@@ -38,9 +38,13 @@ var rotCmd = &cobra.Command{
 		var lookupFailures []string
 		kfClient, _ := initClient()
 		storesFile, _ := cmd.Flags().GetString("stores")
-		certsFile, _ := cmd.Flags().GetString("certs")
+		addRootsFile, _ := cmd.Flags().GetString("add-certs")
+		removeRootsFile, _ := cmd.Flags().GetString("remove-certs")
+		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		log.Printf("[DEBUG] storesFile: %s", storesFile)
-		log.Printf("[DEBUG] certsFile: %s", certsFile)
+		log.Printf("[DEBUG] addRootsFile: %s", addRootsFile)
+		log.Printf("[DEBUG] removeRootsFile: %s", removeRootsFile)
+		log.Printf("[DEBUG] dryRun: %t", dryRun)
 
 		// Read in the stores CSV
 		csvFile, _ := os.Open(storesFile)
@@ -69,29 +73,63 @@ var rotCmd = &cobra.Command{
 		storesJson, _ := json.Marshal(stores)
 		fmt.Println(string(storesJson))
 
-		// Read in the certs CSV
-		csvFile, _ = os.Open(certsFile)
-		reader = csv.NewReader(bufio.NewReader(csvFile))
-		certEntries, _ := reader.ReadAll()
-		var certs = make(map[string]RotCert)
-		for _, entry := range certEntries {
-			if entry[0] == "CertId" || entry[0] == "thumbprint" {
-				continue // Skip header
+		// Read in the add addCerts CSV
+		var addCerts = make(map[string]RotCert)
+		if addRootsFile != "" {
+			addCerts, err := readCertsFile(addRootsFile)
+			if err != nil {
+				log.Fatalf("Error reading addCerts file: %s", err)
 			}
-			certs[entry[0]] = RotCert{
-				ThumbPrint: entry[0],
-			}
-			// Get certificate context
-			//args := &api.GetCertificateContextArgs{
-			//	IncludeMetadata:  boolToPointer(true),
-			//	IncludeLocations: boolToPointer(true),
-			//	CollectionId:     nil,
-			//	Id:               certificateIdInt,
-			//}
-			//cResp, err := r.p.client.GetCertificateContext(args)
+			addCertsJson, _ := json.Marshal(addCerts)
+			fmt.Printf("[DEBUG] add certs JSON: %s", string(addCertsJson))
+			fmt.Println("add rot called")
+		} else {
+			log.Printf("[DEBUG] No addCerts file specified")
+			log.Printf("[DEBUG] No addCerts = %s", addCerts)
 		}
-		fmt.Println("rot called")
+
+		// Read in the remove removeCerts CSV
+		var removeCerts = make(map[string]RotCert)
+		if removeRootsFile != "" {
+			removeCerts, err := readCertsFile(removeRootsFile)
+			if err != nil {
+				log.Fatalf("Error reading removeCerts file: %s", err)
+			}
+			removeCertsJson, _ := json.Marshal(removeCerts)
+			fmt.Println(string(removeCertsJson))
+			fmt.Println("remove rot called")
+		} else {
+			log.Printf("[DEBUG] No removeCerts file specified")
+			log.Printf("[DEBUG] No removeCerts = %s", removeCerts)
+		}
 	},
+}
+
+func readCertsFile(certsFilePath string) (map[string]RotCert, error) {
+	// Read in the cert CSV
+	csvFile, _ := os.Open(certsFilePath)
+	reader := csv.NewReader(bufio.NewReader(csvFile))
+	certEntries, _ := reader.ReadAll()
+	var certs = make(map[string]RotCert)
+	for _, entry := range certEntries {
+		switch entry[0] {
+		case "CertId", "thumbprint", "id", "certId", "Thumbprint":
+			continue // Skip header
+		}
+
+		certs[entry[0]] = RotCert{
+			ThumbPrint: entry[0],
+		}
+		// Get certificate context
+		//args := &api.GetCertificateContextArgs{
+		//	IncludeMetadata:  boolToPointer(true),
+		//	IncludeLocations: boolToPointer(true),
+		//	CollectionId:     nil,
+		//	Id:               certificateIdInt,
+		//}
+		//cResp, err := r.p.client.GetCertificateContext(args)
+	}
+	return certs, nil
 }
 
 var rotGenStoreTemplateCmd = &cobra.Command{
@@ -177,7 +215,10 @@ func init() {
 	var certs string
 	rotCmd.Flags().StringVarP(&stores, "stores", "s", "", "CSV file containing cert stores to enroll into")
 	rotCmd.MarkFlagRequired("stores")
-	rotCmd.Flags().StringVarP(&certs, "certs", "c", "", "CSV file containing cert(s) to enroll into the defined cert stores")
+	rotCmd.Flags().StringVarP(&certs, "add-certs", "a", "", "CSV file containing cert(s) to enroll into the defined cert stores")
+	rotCmd.Flags().StringVarP(&certs, "remove-certs", "r", "", "CSV file containing cert(s) to remove from the defined cert stores")
+
+	rotCmd.Flags().BoolP("dry-run", "d", false, "Dry run mode")
 	rotCmd.MarkFlagRequired("certs")
 	storesCmd.AddCommand(rotGenStoreTemplateCmd)
 	rotGenStoreTemplateCmd.Flags().String("outpath", "template.csv", "Output file to write the template to")
