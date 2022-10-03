@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/Keyfactor/keyfactor-go-client/api"
@@ -18,20 +19,119 @@ import (
 )
 
 type StoreCSVEntry struct {
-	Id      string `json:"id"`
-	Type    string `json:"type"`
-	Machine string `json:"address"`
-	Path    string `json:"path"`
+	Id          string          `json:"id"`
+	Type        string          `json:"type"`
+	Machine     string          `json:"address"`
+	Path        string          `json:"path"`
+	Thumbprints map[string]bool `json:"thumbprints;omitempty"`
+	Serials     map[string]bool `json:"serials;omitempty"`
+	Ids         map[int]bool    `json:"ids;omitempty"`
 }
 
 type RotCert struct {
-	//Id         string `json:"id"`
-	ThumbPrint string `json:"thumbprint"`
+	Id         int                        `json:"id;omitempty"`
+	ThumbPrint string                     `json:"thumbprint;omitempty"`
+	CN         string                     `json:"cn;omitempty"`
+	Locations  []api.CertificateLocations `json:"locations;omitempty"`
 }
 
-// rotCmd represents the rot command
-var rotCmd = &cobra.Command{
-	Use:   "rot",
+type RotAction struct {
+	StoreId    string
+	StoreType  string
+	Thumbprint string
+	CertId     int
+	Add        bool
+	Remove     bool
+}
+
+// rotAuditCmd represents the rot command
+var rotAuditCmd = &cobra.Command{
+	Use:   "rot-audit",
+	Short: "Root Of Trust Audit",
+	Long:  `Root Of Trust Audit: Will read and parse inputs to generate a report of certs that need to be added or removed from the "root of trust" stores.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		var lookupFailures []string
+		kfClient, _ := initClient()
+		storesFile, _ := cmd.Flags().GetString("stores")
+		addRootsFile, _ := cmd.Flags().GetString("add-certs")
+		removeRootsFile, _ := cmd.Flags().GetString("remove-certs")
+		dryRun, _ := cmd.Flags().GetBool("dry-run")
+		log.Printf("[DEBUG] storesFile: %s", storesFile)
+		log.Printf("[DEBUG] addRootsFile: %s", addRootsFile)
+		log.Printf("[DEBUG] removeRootsFile: %s", removeRootsFile)
+		log.Printf("[DEBUG] dryRun: %t", dryRun)
+
+		// Read in the stores CSV
+		csvFile, _ := os.Open(storesFile)
+		reader := csv.NewReader(bufio.NewReader(csvFile))
+		storeEntries, _ := reader.ReadAll()
+		var stores = make(map[string]StoreCSVEntry)
+		for _, entry := range storeEntries {
+			if entry[0] == "StoreId" {
+				continue // Skip header
+			}
+			apiResp, err := kfClient.GetCertificateStoreByID(entry[0])
+			if err != nil {
+				//log.Fatalf("Error getting cert store: %s", err)
+				log.Printf("[ERROR] Error getting cert store: %s", err)
+				lookupFailures = append(lookupFailures, strings.Join(entry, ","))
+				continue
+			}
+
+			log.Printf("[DEBUG] Store: %s", apiResp)
+			inventory, invErr := kfClient.GetCertStoreInventory(entry[0])
+			if invErr != nil {
+				log.Fatal("[ERROR] Error getting cert store inventory: %s", invErr)
+			}
+			stores[entry[0]] = StoreCSVEntry{
+				Id:          entry[0],
+				Type:        entry[1],
+				Machine:     entry[2],
+				Path:        entry[3],
+				Thumbprints: inventory.Thumbprints,
+				Serials:     inventory.Serials,
+				Ids:         inventory.Ids,
+			}
+
+		}
+		storesJson, _ := json.Marshal(stores)
+		fmt.Println(string(storesJson))
+
+		// Read in the add addCerts CSV
+		var certsToAdd = make(map[string]string)
+		if addRootsFile != "" {
+			certsToAdd, _ = readCertsFile(addRootsFile, kfClient)
+			//if err != nil {
+			//	log.Fatalf("Error reading addCerts file: %s", err)
+			//}
+			addCertsJson, _ := json.Marshal(certsToAdd)
+			fmt.Printf("[DEBUG] add certs JSON: %s", string(addCertsJson))
+			fmt.Println("add rot called")
+		} else {
+			log.Printf("[DEBUG] No addCerts file specified")
+			log.Printf("[DEBUG] No addCerts = %s", certsToAdd)
+		}
+
+		// Read in the remove removeCerts CSV
+		var certsToRemove = make(map[string]string)
+		if removeRootsFile != "" {
+			certsToRemove, _ = readCertsFile(removeRootsFile, kfClient)
+			//if err != nil {
+			//	log.Fatalf("Error reading removeCerts file: %s", err)
+			//}
+			removeCertsJson, _ := json.Marshal(certsToRemove)
+			fmt.Println(string(removeCertsJson))
+			fmt.Println("remove rot called")
+		} else {
+			log.Printf("[DEBUG] No removeCerts file specified")
+			log.Printf("[DEBUG] No removeCerts = %s", certsToRemove)
+		}
+		generateAuditReport(certsToAdd, certsToRemove, stores, kfClient)
+	},
+}
+
+var rotReconcileCmd = &cobra.Command{
+	Use:   "rot-reconcile",
 	Short: "Root Of Trust",
 	Long:  `Root Of Trust: Will parse a CSV and attempt to enroll a cert or set of certs into a list of cert stores.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -62,78 +162,206 @@ var rotCmd = &cobra.Command{
 				lookupFailures = append(lookupFailures, strings.Join(entry, ","))
 				continue
 			}
-			stores[entry[0]] = StoreCSVEntry{
-				Id:      entry[0],
-				Type:    entry[1],
-				Machine: entry[2],
-				Path:    entry[3],
-			}
+
 			log.Printf("[DEBUG] Store: %s", apiResp)
+			inventory, invErr := kfClient.GetCertStoreInventory(entry[0])
+			if invErr != nil {
+				log.Fatal("[ERROR] Error getting cert store inventory: %s", invErr)
+			}
+			stores[entry[0]] = StoreCSVEntry{
+				Id:          entry[0],
+				Type:        entry[1],
+				Machine:     entry[2],
+				Path:        entry[3],
+				Thumbprints: inventory.Thumbprints,
+				Serials:     inventory.Serials,
+				Ids:         inventory.Ids,
+			}
+
 		}
 		storesJson, _ := json.Marshal(stores)
 		fmt.Println(string(storesJson))
 
 		// Read in the add addCerts CSV
-		var addCerts = make(map[string]RotCert)
+		var certsToAdd = make(map[string]string)
 		if addRootsFile != "" {
-			addCerts, err := readCertsFile(addRootsFile)
-			if err != nil {
-				log.Fatalf("Error reading addCerts file: %s", err)
-			}
-			addCertsJson, _ := json.Marshal(addCerts)
+			certsToAdd, _ = readCertsFile(addRootsFile, kfClient)
+			//if err != nil {
+			//	log.Fatalf("Error reading addCerts file: %s", err)
+			//}
+			addCertsJson, _ := json.Marshal(certsToAdd)
 			fmt.Printf("[DEBUG] add certs JSON: %s", string(addCertsJson))
 			fmt.Println("add rot called")
 		} else {
 			log.Printf("[DEBUG] No addCerts file specified")
-			log.Printf("[DEBUG] No addCerts = %s", addCerts)
+			log.Printf("[DEBUG] No addCerts = %s", certsToAdd)
 		}
 
 		// Read in the remove removeCerts CSV
-		var removeCerts = make(map[string]RotCert)
+		var certsToRemove = make(map[string]string)
 		if removeRootsFile != "" {
-			removeCerts, err := readCertsFile(removeRootsFile)
-			if err != nil {
-				log.Fatalf("Error reading removeCerts file: %s", err)
-			}
-			removeCertsJson, _ := json.Marshal(removeCerts)
+			certsToRemove, _ = readCertsFile(removeRootsFile, kfClient)
+			//if err != nil {
+			//	log.Fatalf("Error reading removeCerts file: %s", err)
+			//}
+			removeCertsJson, _ := json.Marshal(certsToRemove)
 			fmt.Println(string(removeCertsJson))
 			fmt.Println("remove rot called")
 		} else {
 			log.Printf("[DEBUG] No removeCerts file specified")
-			log.Printf("[DEBUG] No removeCerts = %s", removeCerts)
+			log.Printf("[DEBUG] No removeCerts = %s", certsToRemove)
 		}
+		_, actions, err := generateAuditReport(certsToAdd, certsToRemove, stores, kfClient)
+		if err != nil {
+			log.Fatalf("[ERROR] Error generating audit report: %s", err)
+		}
+		reconcileRoots(actions, kfClient, dryRun)
 	},
 }
 
-func readCertsFile(certsFilePath string) (map[string]RotCert, error) {
+func reconcileRoots(actions map[string]RotAction, kfClient *api.Client, dryRun bool) {
+	for thumbprint, action := range actions {
+		if action.Add {
+			log.Printf("[INFO] Adding cert %s to store %s", thumbprint, action.StoreId)
+			if !dryRun {
+				cStore := api.CertificateStore{
+					CertificateStoreId: action.StoreId,
+				}
+				var stores []api.CertificateStore
+				stores = append(stores, cStore)
+				schedule := &api.InventorySchedule{
+					Immediate: boolToPointer(true),
+				}
+				addReq := api.AddCertificateToStore{
+					CertificateId:     action.CertId,
+					CertificateStores: &stores,
+					InventorySchedule: schedule,
+				}
+				_, err := kfClient.AddCertificateToStores(&addReq)
+				if err != nil {
+					log.Fatalf("[ERROR] Error adding cert to store: %s", err)
+				}
+			}
+		} else if action.Remove {
+			log.Printf("[INFO] Removing cert from store %s", action.StoreId)
+			if !dryRun {
+				cStore := api.CertificateStore{
+					CertificateStoreId: action.StoreId,
+				}
+				var stores []api.CertificateStore
+				stores = append(stores, cStore)
+				schedule := &api.InventorySchedule{
+					Immediate: boolToPointer(true),
+				}
+				removeReq := api.RemoveCertificateFromStore{
+					CertificateId:     action.CertId,
+					Alias:             fmt.Sprintf("KeyfactorAdd%d", action.CertId),
+					CertificateStores: &stores,
+					InventorySchedule: schedule,
+				}
+				_, err := kfClient.RemoveCertificateFromStores(&removeReq)
+				if err != nil {
+					log.Fatalf("[ERROR] Error removing cert from store: %s", err)
+				}
+			}
+		}
+	}
+}
+
+func readCertsFile(certsFilePath string, kfclient *api.Client) (map[string]string, error) {
 	// Read in the cert CSV
 	csvFile, _ := os.Open(certsFilePath)
 	reader := csv.NewReader(bufio.NewReader(csvFile))
 	certEntries, _ := reader.ReadAll()
-	var certs = make(map[string]RotCert)
+	var certs = make(map[string]string)
 	for _, entry := range certEntries {
 		switch entry[0] {
 		case "CertId", "thumbprint", "id", "certId", "Thumbprint":
 			continue // Skip header
 		}
-
-		certs[entry[0]] = RotCert{
-			ThumbPrint: entry[0],
-		}
-		// Get certificate context
-		//args := &api.GetCertificateContextArgs{
-		//	IncludeMetadata:  boolToPointer(true),
-		//	IncludeLocations: boolToPointer(true),
-		//	CollectionId:     nil,
-		//	Id:               certificateIdInt,
-		//}
-		//cResp, err := r.p.client.GetCertificateContext(args)
+		certs[entry[0]] = entry[0]
 	}
 	return certs, nil
 }
 
+func generateAuditReport(addCerts map[string]string, removeCerts map[string]string, stores map[string]StoreCSVEntry, kfClient *api.Client) ([][]string, map[string]RotAction, error) {
+	log.Println("[DEBUG] generateAuditReport called")
+	var data [][]string
+	header := []string{"Thumbprint", "StoreId", "StoreType", "Machine", "Path", "AddCert", "RemoveCert", "Deployed"}
+	data = append(data, header)
+	csvFile, _ := os.Create("rot_audit.csv")
+	csvWriter := csv.NewWriter(csvFile)
+	csvWriter.Write(header)
+	actions := make(map[string]RotAction)
+
+	for _, cert := range addCerts {
+		certLookupReq := api.GetCertificateContextArgs{
+			IncludeMetadata:  boolToPointer(true),
+			IncludeLocations: boolToPointer(true),
+			CollectionId:     nil,
+			Thumbprint:       cert,
+			Id:               0,
+		}
+		certLookup, err := kfClient.GetCertificateContext(&certLookupReq)
+		if err != nil {
+			log.Fatalf("[ERROR] Error looking up cert: %s", err)
+			continue
+		}
+		certId := certLookup.Id
+		certIdStr := strconv.Itoa(certId)
+		for _, store := range stores {
+			if _, ok := store.Thumbprints[cert]; ok {
+				// Cert is already in the store do nothing
+				row := []string{cert, certIdStr, certIdStr, store.Id, store.Type, store.Machine, store.Path, "false", "false", "true"}
+				data = append(data, row)
+				csvWriter.Write(row)
+			} else {
+				// Cert is not deployed to this store and will need to be added
+				row := []string{cert, certIdStr, store.Id, store.Type, store.Machine, store.Path, "true", "false", "false"}
+				data = append(data, row)
+				csvWriter.Write(row)
+				actions[cert] = RotAction{
+					Thumbprint: cert,
+					CertId:     certId,
+					StoreId:    store.Id,
+					StoreType:  store.Type,
+					Add:        true,
+					Remove:     false,
+				}
+			}
+		}
+	}
+	for _, cert := range removeCerts {
+		for _, store := range stores {
+			if _, ok := store.Thumbprints[cert]; ok {
+				// Cert is deployed to this store and will need to be removed
+				row := []string{cert, store.Id, store.Type, store.Machine, store.Path, "false", "true", "true"}
+				data = append(data, row)
+				csvWriter.Write(row)
+				actions[cert] = RotAction{
+					Thumbprint: cert,
+					StoreId:    store.Id,
+					StoreType:  store.Type,
+					Add:        false,
+					Remove:     true,
+				}
+			} else {
+				// Cert is not deployed to this store do nothing
+				row := []string{cert, store.Id, store.Type, store.Machine, store.Path, "false", "false", "false"}
+				data = append(data, row)
+				csvWriter.Write(row)
+			}
+		}
+	}
+	csvWriter.Flush()
+	csvFile.Close()
+
+	log.Printf("[DEBUG] data: %s", data)
+	return data, actions, nil
+}
+
 var rotGenStoreTemplateCmd = &cobra.Command{
-	Use:   "generate-template-rot",
+	Use:   "rot-generate-template",
 	Short: "For generating Root Of Trust template(s)",
 	Long:  `Root Of Trust: Will parse a CSV and attempt to enroll a cert or set of certs into a list of cert stores.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -210,18 +438,28 @@ func initClient() (*api.Client, error) {
 }
 
 func init() {
-	storesCmd.AddCommand(rotCmd)
 	var stores string
-	var certs string
-	rotCmd.Flags().StringVarP(&stores, "stores", "s", "", "CSV file containing cert stores to enroll into")
-	rotCmd.MarkFlagRequired("stores")
-	rotCmd.Flags().StringVarP(&certs, "add-certs", "a", "", "CSV file containing cert(s) to enroll into the defined cert stores")
-	rotCmd.Flags().StringVarP(&certs, "remove-certs", "r", "", "CSV file containing cert(s) to remove from the defined cert stores")
+	var addCerts string
+	var removeCerts string
 
-	rotCmd.Flags().BoolP("dry-run", "d", false, "Dry run mode")
-	rotCmd.MarkFlagRequired("certs")
+	storesCmd.AddCommand(rotAuditCmd)
+	rotAuditCmd.Flags().StringVarP(&stores, "stores", "s", "", "CSV file containing cert stores to enroll into")
+	rotAuditCmd.MarkFlagRequired("stores")
+	rotAuditCmd.Flags().StringVarP(&addCerts, "add-certs", "a", "", "CSV file containing cert(s) to enroll into the defined cert stores")
+	rotAuditCmd.Flags().StringVarP(&removeCerts, "remove-certs", "r", "", "CSV file containing cert(s) to remove from the defined cert stores")
+	rotAuditCmd.Flags().BoolP("dry-run", "d", false, "Dry run mode")
+	rotAuditCmd.MarkFlagRequired("certs")
+
+	storesCmd.AddCommand(rotReconcileCmd)
+	rotReconcileCmd.Flags().StringVarP(&stores, "stores", "s", "", "CSV file containing cert stores to enroll into")
+	rotReconcileCmd.MarkFlagRequired("stores")
+	rotReconcileCmd.Flags().StringVarP(&addCerts, "add-certs", "a", "", "CSV file containing cert(s) to enroll into the defined cert stores")
+	rotReconcileCmd.Flags().StringVarP(&removeCerts, "remove-certs", "r", "", "CSV file containing cert(s) to remove from the defined cert stores")
+	rotReconcileCmd.Flags().BoolP("dry-run", "d", false, "Dry run mode")
+	rotReconcileCmd.MarkFlagRequired("certs")
+
 	storesCmd.AddCommand(rotGenStoreTemplateCmd)
-	rotGenStoreTemplateCmd.Flags().String("outpath", "template.csv", "Output file to write the template to")
+	rotGenStoreTemplateCmd.Flags().String("outpath", "", "Output file to write the template to")
 	rotGenStoreTemplateCmd.Flags().String("format", "csv", "The type of template to generate. Only `csv` is supported at this time.")
 	rotGenStoreTemplateCmd.Flags().String("type", "stores", "The type of template to generate. Only `certs|stores` are supported at this time.")
 	//rotGenStoreTemplateCmd.MarkFlagRequired("type")
@@ -230,9 +468,9 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// rotCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// rotAuditCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// rotCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// rotAuditCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://keyfactor.github.io/integration-manifest-schema.json",
+  "integration_type": "api-client",
+  "name": "kfutil",
+  "status": "pilot",
+  "description": "",
+  "support_level": "kf-community",
+  "link_github": false,
+  "update_catalog": false
+}
+
