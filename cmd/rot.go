@@ -140,6 +140,9 @@ var rotReconcileCmd = &cobra.Command{
 		storesFile, _ := cmd.Flags().GetString("stores")
 		addRootsFile, _ := cmd.Flags().GetString("add-certs")
 		removeRootsFile, _ := cmd.Flags().GetString("remove-certs")
+		minCerts, _ := cmd.Flags().GetInt("min-certs")
+		maxLeaves, _ := cmd.Flags().GetInt("max-leaf-certs")
+		maxKeys, _ := cmd.Flags().GetInt("max-keys")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		log.Printf("[DEBUG] storesFile: %s", storesFile)
 		log.Printf("[DEBUG] addRootsFile: %s", addRootsFile)
@@ -168,6 +171,14 @@ var rotReconcileCmd = &cobra.Command{
 			if invErr != nil {
 				log.Fatal("[ERROR] Error getting cert store inventory: %s", invErr)
 			}
+
+			if !isRootStore(apiResp, inventory, minCerts, maxLeaves, maxKeys) {
+				log.Printf("[WARN] Store %s is not a root store", apiResp.Id)
+				continue
+			} else {
+				log.Printf("[INFO] Store %s is a root store", apiResp.Id)
+			}
+
 			stores[entry[0]] = StoreCSVEntry{
 				Id:          entry[0],
 				Type:        entry[1],
@@ -413,8 +424,31 @@ var rotGenStoreTemplateCmd = &cobra.Command{
 
 	}}
 
-func isRootStore(client *api.Client) bool {
-	//client.GetCertInventory()
+func isRootStore(st *api.GetStoreByIDResp, inv *api.CertStoreInventory, minCerts int, maxKeys int, maxLeaf int) bool {
+	certCount := len(inv.Certificates)
+	if certCount < minCerts {
+		log.Printf("[DEBUG] Store %s has %d certs, less than the required count of %d", st.Id, certCount, minCerts)
+		return false
+	}
+	leafCount := 0
+	keyCount := 0
+	for _, cert := range inv.Certificates {
+		if cert.IssuedDN != cert.IssuerDN {
+			leafCount++
+			if leafCount > maxLeaf {
+				log.Printf("[DEBUG] Store %s has too many leaf certs", st.Id)
+				return false
+			}
+		}
+		if inv.Parameters["PrivateKeyEntry"] == "Yes" {
+			keyCount++
+			if keyCount > maxKeys {
+				log.Printf("[DEBUG] Store %s has too many keys", st.Id)
+				return false
+			}
+		}
+	}
+
 	return true
 }
 
@@ -441,12 +475,18 @@ func init() {
 	var stores string
 	var addCerts string
 	var removeCerts string
+	var minCertsInStore int
+	var maxPrivateKeys int
+	var maxLeaves int
 
 	storesCmd.AddCommand(rotAuditCmd)
 	rotAuditCmd.Flags().StringVarP(&stores, "stores", "s", "", "CSV file containing cert stores to enroll into")
 	rotAuditCmd.MarkFlagRequired("stores")
 	rotAuditCmd.Flags().StringVarP(&addCerts, "add-certs", "a", "", "CSV file containing cert(s) to enroll into the defined cert stores")
 	rotAuditCmd.Flags().StringVarP(&removeCerts, "remove-certs", "r", "", "CSV file containing cert(s) to remove from the defined cert stores")
+	rotAuditCmd.Flags().IntVarP(&minCertsInStore, "min-certs", "m", 1, "The minimum number of certs that should be in a store to be considered a 'root' store")
+	rotAuditCmd.Flags().IntVarP(&maxPrivateKeys, "max-keys", "x", 5, "The max number of private keys that should be in a store to be considered a 'root' store")
+	rotAuditCmd.Flags().IntVarP(&maxLeaves, "max-leaf-certs", "n", 5, "The max number of non-root-certs that should be in a store to be considered a 'root' store")
 	rotAuditCmd.Flags().BoolP("dry-run", "d", false, "Dry run mode")
 	rotAuditCmd.MarkFlagRequired("certs")
 
@@ -455,6 +495,9 @@ func init() {
 	rotReconcileCmd.MarkFlagRequired("stores")
 	rotReconcileCmd.Flags().StringVarP(&addCerts, "add-certs", "a", "", "CSV file containing cert(s) to enroll into the defined cert stores")
 	rotReconcileCmd.Flags().StringVarP(&removeCerts, "remove-certs", "r", "", "CSV file containing cert(s) to remove from the defined cert stores")
+	rotReconcileCmd.Flags().IntVarP(&minCertsInStore, "min-certs", "m", 1, "The minimum number of certs that should be in a store to be considered a 'root' store")
+	rotReconcileCmd.Flags().IntVarP(&maxPrivateKeys, "max-keys", "x", 5, "The max number of private keys that should be in a store to be considered a 'root' store")
+	rotReconcileCmd.Flags().IntVarP(&maxLeaves, "max-leaf-certs", "n", 5, "The max number of non-root-certs that should be in a store to be considered a 'root' store")
 	rotReconcileCmd.Flags().BoolP("dry-run", "d", false, "Dry run mode")
 	rotReconcileCmd.MarkFlagRequired("certs")
 
