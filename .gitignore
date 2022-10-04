@@ -19,3 +19,4 @@ vendor/
 .env
 
 *.csv
+/.vs/slnx.sqlite
