@@ -7,19 +7,35 @@ package cmd
 import (
 	"os"
 
+	"github.com/Keyfactor/keyfactor-go-client/api"
 	"github.com/spf13/cobra"
+	"log"
 )
+
+func initClient() (*api.Client, error) {
+	var clientAuth api.AuthConfig
+	clientAuth.Username = os.Getenv("KEYFACTOR_USERNAME")
+	log.Printf("[DEBUG] Username: %s", clientAuth.Username)
+	clientAuth.Password = os.Getenv("KEYFACTOR_PASSWORD")
+	log.Printf("[DEBUG] Password: %s", clientAuth.Password)
+	clientAuth.Domain = os.Getenv("KEYFACTOR_DOMAIN")
+	log.Printf("[DEBUG] Domain: %s", clientAuth.Domain)
+	clientAuth.Hostname = os.Getenv("KEYFACTOR_HOSTNAME")
+	log.Printf("[DEBUG] Hostname: %s", clientAuth.Hostname)
+
+	c, err := api.NewKeyfactorClient(&clientAuth)
+
+	if err != nil {
+		log.Fatalf("Error creating Keyfactor client: %s", err)
+	}
+	return c, err
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "kfutil",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Keyfactor CLI utilities",
+	Long:  `A CLI wrapper around the Keyfactor Platform API.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	// Run: func(cmd *cobra.Command, args []string) { },
