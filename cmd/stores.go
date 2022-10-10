@@ -66,7 +66,7 @@ func init() {
 	rootCmd.AddCommand(storesCmd)
 	storesCmd.AddCommand(storesListCmd)
 	storesCmd.AddCommand(storesGetCmd)
-	storesGetCmd.Flags().StringVarP(&storeId, "id", "i", "", "Id of the certificate store to get.")
+	storesGetCmd.Flags().StringVarP(&storeId, "id", "i", "", "ID of the certificate store to get.")
 
 	// Here you will define your flags and configuration settings.
 
