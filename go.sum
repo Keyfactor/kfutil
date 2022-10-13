@@ -1,5 +1,5 @@
-github.com/Keyfactor/keyfactor-go-client v1.1.0-rc1 h1:OBMIRIYeK9R0GmW/KGIuWty4axmODsjLglFu5Z1HnBo=
-github.com/Keyfactor/keyfactor-go-client v1.1.0-rc1/go.mod h1:u1M1AjcwiO/Tbvc7EsNl9YTy757hO5wmey1/W/7Qkbs=
+github.com/Keyfactor/keyfactor-go-client v1.1.0-rc5 h1:4nQ/T6YGk9wfgHhyLpUIbK/Ae3CIIbznoJSdLSdZAT8=
+github.com/Keyfactor/keyfactor-go-client v1.1.0-rc5/go.mod h1:u1M1AjcwiO/Tbvc7EsNl9YTy757hO5wmey1/W/7Qkbs=
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/inconshreveable/mousetrap v1.0.1 h1:U3uMjPSQEBMNp1lFxmllqCPM6P5u/Xq7Pgzkat/bFNc=
 github.com/inconshreveable/mousetrap v1.0.1/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=

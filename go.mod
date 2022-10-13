@@ -3,7 +3,7 @@ module kfutil
 go 1.18
 
 require (
-	github.com/Keyfactor/keyfactor-go-client v1.1.0-rc1
+	github.com/Keyfactor/keyfactor-go-client v1.1.0-rc5
 	github.com/spf13/cobra v1.6.0
 )
 
