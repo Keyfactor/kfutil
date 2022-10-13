@@ -735,6 +735,7 @@ func init() {
 	rotReconcileCmd.Flags().IntVarP(&maxLeaves, "max-leaf-certs", "n", -1,
 		"The max number of non-root-certs that should be in a store to be considered a 'root' store. If set to `-1` then all stores will be considered.")
 	rotReconcileCmd.Flags().BoolP("dry-run", "d", false, "Dry run mode")
+	rotReconcileCmd.Flags().BoolP("import-csv", "v", false, "Dry run mode")
 	//rotReconcileCmd.MarkFlagsRequiredTogether("add-certs", "stores")
 	//rotReconcileCmd.MarkFlagsRequiredTogether("remove-certs", "stores")
 	rotReconcileCmd.MarkFlagsMutuallyExclusive("add-certs", "actions")
