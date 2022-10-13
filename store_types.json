@@ -1,0 +1,38 @@
+{
+  "SAMPLETYPE": {
+    "Name": "Sample Store Type",
+    "ShortName": "SAMPLETYPE",
+    "Capability": "SAMPLETYPE",
+    "StoreType": 104,
+    "ImportType": 104,
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden",
+    "ServerRegistration": 0,
+    "InventoryEndpoint": "/AnyInventory/Update",
+    "InventoryJobType": "0b10c7eb-2cd6-4a3c-9e67-8ee6cc88750d",
+    "ManagementJobType": "",
+    "DiscoveryJobType": "",
+    "EnrollmentJobType": ""
+  }
+}

@@ -28,19 +28,19 @@ type StoreCSVEntry struct {
 	Ids         map[int]bool    `json:"ids,omitempty"`
 }
 type ROTCert struct {
-	Id         int                        `json:"id,omitempty"`
+	ID         int                        `json:"id,omitempty"`
 	ThumbPrint string                     `json:"thumbprint,omitempty"`
 	CN         string                     `json:"cn,omitempty"`
 	Locations  []api.CertificateLocations `json:"locations,omitempty"`
 }
 type ROTAction struct {
-	StoreID    string
-	StoreType  string
-	StorePath  string
-	Thumbprint string
-	CertID     int
-	Add        bool
-	Remove     bool
+	StoreID    string `json:"store_id,omitempty"`
+	StoreType  string `json:"store_type,omitempty"`
+	StorePath  string `json:"store_path,omitempty"`
+	Thumbprint string `json:"thumbprint,omitempty"`
+	CertID     int    `json:"cert_id,omitempty"`
+	Add        bool   `json:"add,omitempty"`
+	Remove     bool   `json:"remove,omitempty"`
 }
 
 const (
@@ -201,7 +201,6 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		log.Printf("[ERROR] Error closing audit file: %s", ioErr)
 	}
 	fmt.Println("Audit report written to rot_audit.csv")
-	//log.Printf("[DEBUG] data: %s", data)
 	return data, actions, nil
 }
 
@@ -260,7 +259,6 @@ func reconcileRoots(actions map[string]ROTAction, kfClient *api.Client, dryRun b
 			} else {
 				log.Printf("[INFO] DRY RUN: Would have removed cert %s from store %s", thumbprint, action.StoreID)
 			}
-
 		}
 	}
 	return nil
@@ -299,16 +297,16 @@ func isRootStore(st *api.GetStoreByIDResp, invs *[]api.CertStoreInventory, minCe
 			}
 		}
 	}
-	if certCount < minCerts {
+	if certCount < minCerts && minCerts >= 0 {
 		log.Printf("[DEBUG] Store %s has %d certs, less than the required count of %d", st.Id, certCount, minCerts)
 		return false
 	}
-	if leafCount > maxLeaf {
+	if leafCount > maxLeaf && maxLeaf >= 0 {
 		log.Printf("[DEBUG] Store %s has too many leaf certs", st.Id)
 		return false
 	}
 
-	if keyCount > maxKeys {
+	if keyCount > maxKeys && maxKeys >= 0 {
 		log.Printf("[DEBUG] Store %s has too many keys", st.Id)
 		return false
 	}
@@ -321,9 +319,6 @@ var (
 		Use:   "rot",
 		Short: "Root of trust utility",
 		Long:  `Root of trust allows you to manage your trusted roots using Keyfactor certificate stores.`,
-		//Run: func(cmd *cobra.Command, args []string) {
-		//	fmt.Println("stores called")
-		//},
 	}
 	rotAuditCmd = &cobra.Command{
 		Use:                    "audit",
@@ -354,26 +349,30 @@ var (
 			maxLeaves, _ := cmd.Flags().GetInt("max-leaf-certs")
 			maxKeys, _ := cmd.Flags().GetInt("max-keys")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
-			outPath, _ := cmd.Flags().GetString("outpath")
+			// Read in the stores CSV
 			log.Printf("[DEBUG] storesFile: %s", storesFile)
 			log.Printf("[DEBUG] addRootsFile: %s", addRootsFile)
 			log.Printf("[DEBUG] removeRootsFile: %s", removeRootsFile)
 			log.Printf("[DEBUG] dryRun: %t", dryRun)
-			log.Printf("[DEBUG] outPath: %s", outPath)
-
 			// Read in the stores CSV
 			csvFile, _ := os.Open(storesFile)
 			reader := csv.NewReader(bufio.NewReader(csvFile))
 			storeEntries, _ := reader.ReadAll()
 			var stores = make(map[string]StoreCSVEntry)
+			validHeader := false
 			for _, entry := range storeEntries {
-				if entry[0] == "StoreID" {
+				if strings.EqualFold(strings.Join(entry, ","), strings.Join(StoreHeader, ",")) {
+					validHeader = true
 					continue // Skip header
+				}
+				if !validHeader {
+					fmt.Printf("[ERROR] Invalid header in stores file. Expected: %s", strings.Join(StoreHeader, ","))
+					log.Fatalf("[ERROR] Stores CSV file is missing a valid header")
 				}
 				apiResp, err := kfClient.GetCertificateStoreByID(entry[0])
 				if err != nil {
 					log.Printf("[ERROR] Error getting cert store: %s", err)
-					lookupFailures = append(lookupFailures, strings.Join(entry, ","))
+					_ = append(lookupFailures, strings.Join(entry, ","))
 					continue
 				}
 
@@ -420,8 +419,8 @@ var (
 				//if err != nil {
 				//	log.Fatalf("Error reading addCerts file: %s", err)
 				//}
-				addCertsJson, _ := json.Marshal(certsToAdd)
-				log.Printf("[DEBUG] add certs JSON: %s", string(addCertsJson))
+				addCertsJSON, _ := json.Marshal(certsToAdd)
+				log.Printf("[DEBUG] add certs JSON: %s", string(addCertsJSON))
 				log.Println("[DEBUG] Add ROT called")
 			} else {
 				log.Printf("[DEBUG] No addCerts file specified")
@@ -466,9 +465,24 @@ var (
 		SuggestionsMinimumDistance: 0,
 	}
 	rotReconcileCmd = &cobra.Command{
-		Use:   "reconcile",
-		Short: "Root Of Trust",
-		Long:  `Root Of Trust: Will parse a CSV and attempt to enroll a cert or set of certs into a list of cert stores.`,
+		Use:                    "reconcile",
+		Aliases:                nil,
+		SuggestFor:             nil,
+		Short:                  "Root Of Trust",
+		Long:                   `Root Of Trust: Will parse a CSV and attempt to enroll a cert or set of certs into a list of cert stores.`,
+		Example:                "",
+		ValidArgs:              nil,
+		ValidArgsFunction:      nil,
+		Args:                   nil,
+		ArgAliases:             nil,
+		BashCompletionFunction: "",
+		Deprecated:             "",
+		Annotations:            nil,
+		Version:                "",
+		PersistentPreRun:       nil,
+		PersistentPreRunE:      nil,
+		PreRun:                 nil,
+		PreRunE:                nil,
 		Run: func(cmd *cobra.Command, args []string) {
 			var lookupFailures []string
 			kfClient, _ := initClient()
@@ -495,7 +509,6 @@ var (
 				}
 				apiResp, err := kfClient.GetCertificateStoreByID(entry[0])
 				if err != nil {
-					//log.Fatalf("Error getting cert store: %s", err)
 					log.Printf("[ERROR] Error getting cert store: %s", err)
 					lookupFailures = append(lookupFailures, strings.Join(entry, ","))
 					continue
@@ -569,6 +582,22 @@ var (
 				log.Fatalf("[ERROR] Error reconciling roots: %s", rErr)
 			}
 		},
+		RunE:                       nil,
+		PostRun:                    nil,
+		PostRunE:                   nil,
+		PersistentPostRun:          nil,
+		PersistentPostRunE:         nil,
+		FParseErrWhitelist:         cobra.FParseErrWhitelist{},
+		CompletionOptions:          cobra.CompletionOptions{},
+		TraverseChildren:           false,
+		Hidden:                     false,
+		SilenceErrors:              false,
+		SilenceUsage:               false,
+		DisableFlagParsing:         false,
+		DisableAutoGenTag:          false,
+		DisableFlagsInUseLine:      false,
+		DisableSuggestions:         false,
+		SuggestionsMinimumDistance: 0,
 	}
 	rotGenStoreTemplateCmd = &cobra.Command{
 		Use:                    "generate-template",
@@ -680,12 +709,12 @@ func init() {
 		"CSV file containing cert(s) to enroll into the defined cert stores")
 	rotAuditCmd.Flags().StringVarP(&removeCerts, "remove-certs", "r", "",
 		"CSV file containing cert(s) to remove from the defined cert stores")
-	rotAuditCmd.Flags().IntVarP(&minCertsInStore, "min-certs", "m", 3,
-		"The minimum number of certs that should be in a store to be considered a 'root' store")
-	rotAuditCmd.Flags().IntVarP(&maxPrivateKeys, "max-keys", "x", 1,
-		"The max number of private keys that should be in a store to be considered a 'root' store")
-	rotAuditCmd.Flags().IntVarP(&maxLeaves, "max-leaf-certs", "n", 0,
-		"The max number of non-root-certs that should be in a store to be considered a 'root' store")
+	rotAuditCmd.Flags().IntVarP(&minCertsInStore, "min-certs", "m", -1,
+		"The minimum number of certs that should be in a store to be considered a 'root' store. If set to `-1` then all stores will be considered.")
+	rotAuditCmd.Flags().IntVarP(&maxPrivateKeys, "max-keys", "x", -1,
+		"The max number of private keys that should be in a store to be considered a 'root' store. If set to `-1` then all stores will be considered.")
+	rotAuditCmd.Flags().IntVarP(&maxLeaves, "max-leaf-certs", "n", -1,
+		"The max number of non-root-certs that should be in a store to be considered a 'root' store. If set to `-1` then all stores will be considered.")
 	rotAuditCmd.Flags().BoolP("dry-run", "d", false, "Dry run mode")
 	rotAuditCmd.Flags().StringVarP(&outPath, "outpath", "o", "",
 		"Path to write the audit report file to. If not specified, the file will be written to the current directory.")
@@ -699,12 +728,12 @@ func init() {
 		"CSV file containing cert(s) to remove from the defined cert stores")
 	rotReconcileCmd.Flags().StringVarP(&actions, "actions", "z", "",
 		"CSV file containing reconciliation actions to perform. If this is specified, the other flags are ignored.")
-	rotReconcileCmd.Flags().IntVarP(&minCertsInStore, "min-certs", "m", 3,
-		"The minimum number of certs that should be in a store to be considered a 'root' store")
-	rotReconcileCmd.Flags().IntVarP(&maxPrivateKeys, "max-keys", "x", 1,
-		"The max number of private keys that should be in a store to be considered a 'root' store")
-	rotReconcileCmd.Flags().IntVarP(&maxLeaves, "max-leaf-certs", "n", 0,
-		"The max number of non-root-certs that should be in a store to be considered a 'root' store")
+	rotReconcileCmd.Flags().IntVarP(&minCertsInStore, "min-certs", "m", -1,
+		"The minimum number of certs that should be in a store to be considered a 'root' store. If set to `-1` then all stores will be considered.")
+	rotReconcileCmd.Flags().IntVarP(&maxPrivateKeys, "max-keys", "x", -1,
+		"The max number of private keys that should be in a store to be considered a 'root' store. If set to `-1` then all stores will be considered.")
+	rotReconcileCmd.Flags().IntVarP(&maxLeaves, "max-leaf-certs", "n", -1,
+		"The max number of non-root-certs that should be in a store to be considered a 'root' store. If set to `-1` then all stores will be considered.")
 	rotReconcileCmd.Flags().BoolP("dry-run", "d", false, "Dry run mode")
 	//rotReconcileCmd.MarkFlagsRequiredTogether("add-certs", "stores")
 	//rotReconcileCmd.MarkFlagsRequiredTogether("remove-certs", "stores")
