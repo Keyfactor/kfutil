@@ -1,6 +1,6 @@
 module kfutil
 
-go 1.18
+go 1.19
 
 require (
 	github.com/Keyfactor/keyfactor-go-client v1.1.0-rc5
