@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -67,7 +66,6 @@ var containersListCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(containersCmd)
-
 	// LIST containers command
 	containersCmd.AddCommand(containersListCmd)
 	// GET containers command
@@ -78,6 +76,5 @@ func init() {
 	containersCmd.AddCommand(containersUpdateCmd)
 	// DELETE containers command
 	containersCmd.AddCommand(containersDeleteCmd)
-
 	// Utility functions
 }

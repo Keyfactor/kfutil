@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -10,9 +9,37 @@ import (
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"io/ioutil"
 	"log"
+	"sort"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
+
+// Flag enums
+
+// End enums
+
+// Helpers
+func buildStoreTypePropertiesInterface(properties []interface{}) ([]api.StoreTypePropertyDefinition, error) {
+	var output []api.StoreTypePropertyDefinition
+
+	for _, prop := range properties {
+		log.Printf("Prop: %v", prop)
+		p := prop.(map[string]interface{})
+		output = append(output, api.StoreTypePropertyDefinition{
+			Name:         p["Name"].(string),
+			DisplayName:  p["DisplayName"].(string),
+			Type:         p["Type"].(string),
+			DependsOn:    p["DependsOn"].(string),
+			DefaultValue: p["DefaultValue"],
+			Required:     p["Required"].(bool),
+		})
+	}
+
+	return output, nil
+}
+
+// End helpers
 
 // storeTypesCmd represents the storeTypes command
 var storeTypesCmd = &cobra.Command{
@@ -92,6 +119,81 @@ var storesTypeCreateCmd = &cobra.Command{
 	Long:  `Create a new certificate store type in Keyfactor.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("create called")
+		//Check if store type is valid
+		validStoreTypes := getValidStoreTypes()
+		storeType, _ := cmd.Flags().GetString("name")
+		storeTypeIsValid := false
+		for _, v := range validStoreTypes {
+			if strings.EqualFold(v, strings.ToUpper(storeType)) {
+				log.Printf("[DEBUG] Valid store type: %s", storeType)
+				storeTypeIsValid = true
+				break
+			}
+		}
+		if !storeTypeIsValid {
+			fmt.Printf("Error: Invalid store type: %s\nValid types are: %s", storeType, validStoreTypes)
+			log.Fatalf("Error: Invalid store type: %s", storeType)
+		} else {
+			kfClient, _ := initClient()
+			storeTypeConfig, _ := readStoreTypesConfig()
+			log.Printf("[DEBUG] Store type config: %v", storeTypeConfig[storeType])
+			sConfig := storeTypeConfig[storeType].(map[string]interface{})
+			props, pErr := buildStoreTypePropertiesInterface(sConfig["Properties"].([]interface{}))
+			if pErr != nil {
+				fmt.Printf("Error: %s", pErr)
+				log.Printf("Error: %s", pErr)
+			}
+			createReq := api.CertificateStoreType{
+				Name:       storeTypeConfig[storeType].(map[string]interface{})["Name"].(string),
+				ShortName:  storeTypeConfig[storeType].(map[string]interface{})["ShortName"].(string),
+				Capability: storeTypeConfig[storeType].(map[string]interface{})["Capability"].(string),
+				SupportedOperations: struct {
+					Add        bool `json:"Add"`
+					Create     bool `json:"Create"`
+					Discovery  bool `json:"Discovery"`
+					Enrollment bool `json:"Enrollment"`
+					Remove     bool `json:"Remove"`
+				}{
+					Add:        storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Add"].(bool),
+					Create:     storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Create"].(bool),
+					Discovery:  storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Discovery"].(bool),
+					Enrollment: storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Enrollment"].(bool),
+					Remove:     storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Remove"].(bool),
+				},
+				Properties:      props,
+				EntryParameters: []api.EntryParameter{},
+				PasswordOptions: struct {
+					EntrySupported bool   `json:"EntrySupported"`
+					StoreRequired  bool   `json:"StoreRequired"`
+					Style          string `json:"Style"`
+				}{
+					EntrySupported: storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["EntrySupported"].(bool),
+					StoreRequired:  storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["StoreRequired"].(bool),
+					Style:          storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["Style"].(string),
+				},
+				//StorePathType:      "",
+				//StorePathValue:     "",
+				PrivateKeyAllowed:  storeTypeConfig[storeType].(map[string]interface{})["PrivateKeyAllowed"].(string),
+				JobProperties:      nil,
+				ServerRequired:     storeTypeConfig[storeType].(map[string]interface{})["ServerRequired"].(bool),
+				PowerShell:         storeTypeConfig[storeType].(map[string]interface{})["PowerShell"].(bool),
+				BlueprintAllowed:   storeTypeConfig[storeType].(map[string]interface{})["BlueprintAllowed"].(bool),
+				CustomAliasAllowed: storeTypeConfig[storeType].(map[string]interface{})["CustomAliasAllowed"].(string),
+				//ServerRegistration: 0,
+				//InventoryEndpoint:  "",
+				//InventoryJobType:   "",
+				//ManagementJobType:  "",
+				//DiscoveryJobType:   "",
+				//EnrollmentJobType:  "",
+			}
+			log.Printf("[DEBUG] Create request: %v", createReq)
+			createResp, err := kfClient.CreateStoreType(&createReq)
+			if err != nil {
+				fmt.Printf("Error creating store type: %s", err)
+				log.Printf("[ERROR] creating store type : %s", err)
+			}
+			log.Printf("[DEBUG] Create response: %v", createResp)
+		}
 	},
 }
 
@@ -172,23 +274,37 @@ var generateStoreTypeTemplate = &cobra.Command{
 	},
 }
 
-func readStoreTypesConfig() (map[string]api.CertificateStoreType, error) {
-	content, err := ioutil.ReadFile("./store_types.json")
+func readStoreTypesConfig() (map[string]interface{}, error) {
+	content, err := ioutil.ReadFile("./store_types.json") //todo: make this read from github
 	if err != nil {
 		log.Fatal("Error when opening file: ", err)
 	}
 
 	// Now let's unmarshall the data into `payload`
-	var payload map[string]api.CertificateStoreType
-	err = json.Unmarshal(content, &payload)
+	//var payload map[string]api.CertificateStoreType
+	var datas map[string]interface{}
+	err = json.Unmarshal(content, &datas)
 	if err != nil {
 		log.Printf("Error during Unmarshal(): %s", err)
 		return nil, err
 	}
-	return payload, nil
+	return datas, nil
+}
+
+func getValidStoreTypes() []string {
+	validStoreTypes, _ := readStoreTypesConfig()
+	validStoreTypesList := make([]string, 0, len(validStoreTypes))
+	for k := range validStoreTypes {
+		validStoreTypesList = append(validStoreTypesList, k)
+	}
+	sort.Strings(validStoreTypesList)
+	return validStoreTypesList
+
 }
 
 func init() {
+
+	validTypesString := strings.Join(getValidStoreTypes(), ", ")
 	rootCmd.AddCommand(storeTypesCmd)
 
 	// GET store type templates
@@ -208,9 +324,12 @@ func init() {
 
 	// CREATE command
 	storeTypesCmd.AddCommand(storesTypeCreateCmd)
+	storesTypeCreateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to get. Valid choices are: "+validTypesString)
+	storesTypeCreateCmd.MarkFlagRequired("name")
 
 	// UPDATE command
 	storeTypesCmd.AddCommand(storesTypeUpdateCmd)
+	storesTypeUpdateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to get.")
 
 	// DELETE command
 	storeTypesCmd.AddCommand(storesTypeDeleteCmd)
