@@ -85,7 +85,7 @@ func templateTypeCompletion(cmd *cobra.Command, args []string, toComplete string
 	}, cobra.ShellCompDirectiveDefault
 }
 
-func generateAuditReport(addCerts map[string]string, removeCerts map[string]string, stores map[string]StoreCSVEntry, kfClient *api.Client) ([][]string, map[string]ROTAction, error) {
+func generateAuditReport(addCerts map[string]string, removeCerts map[string]string, stores map[string]StoreCSVEntry, kfClient *api.Client) ([][]string, map[string][]ROTAction, error) {
 	log.Println("[DEBUG] generateAuditReport called")
 	var (
 		data [][]string
@@ -103,7 +103,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		fmt.Printf("%s", cErr)
 		log.Fatalf("[ERROR] Error writing audit header: %s", cErr)
 	}
-	actions := make(map[string]ROTAction)
+	actions := make(map[string][]ROTAction)
 
 	for _, cert := range addCerts {
 		certLookupReq := api.GetCertificateContextArgs{
@@ -139,7 +139,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 					fmt.Printf("%s", wErr)
 					log.Printf("[ERROR] Error writing audit row: %s", wErr)
 				}
-				actions[cert] = ROTAction{
+				actions[cert] = append(actions[cert], ROTAction{
 					Thumbprint: cert,
 					CertID:     certID,
 					StoreID:    store.ID,
@@ -147,7 +147,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 					StorePath:  store.Path,
 					AddCert:    true,
 					RemoveCert: false,
-				}
+				})
 			}
 		}
 	}
@@ -176,7 +176,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 					fmt.Printf("%s", wErr)
 					log.Printf("[ERROR] Error writing row to CSV: %s", wErr)
 				}
-				actions[cert] = ROTAction{
+				actions[cert] = append(actions[cert], ROTAction{
 					Thumbprint: cert,
 					CertID:     certID,
 					StoreID:    store.ID,
@@ -184,7 +184,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 					StorePath:  store.Path,
 					AddCert:    false,
 					RemoveCert: true,
-				}
+				})
 			} else {
 				// Cert is not deployed to this store do nothing
 				row := []string{cert, certIDStr, store.ID, store.Type, store.Machine, store.Path, "false", "false", "false"}
@@ -203,66 +203,68 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		fmt.Println(ioErr)
 		log.Printf("[ERROR] Error closing audit file: %s", ioErr)
 	}
-	fmt.Printf("Audit report written to %s", reconcileDefaultFileName)
+	fmt.Printf("Audit report written to %s\n", reconcileDefaultFileName)
 	return data, actions, nil
 }
 
-func reconcileRoots(actions map[string]ROTAction, kfClient *api.Client, dryRun bool) error {
+func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, dryRun bool) error {
 	log.Printf("[DEBUG] Reconciling roots")
 	if len(actions) == 0 {
 		log.Printf("[INFO] No actions to take, roots are up-to-date.")
 		return nil
 	}
 	for thumbprint, action := range actions {
-		if action.AddCert {
-			log.Printf("[INFO] Adding cert %s to store %s(%s)", thumbprint, action.StoreID, action.StorePath)
-			if !dryRun {
-				cStore := api.CertificateStore{
-					CertificateStoreId: action.StoreID,
-					Overwrite:          true,
+		for _, a := range action {
+			if a.AddCert {
+				log.Printf("[INFO] Adding cert %s to store %s(%s)", thumbprint, a.StoreID, a.StorePath)
+				if !dryRun {
+					cStore := api.CertificateStore{
+						CertificateStoreId: a.StoreID,
+						Overwrite:          true,
+					}
+					var stores []api.CertificateStore
+					stores = append(stores, cStore)
+					schedule := &api.InventorySchedule{
+						Immediate: boolToPointer(true),
+					}
+					addReq := api.AddCertificateToStore{
+						CertificateId:     a.CertID,
+						CertificateStores: &stores,
+						InventorySchedule: schedule,
+					}
+					_, err := kfClient.AddCertificateToStores(&addReq)
+					if err != nil {
+						fmt.Printf("Error adding cert %s (%d) to store %s (%s): %s\n", a.Thumbprint, a.CertID, a.StoreID, a.StorePath, err)
+						continue
+					}
+				} else {
+					log.Printf("[INFO] DRY RUN: Would have added cert %s from store %s", thumbprint, a.StoreID)
 				}
-				var stores []api.CertificateStore
-				stores = append(stores, cStore)
-				schedule := &api.InventorySchedule{
-					Immediate: boolToPointer(true),
+			} else if a.RemoveCert {
+				if !dryRun {
+					log.Printf("[INFO] Removing cert from store %s", a.StoreID)
+					cStore := api.CertificateStore{
+						CertificateStoreId: a.StoreID,
+						Alias:              a.Thumbprint,
+					}
+					var stores []api.CertificateStore
+					stores = append(stores, cStore)
+					schedule := &api.InventorySchedule{
+						Immediate: boolToPointer(true),
+					}
+					removeReq := api.RemoveCertificateFromStore{
+						CertificateId:     a.CertID,
+						CertificateStores: &stores,
+						InventorySchedule: schedule,
+					}
+					_, err := kfClient.RemoveCertificateFromStores(&removeReq)
+					if err != nil {
+						fmt.Printf("Error removing cert %s (%d) from store %s (%s): %s", a.Thumbprint, a.CertID, a.StoreID, a.StorePath, err)
+						log.Fatalf("[ERROR] Error removing cert from store: %s", err)
+					}
+				} else {
+					log.Printf("[INFO] DRY RUN: Would have removed cert %s from store %s", thumbprint, a.StoreID)
 				}
-				addReq := api.AddCertificateToStore{
-					CertificateId:     action.CertID,
-					CertificateStores: &stores,
-					InventorySchedule: schedule,
-				}
-				_, err := kfClient.AddCertificateToStores(&addReq)
-				if err != nil {
-					fmt.Println("Error adding cert to store: ", err)
-					log.Fatalf("[ERROR] Error adding cert to store: %s", err)
-				}
-			} else {
-				log.Printf("[INFO] DRY RUN: Would have added cert %s from store %s", thumbprint, action.StoreID)
-			}
-		} else if action.RemoveCert {
-			if !dryRun {
-				log.Printf("[INFO] Removing cert from store %s", action.StoreID)
-				cStore := api.CertificateStore{
-					CertificateStoreId: action.StoreID,
-					Alias:              action.Thumbprint,
-				}
-				var stores []api.CertificateStore
-				stores = append(stores, cStore)
-				schedule := &api.InventorySchedule{
-					Immediate: boolToPointer(true),
-				}
-				removeReq := api.RemoveCertificateFromStore{
-					CertificateId:     action.CertID,
-					CertificateStores: &stores,
-					InventorySchedule: schedule,
-				}
-				_, err := kfClient.RemoveCertificateFromStores(&removeReq)
-				if err != nil {
-					fmt.Printf("[ERROR] Error removing cert from store: %s", err)
-					log.Fatalf("[ERROR] Error removing cert from store: %s", err)
-				}
-			} else {
-				log.Printf("[INFO] DRY RUN: Would have removed cert %s from store %s", thumbprint, action.StoreID)
 			}
 		}
 	}
@@ -441,8 +443,7 @@ var (
 					log.Fatalf("Error reading removeCerts file: %s", rErr)
 				}
 				removeCertsJSON, _ := json.Marshal(certsToRemove)
-				fmt.Println(string(removeCertsJSON))
-				fmt.Println("remove rot called")
+				log.Printf("[DEBUG] remove certs JSON: %s", string(removeCertsJSON))
 			} else {
 				log.Printf("[DEBUG] No removeCerts file specified")
 				log.Printf("[DEBUG] No removeCerts = %s", certsToRemove)
@@ -520,7 +521,7 @@ var (
 				if cErr != nil {
 					log.Fatalf("Error reading CSV file: %s", cErr)
 				}
-				actions := make(map[string]ROTAction)
+				actions := make(map[string][]ROTAction)
 				fieldMap := make(map[int]string)
 				for i, field := range AuditHeader {
 					fieldMap[i] = field
@@ -559,7 +560,7 @@ var (
 						RemoveCert: removeCert,
 					}
 
-					actions[a.Thumbprint] = a
+					actions[a.Thumbprint] = append(actions[a.Thumbprint], a)
 
 					//actions[cert] = ROTAction{
 					//	Thumbprint: cert,
@@ -674,6 +675,7 @@ var (
 				if lookupFailures != nil {
 					fmt.Printf("The following stores could not be found: %s", strings.Join(lookupFailures, ","))
 				}
+				fmt.Println("Reconciliation completed. Check orchestrator jobs for details.")
 			}
 
 		},
