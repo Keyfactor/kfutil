@@ -3,8 +3,7 @@ module kfutil
 go 1.19
 
 require (
-	github.com/Keyfactor/keyfactor-go-client v1.1.0-rc5
-	github.com/mitchellh/mapstructure v1.5.0
+	github.com/Keyfactor/keyfactor-go-client v1.1.0
 	github.com/spf13/cobra v1.6.0
 )
 
