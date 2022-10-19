@@ -1,0 +1,1204 @@
+{
+  "A10": {
+    "Name": "A10 vThunder",
+    "ShortName": "vThunderU",
+    "Capability": "vThunderU",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "protocol",
+        "DisplayName": "Protocol",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "allowInvalidCert",
+        "DisplayName": "Allow Invalid Cert",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required"
+  },
+  "AZUREKEYVAULT": {
+    "Name": "Azure KeyVault",
+    "ShortName": "AKV",
+    "Capability": "AKV",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "VaultName",
+        "DisplayName": "Vault Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "ResourceGroupName",
+        "DisplayName": "Resource Group Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Required",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  "AWS": {
+    "Name": "Amazon Web Services",
+    "ShortName": "AWS",
+    "Capability": "AWS",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "AccessKey",
+        "DisplayName": "Access Key",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "SecretKey",
+        "DisplayName": "Secret Key",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "[\"AP Northeast 1\", \"AP Northeast 2\", \"AP South 1\", \"AP Southeast 1\", \"AP Southeast 2\", \"CA Central 1\", \"EU Central 1\", \"EU West 1\", \"EU West 2\", \"EU West 3\", \"SA East 1\", \"US East 1\", \"US East 2\", \"US West 1\", \"US West 2\"]",
+    "PrivateKeyAllowed": "Required",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  "F5PROFILES": {
+    "Name": "F5 SSL Profiles",
+    "ShortName": "F5",
+    "Capability": "F5",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  "F5WEB": {
+    "Name": "F5 Web Server",
+    "ShortName": "F5",
+    "Capability": "F5",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "F5 Web Server",
+    "PrivateKeyAllowed": "Required",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  "F5CABUNDLES": {
+    "Name": "F5 CA Bundles REST",
+    "ShortName": "F5-CA-REST",
+    "Capability": "F5-CA-REST",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "PrimaryNode",
+        "DisplayName": "Primary Node",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "PrimaryNodeCheckRetryMax",
+        "DisplayName": "Primary Node Check Retry Maximum",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "3",
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "PrimaryNodeCheckRetryWaitSecs",
+        "DisplayName": "Primary Node Check Retry Wait Seconds",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "120",
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "F5Version",
+        "DisplayName": "Version of F5",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "v12,v13,v14,v15",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required"
+  },
+  "F5PROFILESREST": {
+    "Name": "F5 SSL Profiles REST",
+    "ShortName": "F5-SL-REST",
+    "Capability": "F5-SL-REST",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "PrimaryNode",
+        "DisplayName": "Primary Node",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "PrimaryNodeCheckRetryWaitSecs",
+        "DisplayName": "Primary Node Check Retry Wait Seconds",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "120",
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "PrimaryNodeCheckRetryMax",
+        "DisplayName": "Primary Node Check Retry Maximum",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "3",
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "F5Version",
+        "DisplayName": "Version of F5",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "v12,v13,v14,v15",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required"
+  },
+  "F5WEBREST": {
+    "Name": "F5 Web Server REST",
+    "ShortName": "F5-WS-REST",
+    "Capability": "F5-WS-REST",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "PrimaryNode",
+        "DisplayName": "Primary Node",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "PrimaryNodeCheckRetryWaitSecs",
+        "DisplayName": "Primary Node Check Retry Wait Seconds",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "120",
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "PrimaryNodeCheckRetryMax",
+        "DisplayName": "Primary Node Check Retry Maximum",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "3",
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "F5Version",
+        "DisplayName": "Version of F5",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "v12,v13,v14,v15",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "WebServer",
+    "PrivateKeyAllowed": "Required",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  "FORTANIX": {
+    "Name": "Fortanix",
+    "ShortName": "Fortanix",
+    "Capability": "Fortanix",
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": true,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "ServerRegistration": 0
+  },
+  "FTP": {
+    "Name": "File Transfer Protocol",
+    "ShortName": "FTP",
+    "Capability": "FTP",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  "GCPAPIGEE" : {
+    "Name": "Google Cloud Provider Apigee",
+    "ShortName": "GcpApigee",
+    "Capability": "GcpApigee",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "isTrustStore",
+        "DisplayName": "Is Trust Store?",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true
+      },
+      {
+        "Name": "jsonKey",
+        "DisplayName": "Google Json Key File",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required",
+    "ServerRegistration": 0
+  },
+  "HASHIVAULT": {
+    "Name": "Hashicorp Vault",
+    "ShortName": "HCV",
+    "Capability": "HCV",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "MountPoint",
+        "DisplayName": "Mount Point",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "VaultServerUrl",
+        "DisplayName": "VaultServerURL",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "VaultToken",
+        "DisplayName": "Vault Token",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  "IISROOTS": {
+    "Name": "IIS Roots",
+    "ShortName": "IIS",
+    "Capability": "IIS",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "UseSSL",
+        "DisplayName": "UseSSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "IIS Trusted Roots",
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden",
+    "ServerRegistration": 0
+  },
+  "IISPERSONAL": {
+    "Name": "IIS Personal",
+    "ShortName": "IIS",
+    "Capability": "IIS",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "UseSSL",
+        "DisplayName": "UseSSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "IIS Personal",
+    "PrivateKeyAllowed": "Required",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Optional",
+    "ServerRegistration": 0
+  },
+  "IISREVOKED": {
+    "Name": "IIS Revoked",
+    "ShortName": "IIS",
+    "Capability": "IIS",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "UseSSL",
+        "DisplayName": "UseSSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "IIS Revoked",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  "IISWBINDINGS": {
+    "Name": "IISWithBindings",
+    "ShortName": "IISWBin",
+    "Capability": "IISBindings",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "spnwithport",
+        "DisplayName": "SPN With Port?",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "WinRm Protocol",
+        "DisplayName": "WinRm Protocol",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "http",
+        "Required": true
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "WinRm Port",
+        "DisplayName": "WinRm Port",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "5985",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [
+      {
+        "StoreTypeId": 103,
+        "Name": "Site Name",
+        "DisplayName": "Site Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "Default Web Site",
+        "Options": ""
+      },
+      {
+        "StoreTypeId": 103,
+        "Name": "Port",
+        "DisplayName": "Port",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "443",
+        "Options": ""
+      },
+      {
+        "StoreTypeId": 103,
+        "Name": "IP Address",
+        "DisplayName": "IP Address",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "*",
+        "Options": ""
+      },
+      {
+        "StoreTypeId": 103,
+        "Name": "Host Name",
+        "DisplayName": "Host Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
+      },
+      {
+        "StoreTypeId": 103,
+        "Name": "Sni Flag",
+        "DisplayName": "Sni Flag",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "0 - No SNI",
+        "Options": ""
+      },
+      {
+        "StoreTypeId": 103,
+        "Name": "Protocol",
+        "DisplayName": "Protocol",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "https",
+        "Options": ""
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "[\"My\",\"WebHosting\"]",
+    "PrivateKeyAllowed": "Required",
+    "JobProperties": [
+      "Site Name",
+      "Port",
+      "IP Address",
+      "Host Name",
+      "Sni Flag",
+      "Protocol"
+    ],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  "JKS": {
+    "Name": "Java Keystore",
+    "ShortName": "JKS",
+    "Capability": "JKS",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": true,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "ProviderType",
+        "DisplayName": "Type",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "JKS,PKCS12,Windows-MY",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": true,
+      "StoreRequired": true,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required"
+  },
+  "JKSSSH": {
+    "Name": "JKS-SSH",
+    "ShortName": "JKS-SSH",
+    "Capability": "JKS-SSH",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "linuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux Create File Permissions",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": true,
+      "StoreRequired": true,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  "NETSCALER": {
+    "Name": "NetScaler",
+    "ShortName": "NS",
+    "Capability": "NS",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [],
+    "EntryParameters": [
+      {
+        "StoreTypeId": 5,
+        "Name": "NetscalerVserver",
+        "DisplayName": "NetscalerVserver",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [
+      "NetscalerVserver"
+    ],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  "PALOALTOFW": {
+    "Name": "PaloAlto",
+    "ShortName": "PaloAlto",
+    "Capability": "PaloAlto",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [],
+    "EntryParameters": [
+      {
+        "StoreTypeId": 112,
+        "Name": "Trusted Root",
+        "DisplayName": "Trusted Root",
+        "Type": "Bool",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Options": ""
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [
+      "Trusted Root"
+    ],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  "PEM": {
+    "Name": "PEM File",
+    "ShortName": "PEM",
+    "Capability": "PEM",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": true,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "separatePrivateKey",
+        "DisplayName": "Separate Private Key",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false
+      },
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "privateKeyPath",
+        "DisplayName": "Path To Private Key File",
+        "Type": "String",
+        "DependsOn": "separatePrivateKey",
+        "DefaultValue": null,
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Custom"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  "RFJKS" : {
+    "Name": "RFJKS",
+    "ShortName": "RFJKS",
+    "Capability": "RFJKS",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
+  },
+  "RFPEM" : {
+    "Name": "RFPEM",
+    "ShortName": "RFPEM",
+    "Capability": "RFPEM",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "IsTrustStore",
+        "DisplayName": "Trust Store",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": false
+      },
+      {
+        "Name": "IncludesChain",
+        "DisplayName": "Store Includes Chain",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": false
+      },
+      {
+        "Name": "SeparatePrivateKeyFilePath",
+        "DisplayName": "Separate Private Key File Location",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
+  },
+  "RFPKCS12" : {
+    "Name": "RFPkcs12",
+    "ShortName": "RFPkcs12",
+    "Capability": "RFPkcs12",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
+  },
+  "SAMPLETYPE": {
+    "Name": "Sample Store Type",
+    "ShortName": "SAMPLETYPE",
+    "Capability": "SAMPLETYPE",
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  "WINCERMGMT": {
+    "Name": "Windows Certificate Store Manager",
+    "ShortName": "WinCerMgmt",
+    "Capability": "WinCerMgmt",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId;omitempty": 0,
+        "Name": "spnwithport",
+        "DisplayName": "spnwithport",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  }
+}
