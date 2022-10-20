@@ -34,11 +34,11 @@ var containersGetCmd = &cobra.Command{
 	Long:  `Get certificate store container by ID or name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.SetOutput(ioutil.Discard)
-		client := cmd.Flag("client").Value.String()
+		id := cmd.Flag("id").Value.String()
 		kfClient, _ := initClient()
-		agents, aErr := kfClient.GetStoreContainer(client)
+		agents, aErr := kfClient.GetStoreContainer(id)
 		if aErr != nil {
-			fmt.Printf("Error, unable to get orchestrator %s. %s\n", client, aErr)
+			fmt.Printf("Error, unable to get container %s. %s\n", id, aErr)
 			log.Fatalf("Error: %s", aErr)
 		}
 		output, jErr := json.Marshal(agents)
@@ -96,6 +96,7 @@ func init() {
 	// GET containers command
 	containersCmd.AddCommand(containersGetCmd)
 	containersGetCmd.Flags().StringP("id", "i", "", "ID or name of the cert store container.")
+	containersGetCmd.MarkFlagRequired("id")
 	// CREATE containers command
 	//containersCmd.AddCommand(containersCreateCmd)
 	// UPDATE containers command
