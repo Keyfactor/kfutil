@@ -38,6 +38,8 @@ install:
 	cp ${BINARY} ${INSTALLDIR}
 	mv ${BINARY} /usr/local/bin/${BINARY}
 
+vendor:
+	./vendor.sh
 
 test:
 	go test -i $(TEST) || exit 1
@@ -52,4 +54,4 @@ prerelease:
 	git tag $(VERSION)
 	git push origin $(VERSION)
 
-.PHONY: build prerelease release install test fmt
+.PHONY: build prerelease release install test fmt vendor
