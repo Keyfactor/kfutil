@@ -1,10 +1,10 @@
 module kfutil
 
-go 1.18
+go 1.19
 
 require (
-	github.com/Keyfactor/keyfactor-go-client v1.0.2
-	github.com/spf13/cobra v1.5.0
+	github.com/Keyfactor/keyfactor-go-client v1.1.0
+	github.com/spf13/cobra v1.6.0
 )
 
 require (

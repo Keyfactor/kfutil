@@ -1,11 +1,13 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 
 	"github.com/spf13/cobra"
 )
@@ -13,20 +15,58 @@ import (
 // storesCmd represents the stores command
 var storesCmd = &cobra.Command{
 	Use:   "stores",
-	Short: "Certificate Store operations",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Keyfactor certificate stores APIs and utilities.",
+	Long:  `A collections of APIs and utilities for interacting with Keyfactor certificate stores.`,
+	//Run: func(cmd *cobra.Command, args []string) {
+	//	fmt.Println("stores called")
+	//},
+}
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+var storesListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List certificate stores.",
+	Long:  `List certificate stores.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("stores called")
+		log.SetOutput(ioutil.Discard)
+		kfClient, _ := initClient()
+		stores, err := kfClient.ListCertificateStores()
+		if err != nil {
+			log.Printf("Error: %s", err)
+		}
+		output, jErr := json.Marshal(stores)
+		if jErr != nil {
+			log.Printf("Error: %s", jErr)
+		}
+		fmt.Printf("%s", output)
+	},
+}
+
+var storesGetCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Get a certificate store by ID.",
+	Long:  `Get a certificate store by ID.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.SetOutput(ioutil.Discard) //todo: remove this and set it global
+		storeId, _ := cmd.Flags().GetString("id")
+		kfClient, _ := initClient()
+		stores, err := kfClient.GetCertificateStoreByID(storeId)
+		if err != nil {
+			log.Printf("Error: %s", err)
+		}
+		output, jErr := json.Marshal(stores)
+		if jErr != nil {
+			log.Printf("Error: %s", jErr)
+		}
+		fmt.Printf("%s", output)
 	},
 }
 
 func init() {
+	var storeId string
 	rootCmd.AddCommand(storesCmd)
+	storesCmd.AddCommand(storesListCmd)
+	storesCmd.AddCommand(storesGetCmd)
+	storesGetCmd.Flags().StringVarP(&storeId, "id", "i", "", "ID of the certificate store to get.")
 
 	// Here you will define your flags and configuration settings.
 

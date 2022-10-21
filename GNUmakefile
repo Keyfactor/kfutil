@@ -6,7 +6,7 @@ NAMESPACE=keyfactor
 WEBSITE_REPO=https://github.com/Keyfactor/kfutil
 NAME=kfutil
 BINARY=${NAME}
-VERSION=0.0.2
+VERSION=v0.0.4
 OS_ARCH := $(shell go env GOOS)_$(shell go env GOARCH)
 BASEDIR := ${HOME}/go/bin
 INSTALLDIR := ${BASEDIR}
@@ -35,7 +35,8 @@ install:
 	rm -rf ${INSTALLDIR}/${BINARY}
 	mkdir -p ${INSTALLDIR}
 	chmod oug+x ${BINARY}
-	mv ${BINARY} ${INSTALLDIR}
+	cp ${BINARY} ${INSTALLDIR}
+	mv ${BINARY} /usr/local/bin/${BINARY}
 
 
 test:
@@ -46,8 +47,8 @@ fmt:
 	gofmt -w $(GOFMT_FILES)
 
 prerelease:
-	git tag -d $(VERSION)
-	git push origin :$(VERSION)
+	git tag -d $(VERSION) || true
+	git push origin :$(VERSION) || true
 	git tag $(VERSION)
 	git push origin $(VERSION)
 
