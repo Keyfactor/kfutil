@@ -13,7 +13,7 @@ import (
 // storesCmd represents the stores command
 var storesCmd = &cobra.Command{
 	Use:   "stores",
-	Short: "A brief description of your command",
+	Short: "Certificate Store operations",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
 
