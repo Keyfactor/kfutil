@@ -4,6 +4,7 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"github.com/spf13/cobra"
 	"log"
@@ -24,7 +25,8 @@ func initClient() (*api.Client, error) {
 	c, err := api.NewKeyfactorClient(&clientAuth)
 
 	if err != nil {
-		log.Fatalf("Error creating Keyfactor client: %s", err)
+		fmt.Printf("Error connecting to Keyfactor: %s\n", err)
+		log.Fatalf("[ERROR] creating Keyfactor client: %s", err)
 	}
 	return c, err
 }
