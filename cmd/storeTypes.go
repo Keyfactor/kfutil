@@ -147,26 +147,16 @@ var storesTypeCreateCmd = &cobra.Command{
 				Name:       storeTypeConfig[storeType].(map[string]interface{})["Name"].(string),
 				ShortName:  storeTypeConfig[storeType].(map[string]interface{})["ShortName"].(string),
 				Capability: storeTypeConfig[storeType].(map[string]interface{})["Capability"].(string),
-				SupportedOperations: struct {
-					Add        bool `json:"Add"`
-					Create     bool `json:"Create"`
-					Discovery  bool `json:"Discovery"`
-					Enrollment bool `json:"Enrollment"`
-					Remove     bool `json:"Remove"`
-				}{
+				SupportedOperations: &api.StoreTypeSupportedOperations{
 					Add:        storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Add"].(bool),
 					Create:     storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Create"].(bool),
 					Discovery:  storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Discovery"].(bool),
 					Enrollment: storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Enrollment"].(bool),
 					Remove:     storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Remove"].(bool),
 				},
-				Properties:      props,
-				EntryParameters: []api.EntryParameter{},
-				PasswordOptions: struct {
-					EntrySupported bool   `json:"EntrySupported"`
-					StoreRequired  bool   `json:"StoreRequired"`
-					Style          string `json:"Style"`
-				}{
+				Properties:      &props,
+				EntryParameters: &[]api.EntryParameter{},
+				PasswordOptions: &api.StoreTypePasswordOptions{
 					EntrySupported: storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["EntrySupported"].(bool),
 					StoreRequired:  storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["StoreRequired"].(bool),
 					Style:          storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["Style"].(string),
@@ -305,7 +295,7 @@ func getValidStoreTypes() []string {
 func init() {
 
 	validTypesString := strings.Join(getValidStoreTypes(), ", ")
-	rootCmd.AddCommand(storeTypesCmd)
+	RootCmd.AddCommand(storeTypesCmd)
 
 	// GET store type templates
 	storeTypesCmd.AddCommand(fetchStoreTypes)

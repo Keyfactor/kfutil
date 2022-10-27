@@ -161,7 +161,7 @@ var listOrchestratorsCmd = &cobra.Command{
 func init() {
 	var client string
 
-	rootCmd.AddCommand(orchsCmd)
+	RootCmd.AddCommand(orchsCmd)
 
 	// LIST orchestrators command
 	orchsCmd.AddCommand(listOrchestratorsCmd)

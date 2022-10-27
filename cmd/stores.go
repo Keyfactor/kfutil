@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -63,7 +62,7 @@ var storesGetCmd = &cobra.Command{
 
 func init() {
 	var storeId string
-	rootCmd.AddCommand(storesCmd)
+	RootCmd.AddCommand(storesCmd)
 	storesCmd.AddCommand(storesListCmd)
 	storesCmd.AddCommand(storesGetCmd)
 	storesGetCmd.Flags().StringVarP(&storeId, "id", "i", "", "ID of the certificate store to get.")

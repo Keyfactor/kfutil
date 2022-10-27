@@ -1137,6 +1137,33 @@
     ],
     "EntryParameters": []
   },
+  "SampleStoreType": {
+    "Name": "SampleStoreType",
+    "ShortName": "SAMPLETYPE",
+    "Capability": "SAMPLETYPE",
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
   "WinCerMgmt": {
     "Name": "WinCerMgmt",
     "ShortName": "WinCerMgmt",

@@ -90,7 +90,7 @@ var containersListCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(containersCmd)
+	RootCmd.AddCommand(containersCmd)
 	// LIST containers command
 	containersCmd.AddCommand(containersListCmd)
 	// GET containers command
