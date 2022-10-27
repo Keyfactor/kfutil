@@ -1,6 +1,6 @@
 # kfutil
 
-
+`kfutil` is a go-lang CLI wrapper for Keyfactor API. It also includes other utility/helper functions around automating common Keyfactor operations.
 
 #### Integration status: Pilot - Ready for use in test environments. Not for use in production.
 
@@ -19,10 +19,6 @@ ___
 
 
 
-
-# Keyfactor Util
-
-General go-lang CLI utility for the Keyfactor API.
 
 ## Quickstart
 
