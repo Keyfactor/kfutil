@@ -1,4 +1,9 @@
-// Package cmd /*
+// Copyright 2022 Keyfactor
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
+// and limitations under the License.
 package cmd
 
 import (
@@ -345,8 +350,8 @@ kfutil stores rot reconcile --import-csv <audit-file>
 		Use:                    "audit",
 		Aliases:                nil,
 		SuggestFor:             nil,
-		Short:                  "Root Of Trust Audit",
-		Long:                   `Root Of Trust Audit: Will read and parse inputs to generate a report of certs that need to be added or removed from the "root of trust" stores.`,
+		Short:                  "Audit generates a CSV report of what actions will be taken based on input CSV files.",
+		Long:                   `Root of Trust Audit: Will read and parse inputs to generate a report of certs that need to be added or removed from the "root of trust" stores.`,
 		Example:                "",
 		ValidArgs:              nil,
 		ValidArgsFunction:      nil,
@@ -486,11 +491,14 @@ kfutil stores rot reconcile --import-csv <audit-file>
 		SuggestionsMinimumDistance: 0,
 	}
 	rotReconcileCmd = &cobra.Command{
-		Use:                    "reconcile",
-		Aliases:                nil,
-		SuggestFor:             nil,
-		Short:                  "Root Of Trust",
-		Long:                   `Root Of Trust: Will parse a CSV and attempt to enroll a cert or set of certs into a list of cert stores.`,
+		Use:        "reconcile",
+		Aliases:    nil,
+		SuggestFor: nil,
+		Short:      "Reconcile either takes in or will generate an audit report and then add/remove certs as needed.",
+		Long: `Root of Trust (rot): Will parse either a combination of CSV files that define certs to 
+add and/or certs to remove with a CSV of certificate stores or an audit CSV file. If an audit CSV file is provided, the 
+add and remove actions defined in the audit file will be immediately executed. If a combination of CSV files are provided,
+the utility will first generate an audit report and then execute the add/remove actions defined in the audit report.`,
 		Example:                "",
 		ValidArgs:              nil,
 		ValidArgsFunction:      nil,
