@@ -1,7 +1,3 @@
-# Keyfactor Util
-
-General go-lang CLI utility for the Keyfactor API.
-
 ## Quickstart
 
 ```bash
