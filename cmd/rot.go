@@ -12,7 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -342,7 +342,7 @@ kfutil stores rot audit --certs-file <certs-file> --stores-file <stores-file>
 Will generate a CSV report file 'rot_audit.csv' of what actions will be taken. If those actions are correct you can run
 the following command to actually perform the actions:
 kfutil stores rot reconcile --certs-file <certs-file> --stores-file <stores-file>
-OR if you want to used the audit report file generated you can run this command:
+OR if you want to use the audit report file generated you can run this command:
 kfutil stores rot reconcile --import-csv <audit-file>
 `,
 	}
@@ -807,7 +807,7 @@ the utility will first generate an audit report and then execute the add/remove 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.SetOutput(os.Stdout)
-	log.SetOutput(ioutil.Discard) //todo: remove this and set it global
+	log.SetOutput(io.Discard)
 	var (
 		stores          string
 		addCerts        string

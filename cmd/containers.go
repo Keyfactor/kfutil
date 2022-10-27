@@ -18,7 +18,7 @@ import (
 // containersCmd represents the containers command
 var containersCmd = &cobra.Command{
 	Use:   "containers",
-	Short: "Keyfactor CertificateStoreContainer API and utilities.",
+	Short: "Keyfactor certificate store container API and utilities.",
 	Long:  `A collections of APIs and utilities for interacting with Keyfactor certificate store containers.`,
 }
 
