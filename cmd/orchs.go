@@ -172,11 +172,11 @@ func init() {
 	orchsCmd.AddCommand(getOrchestratorCmd)
 	getOrchestratorCmd.Flags().StringVarP(&client, "client", "c", "", "Get a specific orchestrator by machine or client name.")
 	getOrchestratorCmd.MarkFlagRequired("client")
-	// CREATE orchestrator command TODO: API NOT SUPPORTED
+	// CREATE orchestrator command
 	//orchsCmd.AddCommand(createOrchestratorCmd)
-	// UPDATE orchestrator command TODO: API NOT SUPPORTED
+	// UPDATE orchestrator command
 	//orchsCmd.AddCommand(updateOrchestratorCmd)
-	// DELETE orchestrator command TODO: API NOT SUPPORTED
+	// DELETE orchestrator command
 	//orchsCmd.AddCommand(deleteOrchestratorCmd)
 	// APPROVE orchestrator command
 	orchsCmd.AddCommand(approveOrchestratorCmd)
@@ -194,9 +194,9 @@ func init() {
 	orchsCmd.AddCommand(getLogsOrchestratorCmd)
 	getLogsOrchestratorCmd.Flags().StringVarP(&client, "client", "c", "", "Get logs for a specific orchestrator by machine or client name.")
 	getLogsOrchestratorCmd.MarkFlagRequired("client")
-	// SET orchestrator auth certificate reenrollment command TODO: Not implemented
+	// SET orchestrator auth certificate reenrollment command
 	//orchsCmd.AddCommand(setOrchestratorAuthCertReenrollCmd)
 	// Utility commands
-	//orchsCmd.AddCommand(downloadOrchestrator) TODO: Not implemented
-	//orchsCmd.AddCommand(installOrchestrator) TODO: Not implemented
+	//orchsCmd.AddCommand(downloadOrchestrator)
+	//orchsCmd.AddCommand(installOrchestrator)
 }
