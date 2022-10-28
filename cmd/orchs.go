@@ -9,7 +9,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -28,7 +28,7 @@ var getOrchestratorCmd = &cobra.Command{
 	Short: "Get orchestrator by machine/client name.",
 	Long:  `Get orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		client := cmd.Flag("client").Value.String()
 		kfClient, _ := initClient()
 		agents, aErr := kfClient.GetAgent(client)
@@ -51,7 +51,7 @@ var approveOrchestratorCmd = &cobra.Command{
 	Short: "Approve orchestrator by ID or machine/client name.",
 	Long:  `Approve orchestrator by ID or machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		client := cmd.Flag("client").Value.String()
 		kfClient, cErr := initClient()
 		if cErr != nil {
@@ -79,7 +79,7 @@ var disapproveOrchestratorCmd = &cobra.Command{
 	Short: "Disapprove orchestrator by ID or machine/client name.",
 	Long:  `Disapprove orchestrator by ID or machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		client := cmd.Flag("client").Value.String()
 		kfClient, cErr := initClient()
 		if cErr != nil {
@@ -117,7 +117,7 @@ var getLogsOrchestratorCmd = &cobra.Command{
 	Short: "Get orchestrator logs by ID or machine/client name.",
 	Long:  `Get orchestrator logs by ID or machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		client := cmd.Flag("client").Value.String()
 		kfClient, cErr := initClient()
 		if cErr != nil {
@@ -145,7 +145,7 @@ var listOrchestratorsCmd = &cobra.Command{
 	Short: "List orchestrators.",
 	Long:  `Returns a JSON list of Keyfactor orchestrators.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		kfClient, _ := initClient()
 		agents, aErr := kfClient.GetAgentList()
 		if aErr != nil {

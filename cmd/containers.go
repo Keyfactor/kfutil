@@ -9,7 +9,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -36,7 +35,7 @@ var containersGetCmd = &cobra.Command{
 	Short: "Get certificate store container by ID or name.",
 	Long:  `Get certificate store container by ID or name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		id := cmd.Flag("id").Value.String()
 		kfClient, _ := initClient()
 		agents, aErr := kfClient.GetStoreContainer(id)
@@ -76,7 +75,7 @@ var containersListCmd = &cobra.Command{
 	Short: "List certificate store containers.",
 	Long:  `List certificate store containers.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		kfClient, _ := initClient()
 		agents, aErr := kfClient.GetStoreContainers()
 		if aErr != nil {

@@ -10,8 +10,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client/api"
-	"io/ioutil"
+	"io"
 	"log"
+	"os"
 	"sort"
 	"strings"
 
@@ -57,7 +58,7 @@ var storesTypesListCmd = &cobra.Command{
 	Short: "List certificate store types.",
 	Long:  `List certificate store types.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		kfClient, _ := initClient()
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
 		if err != nil {
@@ -78,7 +79,7 @@ var storesTypeGetCmd = &cobra.Command{
 	Short: "Get a specific store type by either name or ID.",
 	Long:  `Get a specific store type by either name or ID.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		id, _ := cmd.Flags().GetInt("id")
 		name, _ := cmd.Flags().GetString("name")
 		kfClient, _ := initClient()
@@ -195,7 +196,7 @@ var storesTypeUpdateCmd = &cobra.Command{
 	Short: "Update a certificate store type in Keyfactor.",
 	Long:  `Update a certificate store type in Keyfactor.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		fmt.Println("update called")
 	},
 }
@@ -205,7 +206,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 	Short: "Delete a specific store type by ID.",
 	Long:  `Delete a specific store type by ID.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		id, _ := cmd.Flags().GetInt("id")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		kfClient, _ := initClient()
@@ -268,7 +269,7 @@ var generateStoreTypeTemplate = &cobra.Command{
 }
 
 func readStoreTypesConfig() (map[string]interface{}, error) {
-	content, err := ioutil.ReadFile("./store_types.json") //todo: make this read from github
+	content, err := os.ReadFile("./store_types.json")
 	if err != nil {
 		log.Fatal("Error when opening file: ", err)
 	}

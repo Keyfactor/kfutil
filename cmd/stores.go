@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"io/ioutil"
+	"io"
 	"log"
 )
 
@@ -29,7 +29,7 @@ var storesListCmd = &cobra.Command{
 	Short: "List certificate stores.",
 	Long:  `List certificate stores.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		kfClient, _ := initClient()
 		stores, err := kfClient.ListCertificateStores()
 		if err != nil {
@@ -48,7 +48,7 @@ var storesGetCmd = &cobra.Command{
 	Short: "Get a certificate store by ID.",
 	Long:  `Get a certificate store by ID.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard) //todo: remove this and set it global
+		log.SetOutput(io.Discard)
 		storeId, _ := cmd.Flags().GetString("id")
 		kfClient, _ := initClient()
 		stores, err := kfClient.GetCertificateStoreByID(storeId)

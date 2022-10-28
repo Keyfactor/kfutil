@@ -17,7 +17,7 @@ var statusCmd = &cobra.Command{
 	Short: "List the status of Keyfactor services.",
 	Long:  `Returns a list of all API endpoints.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//log.SetOutput(ioutil.Discard)
+		//log.SetOutput(io.Discard)
 		//kfClient, _ := initClient()
 		//status, err := kfClient.GetStatus()
 		//if err != nil {
