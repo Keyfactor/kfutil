@@ -39,7 +39,7 @@ install:
 	mv ${BINARY} /usr/local/bin/${BINARY}
 
 vendor:
-	./vendor.sh
+	go mod vendor
 
 test:
 	go test -i $(TEST) || exit 1
