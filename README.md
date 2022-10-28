@@ -1,6 +1,24 @@
-# Keyfactor Util
+# Keyfactor Utility (kfutil)
 
-General go-lang CLI utility for the Keyfactor API.
+`kfutil` is a go-lang CLI wrapper for Keyfactor API. It also includes other utility/helper functions around automating common Keyfactor operations.
+
+#### Integration status: Pilot - Ready for use in test environments. Not for use in production.
+
+## About the Keyfactor API Client
+
+This API client allows for programmatic management of Keyfactor resources.
+
+
+
+## Support for Keyfactor Utility (kfutil)
+
+Keyfactor Utility (kfutil) is open source and there is **no SLA** for this tool/library/client. Keyfactor will address issues as resources become available. Keyfactor customers may request escalation by opening up a support ticket through their Keyfactor representative.
+
+###### To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
+___
+
+
+
 
 ## Quickstart
 
@@ -87,3 +105,4 @@ alternatively you can specify the parent command
 ```bash
 cobra-cli add <my-new-command> -p '<parent>Cmd'
 ```
+

@@ -1,14 +1,18 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
+// Copyright 2022 Keyfactor
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
+// and limitations under the License.
 package cmd
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client/api"
-	"io/ioutil"
+	"io"
 	"log"
+	"os"
 	"sort"
 	"strings"
 
@@ -54,7 +58,7 @@ var storesTypesListCmd = &cobra.Command{
 	Short: "List certificate store types.",
 	Long:  `List certificate store types.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		kfClient, _ := initClient()
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
 		if err != nil {
@@ -75,7 +79,7 @@ var storesTypeGetCmd = &cobra.Command{
 	Short: "Get a specific store type by either name or ID.",
 	Long:  `Get a specific store type by either name or ID.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		id, _ := cmd.Flags().GetInt("id")
 		name, _ := cmd.Flags().GetString("name")
 		kfClient, _ := initClient()
@@ -147,26 +151,16 @@ var storesTypeCreateCmd = &cobra.Command{
 				Name:       storeTypeConfig[storeType].(map[string]interface{})["Name"].(string),
 				ShortName:  storeTypeConfig[storeType].(map[string]interface{})["ShortName"].(string),
 				Capability: storeTypeConfig[storeType].(map[string]interface{})["Capability"].(string),
-				SupportedOperations: struct {
-					Add        bool `json:"Add"`
-					Create     bool `json:"Create"`
-					Discovery  bool `json:"Discovery"`
-					Enrollment bool `json:"Enrollment"`
-					Remove     bool `json:"Remove"`
-				}{
+				SupportedOperations: &api.StoreTypeSupportedOperations{
 					Add:        storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Add"].(bool),
 					Create:     storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Create"].(bool),
 					Discovery:  storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Discovery"].(bool),
 					Enrollment: storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Enrollment"].(bool),
 					Remove:     storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Remove"].(bool),
 				},
-				Properties:      props,
-				EntryParameters: []api.EntryParameter{},
-				PasswordOptions: struct {
-					EntrySupported bool   `json:"EntrySupported"`
-					StoreRequired  bool   `json:"StoreRequired"`
-					Style          string `json:"Style"`
-				}{
+				Properties:      &props,
+				EntryParameters: &[]api.EntryParameter{},
+				PasswordOptions: &api.StoreTypePasswordOptions{
 					EntrySupported: storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["EntrySupported"].(bool),
 					StoreRequired:  storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["StoreRequired"].(bool),
 					Style:          storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["Style"].(string),
@@ -202,7 +196,7 @@ var storesTypeUpdateCmd = &cobra.Command{
 	Short: "Update a certificate store type in Keyfactor.",
 	Long:  `Update a certificate store type in Keyfactor.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		fmt.Println("update called")
 	},
 }
@@ -212,7 +206,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 	Short: "Delete a specific store type by ID.",
 	Long:  `Delete a specific store type by ID.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		id, _ := cmd.Flags().GetInt("id")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		kfClient, _ := initClient()
@@ -275,7 +269,7 @@ var generateStoreTypeTemplate = &cobra.Command{
 }
 
 func readStoreTypesConfig() (map[string]interface{}, error) {
-	content, err := ioutil.ReadFile("./store_types.json") //todo: make this read from github
+	content, err := os.ReadFile("./store_types.json")
 	if err != nil {
 		log.Fatal("Error when opening file: ", err)
 	}
@@ -305,7 +299,7 @@ func getValidStoreTypes() []string {
 func init() {
 
 	validTypesString := strings.Join(getValidStoreTypes(), ", ")
-	rootCmd.AddCommand(storeTypesCmd)
+	RootCmd.AddCommand(storeTypesCmd)
 
 	// GET store type templates
 	storeTypesCmd.AddCommand(fetchStoreTypes)
