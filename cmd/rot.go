@@ -296,7 +296,7 @@ func readCertsFile(certsFilePath string, kfclient *api.Client) (map[string]strin
 	return certs, nil
 }
 
-func isRootStore(st *api.GetStoreByIDResp, invs *[]api.CertStoreInventory, minCerts int, maxKeys int, maxLeaf int) bool {
+func isRootStore(st *api.GetCertificateStoreResponse, invs *[]api.CertStoreInventory, minCerts int, maxKeys int, maxLeaf int) bool {
 	leafCount := 0
 	keyCount := 0
 	certCount := 0

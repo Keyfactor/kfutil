@@ -124,7 +124,7 @@ var storesTypeCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("create called")
 		//Check if store type is valid
-		validStoreTypes := getValidStoreTypes()
+		validStoreTypes := getValidStoreTypes("")
 		storeType, _ := cmd.Flags().GetString("name")
 		storeTypeIsValid := false
 		for _, v := range validStoreTypes {
@@ -139,7 +139,11 @@ var storesTypeCreateCmd = &cobra.Command{
 			log.Fatalf("Error: Invalid store type: %s", storeType)
 		} else {
 			kfClient, _ := initClient()
-			storeTypeConfig, _ := readStoreTypesConfig()
+			storeTypeConfig, stErr := readStoreTypesConfig("")
+			if stErr != nil {
+				fmt.Printf("Error: %s", stErr)
+				log.Fatalf("Error: %s", stErr)
+			}
 			log.Printf("[DEBUG] Store type config: %v", storeTypeConfig[storeType])
 			sConfig := storeTypeConfig[storeType].(map[string]interface{})
 			props, pErr := buildStoreTypePropertiesInterface(sConfig["Properties"].([]interface{}))
@@ -235,7 +239,7 @@ var fetchStoreTypes = &cobra.Command{
 	Short: "Fetches store type templates from Keyfactor's Github.",
 	Long:  `Fetches store type templates from Keyfactor's Github.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		templates, err := readStoreTypesConfig()
+		templates, err := readStoreTypesConfig("")
 		if err != nil {
 			log.Printf("Error: %s", err)
 			fmt.Printf("Error: %s\n", err)
@@ -254,7 +258,7 @@ var generateStoreTypeTemplate = &cobra.Command{
 	Short: "Generates either a JSON or CSV template file for certificate store type bulk operations.",
 	Long:  `Generates either a JSON or CSV template file for certificate store type bulk operations.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		templates, err := readStoreTypesConfig()
+		templates, err := readStoreTypesConfig("")
 		if err != nil {
 			log.Printf("Error: %s", err)
 			fmt.Printf("Error: %s\n", err)
@@ -268,10 +272,13 @@ var generateStoreTypeTemplate = &cobra.Command{
 	},
 }
 
-func readStoreTypesConfig() (map[string]interface{}, error) {
-	content, err := os.ReadFile("./store_types.json")
+func readStoreTypesConfig(fp string) (map[string]interface{}, error) {
+	if fp == "" {
+		fp = "./store-types.json"
+	}
+	content, err := os.ReadFile(fp)
 	if err != nil {
-		log.Fatal("Error when opening file: ", err)
+		return nil, err
 	}
 
 	// Now let's unmarshall the data into `payload`
@@ -285,8 +292,13 @@ func readStoreTypesConfig() (map[string]interface{}, error) {
 	return datas, nil
 }
 
-func getValidStoreTypes() []string {
-	validStoreTypes, _ := readStoreTypesConfig()
+func getValidStoreTypes(fp string) []string {
+	validStoreTypes, rErr := readStoreTypesConfig(fp)
+	if rErr != nil {
+		log.Printf("Error: %s", rErr)
+		fmt.Printf("Error: %s\n", rErr)
+		return nil
+	}
 	validStoreTypesList := make([]string, 0, len(validStoreTypes))
 	for k := range validStoreTypes {
 		validStoreTypesList = append(validStoreTypesList, k)
@@ -298,7 +310,7 @@ func getValidStoreTypes() []string {
 
 func init() {
 
-	validTypesString := strings.Join(getValidStoreTypes(), ", ")
+	validTypesString := strings.Join(getValidStoreTypes(""), ", ")
 	RootCmd.AddCommand(storeTypesCmd)
 
 	// GET store type templates
