@@ -747,9 +747,13 @@ the utility will first generate an audit report and then execute the add/remove 
 			outPath, _ := cmd.Flags().GetString("outPath")
 			storeType, _ := cmd.Flags().GetStringSlice("store-type")
 			containerType, _ := cmd.Flags().GetStringSlice("container-type")
+			collection, _ := cmd.Flags().GetStringSlice("collection")
+			subjectName, _ := cmd.Flags().GetStringSlice("cn")
 			stID := -1
 			var storeData []api.GetCertificateStoreResponse
+			//var certData []api.GetCertificateResponse
 			var csvStoreData [][]string
+			var csvCertData [][]string
 			var rowLookup = make(map[string]bool)
 			if len(storeType) != 0 {
 				for _, s := range storeType {
@@ -818,6 +822,66 @@ the utility will first generate an audit report and then execute the add/remove 
 					}
 				}
 			}
+			if len(collection) != 0 {
+				for _, c := range collection {
+					kfClient, err := initClient()
+					if err != nil {
+						fmt.Println("Error connecting to Keyfactor. Please check your configuration and try again.")
+						log.Fatalf("[ERROR] Error creating client: %s", err)
+					}
+					q := make(map[string]string)
+					q["collection"] = c
+					certsResp, scErr := kfClient.ListCertificates(q)
+					if scErr != nil {
+						fmt.Printf("No certificates found in collection: %s\n", scErr)
+					}
+					if certsResp != nil {
+						for _, cert := range certsResp {
+							if !rowLookup[cert.Thumbprint] {
+								lineData := []string{
+									// "Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"
+									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), fmt.Sprintf("%v", cert.Locations), GetCurrentTime(),
+								}
+								csvCertData = append(csvCertData, lineData)
+								rowLookup[cert.Thumbprint] = true
+							}
+						}
+
+					}
+				}
+			}
+			if len(subjectName) != 0 {
+				for _, s := range subjectName {
+					kfClient, err := initClient()
+					if err != nil {
+						fmt.Println("Error connecting to Keyfactor. Please check your configuration and try again.")
+						log.Fatalf("[ERROR] Error creating client: %s", err)
+					}
+					q := make(map[string]string)
+					q["subject"] = s
+					certsResp, scErr := kfClient.ListCertificates(q)
+					if scErr != nil {
+						fmt.Printf("No certificates found with CN: %s\n", scErr)
+					}
+					if certsResp != nil {
+						for _, cert := range certsResp {
+							if !rowLookup[cert.Thumbprint] {
+								locationsFormatted := ""
+								for _, loc := range cert.Locations {
+									locationsFormatted += fmt.Sprintf("%s:%s\n", loc.StoreMachine, loc.StorePath)
+								}
+								lineData := []string{
+									// "Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"
+									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), locationsFormatted, GetCurrentTime(),
+								}
+								csvCertData = append(csvCertData, lineData)
+								rowLookup[cert.Thumbprint] = true
+							}
+						}
+
+					}
+				}
+			}
 			// Create CSV template file
 
 			var filePath string
@@ -844,6 +908,9 @@ the utility will first generate an audit report and then execute the add/remove 
 					}
 				case "certs":
 					data = append(data, CertHeader)
+					if len(csvCertData) != 0 {
+						data = append(data, csvCertData...)
+					}
 				case "actions":
 					data = append(data, AuditHeader)
 				}
@@ -898,6 +965,8 @@ func init() {
 		inputFile       string
 		storeTypes      []string
 		containerTypes  []string
+		collections     []string
+		subjectNames    []string
 	)
 
 	storesCmd.AddCommand(rotCmd)
@@ -952,6 +1021,9 @@ func init() {
 		`The type of template to generate. Only "certs|stores|actions" are supported at this time.`)
 	rotGenStoreTemplateCmd.Flags().StringSliceVar(&storeTypes, "store-type", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified store types. If not specified, the template will be empty.")
 	rotGenStoreTemplateCmd.Flags().StringSliceVar(&containerTypes, "container-type", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified container types. If not specified, the template will be empty.")
+	rotGenStoreTemplateCmd.Flags().StringSliceVar(&subjectNames, "cn", []string{}, "Subject name(s) to pre-populate the stores template with. If not specified, the template will be empty. Does not work with SANs.")
+	rotGenStoreTemplateCmd.Flags().StringSliceVar(&collections, "collection", []string{}, "Certificate collection name(s) to pre-populate the stores template with. If not specified, the template will be empty.")
+
 	rotGenStoreTemplateCmd.RegisterFlagCompletionFunc("type", templateTypeCompletion)
 	rotGenStoreTemplateCmd.MarkFlagRequired("type")
 }

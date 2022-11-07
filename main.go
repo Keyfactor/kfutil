@@ -4,7 +4,6 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package main
 
 import (
-	"fmt"
 	"github.com/spf13/cobra/doc"
 	"kfutil/cmd"
 )
@@ -17,7 +16,6 @@ func main() {
 	//	docs()
 	//	os.Exit(0)
 	//}
-	fmt.Println("Hello, playground")
 	cmd.Execute()
 }
 
