@@ -1,6 +1,6 @@
 {
-  "A10": {
-    "Name": "A10 vThunder",
+  "A10vThunder": {
+    "Name": "A10vThunder",
     "ShortName": "vThunderU",
     "Capability": "vThunderU",
     "SupportedOperations": {
@@ -45,8 +45,8 @@
     "BlueprintAllowed": true,
     "CustomAliasAllowed": "Required"
   },
-  "AZUREKEYVAULT": {
-    "Name": "Azure KeyVault",
+  "AzureKeyVault": {
+    "Name": "AzureKeyVault",
     "ShortName": "AKV",
     "Capability": "AKV",
     "SupportedOperations": {
@@ -137,8 +137,8 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden"
   },
-  "F5PROFILES": {
-    "Name": "F5 SSL Profiles",
+  "F5SSLProfiles": {
+    "Name": "F5SSLProfiles",
     "ShortName": "F5",
     "Capability": "F5",
     "SupportedOperations": {
@@ -164,8 +164,8 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Required"
   },
-  "F5WEB": {
-    "Name": "F5 Web Server",
+  "F5WebServer": {
+    "Name": "F5WebServer",
     "ShortName": "F5",
     "Capability": "F5",
     "SupportedOperations": {
@@ -191,8 +191,8 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden"
   },
-  "F5CABUNDLES": {
-    "Name": "F5 CA Bundles REST",
+  "F5CABundlesREST": {
+    "Name": "F5CABundlesREST",
     "ShortName": "F5-CA-REST",
     "Capability": "F5-CA-REST",
     "SupportedOperations": {
@@ -255,8 +255,8 @@
     "BlueprintAllowed": true,
     "CustomAliasAllowed": "Required"
   },
-  "F5PROFILESREST": {
-    "Name": "F5 SSL Profiles REST",
+  "F5SSLProfilesREST": {
+    "Name": "F5SSLProfilesREST",
     "ShortName": "F5-SL-REST",
     "Capability": "F5-SL-REST",
     "SupportedOperations": {
@@ -319,8 +319,8 @@
     "BlueprintAllowed": true,
     "CustomAliasAllowed": "Required"
   },
-  "F5WEBREST": {
-    "Name": "F5 Web Server REST",
+  "F5WebServerREST": {
+    "Name": "F5WebServerREST",
     "ShortName": "F5-WS-REST",
     "Capability": "F5-WS-REST",
     "SupportedOperations": {
@@ -383,7 +383,7 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden"
   },
-  "FORTANIX": {
+  "Fortanix": {
     "Name": "Fortanix",
     "ShortName": "Fortanix",
     "Capability": "Fortanix",
@@ -412,7 +412,7 @@
     "ServerRegistration": 0
   },
   "FTP": {
-    "Name": "File Transfer Protocol",
+    "Name": "FTP",
     "ShortName": "FTP",
     "Capability": "FTP",
     "SupportedOperations": {
@@ -438,8 +438,8 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden"
   },
-  "GCPAPIGEE" : {
-    "Name": "Google Cloud Provider Apigee",
+  "GCPApigee" : {
+    "Name": "GCPApigee",
     "ShortName": "GcpApigee",
     "Capability": "GcpApigee",
     "SupportedOperations": {
@@ -483,8 +483,8 @@
     "CustomAliasAllowed": "Required",
     "ServerRegistration": 0
   },
-  "HASHIVAULT": {
-    "Name": "Hashicorp Vault",
+  "HashicorpVault": {
+    "Name": "HashicorpVault",
     "ShortName": "HCV",
     "Capability": "HCV",
     "SupportedOperations": {
@@ -538,8 +538,8 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden"
   },
-  "IISROOTS": {
-    "Name": "IIS Roots",
+  "IISRoots": {
+    "Name": "IISRoots",
     "ShortName": "IIS",
     "Capability": "IIS",
     "SupportedOperations": {
@@ -576,8 +576,8 @@
     "CustomAliasAllowed": "Forbidden",
     "ServerRegistration": 0
   },
-  "IISPERSONAL": {
-    "Name": "IIS Personal",
+  "IISPersonal": {
+    "Name": "IISPersonal",
     "ShortName": "IIS",
     "Capability": "IIS",
     "SupportedOperations": {
@@ -614,8 +614,8 @@
     "CustomAliasAllowed": "Optional",
     "ServerRegistration": 0
   },
-  "IISREVOKED": {
-    "Name": "IIS Revoked",
+  "IISRevoked": {
+    "Name": "IISRevoked",
     "ShortName": "IIS",
     "Capability": "IIS",
     "SupportedOperations": {
@@ -651,7 +651,7 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden"
   },
-  "IISWBINDINGS": {
+  "IISWithBindings": {
     "Name": "IISWithBindings",
     "ShortName": "IISWBin",
     "Capability": "IISBindings",
@@ -804,8 +804,8 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden"
   },
-  "JKS": {
-    "Name": "Java Keystore",
+  "JavaKeystore": {
+    "Name": "JavaKeystore",
     "ShortName": "JKS",
     "Capability": "JKS",
     "SupportedOperations": {
@@ -841,8 +841,8 @@
     "BlueprintAllowed": true,
     "CustomAliasAllowed": "Required"
   },
-  "JKSSSH": {
-    "Name": "JKS-SSH",
+  "JavaKeystoreSSH": {
+    "Name": "JavaKeystoreSSH",
     "ShortName": "JKS-SSH",
     "Capability": "JKS-SSH",
     "SupportedOperations": {
@@ -878,7 +878,7 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Required"
   },
-  "NETSCALER": {
+  "NetScaler": {
     "Name": "NetScaler",
     "ShortName": "NS",
     "Capability": "NS",
@@ -923,7 +923,7 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Required"
   },
-  "PALOALTOFW": {
+  "PaloAlto": {
     "Name": "PaloAlto",
     "ShortName": "PaloAlto",
     "Capability": "PaloAlto",
@@ -969,7 +969,7 @@
     "CustomAliasAllowed": "Required"
   },
   "PEM": {
-    "Name": "PEM File",
+    "Name": "PEM",
     "ShortName": "PEM",
     "Capability": "PEM",
     "SupportedOperations": {
@@ -1105,7 +1105,7 @@
     "EntryParameters": []
   },
   "RFPKCS12" : {
-    "Name": "RFPkcs12",
+    "Name": "RFPKCS12",
     "ShortName": "RFPkcs12",
     "Capability": "RFPkcs12",
     "ServerRequired": true,
@@ -1137,8 +1137,8 @@
     ],
     "EntryParameters": []
   },
-  "SAMPLETYPE": {
-    "Name": "Sample Store Type",
+  "SampleStoreType": {
+    "Name": "SampleStoreType",
     "ShortName": "SAMPLETYPE",
     "Capability": "SAMPLETYPE",
     "SupportedOperations": {
@@ -1164,8 +1164,8 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden"
   },
-  "WINCERMGMT": {
-    "Name": "Windows Certificate Store Manager",
+  "WinCerMgmt": {
+    "Name": "WinCerMgmt",
     "ShortName": "WinCerMgmt",
     "Capability": "WinCerMgmt",
     "SupportedOperations": {

@@ -1,4 +1,9 @@
-// Package cmd /*
+// Copyright 2022 Keyfactor
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
+// and limitations under the License.
 package cmd
 
 import (
@@ -7,7 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -51,7 +56,7 @@ const (
 )
 
 var (
-	AuditHeader = []string{"Thumbprint", "CertID", "StoreID", "StoreType", "Machine", "Path", "AddCert", "RemoveCert", "Deployed"}
+	AuditHeader = []string{"Thumbprint", "CertID", "SubjectName", "Issuer", "StoreID", "StoreType", "Machine", "Path", "AddCert", "RemoveCert", "Deployed"}
 	StoreHeader = []string{"StoreID", "StoreType", "StoreMachine", "StorePath"}
 	CertHeader  = []string{"Thumbprint"}
 )
@@ -115,6 +120,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		}
 		certLookup, err := kfClient.GetCertificateContext(&certLookupReq)
 		if err != nil {
+			fmt.Printf("Error looking up certificate %s: %s\n", cert, err)
 			log.Printf("[ERROR] Error looking up cert: %s\n%v", cert, err)
 			continue
 		}
@@ -123,20 +129,20 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		for _, store := range stores {
 			if _, ok := store.Thumbprints[cert]; ok {
 				// Cert is already in the store do nothing
-				row := []string{cert, certIDStr, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true"}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true"}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
-					fmt.Printf("%s", wErr)
+					fmt.Printf("Error writing audit file row: %s\n", wErr)
 					log.Printf("[ERROR] Error writing audit row: %s", wErr)
 				}
 			} else {
 				// Cert is not deployed to this store and will need to be added
-				row := []string{cert, certIDStr, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false"}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false"}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
-					fmt.Printf("%s", wErr)
+					fmt.Printf("Error writing audit file row: %s\n", wErr)
 					log.Printf("[ERROR] Error writing audit row: %s", wErr)
 				}
 				actions[cert] = append(actions[cert], ROTAction{
@@ -259,10 +265,11 @@ func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, dryRun
 					}
 					_, err := kfClient.RemoveCertificateFromStores(&removeReq)
 					if err != nil {
-						fmt.Printf("Error removing cert %s (%d) from store %s (%s): %s", a.Thumbprint, a.CertID, a.StoreID, a.StorePath, err)
-						log.Fatalf("[ERROR] Error removing cert from store: %s", err)
+						fmt.Printf("Error removing cert %s (ID: %d) from store %s (%s): %s\n", a.Thumbprint, a.CertID, a.StoreID, a.StorePath, err)
+						//log.Fatalf("[ERROR] Error removing cert from store: %s", err)
 					}
 				} else {
+					fmt.Printf("DRY RUN: Would have removed cert %s from store %s\n", thumbprint, a.StoreID)
 					log.Printf("[INFO] DRY RUN: Would have removed cert %s from store %s", thumbprint, a.StoreID)
 				}
 			}
@@ -325,14 +332,26 @@ var (
 	rotCmd = &cobra.Command{
 		Use:   "rot",
 		Short: "Root of trust utility",
-		Long:  `Root of trust allows you to manage your trusted roots using Keyfactor certificate stores.`,
+		Long: `Root of trust allows you to manage your trusted roots using Keyfactor certificate stores.
+For example if you wish to add a list of "root" certs to a list of certificate stores you would simply generate and fill
+out the template CSV file. These template files can be generated with the following commands:
+kfutil stores rot generate-template --type certs
+kfutil stores rot generate-template --type stores
+Once those files are filled out you can use the following command to add the certs to the stores:
+kfutil stores rot audit --certs-file <certs-file> --stores-file <stores-file>
+Will generate a CSV report file 'rot_audit.csv' of what actions will be taken. If those actions are correct you can run
+the following command to actually perform the actions:
+kfutil stores rot reconcile --certs-file <certs-file> --stores-file <stores-file>
+OR if you want to use the audit report file generated you can run this command:
+kfutil stores rot reconcile --import-csv <audit-file>
+`,
 	}
 	rotAuditCmd = &cobra.Command{
 		Use:                    "audit",
 		Aliases:                nil,
 		SuggestFor:             nil,
-		Short:                  "Root Of Trust Audit",
-		Long:                   `Root Of Trust Audit: Will read and parse inputs to generate a report of certs that need to be added or removed from the "root of trust" stores.`,
+		Short:                  "Audit generates a CSV report of what actions will be taken based on input CSV files.",
+		Long:                   `Root of Trust Audit: Will read and parse inputs to generate a report of certs that need to be added or removed from the "root of trust" stores.`,
 		Example:                "",
 		ValidArgs:              nil,
 		ValidArgsFunction:      nil,
@@ -389,6 +408,7 @@ var (
 				}
 
 				if !isRootStore(apiResp, inventory, minCerts, maxLeaves, maxKeys) {
+					fmt.Printf("Store %s is not a root store, skipping.\n", entry[0])
 					log.Printf("[WARN] Store %s is not a root store", apiResp.Id)
 					continue
 				} else {
@@ -437,11 +457,11 @@ var (
 			// Read in the remove removeCerts CSV
 			var certsToRemove = make(map[string]string)
 			if removeRootsFile != "" {
-				certsToRemove, rErr := readCertsFile(removeRootsFile, kfClient)
-				if rErr != nil {
-					fmt.Printf("Error reading removeCerts file: %s", rErr)
-					log.Fatalf("Error reading removeCerts file: %s", rErr)
-				}
+				certsToRemove, _ = readCertsFile(removeRootsFile, kfClient)
+				//if rErr != nil {
+				//	fmt.Printf("Error reading removeCerts file: %s", rErr)
+				//	log.Fatalf("Error reading removeCerts file: %s", rErr)
+				//}
 				removeCertsJSON, _ := json.Marshal(certsToRemove)
 				log.Printf("[DEBUG] remove certs JSON: %s", string(removeCertsJSON))
 			} else {
@@ -471,11 +491,14 @@ var (
 		SuggestionsMinimumDistance: 0,
 	}
 	rotReconcileCmd = &cobra.Command{
-		Use:                    "reconcile",
-		Aliases:                nil,
-		SuggestFor:             nil,
-		Short:                  "Root Of Trust",
-		Long:                   `Root Of Trust: Will parse a CSV and attempt to enroll a cert or set of certs into a list of cert stores.`,
+		Use:        "reconcile",
+		Aliases:    nil,
+		SuggestFor: nil,
+		Short:      "Reconcile either takes in or will generate an audit report and then add/remove certs as needed.",
+		Long: `Root of Trust (rot): Will parse either a combination of CSV files that define certs to 
+add and/or certs to remove with a CSV of certificate stores or an audit CSV file. If an audit CSV file is provided, the 
+add and remove actions defined in the audit file will be immediately executed. If a combination of CSV files are provided,
+the utility will first generate an audit report and then execute the add/remove actions defined in the audit report.`,
 		Example:                "",
 		ValidArgs:              nil,
 		ValidArgsFunction:      nil,
@@ -731,6 +754,7 @@ var (
 			}
 			file, err := os.Create(filePath)
 			if err != nil {
+				fmt.Printf("Error creating file: %s", err)
 				log.Fatal("Cannot create file", err)
 			}
 
@@ -759,7 +783,7 @@ var (
 					log.Fatal("Cannot write to file", err)
 				}
 			}
-
+			fmt.Printf("Template file created at %s", filePath)
 		},
 		RunE:                       nil,
 		PostRun:                    nil,
@@ -783,7 +807,7 @@ var (
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.SetOutput(os.Stdout)
-	log.SetOutput(ioutil.Discard) //todo: remove this and set it global
+	log.SetOutput(io.Discard)
 	var (
 		stores          string
 		addCerts        string

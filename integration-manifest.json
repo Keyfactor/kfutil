@@ -1,9 +1,9 @@
 {
   "$schema": "https://keyfactor.github.io/integration-manifest-schema.json",
   "integration_type": "api-client",
-  "name": "kfutil",
+  "name": "Keyfactor Utility (kfutil)",
   "status": "pilot",
-  "description": "",
+  "description": "`kfutil` is a go-lang CLI wrapper for Keyfactor API. It also includes other utility/helper functions around automating common Keyfactor operations.",
   "support_level": "kf-community",
   "link_github": false,
   "update_catalog": false

@@ -1,7 +1,9 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
+// Copyright 2022 Keyfactor
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
+// and limitations under the License.
 package cmd
 
 import (
@@ -15,7 +17,7 @@ var statusCmd = &cobra.Command{
 	Short: "List the status of Keyfactor services.",
 	Long:  `Returns a list of all API endpoints.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//log.SetOutput(ioutil.Discard)
+		//log.SetOutput(io.Discard)
 		//kfClient, _ := initClient()
 		//status, err := kfClient.GetStatus()
 		//if err != nil {
@@ -32,7 +34,7 @@ var statusCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(statusCmd)
+	RootCmd.AddCommand(statusCmd)
 
 	// Here you will define your flags and configuration settings.
 
