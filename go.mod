@@ -11,7 +11,7 @@ require (
 require github.com/Jeffail/gabs/v2 v2.6.1
 
 require (
-	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
+	//github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/spbsoluble/go-pkcs12 v0.3.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
