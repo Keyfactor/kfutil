@@ -3,12 +3,14 @@ module kfutil
 go 1.19
 
 require (
-	github.com/Keyfactor/keyfactor-go-client v1.1.0
+	//github.com/Keyfactor/keyfactor-go-client v1.1.0
+	github.com/Keyfactor/keyfactor-go-client v1.2.0-rc2
 	github.com/spf13/cobra v1.6.0
 )
 
+require github.com/Jeffail/gabs/v2 v2.6.1
+
 require (
-	github.com/Jeffail/gabs/v2 v2.6.1 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/spbsoluble/go-pkcs12 v0.3.1 // indirect
