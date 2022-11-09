@@ -90,6 +90,10 @@ var storesCreateCmd = &cobra.Command{
 			return
 		}
 
+		if outPath == "" {
+			outPath = strings.Split(filePath, ".")[0] + "_results.csv"
+		}
+
 		log.Printf("[DEBUG] storesFile: %s", filePath)
 		log.Printf("[DEBUG] output path: %s", outPath)
 		log.Printf("[DEBUG] dryRun: %t", dryRun)
@@ -108,10 +112,10 @@ var storesCreateCmd = &cobra.Command{
 		}
 
 		// check for minimum necessary required fields for creating certificate stores
-		//storeTypeHeaders := getHeadersForStoreType(st, *kfClient)
+
 		intId, reqPropertiesForStoreType := getRequiredProperties(st, *kfClient)
 
-		fmt.Printf("\nrequired properties: %v \n", reqPropertiesForStoreType)
+		//fmt.Printf("\nrequired properties: %v \n", reqPropertiesForStoreType)
 
 		// if not present in header, throw error.
 		headerRow := inFile[0]
@@ -122,8 +126,6 @@ var storesCreateCmd = &cobra.Command{
 		for _, reqField := range reqPropertiesForStoreType {
 			exists := false
 			for _, headerField := range headerRow {
-				fmt.Printf("Comparing %s and %s \n", headerField, "Properties."+reqField)
-
 				if strings.EqualFold(headerField, "Properties."+reqField) {
 					exists = true
 					continue
@@ -145,6 +147,7 @@ var storesCreateCmd = &cobra.Command{
 		//track errors
 		resultsMap := make(map[int]string)
 		originalMap := make(map[int][]string)
+		errorCount := 0
 
 		for idx, row := range inFile {
 			originalMap[idx] = row
@@ -154,8 +157,6 @@ var storesCreateCmd = &cobra.Command{
 			}
 			reqJson := getJsonForRequest(headerRow, row)
 			reqJson.Set(intId, "CertStoreType")
-
-			//fmt.Printf("reqJson: %s", reqJson.String())
 
 			var createStoreReqParameters api.CreateStoreFctArgs
 			props := unmarshalPropertiesString(reqJson.S("Properties").String())
@@ -170,32 +171,43 @@ var storesCreateCmd = &cobra.Command{
 
 			createStoreReqParameters.Properties = props
 
-			fmt.Printf("request parameters object, %v", createStoreReqParameters)
+			//fmt.Printf("request parameters object, %v", createStoreReqParameters)
 
 			//make request.
 			res, err := kfClient.CreateStore(&createStoreReqParameters)
 
-			fmt.Printf("response from client request: %v", res)
+			//fmt.Printf("response from client request: %v", res)
 
 			if err != nil {
 				resultsMap[idx] = err.Error()
+				errorCount++
 			} else {
 				resultsMap[idx] = fmt.Sprintf("Success.  CertStoreId = %s", res.Id)
 			}
 
 			//append response to output file in last column.
-			for oIdx, oRow := range originalMap {
-				extendedRow := append(oRow, resultsMap[oIdx])
-				originalMap[oIdx] = extendedRow
-			}
-			writeCsvFile(outPath, originalMap)
-
 		}
+
+		for oIdx, oRow := range originalMap {
+			extendedRow := append(oRow, resultsMap[oIdx])
+			originalMap[oIdx] = extendedRow
+		}
+		totalRows := len(resultsMap)
+		totalSuccess := totalRows - errorCount
+
+		writeCsvFile(outPath, originalMap)
+		fmt.Printf("\n%d records processed.", totalRows)
+		if totalSuccess > 0 {
+			fmt.Printf("\n%d certificate stores successfully created.", totalSuccess)
+		}
+		if errorCount > 0 {
+			fmt.Printf("\n%d rows had errors.", errorCount)
+		}
+		fmt.Printf("\nImport results written to %s\n\n", outPath)
 	}}
 
 func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 	reqJson := gabs.New()
-	//reqJson.Set(intId, "CertStoreType")
 
 	for hIdx, header := range headerRow {
 
@@ -207,7 +219,7 @@ func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 			reqJson.Set(row[hIdx], strings.Split(header, ".")...)
 		}
 	}
-	fmt.Printf("[DEBUG] get JSON for create store request: %s", reqJson.String())
+	//fmt.Printf("[DEBUG] get JSON for create store request: %s", reqJson.String())
 	return reqJson
 }
 
@@ -219,15 +231,18 @@ func writeCsvFile(outpath string, rows map[int][]string) {
 	}
 	csvWriter := csv.NewWriter(csvFile)
 
+	fmt.Println()
+
 	for _, v := range rows {
+		fmt.Println()
 		wErr := csvWriter.Write(v)
 		if wErr != nil {
 			fmt.Printf("%s", wErr)
 			log.Printf("[ERROR] Error writing row to CSV: %s", wErr)
 		}
+		csvWriter.Flush()
 	}
 
-	csvWriter.Flush()
 	ioErr := csvFile.Close()
 	if ioErr != nil {
 		fmt.Println(ioErr)
@@ -249,7 +264,7 @@ var storesCreateTemplateCmd = &cobra.Command{
 		storeTypeId, _ := cmd.Flags().GetInt("store-type-id")
 		outpath, _ := cmd.Flags().GetString("outpath")
 
-		fmt.Printf("beginning store type id check.. id = %d, name = %s", storeTypeId, storeTypeName)
+		//fmt.Printf("beginning store type id check.. id = %d, name = %s", storeTypeId, storeTypeName)
 
 		var st interface{}
 		// Check inputs
@@ -271,13 +286,11 @@ var storesCreateTemplateCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Printf("made it past the store type id check.. value %v", st)
-
 		// get storetype for the list of properties
 		intId, csvHeaders := getHeadersForStoreType(st, *kfClient)
 		fmt.Printf("Got headers %T\n", csvHeaders)
-		// write csv file header row
 
+		// write csv file header row
 		var filePath string
 		if outpath != "" {
 			filePath = outpath
@@ -296,8 +309,7 @@ var storesCreateTemplateCmd = &cobra.Command{
 
 		writeCsvFile(filePath, csvContent)
 
-		fmt.Printf("Template file for store type %d written to %s\n", intId, filePath)
-
+		fmt.Printf("\nTemplate file for store type %d written to %s\n", intId, filePath)
 	}}
 
 func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, map[int]string) {
@@ -317,11 +329,9 @@ func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, map[int
 	dec := json.NewDecoder(bytes.NewReader(output))
 	dec.UseNumber()
 
-	//fmt.Printf("\n %s \n", output)
 	jsonParsedObj, _ := gabs.ParseJSONDecoder(dec)
 
 	// iterate through properties and determine header positions
-
 	properties := jsonParsedObj.S("Properties").Children()
 	offset := 0
 
@@ -331,7 +341,6 @@ func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, map[int
 			for pIdx, property := range properties {
 				loc := propIdx + pIdx
 				pName := "Properties." + property.S("Name").Data().(string)
-				// fmt.Printf("\n Setting property %s to have index %d", pName, loc)
 				csvHeaders[loc] = pName
 			}
 			offset = len(properties) - 1
@@ -360,7 +369,7 @@ func getRequiredProperties(id interface{}, kfClient api.Client) (int64, []string
 	dec := json.NewDecoder(bytes.NewReader(output))
 	dec.UseNumber()
 
-	fmt.Printf("\n %s \n", output)
+	//fmt.Printf("\n %s \n", output)
 	jsonParsedObj, _ := gabs.ParseJSONDecoder(dec)
 
 	//iterate through properties and determine header positions
