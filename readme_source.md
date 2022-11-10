@@ -85,17 +85,33 @@ files containing a list of certificate thumbprints. To generate a template for t
 ```bash
 kfutil stores rot generate-template --type certs
 ```
+To prepopulate the template file you can provide `--cn` multiple times.
+```bash
+kfutil stores rot generate-template --type certs \
+  --cn <cert subject name> \
+  --cn <additional cert subject name>
+```
+
 In addition, you must provide a list of stores you wish to audit. To generate a template for this file, run the following
 command:
 ```bash
 kfutil stores rot generate-template --type stores
 ```
+To prepopulate the template file you can provide `--store-type` and `--container-type` multiple times.
+```bash
+kfutil stores rot generate-template --type stores \
+  --store-type <store type name> \
+  --store-type <additional store type name> \
+  --container-type <container type name> \
+  --container-type <additional container type name>
+```
+
 With all the files generated and populated, you can now run the audit command:
 ```bash
 kfutil stores rot audit \
-  --stores stores.csv \
-  --add-certs addCerts.csv \
-  --remove-certs removeCerts.csv
+  --stores stores_template.csv \
+  --add-certs certs_template.csv \
+  --remove-certs certs_template2.csv
 ```
 This will generate an audit file that contains the results of the audit and actions that will be taken if `reconcile` is
 executed. By default, the audit file will be named `rot_audit.csv` and will be written to the current directory. To output
@@ -118,17 +134,32 @@ files containing a list of certificate thumbprints. To generate a template for t
 ```bash
 kfutil stores rot generate-template --type certs
 ```
+To prepopulate the template file you can provide `--cn` multiple times.
+```bash
+kfutil stores rot generate-template --type certs \
+  --cn <cert subject name> \
+  --cn <additional cert subject name>
+```
 In addition, you must provide a list of stores you wish to reconcile. To generate a template for this file, run the following
 command:
 ```bash
 kfutil stores rot generate-template --type stores
 ```
+To pre-populate the stores template file you can provide multiple values in any combination of the following flags:
+```bash
+kfutil stores rot generate-template --type stores \
+  --store-type <store type name> \
+  --store-type <additional store type name> \
+  --container-type <container type name> \
+  --container-type <additional container type name>
+```
+
 With all the files generated and populated, you can now run the reconcile command:
 ```bash
 kfutil stores rot reconcile \
-  --stores stores.csv \
-  --add-certs addCerts.csv \
-  --remove-certs removeCerts.csv
+  --stores stores_template.csv \
+  --add-certs certs_template.csv \
+  --remove-certs certs_template2.csv
 ```
 This will generate an audit file that contains the results of the audit and actions will immediately execute those actions.
 By default, the reconcile file will be named `rot_audit.csv` and will be written to the current directory. To output

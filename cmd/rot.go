@@ -131,7 +131,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		for _, store := range stores {
 			if _, ok := store.Thumbprints[cert]; ok {
 				// Cert is already in the store do nothing
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true"}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true", GetCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -140,7 +140,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 				}
 			} else {
 				// Cert is not deployed to this store and will need to be added
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false"}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false", GetCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
