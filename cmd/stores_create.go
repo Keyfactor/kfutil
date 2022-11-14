@@ -258,7 +258,6 @@ var storesCreateTemplateCmd = &cobra.Command{
 			outpath is the path the template should be written to.
 			Store type IDs can be found by running the "store-types" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("RUNNING!")
 		kfClient, _ := initClient()
 		storeTypeName, _ := cmd.Flags().GetString("store-type-name")
 		storeTypeId, _ := cmd.Flags().GetInt("store-type-id")
@@ -288,14 +287,13 @@ var storesCreateTemplateCmd = &cobra.Command{
 
 		// get storetype for the list of properties
 		intId, csvHeaders := getHeadersForStoreType(st, *kfClient)
-		fmt.Printf("Got headers %T\n", csvHeaders)
 
 		// write csv file header row
 		var filePath string
 		if outpath != "" {
 			filePath = outpath
 		} else {
-			filePath = fmt.Sprintf("%s_template.%s", "createstores", "csv")
+			filePath = fmt.Sprintf("%s_template_%d.%s", "createstores", intId, "csv")
 		}
 
 		csvContent := make(map[int][]string)
@@ -309,7 +307,7 @@ var storesCreateTemplateCmd = &cobra.Command{
 
 		writeCsvFile(filePath, csvContent)
 
-		fmt.Printf("\nTemplate file for store type %d written to %s\n", intId, filePath)
+		fmt.Printf("\nTemplate file for store type with id %d written to %s\n", intId, filePath)
 	}}
 
 func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, map[int]string) {
