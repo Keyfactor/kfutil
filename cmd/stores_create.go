@@ -55,12 +55,12 @@ var importCmd = &cobra.Command{
 //storesCreateCmd is the action for importing a csv file for bulk creating stores
 
 var storesCreateCmd = &cobra.Command{
-	Use:   "create -file [-store-type-id] [-store-type-name] [-results-path] [-dry-run]",
+	Use:   "create --file <file name to import> --store-type-id <store type id> --store-type-name <store type name> --results-path <filepath for results> --dry-run <check fields only>",
 	Short: "Create certificate stores",
 	Long: `Certificate stores: Will parse a CSV and attempt to create a certificate store for each row with the provided parameters.
-					store-type-name OR store-type-id is required.
-					file is the path to the file to be imported.
-					resultspath is where the import results will be written to.`,
+store-type-name OR store-type-id is required.
+file is the path to the file to be imported.
+resultspath is where the import results will be written to.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		kfClient, _ := initClient()
 		storeTypeName, _ := cmd.Flags().GetString("store-type-name")
@@ -114,8 +114,6 @@ var storesCreateCmd = &cobra.Command{
 		// check for minimum necessary required fields for creating certificate stores
 
 		intId, reqPropertiesForStoreType := getRequiredProperties(st, *kfClient)
-
-		//fmt.Printf("\nrequired properties: %v \n", reqPropertiesForStoreType)
 
 		// if not present in header, throw error.
 		headerRow := inFile[0]
@@ -171,12 +169,8 @@ var storesCreateCmd = &cobra.Command{
 
 			createStoreReqParameters.Properties = props
 
-			//fmt.Printf("request parameters object, %v", createStoreReqParameters)
-
 			//make request.
 			res, err := kfClient.CreateStore(&createStoreReqParameters)
-
-			//fmt.Printf("response from client request: %v", res)
 
 			if err != nil {
 				resultsMap[idx] = err.Error()
@@ -184,8 +178,6 @@ var storesCreateCmd = &cobra.Command{
 			} else {
 				resultsMap[idx] = fmt.Sprintf("Success.  CertStoreId = %s", res.Id)
 			}
-
-			//append response to output file in last column.
 		}
 
 		for oIdx, oRow := range originalMap {
@@ -251,12 +243,12 @@ func writeCsvFile(outpath string, rows map[int][]string) {
 }
 
 var storesCreateTemplateCmd = &cobra.Command{
-	Use:   "generate-template [store-type-id=] [store-type-name=] [outpath=]",
+	Use:   "generate-template --store-type-id <store type id> --store-type-name <store-type-name> --outpath <output file path>",
 	Short: "For generating a CSV template with headers for bulk store creation.",
 	Long: `kfutil stores generate-template creates a csv file containing headers for a specific cert store type.
-			store-type-name OR store-type-id is required.
-			outpath is the path the template should be written to.
-			Store type IDs can be found by running the "store-types" command.`,
+store-type-name OR store-type-id is required.
+outpath is the path the template should be written to.
+Store type IDs can be found by running the "store-types" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		kfClient, _ := initClient()
 		storeTypeName, _ := cmd.Flags().GetString("store-type-name")
