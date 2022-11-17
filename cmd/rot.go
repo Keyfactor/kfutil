@@ -769,10 +769,10 @@ the utility will first generate an audit report and then execute the add/remove 
 					stID = sType.StoreType // This is the template type ID
 					if stID >= 0 {
 						log.Printf("[DEBUG] Store type ID: %d\n", stID)
-						stores, sErr := kfClient.ListCertificateStores() //TODO: Should this be cached and only ran once?
+						stores, sErr := kfClient.ListCertificateStores()
 						if sErr != nil {
 							fmt.Printf("Error getting certificate stores of type '%s': %s\n", s, sErr)
-							log.Fatalf("[ERROR] Error getting certificate stores of type '%s': %s", s, sErr) // TODO: Should this be allowed to continue?
+							log.Fatalf("[ERROR] Error getting certificate stores of type '%s': %s", s, sErr)
 						}
 						for _, store := range *stores {
 							if store.CertStoreType == stID {
