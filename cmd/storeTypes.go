@@ -1,4 +1,4 @@
-// Copyright 2022 Keyfactor
+// Package cmd Copyright 2022 Keyfactor
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
@@ -11,7 +11,9 @@ import (
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"io"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -122,11 +124,21 @@ var storesTypeCreateCmd = &cobra.Command{
 	Short: "Create a new certificate store type in Keyfactor.",
 	Long:  `Create a new certificate store type in Keyfactor.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("create called")
 		//Check if store type is valid
-		validStoreTypes := getValidStoreTypes()
+		validStoreTypes := getValidStoreTypes("")
 		storeType, _ := cmd.Flags().GetString("name")
+		listTypes, _ := cmd.Flags().GetBool("list")
 		storeTypeIsValid := false
+
+		if listTypes {
+			fmt.Println("Valid store types:")
+			for _, st := range validStoreTypes {
+				fmt.Printf("\t%s\n", st)
+			}
+			fmt.Println("Use these values with the --name flag.")
+			return
+		}
+
 		for _, v := range validStoreTypes {
 			if strings.EqualFold(v, strings.ToUpper(storeType)) {
 				log.Printf("[DEBUG] Valid store type: %s", storeType)
@@ -139,7 +151,11 @@ var storesTypeCreateCmd = &cobra.Command{
 			log.Fatalf("Error: Invalid store type: %s", storeType)
 		} else {
 			kfClient, _ := initClient()
-			storeTypeConfig, _ := readStoreTypesConfig()
+			storeTypeConfig, stErr := readStoreTypesConfig("")
+			if stErr != nil {
+				fmt.Printf("Error: %s", stErr)
+				log.Fatalf("Error: %s", stErr)
+			}
 			log.Printf("[DEBUG] Store type config: %v", storeTypeConfig[storeType])
 			sConfig := storeTypeConfig[storeType].(map[string]interface{})
 			props, pErr := buildStoreTypePropertiesInterface(sConfig["Properties"].([]interface{}))
@@ -235,7 +251,7 @@ var fetchStoreTypes = &cobra.Command{
 	Short: "Fetches store type templates from Keyfactor's Github.",
 	Long:  `Fetches store type templates from Keyfactor's Github.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		templates, err := readStoreTypesConfig()
+		templates, err := readStoreTypesConfig("")
 		if err != nil {
 			log.Printf("Error: %s", err)
 			fmt.Printf("Error: %s\n", err)
@@ -254,7 +270,7 @@ var generateStoreTypeTemplate = &cobra.Command{
 	Short: "Generates either a JSON or CSV template file for certificate store type bulk operations.",
 	Long:  `Generates either a JSON or CSV template file for certificate store type bulk operations.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		templates, err := readStoreTypesConfig()
+		templates, err := readStoreTypesConfig("")
 		if err != nil {
 			log.Printf("Error: %s", err)
 			fmt.Printf("Error: %s\n", err)
@@ -268,10 +284,45 @@ var generateStoreTypeTemplate = &cobra.Command{
 	},
 }
 
-func readStoreTypesConfig() (map[string]interface{}, error) {
-	content, err := os.ReadFile("./store_types.json")
+func getStoreTypesInternet() (map[string]interface{}, error) {
+	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfutil/main/store_types.json")
+	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfctl/master/storetypes/storetypes.json")
+	resp, rErr := http.Get("https://gitlab.com/-/snippets/2459723/raw/main/kfc-store-types.json")
+	if rErr != nil {
+		return nil, rErr
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal("Error when opening file: ", err)
+		return nil, err
+	}
+	var result map[string]interface{}
+	json.Unmarshal([]byte(body), &result)
+	return result, nil
+}
+
+func readStoreTypesConfig(fp string) (map[string]interface{}, error) {
+
+	sTypes, stErr := getStoreTypesInternet()
+	if stErr != nil {
+		fmt.Printf("Error: %s\n", stErr)
+	}
+
+	var content []byte
+	var err error
+	if sTypes == nil {
+		if fp == "" {
+			fp = "store_types.json"
+		}
+		content, err = os.ReadFile(fp)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		content, err = json.Marshal(sTypes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Now let's unmarshall the data into `payload`
@@ -285,8 +336,13 @@ func readStoreTypesConfig() (map[string]interface{}, error) {
 	return datas, nil
 }
 
-func getValidStoreTypes() []string {
-	validStoreTypes, _ := readStoreTypesConfig()
+func getValidStoreTypes(fp string) []string {
+	validStoreTypes, rErr := readStoreTypesConfig(fp)
+	if rErr != nil {
+		log.Printf("Error: %s", rErr)
+		fmt.Printf("Error: %s\n", rErr)
+		return nil
+	}
 	validStoreTypesList := make([]string, 0, len(validStoreTypes))
 	for k := range validStoreTypes {
 		validStoreTypesList = append(validStoreTypesList, k)
@@ -298,7 +354,7 @@ func getValidStoreTypes() []string {
 
 func init() {
 
-	validTypesString := strings.Join(getValidStoreTypes(), ", ")
+	validTypesString := strings.Join(getValidStoreTypes(""), ", ")
 	RootCmd.AddCommand(storeTypesCmd)
 
 	// GET store type templates
@@ -317,9 +373,11 @@ func init() {
 	storesTypeGetCmd.MarkFlagsMutuallyExclusive("id", "name")
 
 	// CREATE command
+	var listValidStoreTypes bool
 	storeTypesCmd.AddCommand(storesTypeCreateCmd)
 	storesTypeCreateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to get. Valid choices are: "+validTypesString)
-	storesTypeCreateCmd.MarkFlagRequired("name")
+	storesTypeCreateCmd.Flags().BoolVarP(&listValidStoreTypes, "list", "l", false, "List valid store types.")
+	//storesTypeCreateCmd.MarkFlagRequired("name")
 
 	// UPDATE command
 	storeTypesCmd.AddCommand(storesTypeUpdateCmd)

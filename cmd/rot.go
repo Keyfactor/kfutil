@@ -1,4 +1,4 @@
-// Copyright 2022 Keyfactor
+// Package cmd Copyright 2022 Keyfactor
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"github.com/spf13/cobra"
@@ -56,9 +57,10 @@ const (
 )
 
 var (
-	AuditHeader = []string{"Thumbprint", "CertID", "SubjectName", "Issuer", "StoreID", "StoreType", "Machine", "Path", "AddCert", "RemoveCert", "Deployed"}
-	StoreHeader = []string{"StoreID", "StoreType", "StoreMachine", "StorePath"}
-	CertHeader  = []string{"Thumbprint"}
+	AuditHeader = []string{"Thumbprint", "CertID", "SubjectName", "Issuer", "StoreID", "StoreType", "Machine", "Path", "AddCert", "RemoveCert", "Deployed", "AuditDate"}
+	StoreHeader = []string{"StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId", "ContainerName", "LastQueriedDate"}
+	CertHeader  = []string{"Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"}
+	TZ, _       = time.LoadLocation("UTC")
 )
 
 // String is used both by fmt.Print and by Cobra in help text
@@ -129,7 +131,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		for _, store := range stores {
 			if _, ok := store.Thumbprints[cert]; ok {
 				// Cert is already in the store do nothing
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true"}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true", GetCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -138,7 +140,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 				}
 			} else {
 				// Cert is not deployed to this store and will need to be added
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false"}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false", GetCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -294,7 +296,7 @@ func readCertsFile(certsFilePath string, kfclient *api.Client) (map[string]strin
 	return certs, nil
 }
 
-func isRootStore(st *api.GetStoreByIDResp, invs *[]api.CertStoreInventory, minCerts int, maxKeys int, maxLeaf int) bool {
+func isRootStore(st *api.GetCertificateStoreResponse, invs *[]api.CertStoreInventory, minCerts int, maxKeys int, maxLeaf int) bool {
 	leafCount := 0
 	keyCount := 0
 	certCount := 0
@@ -743,7 +745,143 @@ the utility will first generate an audit report and then execute the add/remove 
 			templateType, _ := cmd.Flags().GetString("type")
 			format, _ := cmd.Flags().GetString("format")
 			outPath, _ := cmd.Flags().GetString("outPath")
+			storeType, _ := cmd.Flags().GetStringSlice("store-type")
+			containerType, _ := cmd.Flags().GetStringSlice("container-type")
+			collection, _ := cmd.Flags().GetStringSlice("collection")
+			subjectName, _ := cmd.Flags().GetStringSlice("cn")
+			stID := -1
+			var storeData []api.GetCertificateStoreResponse
+			//var certData []api.GetCertificateResponse
+			var csvStoreData [][]string
+			var csvCertData [][]string
+			var rowLookup = make(map[string]bool)
+			if len(storeType) != 0 {
+				for _, s := range storeType {
+					kfClient, err := initClient()
+					if err != nil {
+						log.Fatalf("[ERROR] Error creating client: %s", err)
+					}
+					sType, stErr := kfClient.GetCertificateStoreTypeByName(s)
+					if stErr != nil {
+						fmt.Printf("Error getting store type: %s\n", stErr)
+						continue
+					}
+					stID = sType.StoreType // This is the template type ID
+					if stID >= 0 {
+						log.Printf("[DEBUG] Store type ID: %d\n", stID)
+						stores, sErr := kfClient.ListCertificateStores() //TODO: Should this be cached and only ran once?
+						if sErr != nil {
+							fmt.Printf("Error getting certificate stores of type '%s': %s\n", s, sErr)
+							log.Fatalf("[ERROR] Error getting certificate stores of type '%s': %s", s, sErr) // TODO: Should this be allowed to continue?
+						}
+						for _, store := range *stores {
+							if store.CertStoreType == stID {
+								storeData = append(storeData, store)
+								if !rowLookup[store.Id] {
+									lineData := []string{
+										//"StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId"
+										store.Id, fmt.Sprintf("%s", sType.ShortName), store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, GetCurrentTime(),
+									}
+									csvStoreData = append(csvStoreData, lineData)
+									rowLookup[store.Id] = true
+								}
+							}
+						}
+					}
+				}
+				fmt.Println("Done")
+			}
+			if len(containerType) != 0 {
+				for _, c := range containerType {
+					kfClient, err := initClient()
+					if err != nil {
+						log.Fatalf("[ERROR] Error creating client: %s", err)
+					}
+					cStoresResp, scErr := kfClient.GetCertificateStoreByContainerID(c)
+					if scErr != nil {
+						fmt.Printf("Error getting store container: %s\n", scErr)
+					}
+					if cStoresResp != nil {
+						for _, store := range *cStoresResp {
+							sType, stErr := kfClient.GetCertificateStoreType(store.CertStoreType)
+							if stErr != nil {
+								fmt.Printf("Error getting store type: %s\n", stErr)
+								continue
+							}
+							storeData = append(storeData, store)
+							if !rowLookup[store.Id] {
+								lineData := []string{
+									// "StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId"
+									store.Id, sType.ShortName, store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, GetCurrentTime(),
+								}
+								csvStoreData = append(csvStoreData, lineData)
+								rowLookup[store.Id] = true
+							}
+						}
 
+					}
+				}
+			}
+			if len(collection) != 0 {
+				for _, c := range collection {
+					kfClient, err := initClient()
+					if err != nil {
+						fmt.Println("Error connecting to Keyfactor. Please check your configuration and try again.")
+						log.Fatalf("[ERROR] Error creating client: %s", err)
+					}
+					q := make(map[string]string)
+					q["collection"] = c
+					certsResp, scErr := kfClient.ListCertificates(q)
+					if scErr != nil {
+						fmt.Printf("No certificates found in collection: %s\n", scErr)
+					}
+					if certsResp != nil {
+						for _, cert := range certsResp {
+							if !rowLookup[cert.Thumbprint] {
+								lineData := []string{
+									// "Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"
+									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), fmt.Sprintf("%v", cert.Locations), GetCurrentTime(),
+								}
+								csvCertData = append(csvCertData, lineData)
+								rowLookup[cert.Thumbprint] = true
+							}
+						}
+
+					}
+				}
+			}
+			if len(subjectName) != 0 {
+				for _, s := range subjectName {
+					kfClient, err := initClient()
+					if err != nil {
+						fmt.Println("Error connecting to Keyfactor. Please check your configuration and try again.")
+						log.Fatalf("[ERROR] Error creating client: %s", err)
+					}
+					q := make(map[string]string)
+					q["subject"] = s
+					certsResp, scErr := kfClient.ListCertificates(q)
+					if scErr != nil {
+						fmt.Printf("No certificates found with CN: %s\n", scErr)
+					}
+					if certsResp != nil {
+						for _, cert := range certsResp {
+							if !rowLookup[cert.Thumbprint] {
+								locationsFormatted := ""
+								for _, loc := range cert.Locations {
+									locationsFormatted += fmt.Sprintf("%s:%s\n", loc.StoreMachine, loc.StorePath)
+								}
+								lineData := []string{
+									// "Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"
+									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), locationsFormatted, GetCurrentTime(),
+								}
+								csvCertData = append(csvCertData, lineData)
+								rowLookup[cert.Thumbprint] = true
+							}
+						}
+
+					}
+				}
+			}
 			// Create CSV template file
 
 			var filePath string
@@ -761,16 +899,22 @@ the utility will first generate an audit report and then execute the add/remove 
 			switch format {
 			case "csv":
 				writer := csv.NewWriter(file)
-				var data []string
+				var data [][]string
 				switch templateType {
 				case "stores":
-					data = StoreHeader
+					data = append(data, StoreHeader)
+					if len(csvStoreData) != 0 {
+						data = append(data, csvStoreData...)
+					}
 				case "certs":
-					data = CertHeader
+					data = append(data, CertHeader)
+					if len(csvCertData) != 0 {
+						data = append(data, csvCertData...)
+					}
 				case "actions":
-					data = AuditHeader
+					data = append(data, AuditHeader)
 				}
-				csvErr := writer.WriteAll([][]string{data})
+				csvErr := writer.WriteAll(data)
 				if csvErr != nil {
 					fmt.Println(csvErr)
 				}
@@ -783,7 +927,7 @@ the utility will first generate an audit report and then execute the add/remove 
 					log.Fatal("Cannot write to file", err)
 				}
 			}
-			fmt.Printf("Template file created at %s", filePath)
+			fmt.Printf("Template file created at %s.\n", filePath)
 		},
 		RunE:                       nil,
 		PostRun:                    nil,
@@ -819,6 +963,10 @@ func init() {
 		outPath         string
 		outputFormat    string
 		inputFile       string
+		storeTypes      []string
+		containerTypes  []string
+		collections     []string
+		subjectNames    []string
 	)
 
 	storesCmd.AddCommand(rotCmd)
@@ -871,6 +1019,11 @@ func init() {
 		"The type of template to generate. Only `csv` is supported at this time.")
 	rotGenStoreTemplateCmd.Flags().Var(&tType, "type",
 		`The type of template to generate. Only "certs|stores|actions" are supported at this time.`)
+	rotGenStoreTemplateCmd.Flags().StringSliceVar(&storeTypes, "store-type", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified store types. If not specified, the template will be empty.")
+	rotGenStoreTemplateCmd.Flags().StringSliceVar(&containerTypes, "container-type", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified container types. If not specified, the template will be empty.")
+	rotGenStoreTemplateCmd.Flags().StringSliceVar(&subjectNames, "cn", []string{}, "Subject name(s) to pre-populate the stores template with. If not specified, the template will be empty. Does not work with SANs.")
+	rotGenStoreTemplateCmd.Flags().StringSliceVar(&collections, "collection", []string{}, "Certificate collection name(s) to pre-populate the stores template with. If not specified, the template will be empty.")
+
 	rotGenStoreTemplateCmd.RegisterFlagCompletionFunc("type", templateTypeCompletion)
 	rotGenStoreTemplateCmd.MarkFlagRequired("type")
 }
