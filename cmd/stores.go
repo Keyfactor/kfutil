@@ -9,9 +9,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
+
+	"github.com/spf13/cobra"
 )
 
 // storesCmd represents the stores command
