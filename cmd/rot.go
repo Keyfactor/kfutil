@@ -751,7 +751,6 @@ the utility will first generate an audit report and then execute the add/remove 
 			subjectName, _ := cmd.Flags().GetStringSlice("cn")
 			stID := -1
 			var storeData []api.GetCertificateStoreResponse
-			//var certData []api.GetCertificateResponse
 			var csvStoreData [][]string
 			var csvCertData [][]string
 			var rowLookup = make(map[string]bool)
