@@ -15,7 +15,6 @@ A CLI wrapper around the Keyfactor Platform API.
 
 ### SEE ALSO
 
-* [kfutil certificates](kfutil_certificates.md)	 - A brief description of your command
 * [kfutil containers](kfutil_containers.md)	 - Keyfactor certificate store container API and utilities.
 * [kfutil orchs](kfutil_orchs.md)	 - Keyfactor agents/orchestrators APIs and utilities.
 * [kfutil status](kfutil_status.md)	 - List the status of Keyfactor services.
