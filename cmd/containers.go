@@ -9,6 +9,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 
 	"github.com/spf13/cobra"

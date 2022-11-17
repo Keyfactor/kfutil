@@ -19,3 +19,5 @@ vendor/
 .env
 
 *.csv
+/.vs/**/*
+/.vscode/**/*
