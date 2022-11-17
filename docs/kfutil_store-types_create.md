@@ -14,7 +14,8 @@ kfutil store-types create [flags]
 
 ```
   -h, --help          help for create
-  -n, --name string   Name of the certificate store type to get. Valid choices are: 
+  -l, --list          List valid store types.
+  -n, --name string   Name of the certificate store type to get. Valid choices are: A10vThunder, AWS, AzureKeyVault, F5CABundlesREST, F5SSLProfiles, F5SSLProfilesREST, F5WebServer, F5WebServerREST, FTP, Fortanix, GCPApigee, HashicorpVault, IISPersonal, IISRevoked, IISRoots, IISWithBindings, JavaKeystore, JavaKeystoreSSH, NetScaler, PEM, PaloAlto, RFJKS, RFPEM, RFPKCS12, SampleStoreType, WinCerMgmt
 ```
 
 ### SEE ALSO

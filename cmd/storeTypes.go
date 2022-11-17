@@ -11,7 +11,9 @@ import (
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"io"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -122,11 +124,21 @@ var storesTypeCreateCmd = &cobra.Command{
 	Short: "Create a new certificate store type in Keyfactor.",
 	Long:  `Create a new certificate store type in Keyfactor.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("create called")
 		//Check if store type is valid
 		validStoreTypes := getValidStoreTypes("")
 		storeType, _ := cmd.Flags().GetString("name")
+		listTypes, _ := cmd.Flags().GetBool("list")
 		storeTypeIsValid := false
+
+		if listTypes {
+			fmt.Println("Valid store types:")
+			for _, st := range validStoreTypes {
+				fmt.Printf("\t%s\n", st)
+			}
+			fmt.Println("Use these values with the --name flag.")
+			return
+		}
+
 		for _, v := range validStoreTypes {
 			if strings.EqualFold(v, strings.ToUpper(storeType)) {
 				log.Printf("[DEBUG] Valid store type: %s", storeType)
@@ -272,13 +284,45 @@ var generateStoreTypeTemplate = &cobra.Command{
 	},
 }
 
-func readStoreTypesConfig(fp string) (map[string]interface{}, error) {
-	if fp == "" {
-		fp = "./store-types.json"
+func getStoreTypesInternet() (map[string]interface{}, error) {
+	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfutil/main/store_types.json")
+	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfctl/master/storetypes/storetypes.json")
+	resp, rErr := http.Get("https://gitlab.com/-/snippets/2459723/raw/main/kfc-store-types.json")
+	if rErr != nil {
+		return nil, rErr
 	}
-	content, err := os.ReadFile(fp)
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+	var result map[string]interface{}
+	json.Unmarshal([]byte(body), &result)
+	return result, nil
+}
+
+func readStoreTypesConfig(fp string) (map[string]interface{}, error) {
+
+	sTypes, stErr := getStoreTypesInternet()
+	if stErr != nil {
+		fmt.Printf("Error: %s\n", stErr)
+	}
+
+	var content []byte
+	var err error
+	if sTypes == nil {
+		if fp == "" {
+			fp = "store_types.json"
+		}
+		content, err = os.ReadFile(fp)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		content, err = json.Marshal(sTypes)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Now let's unmarshall the data into `payload`
@@ -329,9 +373,11 @@ func init() {
 	storesTypeGetCmd.MarkFlagsMutuallyExclusive("id", "name")
 
 	// CREATE command
+	var listValidStoreTypes bool
 	storeTypesCmd.AddCommand(storesTypeCreateCmd)
 	storesTypeCreateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to get. Valid choices are: "+validTypesString)
-	storesTypeCreateCmd.MarkFlagRequired("name")
+	storesTypeCreateCmd.Flags().BoolVarP(&listValidStoreTypes, "list", "l", false, "List valid store types.")
+	//storesTypeCreateCmd.MarkFlagRequired("name")
 
 	// UPDATE command
 	storeTypesCmd.AddCommand(storesTypeUpdateCmd)
