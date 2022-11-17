@@ -5,9 +5,8 @@ go 1.19
 require (
 	github.com/Keyfactor/keyfactor-go-client v1.2.0-rc3
 	github.com/spf13/cobra v1.6.1
+	github.com/Jeffail/gabs/v2 v2.6.1
 )
-
-require github.com/Jeffail/gabs/v2 v2.6.1
 
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
