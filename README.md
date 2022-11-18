@@ -183,7 +183,6 @@ kfutil stores rot audit \
   --output /path/to/output/autdit_file.csv
 ```
 
-
 #### Run Root of Trust Reconcile
 
 Reconcile will take in a list of certificates and a list of certificate stores and check that the certificate store's
@@ -234,6 +233,48 @@ Alternatively you can provide an audit CSV file as an input to the reconcile com
 ```bash
 kfutil stores rot reconcile \
   --import-csv /path/to/audit_file.csv
+```
+
+#### Adding CA certs
+```bash
+# Generate CSV file with bad CA certs
+kfutil stores rot generate-template --type certs \
+  --cn <root cert subject name>
+
+# Audit all cert stores
+kfutil stores rot generate-template \
+  --type stores \
+  --store-type all
+
+# Run audit and generate report
+kfutil stores rot audit \
+    --stores stores_template.csv \
+    --add-certs certs_template.csv
+    
+# Run actions and reconcile the report
+kfutil stores rot reconcile \
+    --import-csv rot_audit.csv
+```
+
+#### Finding and removing bad CA certs
+```bash
+# Generate CSV file with bad CA certs
+kfutil stores rot generate-template --type certs \
+  --cn <bad root cert subject name>
+
+# Audit all cert stores
+kfutil stores rot generate-template \
+  --type stores \
+  --store-type all
+
+# Run audit and generate report
+kfutil stores rot audit \
+    --stores stores_template.csv \
+    --remote-certs certs_template.csv
+    
+# Run actions and reconcile the report
+kfutil stores rot reconcile \
+    --import-csv rot_audit.csv
 ```
 
 ### Development
