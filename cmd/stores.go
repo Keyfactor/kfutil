@@ -32,7 +32,8 @@ var storesListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.SetOutput(io.Discard)
 		kfClient, _ := initClient()
-		stores, err := kfClient.ListCertificateStores()
+		params := map[string]interface{}{}
+		stores, err := kfClient.ListCertificateStores(&params)
 		if err != nil {
 			log.Printf("Error: %s", err)
 		}

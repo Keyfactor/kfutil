@@ -53,9 +53,10 @@ const (
 )
 
 var (
-	AuditHeader = []string{"Thumbprint", "CertID", "SubjectName", "Issuer", "StoreID", "StoreType", "Machine", "Path", "AddCert", "RemoveCert", "Deployed", "AuditDate"}
-	StoreHeader = []string{"StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId", "ContainerName", "LastQueriedDate"}
-	CertHeader  = []string{"Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"}
+	AuditHeader           = []string{"Thumbprint", "CertID", "SubjectName", "Issuer", "StoreID", "StoreType", "Machine", "Path", "AddCert", "RemoveCert", "Deployed", "AuditDate"}
+	ReconciledAuditHeader = []string{"Thumbprint", "CertID", "SubjectName", "Issuer", "StoreID", "StoreType", "Machine", "Path", "AddCert", "RemoveCert", "Deployed", "ReconciledDate"}
+	StoreHeader           = []string{"StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId", "ContainerName", "LastQueriedDate"}
+	CertHeader            = []string{"Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"}
 )
 
 // String is used both by fmt.Print and by Cobra in help text
@@ -180,7 +181,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		for _, store := range stores {
 			if _, ok := store.Thumbprints[cert]; ok {
 				// Cert is deployed to this store and will need to be removed
-				row := []string{cert, certIDStr, store.ID, store.Type, store.Machine, store.Path, "false", "true", "true"}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "true", "true", GetCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -198,7 +199,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 				})
 			} else {
 				// Cert is not deployed to this store do nothing
-				row := []string{cert, certIDStr, store.ID, store.Type, store.Machine, store.Path, "false", "false", "false"}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "false", GetCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -218,13 +219,25 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 	return data, actions, nil
 }
 
-func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, dryRun bool) error {
+func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, reportFile string, dryRun bool) error {
 	log.Printf("[DEBUG] Reconciling roots")
 	if len(actions) == 0 {
 		log.Printf("[INFO] No actions to take, roots are up-to-date.")
 		return nil
 	}
+	rFileName := fmt.Sprintf("%s_reconciled.csv", strings.Split(reportFile, ".csv")[0])
+	csvFile, fErr := os.Create(rFileName)
+	if fErr != nil {
+		fmt.Printf("[ERROR] creating reconciled report file: %s", fErr)
+	}
+	csvWriter := csv.NewWriter(csvFile)
+	cErr := csvWriter.Write(ReconciledAuditHeader)
+	if cErr != nil {
+		fmt.Printf("%s", cErr)
+		log.Fatalf("[ERROR] writing audit header: %s", cErr)
+	}
 	for thumbprint, action := range actions {
+
 		for _, a := range action {
 			if a.AddCert {
 				log.Printf("[INFO] Adding cert %s to store %s(%s)", thumbprint, a.StoreID, a.StorePath)
@@ -666,7 +679,7 @@ the utility will first generate an audit report and then execute the add/remove 
 					fmt.Println("No reconciliation actions to take, root stores are up-to-date. Exiting.")
 					return
 				}
-				rErr := reconcileRoots(actions, kfClient, dryRun)
+				rErr := reconcileRoots(actions, kfClient, reportFile, dryRun)
 				if rErr != nil {
 					fmt.Printf("[ERROR] reconciling roots: %s", rErr)
 					log.Fatalf("[ERROR] reconciling roots: %s", rErr)
@@ -757,7 +770,7 @@ the utility will first generate an audit report and then execute the add/remove 
 					fmt.Println("No reconciliation actions to take, root stores are up-to-date. Exiting.")
 					return
 				}
-				rErr := reconcileRoots(actions, kfClient, dryRun)
+				rErr := reconcileRoots(actions, kfClient, reportFile, dryRun)
 				if rErr != nil {
 					fmt.Printf("[ERROR] reconciling roots: %s", rErr)
 					log.Fatalf("[ERROR] reconciling roots: %s", rErr)
@@ -866,7 +879,8 @@ the utility will first generate an audit report and then execute the add/remove 
 
 					if stID >= 0 || s == "all" {
 						log.Printf("[DEBUG] Store type ID: %d\n", stID)
-						stores, sErr := kfClient.ListCertificateStores()
+						params := map[string]interface{}{}
+						stores, sErr := kfClient.ListCertificateStores(&params)
 						if sErr != nil {
 							fmt.Printf("[ERROR] getting certificate stores of type '%s': %s\n", s, sErr)
 							log.Fatalf("[ERROR] getting certificate stores of type '%s': %s", s, sErr)

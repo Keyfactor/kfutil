@@ -13,7 +13,7 @@ kfutil store-types create --name RFPKCS12
 kfutil store-types create --name SAMPLETYPE
 kfutil store-types create --name WINCERMGMT
 
-# Precreated store types
+# Pre-created store types
 kfutil store-types create --name AWS
 kfutil store-types create --name F5CABUNDLES
 kfutil store-types create --name F5PROFILES
