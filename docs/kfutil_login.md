@@ -1,15 +1,16 @@
 ## kfutil login
 
-A brief description of your command
+User interactive login to Keyfactor.
 
 ### Synopsis
 
-A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+Will prompt the user for a username and password and then attempt to login to Keyfactor.
+You can provide the --config flag to specify a config file to use. If not provided, the default
+config file will be used. The default config file is located at $HOME/.keyfactor/command_config.json.
+To prevent the prompt for username and password, use the --no-prompt flag. If this flag is provided then
+the CLI will default to using the environment variables: KEYFACTOR_HOSTNAME, KEYFACTOR_USERNAME, 
+KEYFACTOR_PASSWORD and KEYFACTOR_DOMAIN.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.
 
 ```
 kfutil login [flags]

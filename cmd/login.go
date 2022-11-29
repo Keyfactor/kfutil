@@ -1,6 +1,9 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
+// Package cmd Copyright 2022 Keyfactor
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
+// and limitations under the License.
 package cmd
 
 import (
@@ -21,13 +24,14 @@ const DEFAULT_CONFIG_FILE_NAME = "command_config.json"
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "User interactive login to Keyfactor.",
+	Long: `Will prompt the user for a username and password and then attempt to login to Keyfactor.
+You can provide the --config flag to specify a config file to use. If not provided, the default
+config file will be used. The default config file is located at $HOME/.keyfactor/command_config.json.
+To prevent the prompt for username and password, use the --no-prompt flag. If this flag is provided then
+the CLI will default to using the environment variables: KEYFACTOR_HOSTNAME, KEYFACTOR_USERNAME, 
+KEYFACTOR_PASSWORD and KEYFACTOR_DOMAIN.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
