@@ -514,6 +514,11 @@ var inventoryShowCmd = &cobra.Command{
 
 		kfClient, _ := initClient()
 
+		if len(storeIDs) == 0 && len(clientMachineNames) == 0 && len(storeTypes) == 0 && len(containers) == 0 {
+			fmt.Println("No filters specified. Unable to show inventory. Please specify at least one filter: [--sid, --client, --store-type, --container]")
+			return
+		}
+
 		params := map[string]interface{}{
 			"ClientMachine": []string{},
 			"ContainerId":   []int{},
@@ -643,4 +648,5 @@ func init() {
 	inventoryShowCmd.Flags().StringSliceVar(&clients, "client", []string{}, "Show certificate inventories for stores of specific client machine(s).")
 	inventoryShowCmd.Flags().StringSliceVar(&types, "store-type", []string{}, "Show certificate inventories for stores of specific store type(s).")
 	inventoryShowCmd.Flags().StringSliceVar(&containers, "container", []string{}, "Show certificate inventories for stores of specific container type(s).")
+
 }

@@ -277,6 +277,14 @@ kfutil stores rot reconcile \
     --import-csv rot_audit.csv
 ```
 
+### Certificate Store Inventory
+For full documentation, see [Certificate Store Inventory](docs/kfutil_stores_inventory.md).
+
+#### Show the inventory of a certificate store
+```bash
+kfutil stores inventory show --sid <store id>
+```
+
 ### Development
 
 This CLI developed using [cobra](https://umarcor.github.io/cobra/)

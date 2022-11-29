@@ -214,6 +214,54 @@ kfutil stores rot reconcile \
   --import-csv /path/to/audit_file.csv
 ```
 
+### Certificate Store Inventory
+For full documentation, see [stores inventory](docs/kfutil_stores_inventory.md).
+
+#### Show the inventory of a certificate store
+For full documentation, see [stores inventory show](docs/kfutil_stores_inventory_show.md).
+
+```bash
+
+Show by store ID:
+```bash
+kfutil stores inventory show --sid <store id>
+
+# Nested command lookup: shows inventory of first cert store found
+kfutil stores inventory show \
+  --sid $(kfutil stores list | jq -r ".[0].Id")
+```
+
+Show by client machine name:
+```bash
+kfutil stores inventory show --client <machine name>
+
+# Nested command lookup: shows inventory of first cert store found
+kfutil stores inventory show \
+  --client $(kfutil orchs list | jq -r ".[0].ClientMachine")
+```
+#### Add certificates to certificate stores
+For full documentation, see [stores inventory add](docs/kfutil_stores_inventory_add.md).
+
+```bash
+# Add 2 certs to 2 certificate stores
+kfutil stores inventory add \
+  --sid <store id> \
+  --sid <additional store id> \
+  --cn <cert subject name> \
+  --cn <additional cert subject name>
+```
+
+#### Remove certificates from certificate stores
+For full documentation, see [stores inventory remove](docs/kfutil_stores_inventory_remove.md).
+
+```bash
+# Remove 2 certs from all stores associated with a client machine
+kfutil stores inventory remove \
+  --client <machine name> \
+  --cn <cert subject name> \
+  --cn <additional cert subject name>
+```
+
 ### Development
 
 This CLI developed using [cobra](https://umarcor.github.io/cobra/)
