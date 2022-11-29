@@ -85,7 +85,8 @@ var inventoryClearCmd = &cobra.Command{
 				sTypeName, stErr := kfClient.GetCertificateStoreTypeById(store.CertStoreType)
 				sTypeLookup[sTypeName.ShortName] = true
 				if stErr != nil {
-					fmt.Printf("Error getting store type name for store type id %d: %s", store.CertStoreType, stErr)
+					fmt.Printf("Error getting store type name for store type id %d: %s\n", store.CertStoreType, stErr)
+					log.Fatal(stErr)
 				}
 				if sIdMap[store.Id] || mNameMap[store.ClientMachine] || sTypeMap[sTypeName.ShortName] || cTypeMap[store.ContainerName] {
 					filteredStores = append(filteredStores, store)
@@ -94,7 +95,7 @@ var inventoryClearCmd = &cobra.Command{
 		} else {
 			allStoresResp, fErr := kfClient.ListCertificateStores(nil)
 			if fErr != nil {
-				fmt.Printf("Error getting listing certificate stores: %s", fErr)
+				fmt.Printf("Error listing certificate stores: %s\n", fErr)
 				log.Fatal(fErr)
 			}
 			filteredStores = *allStoresResp
@@ -104,8 +105,8 @@ var inventoryClearCmd = &cobra.Command{
 
 			sInvs, iErr := kfClient.GetCertStoreInventory(store.Id) //TODO: This is a placeholder for the actual API call
 			if iErr != nil {
-				fmt.Println(iErr)
-				log.Printf("Error: %s", iErr)
+				fmt.Printf("Error unable to get inventory from certificate store %s. %s\n", store.Id, iErr)
+				log.Printf("[ERROR]  %s", iErr)
 			}
 			schedule := &api.InventorySchedule{
 				Immediate: boolToPointer(true),
@@ -143,11 +144,11 @@ var inventoryClearCmd = &cobra.Command{
 						_, err := kfClient.RemoveCertificateFromStores(&removeReq)
 						if err != nil {
 							fmt.Printf("Error removing certificate %s(%d) from store %s: %s\n", cert.IssuedDN, cert.Id, st.CertificateStoreId, err)
-							log.Printf("Error: %s", err)
+							log.Printf("[ERROR] %s", err)
 							continue
 						}
 					} else {
-						fmt.Printf("Dry run: Would have removed certificate %s(%d) from store %s", cert.IssuedDN, cert.Id, st.CertificateStoreId)
+						fmt.Printf("Dry run: Would have removed certificate %s(%d) from store %s\n", cert.IssuedDN, cert.Id, st.CertificateStoreId)
 					}
 				}
 
@@ -317,7 +318,7 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 					_, err := kfClient.AddCertificateToStores(&addReq)
 					if err != nil {
 						fmt.Printf("Error adding certificate %s(%d) to store %s: %s\n", cert.IssuedCN, cert.Id, st.CertificateStoreId, err)
-						log.Printf("Error: %s", err)
+						log.Printf("[ERROR]  %s", err)
 						continue
 					}
 				} else {
@@ -422,7 +423,8 @@ var inventoryRemoveCmd = &cobra.Command{
 				sTypeName, stErr := kfClient.GetCertificateStoreTypeById(store.CertStoreType)
 				sTypeLookup[sTypeName.ShortName] = true
 				if stErr != nil {
-					fmt.Printf("Error getting store type name for store type id %d: %s", store.CertStoreType, stErr)
+					fmt.Printf("Error getting store type name for store type id %d: %s\n", store.CertStoreType, stErr)
+					log.Fatal(stErr)
 				}
 				if sIdMap[store.Id] || mNameMap[store.ClientMachine] || sTypeMap[sTypeName.ShortName] || cTypeMap[store.ContainerName] {
 					filteredStores = append(filteredStores, store)
@@ -431,7 +433,7 @@ var inventoryRemoveCmd = &cobra.Command{
 		} else {
 			allStoresResp, fErr := kfClient.ListCertificateStores(nil)
 			if fErr != nil {
-				fmt.Printf("Error getting listing certificate stores: %s", fErr)
+				fmt.Printf("Error listing certificate stores: %s\n", fErr)
 				log.Fatal(fErr)
 			}
 			filteredStores = *allStoresResp
@@ -459,7 +461,7 @@ var inventoryRemoveCmd = &cobra.Command{
 				}
 				if !dryRun {
 					if !force {
-						fmt.Printf("This will remove the certificate %s(%d) from certificate store %s%s's inventory. Are you sure you want to continue? (y/n) ", cert.IssuedCN, cert.Id, store.ClientMachine, store.StorePath)
+						fmt.Printf("This will remove the certificate %s from certificate store %s%s's inventory. Are you sure you want to continue? (y/n) ", certToString(&cert), store.ClientMachine, store.StorePath)
 						var answer string
 						fmt.Scanln(&answer)
 						if answer != "y" {
@@ -469,12 +471,12 @@ var inventoryRemoveCmd = &cobra.Command{
 					}
 					_, err := kfClient.RemoveCertificateFromStores(&removeReq)
 					if err != nil {
-						fmt.Printf("Error removing certificate %s(%d) to store %s: %s\n", cert.IssuedCN, cert.Id, st.CertificateStoreId, err)
-						log.Printf("Error: %s", err)
+						fmt.Printf("Error removing certificate %s to store %s: %s\n", certToString(&cert), st.CertificateStoreId, err)
+						log.Printf("[ERROR] %s", err)
 						continue
 					}
 				} else {
-					fmt.Printf("Dry run: Would have removed certificate %s(%d) from store %s", cert.IssuedDN, cert.Id, st.CertificateStoreId)
+					fmt.Printf("Dry run: Would have removed certificate %s from store %s\n", certToString(&cert), st.CertificateStoreId)
 				}
 			}
 
@@ -535,7 +537,8 @@ var inventoryShowCmd = &cobra.Command{
 		}
 		stResp, err := kfClient.ListCertificateStores(&params)
 		if err != nil {
-			fmt.Printf("[ERROR] Unable to list certificate stores: %s", err)
+			fmt.Println("Error, unable to list certificate stores. ", err)
+			log.Printf("[ERROR] Unable to list certificate stores: %s\n", err)
 			return
 		}
 
@@ -544,8 +547,8 @@ var inventoryShowCmd = &cobra.Command{
 		for _, cStore := range *stResp {
 			inv, err := kfClient.GetCertStoreInventory(cStore.Id)
 			if err != nil {
-				fmt.Printf("[ERROR] Unable to retrieve certificate store inventory from %s: %s", cStore, err)
-				log.Printf("Error: %s", err)
+				fmt.Printf("Error, unable to retrieve certificate store inventory from %s: %s\n", cStore, err)
+				log.Printf("[ERROR]  %s", err)
 			}
 			invData := make(map[string]interface{})
 			invData["StoreId"] = cStore.Id
@@ -562,7 +565,8 @@ var inventoryShowCmd = &cobra.Command{
 		// return JSON response
 		json, jsErr := json.Marshal(lkup)
 		if jsErr != nil {
-			fmt.Printf("[ERROR] Unable to marshal JSON: %s", jsErr)
+			fmt.Printf("Error, unable to format JSON: %s\n", jsErr)
+			log.Println("[ERROR] ", jsErr)
 			return
 		}
 		fmt.Println(string(json))
