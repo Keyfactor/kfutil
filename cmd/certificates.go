@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/Keyfactor/keyfactor-go-client/api"
 
 	"github.com/spf13/cobra"
 )
@@ -34,4 +35,15 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// certificatesCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func certToString(response *api.GetCertificateResponse) string {
+	sansString := ""
+	for _, san := range response.SubjectAltNameElements {
+		sansString += fmt.Sprintf("%s,", san.Value)
+	}
+	if len(sansString) > 0 {
+		sansString = sansString[:len(sansString)-1]
+	}
+	return fmt.Sprintf("DN=(%s),SANs=(%s),TP=(%s),ID=(%d)", response.IssuedDN, sansString, response.Thumbprint, response.Id)
 }

@@ -12,15 +12,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"os"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/Keyfactor/keyfactor-go-client/api"
-	"github.com/spf13/cobra"
 )
 
 type templateType string
@@ -51,16 +49,14 @@ type ROTAction struct {
 
 const (
 	tTypeCerts               templateType = "certs"
-	tTypeStores              templateType = "stores"
-	tTypeActions             templateType = "actions"
-	reconcileDefaultFileName              = "rot_audit.csv"
+	reconcileDefaultFileName string       = "rot_audit.csv"
 )
 
 var (
-	AuditHeader = []string{"Thumbprint", "CertID", "SubjectName", "Issuer", "StoreID", "StoreType", "Machine", "Path", "AddCert", "RemoveCert", "Deployed", "AuditDate"}
-	StoreHeader = []string{"StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId", "ContainerName", "LastQueriedDate"}
-	CertHeader  = []string{"Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"}
-	TZ, _       = time.LoadLocation("UTC")
+	AuditHeader           = []string{"Thumbprint", "CertID", "SubjectName", "Issuer", "StoreID", "StoreType", "Machine", "Path", "AddCert", "RemoveCert", "Deployed", "AuditDate"}
+	ReconciledAuditHeader = []string{"Thumbprint", "CertID", "SubjectName", "Issuer", "StoreID", "StoreType", "Machine", "Path", "AddCert", "RemoveCert", "Deployed", "ReconciledDate"}
+	StoreHeader           = []string{"StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId", "ContainerName", "LastQueriedDate"}
+	CertHeader            = []string{"Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"}
 )
 
 // String is used both by fmt.Print and by Cobra in help text
@@ -92,23 +88,31 @@ func templateTypeCompletion(cmd *cobra.Command, args []string, toComplete string
 	}, cobra.ShellCompDirectiveDefault
 }
 
-func generateAuditReport(addCerts map[string]string, removeCerts map[string]string, stores map[string]StoreCSVEntry, kfClient *api.Client) ([][]string, map[string][]ROTAction, error) {
+func generateAuditReport(addCerts map[string]string, removeCerts map[string]string, stores map[string]StoreCSVEntry, outpath string, kfClient *api.Client) ([][]string, map[string][]ROTAction, error) {
 	log.Println("[DEBUG] generateAuditReport called")
 	var (
 		data [][]string
 	)
 
 	data = append(data, AuditHeader)
-	csvFile, fErr := os.Create(reconcileDefaultFileName)
+	var csvFile *os.File
+	var fErr error
+	if outpath == "" {
+		csvFile, fErr = os.Create(reconcileDefaultFileName)
+		outpath = reconcileDefaultFileName
+	} else {
+		csvFile, fErr = os.Create(outpath)
+	}
+
 	if fErr != nil {
 		fmt.Printf("%s", fErr)
-		log.Fatalf("[ERROR] Error creating audit file: %s", fErr)
+		log.Fatalf("[ERROR] creating audit file: %s", fErr)
 	}
 	csvWriter := csv.NewWriter(csvFile)
 	cErr := csvWriter.Write(AuditHeader)
 	if cErr != nil {
 		fmt.Printf("%s", cErr)
-		log.Fatalf("[ERROR] Error writing audit header: %s", cErr)
+		log.Fatalf("[ERROR] writing audit header: %s", cErr)
 	}
 	actions := make(map[string][]ROTAction)
 
@@ -122,8 +126,8 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		}
 		certLookup, err := kfClient.GetCertificateContext(&certLookupReq)
 		if err != nil {
-			fmt.Printf("Error looking up certificate %s: %s\n", cert, err)
-			log.Printf("[ERROR] Error looking up cert: %s\n%v", cert, err)
+			fmt.Printf("[ERROR] looking up certificate %s: %s\n", cert, err)
+			log.Printf("[ERROR] looking up cert: %s\n%v", cert, err)
 			continue
 		}
 		certID := certLookup.Id
@@ -135,8 +139,8 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
-					fmt.Printf("Error writing audit file row: %s\n", wErr)
-					log.Printf("[ERROR] Error writing audit row: %s", wErr)
+					fmt.Printf("[ERROR] writing audit file row: %s\n", wErr)
+					log.Printf("[ERROR] writing audit row: %s", wErr)
 				}
 			} else {
 				// Cert is not deployed to this store and will need to be added
@@ -144,8 +148,8 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
-					fmt.Printf("Error writing audit file row: %s\n", wErr)
-					log.Printf("[ERROR] Error writing audit row: %s", wErr)
+					fmt.Printf("[ERROR] writing audit file row: %s\n", wErr)
+					log.Printf("[ERROR] writing audit row: %s", wErr)
 				}
 				actions[cert] = append(actions[cert], ROTAction{
 					Thumbprint: cert,
@@ -169,7 +173,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		}
 		certLookup, err := kfClient.GetCertificateContext(&certLookupReq)
 		if err != nil {
-			log.Printf("[ERROR] Error looking up cert: %s", err)
+			log.Printf("[ERROR] looking up cert: %s", err)
 			continue
 		}
 		certID := certLookup.Id
@@ -177,12 +181,12 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		for _, store := range stores {
 			if _, ok := store.Thumbprints[cert]; ok {
 				// Cert is deployed to this store and will need to be removed
-				row := []string{cert, certIDStr, store.ID, store.Type, store.Machine, store.Path, "false", "true", "true"}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "true", "true", GetCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
 					fmt.Printf("%s", wErr)
-					log.Printf("[ERROR] Error writing row to CSV: %s", wErr)
+					log.Printf("[ERROR] writing row to CSV: %s", wErr)
 				}
 				actions[cert] = append(actions[cert], ROTAction{
 					Thumbprint: cert,
@@ -195,12 +199,12 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 				})
 			} else {
 				// Cert is not deployed to this store do nothing
-				row := []string{cert, certIDStr, store.ID, store.Type, store.Machine, store.Path, "false", "false", "false"}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "false", GetCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
 					fmt.Printf("%s", wErr)
-					log.Printf("[ERROR] Error writing row to CSV: %s", wErr)
+					log.Printf("[ERROR] writing row to CSV: %s", wErr)
 				}
 			}
 		}
@@ -209,19 +213,31 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 	ioErr := csvFile.Close()
 	if ioErr != nil {
 		fmt.Println(ioErr)
-		log.Printf("[ERROR] Error closing audit file: %s", ioErr)
+		log.Printf("[ERROR] closing audit file: %s", ioErr)
 	}
-	fmt.Printf("Audit report written to %s\n", reconcileDefaultFileName)
+	fmt.Printf("Audit report written to %s\n", outpath)
 	return data, actions, nil
 }
 
-func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, dryRun bool) error {
+func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, reportFile string, dryRun bool) error {
 	log.Printf("[DEBUG] Reconciling roots")
 	if len(actions) == 0 {
 		log.Printf("[INFO] No actions to take, roots are up-to-date.")
 		return nil
 	}
+	rFileName := fmt.Sprintf("%s_reconciled.csv", strings.Split(reportFile, ".csv")[0])
+	csvFile, fErr := os.Create(rFileName)
+	if fErr != nil {
+		fmt.Printf("[ERROR] creating reconciled report file: %s", fErr)
+	}
+	csvWriter := csv.NewWriter(csvFile)
+	cErr := csvWriter.Write(ReconciledAuditHeader)
+	if cErr != nil {
+		fmt.Printf("%s", cErr)
+		log.Fatalf("[ERROR] writing audit header: %s", cErr)
+	}
 	for thumbprint, action := range actions {
+
 		for _, a := range action {
 			if a.AddCert {
 				log.Printf("[INFO] Adding cert %s to store %s(%s)", thumbprint, a.StoreID, a.StorePath)
@@ -242,7 +258,7 @@ func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, dryRun
 					}
 					_, err := kfClient.AddCertificateToStores(&addReq)
 					if err != nil {
-						fmt.Printf("Error adding cert %s (%d) to store %s (%s): %s\n", a.Thumbprint, a.CertID, a.StoreID, a.StorePath, err)
+						fmt.Printf("[ERROR] adding cert %s (%d) to store %s (%s): %s\n", a.Thumbprint, a.CertID, a.StoreID, a.StorePath, err)
 						continue
 					}
 				} else {
@@ -267,8 +283,7 @@ func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, dryRun
 					}
 					_, err := kfClient.RemoveCertificateFromStores(&removeReq)
 					if err != nil {
-						fmt.Printf("Error removing cert %s (ID: %d) from store %s (%s): %s\n", a.Thumbprint, a.CertID, a.StoreID, a.StorePath, err)
-						//log.Fatalf("[ERROR] Error removing cert from store: %s", err)
+						fmt.Printf("[ERROR] removing cert %s (ID: %d) from store %s (%s): %s\n", a.Thumbprint, a.CertID, a.StoreID, a.StorePath, err)
 					}
 				} else {
 					fmt.Printf("DRY RUN: Would have removed cert %s from store %s\n", thumbprint, a.StoreID)
@@ -377,6 +392,7 @@ kfutil stores rot reconcile --import-csv <audit-file>
 			maxLeaves, _ := cmd.Flags().GetInt("max-leaf-certs")
 			maxKeys, _ := cmd.Flags().GetInt("max-keys")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			outpath, _ := cmd.Flags().GetString("outpath")
 			// Read in the stores CSV
 			log.Printf("[DEBUG] storesFile: %s", storesFile)
 			log.Printf("[DEBUG] addRootsFile: %s", addRootsFile)
@@ -399,14 +415,14 @@ kfutil stores rot reconcile --import-csv <audit-file>
 				}
 				apiResp, err := kfClient.GetCertificateStoreByID(entry[0])
 				if err != nil {
-					log.Printf("[ERROR] Error getting cert store: %s", err)
+					log.Printf("[ERROR] getting cert store: %s", err)
 					_ = append(lookupFailures, strings.Join(entry, ","))
 					continue
 				}
 
 				inventory, invErr := kfClient.GetCertStoreInventory(entry[0])
 				if invErr != nil {
-					log.Printf("[ERROR] Error getting cert store inventory for: %s\n%s", entry[0], invErr)
+					log.Printf("[ERROR] getting cert store inventory for: %s\n%s", entry[0], invErr)
 				}
 
 				if !isRootStore(apiResp, inventory, minCerts, maxLeaves, maxKeys) {
@@ -444,10 +460,12 @@ kfutil stores rot reconcile --import-csv <audit-file>
 			// Read in the add addCerts CSV
 			var certsToAdd = make(map[string]string)
 			if addRootsFile != "" {
-				certsToAdd, _ = readCertsFile(addRootsFile, kfClient)
-				//if err != nil {
-				//	log.Fatalf("Error reading addCerts file: %s", err)
-				//}
+				var rcfErr error
+				certsToAdd, rcfErr = readCertsFile(addRootsFile, kfClient)
+				if rcfErr != nil {
+					fmt.Printf("[ERROR] reading certs file %s: %s", addRootsFile, rcfErr)
+					log.Fatalf("[ERROR] reading addCerts file: %s", rcfErr)
+				}
 				addCertsJSON, _ := json.Marshal(certsToAdd)
 				log.Printf("[DEBUG] add certs JSON: %s", string(addCertsJSON))
 				log.Println("[DEBUG] AddCert ROT called")
@@ -459,20 +477,21 @@ kfutil stores rot reconcile --import-csv <audit-file>
 			// Read in the remove removeCerts CSV
 			var certsToRemove = make(map[string]string)
 			if removeRootsFile != "" {
-				certsToRemove, _ = readCertsFile(removeRootsFile, kfClient)
-				//if rErr != nil {
-				//	fmt.Printf("Error reading removeCerts file: %s", rErr)
-				//	log.Fatalf("Error reading removeCerts file: %s", rErr)
-				//}
+				var rcfErr error
+				certsToRemove, rcfErr = readCertsFile(removeRootsFile, kfClient)
+				if rcfErr != nil {
+					fmt.Printf("[ERROR] reading removeCerts file %s: %s", removeRootsFile, rcfErr)
+					log.Fatalf("[ERROR] reading removeCerts file: %s", rcfErr)
+				}
 				removeCertsJSON, _ := json.Marshal(certsToRemove)
 				log.Printf("[DEBUG] remove certs JSON: %s", string(removeCertsJSON))
 			} else {
 				log.Printf("[DEBUG] No removeCerts file specified")
 				log.Printf("[DEBUG] No removeCerts = %s", certsToRemove)
 			}
-			_, _, gErr := generateAuditReport(certsToAdd, certsToRemove, stores, kfClient)
+			_, _, gErr := generateAuditReport(certsToAdd, certsToRemove, stores, outpath, kfClient)
 			if gErr != nil {
-				log.Fatalf("Error generating audit report: %s", gErr)
+				log.Fatalf("[ERROR] generating audit report: %s", gErr)
 			}
 		},
 		RunE:                       nil,
@@ -526,6 +545,7 @@ the utility will first generate an audit report and then execute the add/remove 
 			maxLeaves, _ := cmd.Flags().GetInt("max-leaf-certs")
 			maxKeys, _ := cmd.Flags().GetInt("max-keys")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			outpath, _ := cmd.Flags().GetString("outpath")
 			log.Printf("[DEBUG] storesFile: %s", storesFile)
 			log.Printf("[DEBUG] addRootsFile: %s", addRootsFile)
 			log.Printf("[DEBUG] removeRootsFile: %s", removeRootsFile)
@@ -538,20 +558,24 @@ the utility will first generate an audit report and then execute the add/remove 
 				// Read in the CSV
 				csvFile, err := os.Open(reportFile)
 				if err != nil {
-					fmt.Printf("Error opening file: %s", err)
-					log.Fatalf("Error opening CSV file: %s", err)
+					fmt.Printf("[ERROR] opening file: %s", err)
+					log.Fatalf("[ERROR] opening CSV file: %s", err)
 				}
 				validHeader := false
-				inFile, cErr := csv.NewReader(csvFile).ReadAll()
+
+				aCSV := csv.NewReader(csvFile)
+				aCSV.FieldsPerRecord = -1
+				inFile, cErr := aCSV.ReadAll()
 				if cErr != nil {
-					log.Fatalf("Error reading CSV file: %s", cErr)
+					fmt.Printf("[ERROR] reading CSV file: %s", cErr)
+					log.Fatalf("[ERROR] reading CSV file: %s", cErr)
 				}
 				actions := make(map[string][]ROTAction)
 				fieldMap := make(map[int]string)
 				for i, field := range AuditHeader {
 					fieldMap[i] = field
 				}
-				for _, row := range inFile {
+				for ri, row := range inFile {
 					if strings.EqualFold(strings.Join(row, ","), strings.Join(AuditHeader, ",")) {
 						validHeader = true
 						continue // Skip header
@@ -572,39 +596,93 @@ the utility will first generate an audit report and then execute the add/remove 
 						}
 
 					}
-					addCert, _ := strconv.ParseBool(action["AddCert"].(string))
-					removeCert, _ := strconv.ParseBool(action["RemoveCert"].(string))
+
+					addCertStr, aOk := action["AddCert"].(string)
+					if !aOk {
+						addCertStr = ""
+					}
+					addCert, acErr := strconv.ParseBool(addCertStr)
+					if acErr != nil {
+						addCert = false
+					}
+
+					removeCertStr, rOk := action["RemoveCert"].(string)
+					if !rOk {
+						removeCertStr = ""
+					}
+					removeCert, rcErr := strconv.ParseBool(removeCertStr)
+					if rcErr != nil {
+						removeCert = false
+					}
+
+					sType, sOk := action["StoreType"].(string)
+					if !sOk {
+						sType = ""
+					}
+
+					sPath, pOk := action["Path"].(string)
+					if !pOk {
+						sPath = ""
+					}
+
+					tp, tpOk := action["Thumbprint"].(string)
+					if !tpOk {
+						tp = ""
+					}
+					cid, cidOk := action["CertID"].(int)
+					if !cidOk {
+						cid = -1
+					}
+
+					if !tpOk && !cidOk {
+						fmt.Printf("[ERROR] Missing Thumbprint or CertID for row %d in report file %s", ri, reportFile)
+						log.Printf("[ERROR] Invalid action: %v", action)
+						continue
+					}
+
+					sId, sIdOk := action["StoreID"].(string)
+					if !sIdOk {
+						fmt.Printf("[ERROR] Missing StoreID for row %d in report file %s", ri, reportFile)
+						log.Printf("[ERROR] Invalid action: %v", action)
+						continue
+					}
+					if cid == -1 && tp != "" {
+						certLookupReq := api.GetCertificateContextArgs{
+							IncludeMetadata:  boolToPointer(true),
+							IncludeLocations: boolToPointer(true),
+							CollectionId:     nil,
+							Thumbprint:       tp,
+							Id:               0,
+						}
+						certLookup, err := kfClient.GetCertificateContext(&certLookupReq)
+						if err != nil {
+							fmt.Printf("[ERROR] looking up certificate %s: %s\n", tp, err)
+							log.Printf("[ERROR] looking up cert: %s\n%v", tp, err)
+							continue
+						}
+						cid = certLookup.Id
+					}
 
 					a := ROTAction{
-						StoreID:    action["StoreID"].(string),
-						StoreType:  action["StoreType"].(string),
-						StorePath:  action["Path"].(string),
-						Thumbprint: action["Thumbprint"].(string),
-						CertID:     action["CertID"].(int),
+						StoreID:    sId,
+						StoreType:  sType,
+						StorePath:  sPath,
+						Thumbprint: tp,
+						CertID:     cid,
 						AddCert:    addCert,
 						RemoveCert: removeCert,
 					}
 
 					actions[a.Thumbprint] = append(actions[a.Thumbprint], a)
-
-					//actions[cert] = ROTAction{
-					//	Thumbprint: cert,
-					//	CertID:     certID,
-					//	StoreID:    store.ID,
-					//	StoreType:  store.Type,
-					//	StorePath:  store.Path,
-					//	AddCert:        true,
-					//	RemoveCert:     false,
-					//}
 				}
 				if len(actions) == 0 {
 					fmt.Println("No reconciliation actions to take, root stores are up-to-date. Exiting.")
 					return
 				}
-				rErr := reconcileRoots(actions, kfClient, dryRun)
+				rErr := reconcileRoots(actions, kfClient, reportFile, dryRun)
 				if rErr != nil {
-					fmt.Printf("Error reconciling roots: %s", rErr)
-					log.Fatalf("[ERROR] Error reconciling roots: %s", rErr)
+					fmt.Printf("[ERROR] reconciling roots: %s", rErr)
+					log.Fatalf("[ERROR] reconciling roots: %s", rErr)
 				}
 				defer csvFile.Close()
 				fmt.Println("Reconciliation completed. Check orchestrator jobs for details.")
@@ -620,13 +698,13 @@ the utility will first generate an audit report and then execute the add/remove 
 					}
 					apiResp, err := kfClient.GetCertificateStoreByID(entry[0])
 					if err != nil {
-						log.Printf("[ERROR] Error getting cert store: %s", err)
+						log.Printf("[ERROR] getting cert store: %s", err)
 						lookupFailures = append(lookupFailures, entry[0])
 						continue
 					}
 					inventory, invErr := kfClient.GetCertStoreInventory(entry[0])
 					if invErr != nil {
-						log.Fatalf("[ERROR] Error getting cert store inventory: %s", invErr)
+						log.Fatalf("[ERROR] getting cert store inventory: %s", invErr)
 					}
 
 					if !isRootStore(apiResp, inventory, minCerts, maxLeaves, maxKeys) {
@@ -660,11 +738,11 @@ the utility will first generate an audit report and then execute the add/remove 
 
 				}
 				if len(lookupFailures) > 0 {
-					fmt.Printf("Error the following stores were not found: %s", strings.Join(lookupFailures, ","))
-					log.Fatalf("[ERROR] Error the following stores were not found: %s", strings.Join(lookupFailures, ","))
+					fmt.Printf("[ERROR] the following stores were not found: %s", strings.Join(lookupFailures, ","))
+					log.Fatalf("[ERROR] the following stores were not found: %s", strings.Join(lookupFailures, ","))
 				}
 				if len(stores) == 0 {
-					fmt.Println("Error no root stores found. Exiting.")
+					fmt.Println("[ERROR] no root stores found. Exiting.")
 					log.Fatalf("[ERROR] No root stores found. Exiting.")
 				}
 				// Read in the add addCerts CSV
@@ -684,18 +762,18 @@ the utility will first generate an audit report and then execute the add/remove 
 				} else {
 					log.Printf("[DEBUG] No removeCerts file specified")
 				}
-				_, actions, err := generateAuditReport(certsToAdd, certsToRemove, stores, kfClient)
+				_, actions, err := generateAuditReport(certsToAdd, certsToRemove, stores, outpath, kfClient)
 				if err != nil {
-					log.Fatalf("[ERROR] Error generating audit report: %s", err)
+					log.Fatalf("[ERROR] generating audit report: %s", err)
 				}
 				if len(actions) == 0 {
 					fmt.Println("No reconciliation actions to take, root stores are up-to-date. Exiting.")
 					return
 				}
-				rErr := reconcileRoots(actions, kfClient, dryRun)
+				rErr := reconcileRoots(actions, kfClient, reportFile, dryRun)
 				if rErr != nil {
-					fmt.Printf("Error reconciling roots: %s", rErr)
-					log.Fatalf("[ERROR] Error reconciling roots: %s", rErr)
+					fmt.Printf("[ERROR] reconciling roots: %s", rErr)
+					log.Fatalf("[ERROR] reconciling roots: %s", rErr)
 				}
 				if lookupFailures != nil {
 					fmt.Printf("The following stores could not be found: %s", strings.Join(lookupFailures, ","))
@@ -744,7 +822,7 @@ the utility will first generate an audit report and then execute the add/remove 
 
 			templateType, _ := cmd.Flags().GetString("type")
 			format, _ := cmd.Flags().GetString("format")
-			outPath, _ := cmd.Flags().GetString("outPath")
+			outPath, _ := cmd.Flags().GetString("outpath")
 			storeType, _ := cmd.Flags().GetStringSlice("store-type")
 			containerType, _ := cmd.Flags().GetStringSlice("container-type")
 			collection, _ := cmd.Flags().GetStringSlice("collection")
@@ -758,23 +836,57 @@ the utility will first generate an audit report and then execute the add/remove 
 				for _, s := range storeType {
 					kfClient, err := initClient()
 					if err != nil {
-						log.Fatalf("[ERROR] Error creating client: %s", err)
+						log.Fatalf("[ERROR] creating client: %s", err)
 					}
-					sType, stErr := kfClient.GetCertificateStoreTypeByName(s)
+					var sType *api.CertificateStoreType
+					var stErr error
+					if s == "all" {
+						sType = &api.CertificateStoreType{
+							Name:                "",
+							ShortName:           "",
+							Capability:          "",
+							StoreType:           0,
+							ImportType:          0,
+							LocalStore:          false,
+							SupportedOperations: nil,
+							Properties:          nil,
+							EntryParameters:     nil,
+							PasswordOptions:     nil,
+							StorePathType:       "",
+							StorePathValue:      "",
+							PrivateKeyAllowed:   "",
+							JobProperties:       nil,
+							ServerRequired:      false,
+							PowerShell:          false,
+							BlueprintAllowed:    false,
+							CustomAliasAllowed:  "",
+							ServerRegistration:  0,
+							InventoryEndpoint:   "",
+							InventoryJobType:    "",
+							ManagementJobType:   "",
+							DiscoveryJobType:    "",
+							EnrollmentJobType:   "",
+						}
+					} else {
+						sType, stErr = kfClient.GetCertificateStoreTypeByName(s)
+						stID = sType.StoreType // This is the template type ID
+					}
+
 					if stErr != nil {
-						fmt.Printf("Error getting store type: %s\n", stErr)
+						fmt.Printf("[ERROR] getting store type: %s\n", stErr)
 						continue
 					}
-					stID = sType.StoreType // This is the template type ID
-					if stID >= 0 {
+
+					if stID >= 0 || s == "all" {
 						log.Printf("[DEBUG] Store type ID: %d\n", stID)
-						stores, sErr := kfClient.ListCertificateStores()
+						params := map[string]interface{}{}
+						stores, sErr := kfClient.ListCertificateStores(&params)
 						if sErr != nil {
-							fmt.Printf("Error getting certificate stores of type '%s': %s\n", s, sErr)
-							log.Fatalf("[ERROR] Error getting certificate stores of type '%s': %s", s, sErr)
+							fmt.Printf("[ERROR] getting certificate stores of type '%s': %s\n", s, sErr)
+							log.Fatalf("[ERROR] getting certificate stores of type '%s': %s", s, sErr)
 						}
 						for _, store := range *stores {
-							if store.CertStoreType == stID {
+							if store.CertStoreType == stID || s == "all" {
 								storeData = append(storeData, store)
 								if !rowLookup[store.Id] {
 									lineData := []string{
@@ -794,17 +906,17 @@ the utility will first generate an audit report and then execute the add/remove 
 				for _, c := range containerType {
 					kfClient, err := initClient()
 					if err != nil {
-						log.Fatalf("[ERROR] Error creating client: %s", err)
+						log.Fatalf("[ERROR] creating client: %s", err)
 					}
 					cStoresResp, scErr := kfClient.GetCertificateStoreByContainerID(c)
 					if scErr != nil {
-						fmt.Printf("Error getting store container: %s\n", scErr)
+						fmt.Printf("[ERROR] getting store container: %s\n", scErr)
 					}
 					if cStoresResp != nil {
 						for _, store := range *cStoresResp {
 							sType, stErr := kfClient.GetCertificateStoreType(store.CertStoreType)
 							if stErr != nil {
-								fmt.Printf("Error getting store type: %s\n", stErr)
+								fmt.Printf("[ERROR] getting store type: %s\n", stErr)
 								continue
 							}
 							storeData = append(storeData, store)
@@ -825,8 +937,8 @@ the utility will first generate an audit report and then execute the add/remove 
 				for _, c := range collection {
 					kfClient, err := initClient()
 					if err != nil {
-						fmt.Println("Error connecting to Keyfactor. Please check your configuration and try again.")
-						log.Fatalf("[ERROR] Error creating client: %s", err)
+						fmt.Println("[ERROR] connecting to Keyfactor. Please check your configuration and try again.")
+						log.Fatalf("[ERROR] creating client: %s", err)
 					}
 					q := make(map[string]string)
 					q["collection"] = c
@@ -853,8 +965,8 @@ the utility will first generate an audit report and then execute the add/remove 
 				for _, s := range subjectName {
 					kfClient, err := initClient()
 					if err != nil {
-						fmt.Println("Error connecting to Keyfactor. Please check your configuration and try again.")
-						log.Fatalf("[ERROR] Error creating client: %s", err)
+						fmt.Println("[ERROR] connecting to Keyfactor. Please check your configuration and try again.")
+						log.Fatalf("[ERROR] creating client: %s", err)
 					}
 					q := make(map[string]string)
 					q["subject"] = s
@@ -891,7 +1003,7 @@ the utility will first generate an audit report and then execute the add/remove 
 			}
 			file, err := os.Create(filePath)
 			if err != nil {
-				fmt.Printf("Error creating file: %s", err)
+				fmt.Printf("[ERROR] creating file: %s", err)
 				log.Fatal("Cannot create file", err)
 			}
 
@@ -1004,6 +1116,8 @@ func init() {
 	rotReconcileCmd.Flags().BoolP("import-csv", "v", false, "Import an audit report file in CSV format.")
 	rotReconcileCmd.Flags().StringVarP(&inputFile, "input-file", "i", reconcileDefaultFileName,
 		"Path to a file generated by 'stores rot audit' command.")
+	rotReconcileCmd.Flags().StringVarP(&outPath, "outpath", "o", "",
+		"Path to write the audit report file to. If not specified, the file will be written to the current directory.")
 	//rotReconcileCmd.MarkFlagsRequiredTogether("add-certs", "stores")
 	//rotReconcileCmd.MarkFlagsRequiredTogether("remove-certs", "stores")
 	rotReconcileCmd.MarkFlagsMutuallyExclusive("add-certs", "import-csv")

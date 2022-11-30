@@ -1,19 +1,19 @@
-## kfutil status
+## kfutil version
 
-List the status of Keyfactor services.
+Shows version of kfutil
 
 ### Synopsis
 
-Returns a list of all API endpoints.
+Shows version of kfutil
 
 ```
-kfutil status [flags]
+kfutil version [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for status
+  -h, --help   help for version
 ```
 
 ### SEE ALSO
