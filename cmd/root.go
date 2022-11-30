@@ -10,12 +10,14 @@ import (
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"github.com/spf13/cobra"
+	"io"
 	"log"
 	"os"
 	"time"
 )
 
 func initClient() (*api.Client, error) {
+	log.SetOutput(io.Discard)
 	var clientAuth api.AuthConfig
 	clientAuth.Username = os.Getenv("KEYFACTOR_USERNAME")
 	log.Printf("[DEBUG] Username: %s", clientAuth.Username)
@@ -26,6 +28,17 @@ func initClient() (*api.Client, error) {
 	clientAuth.Hostname = os.Getenv("KEYFACTOR_HOSTNAME")
 	log.Printf("[DEBUG] Hostname: %s", clientAuth.Hostname)
 
+	if clientAuth.Username == "" || clientAuth.Password == "" || clientAuth.Hostname == "" {
+		authConfigFile("", true)
+		clientAuth.Username = os.Getenv("KEYFACTOR_USERNAME")
+		log.Printf("[DEBUG] Username: %s", clientAuth.Username)
+		clientAuth.Password = os.Getenv("KEYFACTOR_PASSWORD")
+		log.Printf("[DEBUG] Password: %s", clientAuth.Password)
+		clientAuth.Domain = os.Getenv("KEYFACTOR_DOMAIN")
+		log.Printf("[DEBUG] Domain: %s", clientAuth.Domain)
+		clientAuth.Hostname = os.Getenv("KEYFACTOR_HOSTNAME")
+		log.Printf("[DEBUG] Hostname: %s", clientAuth.Hostname)
+	}
 	c, err := api.NewKeyfactorClient(&clientAuth)
 
 	if err != nil {
