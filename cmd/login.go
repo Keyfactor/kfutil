@@ -9,14 +9,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
-	"syscall"
-
-	"github.com/spf13/cobra"
 )
 
 const DEFAULT_CONFIG_FILE_NAME = "command_config.json"
@@ -176,7 +174,7 @@ func init() {
 
 func getPassword(prompt string) string {
 	// Get the initial state of the terminal.
-	initialTermState, e1 := terminal.GetState(syscall.Stdin)
+	initialTermState, e1 := terminal.GetState(int(os.Stdin.Fd()))
 	if e1 != nil {
 		panic(e1)
 	}
@@ -185,13 +183,13 @@ func getPassword(prompt string) string {
 	signal.Notify(c, os.Interrupt, os.Kill)
 	go func() {
 		<-c
-		_ = terminal.Restore(syscall.Stdin, initialTermState)
+		_ = terminal.Restore(int(os.Stdin.Fd()), initialTermState)
 		os.Exit(1)
 	}()
 
 	// Now get the password.
 	fmt.Print(prompt)
-	p, err := terminal.ReadPassword(syscall.Stdin)
+	p, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 	fmt.Println("")
 	if err != nil {
 		panic(err)
