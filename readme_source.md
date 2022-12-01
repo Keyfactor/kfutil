@@ -10,11 +10,42 @@ kfutil --help
 All the variables listed below need to be set in your environment. The `kfutil` command will look for these variables
 and use them if they are set. If they are not set, the utility will fail to connect to Keyfactor.
 
+Linux/MacOS:
 ```bash
 export KEYFACTOR_HOSTNAME=<mykeyfactorhost.mydomain.com>
 export KEYFACTOR_USERNAME=<myusername> # Do not include domain
 export KEYFACTOR_PASSWORD=<mypassword>
 export KEYFACTOR_DOMAIN=<mykeyfactordomain>
+```
+
+Windows Powershell
+```powershell
+$env:KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
+$env:KEYFACTOR_USERNAME="<myusername>" # Do not include domain
+$env:KEYFACTOR_PASSWORD="<mypassword>"
+$env:KEYFACTOR_DOMAIN="<mykeyfactordomain>"
+```
+
+## Commands
+
+### Login
+For full documentation on the `login` command, see the [login](docs/kfutil_login.md) documentation.
+
+*WARNING* - The `login` command will store your Keyfactor credentials in a file on your local machine. This file is not
+encrypted and is not secure. It is recommended that you use the `login` command only on your local machine and not on a
+shared machine. Instead of using the `login` command, you can set the environmental variables listed above.
+
+```bash
+kfutil login
+```
+
+### Logout
+For full documentation on the `logout` command, see the [logout](docs/kfutil_logout.md) documentation.
+
+*WARNING* - This will delete the file containing your Keyfactor credentials at `$HOME/.keyfactor/command_config.json`.
+
+```bash
+kfutil logout
 ```
 
 ## Commands
