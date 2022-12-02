@@ -24,13 +24,16 @@ const DefaultConfigFileName = "command_config.json"
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "User interactive login to Keyfactor.",
+	Short: "User interactive login to Keyfactor. Stores the credentials in the config file '$HOME/.keyfactor/command_config.json'.",
 	Long: `Will prompt the user for a username and password and then attempt to login to Keyfactor.
 You can provide the --config flag to specify a config file to use. If not provided, the default
 config file will be used. The default config file is located at $HOME/.keyfactor/command_config.json.
 To prevent the prompt for username and password, use the --no-prompt flag. If this flag is provided then
 the CLI will default to using the environment variables: KEYFACTOR_HOSTNAME, KEYFACTOR_USERNAME, 
 KEYFACTOR_PASSWORD and KEYFACTOR_DOMAIN.
+
+WARNING: The username and password will be stored in the config file in plain text at: 
+'$HOME/.keyfactor/command_config.json.'
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.SetOutput(io.Discard)
@@ -100,8 +103,11 @@ func authConfigFile(configFile string, noPrompt bool) bool {
 		fmt.Printf("Enter Keyfactor Command host URL [%s]: \n", envHostName)
 		_, phErr := fmt.Scanln(&host)
 		if phErr != nil {
-			fmt.Println("Error getting hostname: ", phErr)
-			log.Fatal("[ERROR] getting hostname: ", phErr)
+			if phErr.Error() != "unexpected newline" {
+				fmt.Println("Error getting hostname: ", phErr)
+				log.Println("[ERROR] getting hostname: ", phErr)
+			}
+
 		}
 		if len(host) == 0 {
 			host = envHostName
@@ -128,8 +134,10 @@ func authConfigFile(configFile string, noPrompt bool) bool {
 		fmt.Printf("Enter your Keyfactor Command username [%s]: \n", envUserName)
 		_, puErr := fmt.Scanln(&username)
 		if puErr != nil {
-			fmt.Println("Error getting username: ", puErr)
-			log.Fatal("[ERROR] getting username: ", puErr)
+			if puErr.Error() != "unexpected newline" {
+				fmt.Println("Error getting username: ", puErr)
+				log.Println("[ERROR] getting username: ", puErr)
+			}
 		}
 	}
 	if len(username) == 0 {
@@ -189,8 +197,11 @@ func authConfigFile(configFile string, noPrompt bool) bool {
 		fmt.Printf("Enter your Keyfactor Command AD domain [%s]: \n", envDomain)
 		_, sdErr := fmt.Scanln(&domain)
 		if sdErr != nil {
-			fmt.Println("Error getting domain: ", sdErr)
-			log.Fatal("[ERROR] getting domain: ", sdErr)
+			if sdErr.Error() != "unexpected newline" {
+				fmt.Println("Error getting domain: ", sdErr)
+				log.Println("[ERROR] getting domain: ", sdErr)
+			}
+
 		}
 		if len(domain) == 0 {
 			domain = envDomain
