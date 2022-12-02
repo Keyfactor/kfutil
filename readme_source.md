@@ -12,10 +12,10 @@ and use them if they are set. If they are not set, the utility will fail to conn
 
 Linux/MacOS:
 ```bash
-export KEYFACTOR_HOSTNAME=<mykeyfactorhost.mydomain.com>
-export KEYFACTOR_USERNAME=<myusername> # Do not include domain
-export KEYFACTOR_PASSWORD=<mypassword>
-export KEYFACTOR_DOMAIN=<mykeyfactordomain>
+export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
+export KEYFACTOR_USERNAME="<myusername>" # Do not include domain
+export KEYFACTOR_PASSWORD="<mypassword>"
+export KEYFACTOR_DOMAIN="<mykeyfactordomain>"
 ```
 
 Windows Powershell
