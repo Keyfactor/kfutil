@@ -1016,7 +1016,7 @@
   },
   "RFJKS" : {
     "Name": "RFJKS",
-    "ShortName": "RFJKS",
+    "ShortName": "RFjks",
     "Capability": "RFJKS",
     "ServerRequired": true,
     "BlueprintAllowed": false,
@@ -1081,7 +1081,7 @@
     "EntryParameters": []
   },
   "RFPEM" : {
-    "Name": "RFPEM",
+    "Name": "RFpem",
     "ShortName": "RFPEM",
     "Capability": "RFPEM",
     "ServerRequired": true,
