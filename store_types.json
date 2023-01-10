@@ -1047,6 +1047,39 @@
     ],
     "EntryParameters": []
   },
+  "RFKDB" : {
+    "Name": "RFKDB",
+    "ShortName": "RFKDB",
+    "Capability": "RFKDB",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
+  },
   "RFPEM" : {
     "Name": "RFPEM",
     "ShortName": "RFPEM",
