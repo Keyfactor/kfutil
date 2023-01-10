@@ -1138,7 +1138,7 @@
     "EntryParameters": []
   },
   "RFPKCS12" : {
-    "Name": "RFPKCS12",
+    "Name": "RFPkcs12",
     "ShortName": "RFPkcs12",
     "Capability": "RFPkcs12",
     "ServerRequired": true,
