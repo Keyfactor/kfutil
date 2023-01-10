@@ -287,7 +287,7 @@ var generateStoreTypeTemplate = &cobra.Command{
 func getStoreTypesInternet() (map[string]interface{}, error) {
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfutil/main/store_types.json")
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfctl/master/storetypes/storetypes.json")
-	resp, rErr := http.Get("https://gitlab.com/-/snippets/2459723/raw/main/kfc-store-types.json")
+	resp, rErr := http.Get("https://raw.githubusercontent.com/Keyfactor/kfutil/main/store_types.json")
 	if rErr != nil {
 		return nil, rErr
 	}
