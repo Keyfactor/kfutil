@@ -6,7 +6,10 @@ NAMESPACE=keyfactor
 WEBSITE_REPO=https://github.com/Keyfactor/kfutil
 NAME=kfutil
 BINARY=${NAME}
-VERSION=v0.0.4
+VERSION := $(GITHUB_REF_NAME)
+ifeq ($(VERSION),)
+	VERSION := $(shell git tag -l | tail -n 1)
+endif
 OS_ARCH := $(shell go env GOOS)_$(shell go env GOARCH)
 BASEDIR := ${HOME}/go/bin
 INSTALLDIR := ${BASEDIR}
@@ -30,7 +33,7 @@ release:
 	GOOS=windows GOARCH=386 go build -o ./bin/${BINARY}_${VERSION}_windows_386
 	GOOS=windows GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_windows_amd64
 
-install:
+install: fmt setversion
 	go build -o ${BINARY}
 	rm -rf ${INSTALLDIR}/${BINARY}
 	mkdir -p ${INSTALLDIR}
@@ -40,6 +43,12 @@ install:
 
 vendor:
 	go mod vendor
+
+version:
+	@echo ${VERSION}
+
+setversion:
+	sed -i '' -e 's/VERSION = ".*"/VERSION = "$(VERSION)"/' pkg/version/version.go
 
 test:
 	go test -i $(TEST) || exit 1
@@ -54,4 +63,4 @@ prerelease:
 	git tag $(VERSION)
 	git push origin $(VERSION)
 
-.PHONY: build prerelease release install test fmt vendor
+.PHONY: build prerelease release install test fmt vendor version setversion
