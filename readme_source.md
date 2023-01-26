@@ -1,8 +1,12 @@
 ## Quickstart
 
+Prerequisites:
+- [Github CLI](https://cli.github.com/)
+- `$HOME/.local/bin` in your `$PATH` and exists.
+
 ```bash
-make install
-kfutil --help
+gh auth login
+bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/gh-dl-release.sh)
 ````
 
 ### Environmental Variables

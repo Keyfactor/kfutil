@@ -57,7 +57,7 @@ test:
 fmt:
 	gofmt -w $(GOFMT_FILES)
 
-prerelease:
+prerelease: fmt setversion
 	git tag -d $(VERSION) || true
 	git push origin :$(VERSION) || true
 	git tag $(VERSION)
