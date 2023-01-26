@@ -1,11 +1,12 @@
 ## Quickstart
 
-Prerequisites:
+### Prerequisites:
 - [Github CLI](https://cli.github.com/)
+- [zip](https://linuxize.com/post/how-to-unzip-files-in-linux/#installing-unzip) CLI tool, used to unzip the release files. 
 - `$HOME/.local/bin` in your `$PATH` and exists.
 
+### Installation:
 ```bash
-gh auth login
 bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/gh-dl-release.sh)
 ````
 
