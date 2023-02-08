@@ -80,7 +80,7 @@ var inventoryClearCmd = &cobra.Command{
 
 		sTypeLookup := make(map[string]bool)
 		if !allStores {
-			allStoresResponse, _ := kfClient.ListCertificateStores(nil)
+			allStoresResponse, _ := kfClient.ListCertificateStores() //nil
 			for _, store := range *allStoresResponse {
 				sTypeName, stErr := kfClient.GetCertificateStoreTypeById(store.CertStoreType)
 				sTypeLookup[sTypeName.ShortName] = true
@@ -93,7 +93,7 @@ var inventoryClearCmd = &cobra.Command{
 				}
 			}
 		} else {
-			allStoresResp, fErr := kfClient.ListCertificateStores(nil)
+			allStoresResp, fErr := kfClient.ListCertificateStores()
 			if fErr != nil {
 				fmt.Printf("Error listing certificate stores: %s\n", fErr)
 				log.Fatal(fErr)
@@ -265,7 +265,7 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 
 		sTypeLookup := make(map[string]bool)
 		if !allStores {
-			allStoresResponse, _ := kfClient.ListCertificateStores(nil)
+			allStoresResponse, _ := kfClient.ListCertificateStores()
 			for _, store := range *allStoresResponse {
 				sTypeName, stErr := kfClient.GetCertificateStoreTypeById(store.CertStoreType)
 				sTypeLookup[sTypeName.ShortName] = true
@@ -277,7 +277,7 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 				}
 			}
 		} else {
-			allStoresResp, fErr := kfClient.ListCertificateStores(nil)
+			allStoresResp, fErr := kfClient.ListCertificateStores()
 			if fErr != nil {
 				fmt.Printf("Error getting listing certificate stores: %s", fErr)
 				log.Fatal(fErr)
@@ -418,7 +418,7 @@ var inventoryRemoveCmd = &cobra.Command{
 
 		sTypeLookup := make(map[string]bool)
 		if !allStores {
-			allStoresResponse, _ := kfClient.ListCertificateStores(nil)
+			allStoresResponse, _ := kfClient.ListCertificateStores()
 			for _, store := range *allStoresResponse {
 				sTypeName, stErr := kfClient.GetCertificateStoreTypeById(store.CertStoreType)
 				sTypeLookup[sTypeName.ShortName] = true
@@ -431,7 +431,7 @@ var inventoryRemoveCmd = &cobra.Command{
 				}
 			}
 		} else {
-			allStoresResp, fErr := kfClient.ListCertificateStores(nil)
+			allStoresResp, fErr := kfClient.ListCertificateStores()
 			if fErr != nil {
 				fmt.Printf("Error listing certificate stores: %s\n", fErr)
 				log.Fatal(fErr)
@@ -540,7 +540,7 @@ var inventoryShowCmd = &cobra.Command{
 		for _, s := range storeIDs {
 			params["Id"] = append(params["Id"].([]string), s)
 		}
-		stResp, err := kfClient.ListCertificateStores(&params)
+		stResp, err := kfClient.ListCertificateStores()
 		if err != nil {
 			fmt.Println("Error, unable to list certificate stores. ", err)
 			log.Printf("[ERROR] Unable to list certificate stores: %s\n", err)
