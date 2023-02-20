@@ -8,6 +8,7 @@ package cmd
 
 import (
 	"fmt"
+	keyfactor_command_client_api "github.com/Keyfactor/keyfactor-go-client-sdk"
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"github.com/spf13/cobra"
 	"io"
@@ -15,6 +16,9 @@ import (
 	"os"
 	"time"
 )
+
+var xKeyfactorRequestedWith = "APIClient"
+var xKeyfactorApiVersion = "1"
 
 func initClient() (*api.Client, error) {
 	log.SetOutput(io.Discard)
@@ -45,7 +49,14 @@ func initClient() (*api.Client, error) {
 		fmt.Printf("Error connecting to Keyfactor: %s\n", err)
 		log.Fatalf("[ERROR] creating Keyfactor client: %s", err)
 	}
-	return c, err
+
+	return c, nil
+}
+
+func initGenClient() *keyfactor_command_client_api.APIClient {
+	configuration := keyfactor_command_client_api.NewConfiguration()
+	c := keyfactor_command_client_api.NewAPIClient(configuration)
+	return c
 }
 
 // RootCmd represents the base command when called without any subcommands
