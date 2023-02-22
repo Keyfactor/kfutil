@@ -49,7 +49,7 @@ var (
 	}
 )
 
-var importCmd = &cobra.Command{
+var importStoresCmd = &cobra.Command{
 	Use:   "import",
 	Short: "Import a file with certificate store parameters and create them in keyfactor.",
 	Long:  `Tools for generating import templates and importing certificate stores`,
@@ -409,9 +409,9 @@ var (
 )
 
 func init() {
-	storesCmd.AddCommand(importCmd)
-	importCmd.AddCommand(storesCreateTemplateCmd)
-	importCmd.AddCommand(storesCreateCmd)
+	storesCmd.AddCommand(importStoresCmd)
+	importStoresCmd.AddCommand(storesCreateTemplateCmd)
+	importStoresCmd.AddCommand(storesCreateCmd)
 
 	storesCreateTemplateCmd.Flags().StringVarP(&storeTypeName, "store-type-name", "n", "", "The name of the cert store type for the template.  Use if store-type-id is unknown.")
 	storesCreateTemplateCmd.Flags().IntVarP(&storeTypeId, "store-type-id", "i", -1, "The ID of the cert store type for the template.")

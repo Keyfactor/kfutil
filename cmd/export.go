@@ -40,12 +40,6 @@ func exportToJSON(out outJson, exportPath string) {
 	}
 }
 
-var migrateCmd = &cobra.Command{
-	Use:   "migrate",
-	Short: "Keyfactor instance migrate utilities.",
-	Long:  `A collection of APIs and utilities for migrating Keyfactor instance data.`,
-}
-
 // exportCmd represents the export command
 var exportCmd = &cobra.Command{
 	Use:   "export",
@@ -221,8 +215,7 @@ func init() {
 	var fReports bool
 	var fSecurityRoles bool
 
-	RootCmd.AddCommand(migrateCmd)
-	migrateCmd.AddCommand(exportCmd)
+	RootCmd.AddCommand(exportCmd)
 
 	exportCmd.Flags().StringVarP(&exportPath, "file", "f", "", "export JSON to a specified filepath")
 	exportCmd.MarkFlagRequired("file")
