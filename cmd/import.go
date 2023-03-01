@@ -12,7 +12,6 @@ import (
 	"os"
 )
 
-// TODO import flags --all (export too)
 var importCmd = &cobra.Command{
 	Use:   "import",
 	Short: "Keyfactor instance import utilities.",
@@ -33,36 +32,49 @@ var importCmd = &cobra.Command{
 			log.Fatalf("Error: %s", jErr)
 		}
 		kfClient := initGenClient()
-		if len(out.Collections) != 0 {
+		oldKfClient, _ := initClient()
+		if cmd.Flag("all").Value.String() == "true" {
 			importCollections(out.Collections, kfClient)
-		}
-		if len(out.MetadataFields) != 0 {
 			importMetadataFields(out.MetadataFields, kfClient)
-		}
-		if len(out.IssuedCertAlerts) != 0 {
 			importIssuedCertAlerts(out.IssuedCertAlerts, kfClient)
-		}
-		if len(out.DeniedCertAlerts) != 0 {
 			importDeniedCertAlerts(out.DeniedCertAlerts, kfClient)
-		}
-		if len(out.PendingCertAlerts) != 0 {
 			importPendingCertAlerts(out.PendingCertAlerts, kfClient)
-		}
-		if len(out.Networks) != 0 {
 			importNetworks(out.Networks, kfClient)
-		}
-		if len(out.WorkflowDefinitions) != 0 {
 			importWorkflowDefinitions(out.WorkflowDefinitions, kfClient)
-		}
-		if len(out.BuiltInReports) != 0 {
 			importBuiltInReports(out.BuiltInReports, kfClient)
-		}
-		if len(out.CustomReports) != 0 {
 			importCustomReports(out.CustomReports, kfClient)
-		}
-		if len(out.SecurityRoles) != 0 {
-			kfClient, _ := initClient()
-			importSecurityRoles(out.SecurityRoles, kfClient)
+			importSecurityRoles(out.SecurityRoles, oldKfClient)
+		} else {
+			if len(out.Collections) != 0 && cmd.Flag("collections").Value.String() == "true" {
+				importCollections(out.Collections, kfClient)
+			}
+			if len(out.MetadataFields) != 0 && cmd.Flag("metadata").Value.String() == "true" {
+				importMetadataFields(out.MetadataFields, kfClient)
+			}
+			if len(out.IssuedCertAlerts) != 0 && cmd.Flag("issued-alerts").Value.String() == "true" {
+				importIssuedCertAlerts(out.IssuedCertAlerts, kfClient)
+			}
+			if len(out.DeniedCertAlerts) != 0 && cmd.Flag("denied-alerts").Value.String() == "true" {
+				importDeniedCertAlerts(out.DeniedCertAlerts, kfClient)
+			}
+			if len(out.PendingCertAlerts) != 0 && cmd.Flag("pending-alerts").Value.String() == "true" {
+				importPendingCertAlerts(out.PendingCertAlerts, kfClient)
+			}
+			if len(out.Networks) != 0 && cmd.Flag("networks").Value.String() == "true" {
+				importNetworks(out.Networks, kfClient)
+			}
+			if len(out.WorkflowDefinitions) != 0 && cmd.Flag("workflow-definitions").Value.String() == "true" {
+				importWorkflowDefinitions(out.WorkflowDefinitions, kfClient)
+			}
+			if len(out.BuiltInReports) != 0 && cmd.Flag("reports").Value.String() == "true" {
+				importBuiltInReports(out.BuiltInReports, kfClient)
+			}
+			if len(out.CustomReports) != 0 && cmd.Flag("reports").Value.String() == "true" {
+				importCustomReports(out.CustomReports, kfClient)
+			}
+			if len(out.SecurityRoles) != 0 && cmd.Flag("security-roles").Value.String() == "true" {
+				importSecurityRoles(out.SecurityRoles, oldKfClient)
+			}
 		}
 	},
 }
@@ -254,10 +266,32 @@ func importSecurityRoles(roles []api.CreateSecurityRoleArg, kfClient *api.Client
 }
 
 func init() {
-	var exportPath string
-
 	RootCmd.AddCommand(importCmd)
 
-	importCmd.Flags().StringVarP(&exportPath, "file", "f", "", "export JSON to a specified filepath")
+	importCmd.Flags().StringVarP(&exportPath, "file", "f", "", "import JSON to a specified filepath")
 	importCmd.MarkFlagRequired("file")
+
+	importCmd.Flags().BoolVarP(&fAll, "all", "a", false, "import all importable data to JSON file")
+	importCmd.Flags().Lookup("all").NoOptDefVal = "true"
+
+	importCmd.Flags().BoolVarP(&fCollections, "collections", "c", false, "import collections to JSON file")
+	importCmd.Flags().Lookup("collections").NoOptDefVal = "true"
+	importCmd.Flags().BoolVarP(&fMetadata, "metadata", "m", false, "import metadata to JSON file")
+	importCmd.Flags().Lookup("metadata").NoOptDefVal = "true"
+	importCmd.Flags().BoolVarP(&fExpirationAlerts, "expiration-alerts", "e", false, "import expiration cert alerts to JSON file")
+	importCmd.Flags().Lookup("expiration-alerts").NoOptDefVal = "true"
+	importCmd.Flags().BoolVarP(&fIssuedAlerts, "issued-alerts", "i", false, "import issued cert alerts to JSON file")
+	importCmd.Flags().Lookup("issued-alerts").NoOptDefVal = "true"
+	importCmd.Flags().BoolVarP(&fDeniedAlerts, "denied-alerts", "d", false, "import denied cert alerts to JSON file")
+	importCmd.Flags().Lookup("denied-alerts").NoOptDefVal = "true"
+	importCmd.Flags().BoolVarP(&fPendingAlerts, "pending-alerts", "p", false, "import pending cert alerts to JSON file")
+	importCmd.Flags().Lookup("pending-alerts").NoOptDefVal = "true"
+	importCmd.Flags().BoolVarP(&fNetworks, "networks", "n", false, "import SSL networks to JSON file")
+	importCmd.Flags().Lookup("networks").NoOptDefVal = "true"
+	importCmd.Flags().BoolVarP(&fWorkflowDefinitions, "workflow-definitions", "w", false, "import workflow definitions to JSON file")
+	importCmd.Flags().Lookup("workflow-definitions").NoOptDefVal = "true"
+	importCmd.Flags().BoolVarP(&fReports, "reports", "r", false, "import reports to JSON file")
+	importCmd.Flags().Lookup("reports").NoOptDefVal = "true"
+	importCmd.Flags().BoolVarP(&fSecurityRoles, "security-roles", "s", false, "import security roles to JSON file")
+	importCmd.Flags().Lookup("security-roles").NoOptDefVal = "true"
 }

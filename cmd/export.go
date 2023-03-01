@@ -12,6 +12,19 @@ import (
 	"strconv"
 )
 
+var exportPath string
+var fCollections bool
+var fMetadata bool
+var fExpirationAlerts bool
+var fIssuedAlerts bool
+var fDeniedAlerts bool
+var fPendingAlerts bool
+var fNetworks bool
+var fWorkflowDefinitions bool
+var fReports bool
+var fSecurityRoles bool
+var fAll bool
+
 type exportModelsReport struct {
 	Id                      *int32                                                `json:"-"`
 	Scheduled               *int32                                                `json:"Scheduled,omitempty"`
@@ -93,35 +106,48 @@ var exportCmd = &cobra.Command{
 			SecurityRoles:       []api.CreateSecurityRoleArg{},
 		}
 		exportPath := cmd.Flag("file").Value.String()
-		if cmd.Flag("collections").Value.String() == "true" {
+		if cmd.Flag("all").Value.String() == "true" {
 			out.Collections = getCollections()
-		}
-		if cmd.Flag("metadata").Value.String() == "true" {
 			out.MetadataFields = getMetadata()
-		}
-		if cmd.Flag("expiration-alerts").Value.String() == "true" {
 			out.ExpirationAlerts = getExpirationAlerts()
-		}
-		if cmd.Flag("issued-alerts").Value.String() == "true" {
 			out.IssuedCertAlerts = getIssuedAlerts()
-		}
-		if cmd.Flag("denied-alerts").Value.String() == "true" {
 			out.DeniedCertAlerts = getDeniedAlerts()
-		}
-		if cmd.Flag("pending-alerts").Value.String() == "true" {
 			out.PendingCertAlerts = getPendingAlerts()
-		}
-		if cmd.Flag("networks").Value.String() == "true" {
 			out.Networks = getSslNetworks()
-		}
-		if cmd.Flag("workflow-definitions").Value.String() == "true" {
 			out.WorkflowDefinitions = getWorkflowDefinitions()
-		}
-		if cmd.Flag("reports").Value.String() == "true" {
 			out.BuiltInReports, out.CustomReports = getReports()
-		}
-		if cmd.Flag("security-roles").Value.String() == "true" {
 			out.SecurityRoles = getRoles()
+		} else {
+			if cmd.Flag("collections").Value.String() == "true" {
+				out.Collections = getCollections()
+			}
+			if cmd.Flag("metadata").Value.String() == "true" {
+				out.MetadataFields = getMetadata()
+			}
+			if cmd.Flag("expiration-alerts").Value.String() == "true" {
+				out.ExpirationAlerts = getExpirationAlerts()
+			}
+			if cmd.Flag("issued-alerts").Value.String() == "true" {
+				out.IssuedCertAlerts = getIssuedAlerts()
+			}
+			if cmd.Flag("denied-alerts").Value.String() == "true" {
+				out.DeniedCertAlerts = getDeniedAlerts()
+			}
+			if cmd.Flag("pending-alerts").Value.String() == "true" {
+				out.PendingCertAlerts = getPendingAlerts()
+			}
+			if cmd.Flag("networks").Value.String() == "true" {
+				out.Networks = getSslNetworks()
+			}
+			if cmd.Flag("workflow-definitions").Value.String() == "true" {
+				out.WorkflowDefinitions = getWorkflowDefinitions()
+			}
+			if cmd.Flag("reports").Value.String() == "true" {
+				out.BuiltInReports, out.CustomReports = getReports()
+			}
+			if cmd.Flag("security-roles").Value.String() == "true" {
+				out.SecurityRoles = getRoles()
+			}
 		}
 		exportToJSON(out, exportPath)
 	},
@@ -370,23 +396,13 @@ func getRoles() []api.CreateSecurityRoleArg {
 }
 
 func init() {
-	var exportPath string
-	var fCollections bool
-	var fMetadata bool
-	var fExpirationAlerts bool
-	var fIssuedAlerts bool
-	var fDeniedAlerts bool
-	var fPendingAlerts bool
-	var fNetworks bool
-	var fWorkflowDefinitions bool
-	var fReports bool
-	var fSecurityRoles bool
-
 	RootCmd.AddCommand(exportCmd)
 
 	exportCmd.Flags().StringVarP(&exportPath, "file", "f", "", "export JSON to a specified filepath")
 	exportCmd.MarkFlagRequired("file")
 
+	exportCmd.Flags().BoolVarP(&fAll, "all", "a", false, "export all exportable data to JSON file")
+	exportCmd.Flags().Lookup("all").NoOptDefVal = "true"
 	exportCmd.Flags().BoolVarP(&fCollections, "collections", "c", false, "export collections to JSON file")
 	exportCmd.Flags().Lookup("collections").NoOptDefVal = "true"
 	exportCmd.Flags().BoolVarP(&fMetadata, "metadata", "m", false, "export metadata to JSON file")
