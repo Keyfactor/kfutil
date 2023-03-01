@@ -9,20 +9,52 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"os"
+	"strconv"
 )
 
+type exportModelsReport struct {
+	Id                      *int32                                                `json:"-"`
+	Scheduled               *int32                                                `json:"Scheduled,omitempty"`
+	DisplayName             *string                                               `json:"DisplayName,omitempty"`
+	Description             *string                                               `json:"Description,omitempty"`
+	ReportPath              *string                                               `json:"ReportPath,omitempty"`
+	VersionNumber           *string                                               `json:"VersionNumber,omitempty"`
+	Categories              *string                                               `json:"Categories,omitempty"`
+	ShortName               *string                                               `json:"ShortName,omitempty"`
+	InNavigator             *bool                                                 `json:"InNavigator,omitempty"`
+	Favorite                *bool                                                 `json:"Favorite,omitempty"`
+	RemoveDuplicates        *bool                                                 `json:"RemoveDuplicates,omitempty"`
+	UsesCollection          *bool                                                 `json:"UsesCollection,omitempty"`
+	ReportParameter         []keyfactor_command_client_api.ModelsReportParameters `json:"ReportParameter,omitempty"`
+	Schedules               []keyfactor_command_client_api.ModelsReportSchedule   `json:"Schedules,omitempty"`
+	AcceptedScheduleFormats []string                                              `json:"AcceptedScheduleFormats,omitempty"`
+}
+
+type exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest struct {
+	// Display name of the Definition
+	DisplayName *string `json:"DisplayName,omitempty"`
+	// Description of the Definition
+	Description *string `json:"Description,omitempty"`
+	// Key to be used to look up definition when starting a new workflow.  For enrollment workflowTypes, this should be a template
+	Key *string `json:"Key,omitempty"`
+	//Name of Template corresponding to key value
+	KeyName *string `json:"KeyName,omitempty"`
+	// The Type of Workflow
+	WorkflowType *string `json:"WorkflowType,omitempty"`
+}
+
 type outJson struct {
-	Collections         []keyfactor_command_client_api.ModelsCertificateQuery                                              `json:"Collections"`
-	MetadataFields      []keyfactor_command_client_api.ModelsMetadataFieldTypeModel                                        `json:"MetadataFields"`
-	ExpirationAlerts    []keyfactor_command_client_api.KeyfactorApiModelsAlertsExpirationExpirationAlertDefinitionResponse `json:"ExpirationAlerts"`
-	IssuedCertAlerts    []keyfactor_command_client_api.KeyfactorApiModelsAlertsIssuedIssuedAlertDefinitionResponse         `json:"IssuedCertAlerts"`
-	DeniedCertAlerts    []keyfactor_command_client_api.KeyfactorApiModelsAlertsDeniedDeniedAlertDefinitionResponse         `json:"DeniedCertAlerts"`
-	PendingCertAlerts   []keyfactor_command_client_api.KeyfactorApiModelsAlertsPendingPendingAlertDefinitionResponse       `json:"PendingCertAlerts"`
-	Networks            []keyfactor_command_client_api.KeyfactorApiModelsSslNetworkQueryResponse                           `json:"Networks"`
-	WorkflowDefinitions []keyfactor_command_client_api.KeyfactorApiModelsWorkflowsDefinitionQueryResponse                  `json:"WorkflowDefinitions"`
-	BuiltInReports      []keyfactor_command_client_api.ModelsReport                                                        `json:"BuiltInReports"`
-	CustomReports       []keyfactor_command_client_api.ModelsCustomReport                                                  `json:"CustomReports"`
-	SecurityRoles       api.GetSecurityRolesResponse                                                                       `json:"SecurityRoles"`
+	Collections         []keyfactor_command_client_api.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest `json:"Collections"`
+	MetadataFields      []keyfactor_command_client_api.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest                  `json:"MetadataFields"`
+	ExpirationAlerts    []keyfactor_command_client_api.KeyfactorApiModelsAlertsExpirationExpirationAlertCreationRequest           `json:"ExpirationAlerts"`
+	IssuedCertAlerts    []keyfactor_command_client_api.KeyfactorApiModelsAlertsIssuedIssuedAlertCreationRequest                   `json:"IssuedCertAlerts"`
+	DeniedCertAlerts    []keyfactor_command_client_api.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest                   `json:"DeniedCertAlerts"`
+	PendingCertAlerts   []keyfactor_command_client_api.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest                 `json:"PendingCertAlerts"`
+	Networks            []keyfactor_command_client_api.KeyfactorApiModelsSslCreateNetworkRequest                                  `json:"Networks"`
+	WorkflowDefinitions []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest                                                `json:"WorkflowDefinitions"`
+	BuiltInReports      []exportModelsReport                                                                                      `json:"BuiltInReports"`
+	CustomReports       []keyfactor_command_client_api.ModelsCustomReportCreationRequest                                          `json:"CustomReports"`
+	SecurityRoles       []api.CreateSecurityRoleArg                                                                               `json:"SecurityRoles"`
 }
 
 func exportToJSON(out outJson, exportPath string) {
@@ -48,17 +80,17 @@ var exportCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// initialize each entry as an empty list in the event it is not requested by the flags
 		out := outJson{
-			Collections:         []keyfactor_command_client_api.ModelsCertificateQuery{},
-			MetadataFields:      []keyfactor_command_client_api.ModelsMetadataFieldTypeModel{},
-			ExpirationAlerts:    []keyfactor_command_client_api.KeyfactorApiModelsAlertsExpirationExpirationAlertDefinitionResponse{},
-			IssuedCertAlerts:    []keyfactor_command_client_api.KeyfactorApiModelsAlertsIssuedIssuedAlertDefinitionResponse{},
-			DeniedCertAlerts:    []keyfactor_command_client_api.KeyfactorApiModelsAlertsDeniedDeniedAlertDefinitionResponse{},
-			PendingCertAlerts:   []keyfactor_command_client_api.KeyfactorApiModelsAlertsPendingPendingAlertDefinitionResponse{},
-			Networks:            []keyfactor_command_client_api.KeyfactorApiModelsSslNetworkQueryResponse{},
-			WorkflowDefinitions: []keyfactor_command_client_api.KeyfactorApiModelsWorkflowsDefinitionQueryResponse{},
-			BuiltInReports:      []keyfactor_command_client_api.ModelsReport{},
-			CustomReports:       []keyfactor_command_client_api.ModelsCustomReport{},
-			SecurityRoles:       api.GetSecurityRolesResponse{},
+			Collections:         []keyfactor_command_client_api.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest{},
+			MetadataFields:      []keyfactor_command_client_api.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest{},
+			ExpirationAlerts:    []keyfactor_command_client_api.KeyfactorApiModelsAlertsExpirationExpirationAlertCreationRequest{},
+			IssuedCertAlerts:    []keyfactor_command_client_api.KeyfactorApiModelsAlertsIssuedIssuedAlertCreationRequest{},
+			DeniedCertAlerts:    []keyfactor_command_client_api.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest{},
+			PendingCertAlerts:   []keyfactor_command_client_api.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest{},
+			Networks:            []keyfactor_command_client_api.KeyfactorApiModelsSslCreateNetworkRequest{},
+			WorkflowDefinitions: []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest{},
+			BuiltInReports:      []exportModelsReport{},
+			CustomReports:       []keyfactor_command_client_api.ModelsCustomReportCreationRequest{},
+			SecurityRoles:       []api.CreateSecurityRoleArg{},
 		}
 		exportPath := cmd.Flag("file").Value.String()
 		if cmd.Flag("collections").Value.String() == "true" {
@@ -95,87 +127,188 @@ var exportCmd = &cobra.Command{
 	},
 }
 
-func getCollections() []keyfactor_command_client_api.ModelsCertificateQuery {
+func getCollections() []keyfactor_command_client_api.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest {
 	kfClient := initGenClient()
 	collections, _, reqErr := kfClient.CertificateCollectionApi.CertificateCollectionGetCollections(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("Error, unable to get collections %s\n", reqErr)
 		log.Fatalf("Error: %s", reqErr)
 	}
-	return collections
+	var lCollectionReq []keyfactor_command_client_api.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest
+	for _, collection := range collections {
+		cJson, _ := json.Marshal(collection)
+		var collectionReq keyfactor_command_client_api.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest
+		jErr := json.Unmarshal(cJson, &collectionReq)
+		if jErr != nil {
+			fmt.Printf("Error: %s\n", jErr)
+			log.Fatalf("Error: %s", jErr)
+		}
+		collectionReq.Query = collection.Content
+		collectionReq.Id = nil
+		lCollectionReq = append(lCollectionReq, collectionReq)
+	}
+	return lCollectionReq
 }
 
-func getMetadata() []keyfactor_command_client_api.ModelsMetadataFieldTypeModel {
+func getMetadata() []keyfactor_command_client_api.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest {
 	kfClient := initGenClient()
 	metadata, _, reqErr := kfClient.MetadataFieldApi.MetadataFieldGetAllMetadataFields(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("Error, unable to get metadata %s\n", reqErr)
 		log.Fatalf("Error: %s", reqErr)
 	}
-	return metadata
+	var lMetadataReq []keyfactor_command_client_api.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest
+	for _, metadataItem := range metadata {
+		mJson, _ := json.Marshal(metadataItem)
+		var metadataReq keyfactor_command_client_api.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest
+		jErr := json.Unmarshal(mJson, &metadataReq)
+		if jErr != nil {
+			fmt.Printf("Error: %s\n", jErr)
+			log.Fatalf("Error: %s", jErr)
+		}
+		metadataItem.Id = nil
+		lMetadataReq = append(lMetadataReq, metadataReq)
+	}
+	return lMetadataReq
 }
 
-func getExpirationAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAlertsExpirationExpirationAlertDefinitionResponse {
+func getExpirationAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAlertsExpirationExpirationAlertCreationRequest {
 	kfClient := initGenClient()
-	expirAlerts, _, reqErr := kfClient.ExpirationAlertApi.ExpirationAlertGetExpirationAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	alerts, _, reqErr := kfClient.ExpirationAlertApi.ExpirationAlertGetExpirationAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("Error, unable to get expiration alerts %s\n", reqErr)
 		log.Fatalf("Error: %s", reqErr)
 	}
-	return expirAlerts
+	var lAlertReq []keyfactor_command_client_api.KeyfactorApiModelsAlertsExpirationExpirationAlertCreationRequest
+	for _, alert := range alerts {
+		mJson, _ := json.Marshal(alert)
+		var alertReq keyfactor_command_client_api.KeyfactorApiModelsAlertsExpirationExpirationAlertCreationRequest
+		jErr := json.Unmarshal(mJson, &alertReq)
+		if jErr != nil {
+			fmt.Printf("Error: %s\n", jErr)
+			log.Fatalf("Error: %s", jErr)
+		}
+		lAlertReq = append(lAlertReq, alertReq)
+	}
+	return lAlertReq
 }
 
-func getIssuedAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAlertsIssuedIssuedAlertDefinitionResponse {
+func getIssuedAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAlertsIssuedIssuedAlertCreationRequest {
 	kfClient := initGenClient()
-	issuedAlerts, _, reqErr := kfClient.IssuedAlertApi.IssuedAlertGetIssuedAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	alerts, _, reqErr := kfClient.IssuedAlertApi.IssuedAlertGetIssuedAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("Error, unable to get issued cert alerts %s\n", reqErr)
 		log.Fatalf("Error: %s", reqErr)
 	}
-	return issuedAlerts
+	var lAlertReq []keyfactor_command_client_api.KeyfactorApiModelsAlertsIssuedIssuedAlertCreationRequest
+	for _, alert := range alerts {
+		mJson, _ := json.Marshal(alert)
+		var alertReq keyfactor_command_client_api.KeyfactorApiModelsAlertsIssuedIssuedAlertCreationRequest
+		jErr := json.Unmarshal(mJson, &alertReq)
+		if jErr != nil {
+			fmt.Printf("Error: %s\n", jErr)
+			log.Fatalf("Error: %s", jErr)
+		}
+		alertReq.TemplateId = nil
+		lAlertReq = append(lAlertReq, alertReq)
+	}
+	return lAlertReq
 }
 
-func getDeniedAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAlertsDeniedDeniedAlertDefinitionResponse {
+func getDeniedAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest {
 	kfClient := initGenClient()
-	deniedAlerts, _, reqErr := kfClient.DeniedAlertApi.DeniedAlertGetDeniedAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	alerts, _, reqErr := kfClient.DeniedAlertApi.DeniedAlertGetDeniedAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("Error, unable to get denied cert alerts %s\n", reqErr)
 		log.Fatalf("Error: %s", reqErr)
 	}
-	return deniedAlerts
+	var lAlertReq []keyfactor_command_client_api.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest
+	for _, alert := range alerts {
+		mJson, _ := json.Marshal(alert)
+		var alertReq keyfactor_command_client_api.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest
+		jErr := json.Unmarshal(mJson, &alertReq)
+		if jErr != nil {
+			fmt.Printf("Error: %s\n", jErr)
+			log.Fatalf("Error: %s", jErr)
+		}
+		alertReq.TemplateId = nil
+		lAlertReq = append(lAlertReq, alertReq)
+	}
+	return lAlertReq
 }
 
-func getPendingAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAlertsPendingPendingAlertDefinitionResponse {
+func getPendingAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest {
 	kfClient := initGenClient()
-	pendingAlerts, _, reqErr := kfClient.PendingAlertApi.PendingAlertGetPendingAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	alerts, _, reqErr := kfClient.PendingAlertApi.PendingAlertGetPendingAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("Error, unable to get pending cert alerts %s\n", reqErr)
 		log.Fatalf("Error: %s", reqErr)
 	}
-	return pendingAlerts
+	var lAlertReq []keyfactor_command_client_api.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest
+	for _, alert := range alerts {
+		mJson, _ := json.Marshal(alert)
+		var alertReq keyfactor_command_client_api.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest
+		jErr := json.Unmarshal(mJson, &alertReq)
+		if jErr != nil {
+			fmt.Printf("Error: %s\n", jErr)
+			log.Fatalf("Error: %s", jErr)
+		}
+		alertReq.TemplateId = nil
+		lAlertReq = append(lAlertReq, alertReq)
+	}
+	return lAlertReq
 }
 
-func getSslNetworks() []keyfactor_command_client_api.KeyfactorApiModelsSslNetworkQueryResponse {
+func getSslNetworks() []keyfactor_command_client_api.KeyfactorApiModelsSslCreateNetworkRequest {
 	kfClient := initGenClient()
 	networks, _, reqErr := kfClient.SslApi.SslGetNetworks(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("Error, unable to get SSL networks %s\n", reqErr)
 		log.Fatalf("Error: %s", reqErr)
 	}
-	return networks
+	var lNetworkReq []keyfactor_command_client_api.KeyfactorApiModelsSslCreateNetworkRequest
+	for _, network := range networks {
+		mJson, _ := json.Marshal(network)
+		var networkReq keyfactor_command_client_api.KeyfactorApiModelsSslCreateNetworkRequest
+		jErr := json.Unmarshal(mJson, &networkReq)
+		if jErr != nil {
+			fmt.Printf("Error: %s\n", jErr)
+			log.Fatalf("Error: %s", jErr)
+		}
+		lNetworkReq = append(lNetworkReq, networkReq)
+	}
+	return lNetworkReq
 }
 
-func getWorkflowDefinitions() []keyfactor_command_client_api.KeyfactorApiModelsWorkflowsDefinitionQueryResponse {
+func getWorkflowDefinitions() []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest {
 	kfClient := initGenClient()
 	workflowDefs, _, reqErr := kfClient.WorkflowDefinitionApi.WorkflowDefinitionQuery(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("Error, unable to get workflow definitions %s\n", reqErr)
 		log.Fatalf("Error: %s", reqErr)
 	}
-	return workflowDefs
+	var lWorkflowReq []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest
+	for _, workflowDef := range workflowDefs {
+		mJson, _ := json.Marshal(workflowDef)
+		var workflowReq exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest
+		jErr := json.Unmarshal(mJson, &workflowReq)
+		if jErr != nil {
+			fmt.Printf("Error: %s\n", jErr)
+			log.Fatalf("Error: %s", jErr)
+		}
+		if workflowDef.Key != nil {
+			key, _ := strconv.ParseInt(*workflowDef.Key, 10, 64)
+			key32 := int32(key)
+			template, _, _ := kfClient.TemplateApi.TemplateGetTemplate(context.Background(), key32).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+			workflowReq.KeyName = template.TemplateName
+		}
+		workflowReq.Key = nil
+		lWorkflowReq = append(lWorkflowReq, workflowReq)
+	}
+	return lWorkflowReq
 }
 
-func getReports() ([]keyfactor_command_client_api.ModelsReport, []keyfactor_command_client_api.ModelsCustomReport) {
+func getReports() ([]exportModelsReport, []keyfactor_command_client_api.ModelsCustomReportCreationRequest) {
 	kfClient := initGenClient()
 	//Gets all built-in reports
 	bReports, _, bErr := kfClient.ReportsApi.ReportsQueryReports(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -183,23 +316,57 @@ func getReports() ([]keyfactor_command_client_api.ModelsReport, []keyfactor_comm
 		fmt.Printf("Error, unable to get built-in reports %s\n", bErr)
 		log.Fatalf("Error: %s", bErr)
 	}
+	var lbReportsReq []exportModelsReport
+	for _, bReport := range bReports {
+		mJson, _ := json.Marshal(bReport)
+		var newbReport exportModelsReport
+		jErr := json.Unmarshal(mJson, &newbReport)
+		if jErr != nil {
+			fmt.Printf("Error: %s\n", jErr)
+			log.Fatalf("Error: %s", jErr)
+		}
+		newbReport.Id = nil
+		lbReportsReq = append(lbReportsReq, newbReport)
+	}
 	//Gets all custom reports
 	cReports, _, cErr := kfClient.ReportsApi.ReportsQueryCustomReports(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if cErr != nil {
 		fmt.Printf("Error, unable to get custom reports %s\n", cErr)
 		log.Fatalf("Error: %s", cErr)
 	}
-	return bReports, cReports
+	var lcReportReq []keyfactor_command_client_api.ModelsCustomReportCreationRequest
+	for _, cReport := range cReports {
+		mJson, _ := json.Marshal(cReport)
+		var cReportReq keyfactor_command_client_api.ModelsCustomReportCreationRequest
+		jErr := json.Unmarshal(mJson, &cReportReq)
+		if jErr != nil {
+			fmt.Printf("Error: %s\n", jErr)
+			log.Fatalf("Error: %s", jErr)
+		}
+		lcReportReq = append(lcReportReq, cReportReq)
+	}
+	return lbReportsReq, lcReportReq
 }
 
-func getRoles() api.GetSecurityRolesResponse {
+func getRoles() []api.CreateSecurityRoleArg {
 	kfClient, _ := initClient()
 	roles, reqErr := kfClient.GetSecurityRoles()
 	if reqErr != nil {
 		fmt.Printf("Error, unable to get roles %s\n", reqErr)
 		log.Fatalf("Error: %s", reqErr)
 	}
-	return roles
+	var lRoleReq []api.CreateSecurityRoleArg
+	for _, role := range roles {
+		mJson, _ := json.Marshal(role)
+		var cRoleReq api.CreateSecurityRoleArg
+		jErr := json.Unmarshal(mJson, &cRoleReq)
+		if jErr != nil {
+			fmt.Printf("Error: %s\n", jErr)
+			log.Fatalf("Error: %s", jErr)
+		}
+		lRoleReq = append(lRoleReq, cRoleReq)
+	}
+	return lRoleReq
 }
 
 func init() {
