@@ -17,6 +17,9 @@ import (
 	"time"
 )
 
+var colorRed = "\033[31m"
+var colorWhite = "\033[37m"
+
 var xKeyfactorRequestedWith = "APIClient"
 var xKeyfactorApiVersion = "1"
 

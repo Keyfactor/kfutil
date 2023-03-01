@@ -157,8 +157,7 @@ func getCollections() []keyfactor_command_client_api.KeyfactorApiModelsCertifica
 	kfClient := initGenClient()
 	collections, _, reqErr := kfClient.CertificateCollectionApi.CertificateCollectionGetCollections(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
-		fmt.Printf("Error, unable to get collections %s\n", reqErr)
-		log.Fatalf("Error: %s", reqErr)
+		fmt.Printf("%s Error! Unable to get collections %s%s\n", colorRed, reqErr, colorWhite)
 	}
 	var lCollectionReq []keyfactor_command_client_api.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest
 	for _, collection := range collections {
@@ -180,8 +179,7 @@ func getMetadata() []keyfactor_command_client_api.KeyfactorApiModelsMetadataFiel
 	kfClient := initGenClient()
 	metadata, _, reqErr := kfClient.MetadataFieldApi.MetadataFieldGetAllMetadataFields(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
-		fmt.Printf("Error, unable to get metadata %s\n", reqErr)
-		log.Fatalf("Error: %s", reqErr)
+		fmt.Printf("%s Error! Unable to get metadata %s%s\n", colorRed, reqErr, colorWhite)
 	}
 	var lMetadataReq []keyfactor_command_client_api.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest
 	for _, metadataItem := range metadata {
@@ -202,8 +200,7 @@ func getExpirationAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAler
 	kfClient := initGenClient()
 	alerts, _, reqErr := kfClient.ExpirationAlertApi.ExpirationAlertGetExpirationAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
-		fmt.Printf("Error, unable to get expiration alerts %s\n", reqErr)
-		log.Fatalf("Error: %s", reqErr)
+		fmt.Printf("%s Error! Unable to get expiration alerts %s%s\n", colorRed, reqErr, colorWhite)
 	}
 	var lAlertReq []keyfactor_command_client_api.KeyfactorApiModelsAlertsExpirationExpirationAlertCreationRequest
 	for _, alert := range alerts {
@@ -223,8 +220,7 @@ func getIssuedAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAlertsIs
 	kfClient := initGenClient()
 	alerts, _, reqErr := kfClient.IssuedAlertApi.IssuedAlertGetIssuedAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
-		fmt.Printf("Error, unable to get issued cert alerts %s\n", reqErr)
-		log.Fatalf("Error: %s", reqErr)
+		fmt.Printf("%s Error! Unable to get issued cert alerts %s%s\n", colorRed, reqErr, colorWhite)
 	}
 	var lAlertReq []keyfactor_command_client_api.KeyfactorApiModelsAlertsIssuedIssuedAlertCreationRequest
 	for _, alert := range alerts {
@@ -245,8 +241,7 @@ func getDeniedAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAlertsDe
 	kfClient := initGenClient()
 	alerts, _, reqErr := kfClient.DeniedAlertApi.DeniedAlertGetDeniedAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
-		fmt.Printf("Error, unable to get denied cert alerts %s\n", reqErr)
-		log.Fatalf("Error: %s", reqErr)
+		fmt.Printf("%s Error! Unable to get denied cert alerts %s%s\n", colorRed, reqErr, colorWhite)
 	}
 	var lAlertReq []keyfactor_command_client_api.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest
 	for _, alert := range alerts {
@@ -267,8 +262,7 @@ func getPendingAlerts() []keyfactor_command_client_api.KeyfactorApiModelsAlertsP
 	kfClient := initGenClient()
 	alerts, _, reqErr := kfClient.PendingAlertApi.PendingAlertGetPendingAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
-		fmt.Printf("Error, unable to get pending cert alerts %s\n", reqErr)
-		log.Fatalf("Error: %s", reqErr)
+		fmt.Printf("%s Error! Unable to get pending cert alerts %s%s\n", colorRed, reqErr, colorWhite)
 	}
 	var lAlertReq []keyfactor_command_client_api.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest
 	for _, alert := range alerts {
@@ -289,8 +283,7 @@ func getSslNetworks() []keyfactor_command_client_api.KeyfactorApiModelsSslCreate
 	kfClient := initGenClient()
 	networks, _, reqErr := kfClient.SslApi.SslGetNetworks(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
-		fmt.Printf("Error, unable to get SSL networks %s\n", reqErr)
-		log.Fatalf("Error: %s", reqErr)
+		fmt.Printf("%s Error! Unable to get SSL networks %s%s\n", colorRed, reqErr, colorWhite)
 	}
 	var lNetworkReq []keyfactor_command_client_api.KeyfactorApiModelsSslCreateNetworkRequest
 	for _, network := range networks {
@@ -310,8 +303,7 @@ func getWorkflowDefinitions() []exportKeyfactorApiModelsWorkflowsDefinitionCreat
 	kfClient := initGenClient()
 	workflowDefs, _, reqErr := kfClient.WorkflowDefinitionApi.WorkflowDefinitionQuery(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
-		fmt.Printf("Error, unable to get workflow definitions %s\n", reqErr)
-		log.Fatalf("Error: %s", reqErr)
+		fmt.Printf("%s Error! Unable to get workflow definitions %s%s\n", colorRed, reqErr, colorWhite)
 	}
 	var lWorkflowReq []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest
 	for _, workflowDef := range workflowDefs {
@@ -339,8 +331,7 @@ func getReports() ([]exportModelsReport, []keyfactor_command_client_api.ModelsCu
 	//Gets all built-in reports
 	bReports, _, bErr := kfClient.ReportsApi.ReportsQueryReports(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if bErr != nil {
-		fmt.Printf("Error, unable to get built-in reports %s\n", bErr)
-		log.Fatalf("Error: %s", bErr)
+		fmt.Printf("%s Error! Unable to get built-in reports %s%s\n", colorRed, bErr, colorWhite)
 	}
 	var lbReportsReq []exportModelsReport
 	for _, bReport := range bReports {
@@ -357,8 +348,7 @@ func getReports() ([]exportModelsReport, []keyfactor_command_client_api.ModelsCu
 	//Gets all custom reports
 	cReports, _, cErr := kfClient.ReportsApi.ReportsQueryCustomReports(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if cErr != nil {
-		fmt.Printf("Error, unable to get custom reports %s\n", cErr)
-		log.Fatalf("Error: %s", cErr)
+		fmt.Printf("%s Error! Unable to get custom reports %s%s\n", colorRed, cErr, colorWhite)
 	}
 	var lcReportReq []keyfactor_command_client_api.ModelsCustomReportCreationRequest
 	for _, cReport := range cReports {
@@ -378,8 +368,7 @@ func getRoles() []api.CreateSecurityRoleArg {
 	kfClient, _ := initClient()
 	roles, reqErr := kfClient.GetSecurityRoles()
 	if reqErr != nil {
-		fmt.Printf("Error, unable to get roles %s\n", reqErr)
-		log.Fatalf("Error: %s", reqErr)
+		fmt.Printf("%s Error! Unable to get security roles %s%s\n", colorRed, reqErr, colorWhite)
 	}
 	var lRoleReq []api.CreateSecurityRoleArg
 	for _, role := range roles {
