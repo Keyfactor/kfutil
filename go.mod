@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/Jeffail/gabs/v2 v2.6.1
-	github.com/Keyfactor/keyfactor-go-client v1.2.1-0.20230207180411-19f63f6d48b8
+	github.com/Keyfactor/keyfactor-go-client v1.4.0
 	github.com/spf13/cobra v1.6.1
 	golang.org/x/crypto v0.0.0-20220331220935-ae2d96664a29
 )
