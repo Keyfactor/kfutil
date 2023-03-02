@@ -167,7 +167,8 @@ func importNetworks(networks []keyfactor_command_client_api.KeyfactorApiModelsSs
 	}
 }
 
-func findMatchingTempIds(exportedWorkflowDef exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest, kfClient *keyfactor_command_client_api.APIClient) *string {
+// identify matching templates between instances by name, then return the template Id of the matching template in the import instance
+func findMatchingTemplates(exportedWorkflowDef exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest, kfClient *keyfactor_command_client_api.APIClient) *string {
 	importInstanceTemplates, _, _ := kfClient.TemplateApi.TemplateGetTemplates(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	for _, template := range importInstanceTemplates {
 		importInstTempNameJson, _ := json.Marshal(template.TemplateName)
@@ -190,7 +191,7 @@ func importWorkflowDefinitions(workflowDefs []exportKeyfactorApiModelsWorkflowsD
 			fmt.Printf("Error: %s\n", jErr)
 			log.Fatalf("Error: %s", jErr)
 		}
-		newTemplateId := findMatchingTempIds(workflowDef, kfClient)
+		newTemplateId := findMatchingTemplates(workflowDef, kfClient)
 		if newTemplateId != nil {
 			workflowDefReq.Key = newTemplateId
 		}
@@ -204,6 +205,7 @@ func importWorkflowDefinitions(workflowDefs []exportKeyfactorApiModelsWorkflowsD
 	}
 }
 
+// check for built-in report discrepancies between instances, return the report id of reports that need to be updated in import instance
 func checkBuiltInReportDiffs(exportedReport exportModelsReport, kfClient *keyfactor_command_client_api.APIClient) *int32 {
 	importInstanceReports, _, _ := kfClient.ReportsApi.ReportsQueryReports(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	//check if built in report was modified from default in exported instance; if modified, update built-in report in new instance
