@@ -364,6 +364,40 @@ kfutil stores inventory remove \
   --cn <additional cert subject name>
 ```
 
+### Export Instance Data
+
+For full documentation, see [export](docs/kfutil_export.md).
+
+Export select instance data to JSON file:
+
+```bash
+# export only collections, metadata, and roles
+kfutil export --collections --metadata --roles --file <path to JSON file>
+```
+
+Export all exportable instance data to JSON file:
+
+```bash
+kfutil export --all --file <path to JSON file>
+```
+
+### Import Instance Data
+
+For full documentation, see [import](docs/kfutil_import.md).
+
+Import select instance data from exported JSON file:
+
+```bash
+# export only collections, metadata, and roles
+kfutil import --collections --metadata --roles --file <path to JSON file>
+```
+
+Import all importable instance data from exported JSON file:
+
+```bash
+kfutil import --all --file <path to JSON file>
+```
+
 ## Development
 
 This CLI developed using [cobra](https://umarcor.github.io/cobra/)
@@ -379,4 +413,3 @@ alternatively you can specify the parent command
 ```bash
 cobra-cli add <my-new-command> -p '<parent>Cmd'
 ```
-

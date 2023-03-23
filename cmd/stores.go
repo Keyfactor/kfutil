@@ -9,10 +9,9 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cobra"
 	"io"
 	"log"
-
-	"github.com/spf13/cobra"
 )
 
 // storesCmd represents the stores command
@@ -32,8 +31,7 @@ var storesListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		log.SetOutput(io.Discard)
 		kfClient, _ := initClient()
-		params := map[string]interface{}{}
-		stores, err := kfClient.ListCertificateStores(&params)
+		stores, err := kfClient.ListCertificateStores()
 		if err != nil {
 			log.Printf("Error: %s", err)
 		}
