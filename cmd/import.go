@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	keyfactor_command_client_api "github.com/Keyfactor/keyfactor-go-client-sdk"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"github.com/spf13/cobra"
 	"io"
@@ -91,7 +91,7 @@ var importCmd = &cobra.Command{
 	},
 }
 
-func importCollections(collections []keyfactor_command_client_api.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest, kfClient *keyfactor_command_client_api.APIClient) {
+func importCollections(collections []keyfactor.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest, kfClient *keyfactor.APIClient) {
 	for _, collection := range collections {
 		_, httpResp, reqErr := kfClient.CertificateCollectionApi.CertificateCollectionCreateCollection(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).
 			Request(collection).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -105,7 +105,7 @@ func importCollections(collections []keyfactor_command_client_api.KeyfactorApiMo
 	}
 }
 
-func importMetadataFields(metadataFields []keyfactor_command_client_api.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest, kfClient *keyfactor_command_client_api.APIClient) {
+func importMetadataFields(metadataFields []keyfactor.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest, kfClient *keyfactor.APIClient) {
 	for _, metadata := range metadataFields {
 		_, httpResp, reqErr := kfClient.MetadataFieldApi.MetadataFieldCreateMetadataField(context.Background()).
 			XKeyfactorRequestedWith(xKeyfactorRequestedWith).MetadataFieldType(metadata).
@@ -119,7 +119,7 @@ func importMetadataFields(metadataFields []keyfactor_command_client_api.Keyfacto
 	}
 }
 
-func importIssuedCertAlerts(alerts []keyfactor_command_client_api.KeyfactorApiModelsAlertsIssuedIssuedAlertCreationRequest, kfClient *keyfactor_command_client_api.APIClient) {
+func importIssuedCertAlerts(alerts []keyfactor.KeyfactorApiModelsAlertsIssuedIssuedAlertCreationRequest, kfClient *keyfactor.APIClient) {
 	for _, alert := range alerts {
 		_, httpResp, reqErr := kfClient.IssuedAlertApi.IssuedAlertAddIssuedAlert(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Req(alert).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(alert.DisplayName)
@@ -131,7 +131,7 @@ func importIssuedCertAlerts(alerts []keyfactor_command_client_api.KeyfactorApiMo
 	}
 }
 
-func importDeniedCertAlerts(alerts []keyfactor_command_client_api.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest, kfClient *keyfactor_command_client_api.APIClient) {
+func importDeniedCertAlerts(alerts []keyfactor.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest, kfClient *keyfactor.APIClient) {
 	for _, alert := range alerts {
 		_, httpResp, reqErr := kfClient.DeniedAlertApi.DeniedAlertAddDeniedAlert(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Req(alert).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(alert.DisplayName)
@@ -143,7 +143,7 @@ func importDeniedCertAlerts(alerts []keyfactor_command_client_api.KeyfactorApiMo
 	}
 }
 
-func importPendingCertAlerts(alerts []keyfactor_command_client_api.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest, kfClient *keyfactor_command_client_api.APIClient) {
+func importPendingCertAlerts(alerts []keyfactor.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest, kfClient *keyfactor.APIClient) {
 	for _, alert := range alerts {
 		_, httpResp, reqErr := kfClient.PendingAlertApi.PendingAlertAddPendingAlert(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Req(alert).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(alert.DisplayName)
@@ -155,7 +155,7 @@ func importPendingCertAlerts(alerts []keyfactor_command_client_api.KeyfactorApiM
 	}
 }
 
-func importNetworks(networks []keyfactor_command_client_api.KeyfactorApiModelsSslCreateNetworkRequest, kfClient *keyfactor_command_client_api.APIClient) {
+func importNetworks(networks []keyfactor.KeyfactorApiModelsSslCreateNetworkRequest, kfClient *keyfactor.APIClient) {
 	for _, network := range networks {
 		_, httpResp, reqErr := kfClient.SslApi.SslCreateNetwork(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Network(network).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(network.Name)
@@ -168,7 +168,7 @@ func importNetworks(networks []keyfactor_command_client_api.KeyfactorApiModelsSs
 }
 
 // identify matching templates between instances by name, then return the template Id of the matching template in the import instance
-func findMatchingTemplates(exportedWorkflowDef exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest, kfClient *keyfactor_command_client_api.APIClient) *string {
+func findMatchingTemplates(exportedWorkflowDef exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest, kfClient *keyfactor.APIClient) *string {
 	importInstanceTemplates, _, _ := kfClient.TemplateApi.TemplateGetTemplates(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	for _, template := range importInstanceTemplates {
 		importInstTempNameJson, _ := json.Marshal(template.TemplateName)
@@ -182,10 +182,10 @@ func findMatchingTemplates(exportedWorkflowDef exportKeyfactorApiModelsWorkflows
 	return nil
 }
 
-func importWorkflowDefinitions(workflowDefs []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest, kfClient *keyfactor_command_client_api.APIClient) {
+func importWorkflowDefinitions(workflowDefs []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest, kfClient *keyfactor.APIClient) {
 	for _, workflowDef := range workflowDefs {
 		wJson, _ := json.Marshal(workflowDef)
-		var workflowDefReq keyfactor_command_client_api.KeyfactorApiModelsWorkflowsDefinitionCreateRequest
+		var workflowDefReq keyfactor.KeyfactorApiModelsWorkflowsDefinitionCreateRequest
 		jErr := json.Unmarshal(wJson, &workflowDefReq)
 		if jErr != nil {
 			fmt.Printf("Error: %s\n", jErr)
@@ -206,7 +206,7 @@ func importWorkflowDefinitions(workflowDefs []exportKeyfactorApiModelsWorkflowsD
 }
 
 // check for built-in report discrepancies between instances, return the report id of reports that need to be updated in import instance
-func checkBuiltInReportDiffs(exportedReport exportModelsReport, kfClient *keyfactor_command_client_api.APIClient) *int32 {
+func checkBuiltInReportDiffs(exportedReport exportModelsReport, kfClient *keyfactor.APIClient) *int32 {
 	importInstanceReports, _, _ := kfClient.ReportsApi.ReportsQueryReports(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	//check if built in report was modified from default in exported instance; if modified, update built-in report in new instance
 	for _, report := range importInstanceReports {
@@ -232,12 +232,12 @@ func checkBuiltInReportDiffs(exportedReport exportModelsReport, kfClient *keyfac
 }
 
 // only imports built in reports where UsesCollections is false
-func importBuiltInReports(reports []exportModelsReport, kfClient *keyfactor_command_client_api.APIClient) {
+func importBuiltInReports(reports []exportModelsReport, kfClient *keyfactor.APIClient) {
 	for _, report := range reports {
 		newReportId := checkBuiltInReportDiffs(report, kfClient)
 		if newReportId != nil {
 			rJson, _ := json.Marshal(report)
-			var reportReq keyfactor_command_client_api.ModelsReportRequestModel
+			var reportReq keyfactor.ModelsReportRequestModel
 			jErr := json.Unmarshal(rJson, &reportReq)
 			if jErr != nil {
 				fmt.Printf("Error: %s\n", jErr)
@@ -255,7 +255,7 @@ func importBuiltInReports(reports []exportModelsReport, kfClient *keyfactor_comm
 	}
 }
 
-func importCustomReports(reports []keyfactor_command_client_api.ModelsCustomReportCreationRequest, kfClient *keyfactor_command_client_api.APIClient) {
+func importCustomReports(reports []keyfactor.ModelsCustomReportCreationRequest, kfClient *keyfactor.APIClient) {
 	for _, report := range reports {
 		_, httpResp, reqErr := kfClient.ReportsApi.ReportsCreateCustomReport(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Request(report).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(report.DisplayName)
@@ -282,7 +282,7 @@ func importSecurityRoles(roles []api.CreateSecurityRoleArg, kfClient *api.Client
 func init() {
 	RootCmd.AddCommand(importCmd)
 
-	importCmd.Flags().StringVarP(&exportPath, "file", "f", "", "import JSON to a specified filepath")
+	importCmd.Flags().StringVarP(&exportPath, "file", "f", "", "path to JSON file containing exported data")
 	importCmd.MarkFlagRequired("file")
 
 	importCmd.Flags().BoolVarP(&fAll, "all", "a", false, "import all importable data to JSON file")
@@ -292,8 +292,6 @@ func init() {
 	importCmd.Flags().Lookup("collections").NoOptDefVal = "true"
 	importCmd.Flags().BoolVarP(&fMetadata, "metadata", "m", false, "import metadata to JSON file")
 	importCmd.Flags().Lookup("metadata").NoOptDefVal = "true"
-	importCmd.Flags().BoolVarP(&fExpirationAlerts, "expiration-alerts", "e", false, "import expiration cert alerts to JSON file")
-	importCmd.Flags().Lookup("expiration-alerts").NoOptDefVal = "true"
 	importCmd.Flags().BoolVarP(&fIssuedAlerts, "issued-alerts", "i", false, "import issued cert alerts to JSON file")
 	importCmd.Flags().Lookup("issued-alerts").NoOptDefVal = "true"
 	importCmd.Flags().BoolVarP(&fDeniedAlerts, "denied-alerts", "d", false, "import denied cert alerts to JSON file")

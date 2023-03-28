@@ -8,7 +8,7 @@ package cmd
 
 import (
 	"fmt"
-	keyfactor_command_client_api "github.com/Keyfactor/keyfactor-go-client-sdk"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"github.com/spf13/cobra"
 	"io"
@@ -56,9 +56,9 @@ func initClient() (*api.Client, error) {
 	return c, nil
 }
 
-func initGenClient() *keyfactor_command_client_api.APIClient {
-	configuration := keyfactor_command_client_api.NewConfiguration()
-	c := keyfactor_command_client_api.NewAPIClient(configuration)
+func initGenClient() *keyfactor.APIClient {
+	configuration := keyfactor.NewConfiguration()
+	c := keyfactor.NewAPIClient(configuration)
 	return c
 }
 
