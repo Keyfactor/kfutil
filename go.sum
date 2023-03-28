@@ -6,6 +6,8 @@ github.com/Keyfactor/keyfactor-go-client v1.3.1 h1:PACXm/8ZtxGzSSZ0d+043ntMbHOMS
 github.com/Keyfactor/keyfactor-go-client v1.3.1/go.mod h1:u1M1AjcwiO/Tbvc7EsNl9YTy757hO5wmey1/W/7Qkbs=
 github.com/Keyfactor/keyfactor-go-client v1.3.2-0.20230328010103-e4fe507c6a5f h1:8bShNkvlOd9MFB6BsRMgcBaAPNVq9i44coWCwLAQOX4=
 github.com/Keyfactor/keyfactor-go-client v1.3.2-0.20230328010103-e4fe507c6a5f/go.mod h1:YeiR7zU2GT3bVs99EYYdwImBLu3LBZo7zYi3yS2wawQ=
+github.com/Keyfactor/keyfactor-go-client v1.3.2-0.20230328014202-a92b8603fc5f h1:QS9yuSizZ/Tq/4eQjyn1V5kaNJUvI+XoBiGSBYHW5e4=
+github.com/Keyfactor/keyfactor-go-client v1.3.2-0.20230328014202-a92b8603fc5f/go.mod h1:YeiR7zU2GT3bVs99EYYdwImBLu3LBZo7zYi3yS2wawQ=
 github.com/Keyfactor/keyfactor-go-client v1.4.0 h1:JPzDQ6L12TEbhsDK0SJtCii/qD18sg6pEiWEdPNXl68=
 github.com/Keyfactor/keyfactor-go-client v1.4.0/go.mod h1:DhSKPB1ZXtxojUpTTAFcITTXQPExuWB6saFSTipCupc=
 github.com/Keyfactor/keyfactor-go-client-sdk v0.0.0-20230207174129-9d99e523eb15 h1:tOBT7/oLUtjcFCRDLsQAIv2oSj+59O6PUSveIb5gkZQ=

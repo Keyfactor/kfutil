@@ -387,7 +387,7 @@ func getRoles() []api.CreateSecurityRoleArg {
 func init() {
 	RootCmd.AddCommand(exportCmd)
 
-	exportCmd.Flags().StringVarP(&exportPath, "file", "f", "", "export JSON to a specified filepath")
+	exportCmd.Flags().StringVarP(&exportPath, "file", "f", "", "path to JSON output file with exported data")
 	exportCmd.MarkFlagRequired("file")
 
 	exportCmd.Flags().BoolVarP(&fAll, "all", "a", false, "export all exportable data to JSON file")

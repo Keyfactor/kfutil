@@ -282,7 +282,7 @@ func importSecurityRoles(roles []api.CreateSecurityRoleArg, kfClient *api.Client
 func init() {
 	RootCmd.AddCommand(importCmd)
 
-	importCmd.Flags().StringVarP(&exportPath, "file", "f", "", "import JSON to a specified filepath")
+	importCmd.Flags().StringVarP(&exportPath, "file", "f", "", "path to JSON file containing exported data")
 	importCmd.MarkFlagRequired("file")
 
 	importCmd.Flags().BoolVarP(&fAll, "all", "a", false, "import all importable data to JSON file")
@@ -292,8 +292,6 @@ func init() {
 	importCmd.Flags().Lookup("collections").NoOptDefVal = "true"
 	importCmd.Flags().BoolVarP(&fMetadata, "metadata", "m", false, "import metadata to JSON file")
 	importCmd.Flags().Lookup("metadata").NoOptDefVal = "true"
-	importCmd.Flags().BoolVarP(&fExpirationAlerts, "expiration-alerts", "e", false, "import expiration cert alerts to JSON file")
-	importCmd.Flags().Lookup("expiration-alerts").NoOptDefVal = "true"
 	importCmd.Flags().BoolVarP(&fIssuedAlerts, "issued-alerts", "i", false, "import issued cert alerts to JSON file")
 	importCmd.Flags().Lookup("issued-alerts").NoOptDefVal = "true"
 	importCmd.Flags().BoolVarP(&fDeniedAlerts, "denied-alerts", "d", false, "import denied cert alerts to JSON file")
