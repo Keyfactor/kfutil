@@ -12,6 +12,7 @@ import (
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
+
 	"io"
 	"log"
 	"os"
@@ -164,7 +165,12 @@ func authConfigFile(configFile string, noPrompt bool) bool {
 		}
 		p = envPassword
 	} else {
-		p = getPassword("password: [<from env KEYFACTOR_PASSWORD>]")
+		if len(envPassword) > 0 {
+			p = getPassword("password: [<from env KEYFACTOR_PASSWORD>]")
+		} else {
+			p = getPassword("password: ")
+		}
+
 		if len(p) == 0 {
 			p = envPassword
 		}
