@@ -26,7 +26,7 @@ var fSecurityRoles bool
 var fAll bool
 
 type exportModelsReport struct {
-	Id                      *int32                             `json:"-"`
+	ID                      *int32                             `json:"-"`
 	Scheduled               *int32                             `json:"Scheduled,omitempty"`
 	DisplayName             *string                            `json:"DisplayName,omitempty"`
 	Description             *string                            `json:"Description,omitempty"`
@@ -43,7 +43,7 @@ type exportModelsReport struct {
 	AcceptedScheduleFormats []string                           `json:"AcceptedScheduleFormats,omitempty"`
 }
 
-type exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest struct {
+type exportKeyfactorAPIModelsWorkflowsDefinitionCreateRequest struct {
 	// Display name of the Definition
 	DisplayName *string `json:"DisplayName,omitempty"`
 	// Description of the Definition
@@ -64,7 +64,7 @@ type outJson struct {
 	DeniedCertAlerts    []keyfactor.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest                   `json:"DeniedCertAlerts"`
 	PendingCertAlerts   []keyfactor.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest                 `json:"PendingCertAlerts"`
 	Networks            []keyfactor.KeyfactorApiModelsSslCreateNetworkRequest                                  `json:"Networks"`
-	WorkflowDefinitions []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest                             `json:"WorkflowDefinitions"`
+	WorkflowDefinitions []exportKeyfactorAPIModelsWorkflowsDefinitionCreateRequest                             `json:"WorkflowDefinitions"`
 	BuiltInReports      []exportModelsReport                                                                   `json:"BuiltInReports"`
 	CustomReports       []keyfactor.ModelsCustomReportCreationRequest                                          `json:"CustomReports"`
 	SecurityRoles       []api.CreateSecurityRoleArg                                                            `json:"SecurityRoles"`
@@ -100,7 +100,7 @@ var exportCmd = &cobra.Command{
 			DeniedCertAlerts:    []keyfactor.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest{},
 			PendingCertAlerts:   []keyfactor.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest{},
 			Networks:            []keyfactor.KeyfactorApiModelsSslCreateNetworkRequest{},
-			WorkflowDefinitions: []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest{},
+			WorkflowDefinitions: []exportKeyfactorAPIModelsWorkflowsDefinitionCreateRequest{},
 			BuiltInReports:      []exportModelsReport{},
 			CustomReports:       []keyfactor.ModelsCustomReportCreationRequest{},
 			SecurityRoles:       []api.CreateSecurityRoleArg{},
@@ -239,7 +239,9 @@ func getIssuedAlerts() []keyfactor.KeyfactorApiModelsAlertsIssuedIssuedAlertCrea
 
 func getDeniedAlerts() []keyfactor.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest {
 	kfClient := initGenClient()
-	alerts, _, reqErr := kfClient.DeniedAlertApi.DeniedAlertGetDeniedAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	alerts, _, reqErr := kfClient.DeniedAlertApi.DeniedAlertGetDeniedAlerts(
+		context.Background()).XKeyfactorRequestedWith(
+		xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get denied cert alerts %s%s\n", colorRed, reqErr, colorWhite)
 	}
@@ -299,16 +301,16 @@ func getSslNetworks() []keyfactor.KeyfactorApiModelsSslCreateNetworkRequest {
 	return lNetworkReq
 }
 
-func getWorkflowDefinitions() []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest {
+func getWorkflowDefinitions() []exportKeyfactorAPIModelsWorkflowsDefinitionCreateRequest {
 	kfClient := initGenClient()
 	workflowDefs, _, reqErr := kfClient.WorkflowDefinitionApi.WorkflowDefinitionQuery(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get workflow definitions %s%s\n", colorRed, reqErr, colorWhite)
 	}
-	var lWorkflowReq []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest
+	var lWorkflowReq []exportKeyfactorAPIModelsWorkflowsDefinitionCreateRequest
 	for _, workflowDef := range workflowDefs {
 		mJson, _ := json.Marshal(workflowDef)
-		var workflowReq exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest
+		var workflowReq exportKeyfactorAPIModelsWorkflowsDefinitionCreateRequest
 		jErr := json.Unmarshal(mJson, &workflowReq)
 		if jErr != nil {
 			fmt.Printf("Error: %s\n", jErr)
@@ -342,7 +344,7 @@ func getReports() ([]exportModelsReport, []keyfactor.ModelsCustomReportCreationR
 			fmt.Printf("Error: %s\n", jErr)
 			log.Fatalf("Error: %s", jErr)
 		}
-		newbReport.Id = nil
+		newbReport.ID = nil
 		lbReportsReq = append(lbReportsReq, newbReport)
 	}
 	//Gets all custom reports

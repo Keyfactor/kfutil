@@ -879,7 +879,8 @@ the utility will first generate an audit report and then execute the add/remove 
 
 					if stID >= 0 || s == "all" {
 						log.Printf("[DEBUG] Store type ID: %d\n", stID)
-						stores, sErr := kfClient.ListCertificateStores()
+						params := make(map[string]interface{})
+						stores, sErr := kfClient.ListCertificateStores(&params)
 						if sErr != nil {
 							fmt.Printf("[ERROR] getting certificate stores of type '%s': %s\n", s, sErr)
 							log.Fatalf("[ERROR] getting certificate stores of type '%s': %s", s, sErr)
