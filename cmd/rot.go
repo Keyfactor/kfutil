@@ -359,7 +359,7 @@ kfutil stores rot audit --certs-file <certs-file> --stores-file <stores-file>
 Will generate a CSV report file 'rot_audit.csv' of what actions will be taken. If those actions are correct you can run
 the following command to actually perform the actions:
 kfutil stores rot reconcile --certs-file <certs-file> --stores-file <stores-file>
-OR if you want to use the audit report file generated you can run this command:
+OR if you shouldPass to use the audit report file generated you can run this command:
 kfutil stores rot reconcile --import-csv <audit-file>
 `,
 	}

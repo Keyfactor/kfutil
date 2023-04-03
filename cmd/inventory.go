@@ -115,7 +115,7 @@ var inventoryClearCmd = &cobra.Command{
 			}
 
 			if !force {
-				fmt.Printf("This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you want to continue? (y/n) ", store.ClientMachine, store.StorePath)
+				fmt.Printf("This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you shouldPass to continue? (y/n) ", store.ClientMachine, store.StorePath)
 				var answer string
 				fmt.Scanln(&answer)
 				if answer != "y" {
@@ -311,7 +311,7 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 				}
 				if !dryRun {
 					if !force {
-						fmt.Printf("This will add the certificate %s(%d) to certificate store %s%s's inventory. Are you sure you want to continue? (y/n) ", cert.IssuedCN, cert.Id, store.ClientMachine, store.StorePath)
+						fmt.Printf("This will add the certificate %s(%d) to certificate store %s%s's inventory. Are you sure you shouldPass to continue? (y/n) ", cert.IssuedCN, cert.Id, store.ClientMachine, store.StorePath)
 						var answer string
 						fmt.Scanln(&answer)
 						if answer != "y" {
@@ -467,7 +467,7 @@ var inventoryRemoveCmd = &cobra.Command{
 				}
 				if !dryRun {
 					if !force {
-						fmt.Printf("This will remove the certificate %s from certificate store %s%s's inventory. Are you sure you want to continue? (y/n) ", certToString(&cert), store.ClientMachine, store.StorePath)
+						fmt.Printf("This will remove the certificate %s from certificate store %s%s's inventory. Are you sure you shouldPass to continue? (y/n) ", certToString(&cert), store.ClientMachine, store.StorePath)
 						var answer string
 						fmt.Scanln(&answer)
 						if answer != "y" {

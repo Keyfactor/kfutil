@@ -12,8 +12,8 @@ import (
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
-
 	"io"
+
 	"log"
 	"os"
 	"os/signal"
@@ -38,6 +38,7 @@ WARNING: The username and password will be stored in the config file in plain te
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.SetOutput(io.Discard)
+		//log.SetOutput(os.Stdout)
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 
@@ -51,15 +52,7 @@ WARNING: The username and password will be stored in the config file in plain te
 }
 
 func init() {
-	var (
-		configFile string
-		noPrompt   bool
-	)
-
 	RootCmd.AddCommand(loginCmd)
-
-	loginCmd.Flags().StringVarP(&configFile, "config", "c", "", "config file (default is $HOME/.keyfactor/%s)")
-	loginCmd.Flags().BoolVar(&noPrompt, "no-prompt", false, "Do not prompt for username and password")
 }
 
 func authConfigFile(configFile string, noPrompt bool) bool {
@@ -108,7 +101,6 @@ func authConfigFile(configFile string, noPrompt bool) bool {
 				fmt.Println("Error getting hostname: ", phErr)
 				log.Println("[ERROR] getting hostname: ", phErr)
 			}
-
 		}
 		if len(host) == 0 {
 			host = envHostName
@@ -226,14 +218,11 @@ func authConfigFile(configFile string, noPrompt bool) bool {
 		Domain:   domain,
 	}
 	// Since there's no login command in the API, we'll just try to get the list of CAs
-	kfClient, kfcErr := api.NewKeyfactorClient(&authConfig)
+	_, kfcErr := api.NewKeyfactorClient(&authConfig)
 	if kfcErr != nil {
 		log.Println("[ERROR] initializing Keyfactor client: ", kfcErr)
-	}
-	_, authErr := kfClient.GetCAList()
-	if authErr != nil {
-		fmt.Println("Error authenticating to Keyfactor Command: ", authErr)
-		log.Fatal("[ERROR] getting CA list: ", authErr)
+		fmt.Println(fmt.Sprintf("Unable to initialize Keyfactor client. %s. Please check your configuration and try again.", kfcErr))
+		return false
 	}
 
 	config["host"] = host
