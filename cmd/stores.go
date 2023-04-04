@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
-	"io"
 	"log"
 )
 
@@ -29,8 +28,15 @@ var storesListCmd = &cobra.Command{
 	Short: "List certificate stores.",
 	Long:  `List certificate stores.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
-		kfClient, _ := initClient()
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
+		kfClient, _ := initClient(profile)
 		params := make(map[string]interface{})
 		stores, err := kfClient.ListCertificateStores(&params)
 
@@ -50,9 +56,16 @@ var storesGetCmd = &cobra.Command{
 	Short: "Get a certificate store by ID.",
 	Long:  `Get a certificate store by ID.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		storeId, _ := cmd.Flags().GetString("id")
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(profile)
 		stores, err := kfClient.GetCertificateStoreByID(storeId)
 		if err != nil {
 			log.Printf("Error: %s", err)

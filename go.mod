@@ -6,8 +6,10 @@ require (
 	github.com/Jeffail/gabs/v2 v2.7.0
 	github.com/Keyfactor/keyfactor-go-client v1.3.2
 	github.com/Keyfactor/keyfactor-go-client-sdk v0.1.0
+	github.com/google/go-cmp v0.5.9
 	github.com/spf13/cobra v1.6.1
 	golang.org/x/crypto v0.7.0
+//github.com/google/go-cmp/cmp v0.5.9
 )
 
 require (

@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client/api"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -60,8 +59,15 @@ var storesTypesListCmd = &cobra.Command{
 	Short: "List certificate store types.",
 	Long:  `List certificate store types.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
-		kfClient, _ := initClient()
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
+		kfClient, _ := initClient(profile)
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
 		if err != nil {
 			log.Printf("Error: %s", err)
@@ -81,10 +87,17 @@ var storesTypeGetCmd = &cobra.Command{
 	Short: "Get a specific store type by either name or ID.",
 	Long:  `Get a specific store type by either name or ID.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id, _ := cmd.Flags().GetInt("id")
 		name, _ := cmd.Flags().GetString("name")
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(profile)
 		var st interface{}
 		// Check inputs
 		if id < 0 && name == "" {
@@ -124,6 +137,14 @@ var storesTypeCreateCmd = &cobra.Command{
 	Short: "Create a new certificate store type in Keyfactor.",
 	Long:  `Create a new certificate store type in Keyfactor.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		//Check if store type is valid
 		validStoreTypes := getValidStoreTypes("")
 		storeType, _ := cmd.Flags().GetString("name")
@@ -142,7 +163,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		}
 
 		if configFile != "" {
-			createdStore, err := createStoreFromFile(configFile)
+			createdStore, err := createStoreFromFile(configFile, profile)
 			if err != nil {
 				fmt.Printf("Failed to create store type from file \"%s\"", err)
 				return
@@ -163,7 +184,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			fmt.Printf("Error: Invalid store type: %s\nValid types are: %s", storeType, validStoreTypes)
 			log.Fatalf("Error: Invalid store type: %s", storeType)
 		} else {
-			kfClient, _ := initClient()
+			kfClient, _ := initClient(profile)
 			storeTypeConfig, stErr := readStoreTypesConfig("")
 			if stErr != nil {
 				fmt.Printf("Error: %s", stErr)
@@ -220,8 +241,8 @@ var storesTypeCreateCmd = &cobra.Command{
 	},
 }
 
-func createStoreFromFile(filename string) (*api.CertificateStoreType, error) {
-	kfClient, _ := initClient()
+func createStoreFromFile(filename string, profile string) (*api.CertificateStoreType, error) {
+	kfClient, _ := initClient(profile)
 	// Read the file
 	file, err := os.Open(filename)
 	if err != nil {
@@ -248,8 +269,16 @@ var storesTypeUpdateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update a certificate store type in Keyfactor.",
 	Long:  `Update a certificate store type in Keyfactor.`,
+
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		//profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		fmt.Println("update called")
 	},
 }
@@ -259,10 +288,17 @@ var storesTypeDeleteCmd = &cobra.Command{
 	Short: "Delete a specific store type by ID.",
 	Long:  `Delete a specific store type by ID.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id, _ := cmd.Flags().GetInt("id")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(profile)
 		_, err := kfClient.GetCertificateStoreType(id)
 		if err != nil {
 			log.Printf("Error: %s", err)

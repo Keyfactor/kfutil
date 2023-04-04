@@ -10,10 +10,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
-	"io"
-
 	"log"
 	"os"
 	"os/signal"
@@ -21,6 +20,18 @@ import (
 )
 
 const DefaultConfigFileName = "command_config.json"
+const DefaultConfigurationFileName = "kfcmd_config.json"
+
+type ConfigurationFile struct {
+	Servers map[string]ConfigurationFileEntry `json:"servers"`
+}
+
+type ConfigurationFileEntry struct {
+	Hostname string `json:"host"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Domain   string `json:"domain"`
+}
 
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
@@ -36,18 +47,23 @@ KEYFACTOR_PASSWORD and KEYFACTOR_DOMAIN.
 WARNING: The username and password will be stored in the config file in plain text at: 
 '$HOME/.keyfactor/command_config.json.'
 `,
+	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
-		//log.SetOutput(os.Stdout)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
 
-		authenticated := authConfigFile(configFile, noPrompt)
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
+
+		authenticated := authConfigFile(configFile, noPrompt, profile)
 		if !authenticated {
 			fmt.Println("Login failed.")
-			log.Fatal("Unable to authenticate")
+			log.Fatal("[FATAL] Unable to authenticate")
 		}
-		fmt.Println("Login successful!")
+		fmt.Println(fmt.Sprintf("Login successful!"))
 	},
 }
 
@@ -55,8 +71,10 @@ func init() {
 	RootCmd.AddCommand(loginCmd)
 }
 
-func authConfigFile(configFile string, noPrompt bool) bool {
-	config := make(map[string]string)
+func authConfigFile(configFile string, noPrompt bool, profile string) bool {
+	var config map[string]string
+	var configurationFile ConfigurationFile
+
 	userHomeDir, hErr := os.UserHomeDir()
 	if configFile == "" {
 		// Set up home directory config
@@ -74,11 +92,22 @@ func authConfigFile(configFile string, noPrompt bool) bool {
 				log.Printf("[ERROR] creating directory: %s", errDir)
 			}
 		}
-		config = loadConfigFile(fmt.Sprintf("%s/%s", userHomeDir, DefaultConfigFileName), nil)
+		//config, _ = loadConfigFile(fmt.Sprintf("%s/%s", userHomeDir, DefaultConfigFileName), true)
+		configurationFile, _ = loadConfigurationFile(fmt.Sprintf("%s/%s", userHomeDir, DefaultConfigFileName), true)
+		configFile = fmt.Sprintf("%s/%s", userHomeDir, DefaultConfigFileName)
 	} else {
 		// Load config from specified file
-		config = loadConfigFile(configFile, nil)
+		//config, _ = loadConfigFile(configFile, false)
+		configurationFile, _ = loadConfigurationFile(configFile, false)
 		return true
+	}
+
+	if config == nil {
+		config = make(map[string]string)
+	}
+
+	if configurationFile.Servers == nil {
+		configurationFile.Servers = make(map[string]ConfigurationFileEntry)
 	}
 
 	// Get the Keyfactor Command URL
@@ -176,21 +205,34 @@ func authConfigFile(configFile string, noPrompt bool) bool {
 	// Get AD domain if not provided in the username or config file
 	envDomain, domainSet := os.LookupEnv("KEYFACTOR_DOMAIN")
 	var domain string
+	var userDomain string
+	var configDomain string
 	if !domainSet {
 		if strings.Contains(username, "@") {
-			envDomain = strings.Split(username, "@")[1]
+			userDomain = strings.Split(username, "@")[1]
 		} else if strings.Contains(username, "\\") {
-			envDomain = strings.Split(username, "\\")[0]
+			userDomain = strings.Split(username, "\\")[0]
 		} else {
-			log.Println("[INFO] Domain not set. Please set the KEYFACTOR_DOMAIN environment variable.")
+			configDomain = config["domain"]
 		}
 	}
 	if noPrompt {
 		//fmt.Println("Using domain: ", envDomain)
-		if len(envDomain) == 0 {
-			envDomain = config["domain"]
+		if len(envDomain) == 0 && len(userDomain) == 0 && len(configDomain) == 0 {
+
+			fmt.Println("Domain not set and unable to be inferred. Please set the KEYFACTOR_DOMAIN environment variable.")
+			log.Fatal("[FATAL] Domain not set. Please set the KEYFACTOR_DOMAIN environment variable.")
+			return false
 		}
-		domain = envDomain
+		if len(configDomain) == 0 {
+			if len(userDomain) > 0 {
+				log.Println("[INFO] Domain not set. Using domain from username ", userDomain)
+				domain = userDomain
+			} else if len(envDomain) > 0 {
+				log.Println("[INFO] Domain not set. Using domain from environment variable KEYFACTOR_DOMAIN", envDomain)
+				domain = envDomain
+			}
+		}
 	} else {
 		fmt.Printf("Enter your Keyfactor Command AD domain [%s]: \n", envDomain)
 		_, sdErr := fmt.Scanln(&domain)
@@ -229,18 +271,105 @@ func authConfigFile(configFile string, noPrompt bool) bool {
 	config["username"] = username
 	config["domain"] = domain
 	config["password"] = p
-	f, fErr := os.OpenFile(fmt.Sprintf("%s/%s", userHomeDir, DefaultConfigFileName), os.O_CREATE|os.O_RDWR, 0700)
+
+	configuration := ConfigurationFileEntry{
+		Hostname: host,
+		Username: username,
+		Password: p,
+		Domain:   domain,
+	}
+
+	//confErr := createConfigFile(config, configFile)
+	configurationErr := createConfigurationFile(configuration, profile, configFile)
+	if configurationErr != nil {
+		log.Fatal("[FATAL] Login failed due to an issue with the configuration file: ", configurationErr)
+	}
+	//if confErr != nil {
+	//	log.Fatal("[FATAL] Login failed due ot an issue with the config file: ", confErr)
+	//}
+
+	return true
+}
+
+func createConfigFile(kfcfg map[string]string, configPath string) error {
+	log.Println("[INFO] creating kfcfg file")
+	log.Println("[DEBUG] kfcfg path: ", configPath)
+
+	entry := ConfigurationFileEntry{
+		Hostname: kfcfg["host"],
+		Username: kfcfg["username"],
+		Password: kfcfg["password"],
+		Domain:   kfcfg["domain"],
+	}
+
+	log.Println("[DEBUG] kfcfg entry: ", entry)
+
+	f, fErr := os.OpenFile(fmt.Sprintf("%s", configPath), os.O_CREATE|os.O_RDWR, 0600)
 	defer f.Close()
 	if fErr != nil {
-		fmt.Println("[ERROR] creating config file: ", fErr)
+		fmt.Println("Error creating kfcfg file: ", fErr)
+		log.Println("[ERROR] creating kfcfg file: ", fErr)
+		return fErr
 	}
 	encoder := json.NewEncoder(f)
-	enErr := encoder.Encode(&config)
+	enErr := encoder.Encode(&kfcfg)
 	if enErr != nil {
-		fmt.Println("Unable to read config file due to invalid format. ", enErr)
-		log.Println("[ERROR] encoding config file: ", enErr)
+		fmt.Println("Unable to read kfcfg file due to invalid format. ", enErr)
+		log.Println("[ERROR] encoding kfcfg file: ", enErr)
+		return enErr
 	}
-	return true
+	return nil
+}
+
+func createConfigurationFile(cfgFile ConfigurationFileEntry, configName string, configPath string) error {
+	log.Println("[INFO] creating kfcfg file")
+	log.Println("[DEBUG] kfcfg path: ", configPath)
+
+	if len(configName) == 0 {
+		configName = "default"
+	}
+
+	existingConfig, exsErr := loadConfigurationFile(configPath, true)
+	if exsErr != nil {
+		log.Println(fmt.Sprintf("[INFO] adding new config name '%s'", configName))
+		existingConfig.Servers = make(map[string]ConfigurationFileEntry)
+		existingConfig.Servers[configName] = cfgFile
+	} else if len(existingConfig.Servers) > 0 {
+		// check if the config name already exists
+		if _, ok := existingConfig.Servers[configName]; ok {
+			log.Println(fmt.Sprintf("[WARN] config name '%s' already exists. Overwriting existing config.", configName))
+			log.Println(fmt.Sprintf("[DEBUG] existing config: %v", existingConfig.Servers[configName]))
+			log.Println(fmt.Sprintf("[DEBUG] new config: %v", cfgFile))
+			// print out the diff between the two configs
+			diff := cmp.Diff(existingConfig.Servers[configName], cfgFile)
+			log.Println(fmt.Sprintf("[DEBUG] diff: %s", diff))
+		} else {
+			log.Println(fmt.Sprintf("[INFO] adding new config name '%s'", configName))
+		}
+		existingConfig.Servers[configName] = cfgFile
+	} else {
+		log.Println(fmt.Sprintf("[INFO] adding new config name '%s'", configName))
+		existingConfig.Servers = make(map[string]ConfigurationFileEntry)
+		existingConfig.Servers[configName] = cfgFile
+	}
+
+	log.Println("[DEBUG] kfcfg entry: ", cfgFile)
+
+	f, fErr := os.OpenFile(fmt.Sprintf("%s", configPath), os.O_CREATE|os.O_RDWR, 0600)
+	defer f.Close()
+	if fErr != nil {
+		fmt.Println("Error creating kfcfg file: ", fErr)
+		log.Println("[ERROR] creating kfcfg file: ", fErr)
+		return fErr
+	}
+	encoder := json.NewEncoder(f)
+	enErr := encoder.Encode(&existingConfig)
+	if enErr != nil {
+		fmt.Println("Unable to read kfcfg file due to invalid format. ", enErr)
+		log.Println("[ERROR] encoding kfcfg file: ", enErr)
+		return enErr
+	}
+	return nil
 }
 
 func getPassword(prompt string) string {
@@ -273,10 +402,17 @@ func getPassword(prompt string) string {
 	return string(p)
 }
 
-func loadConfigFile(path string, filter func(map[string]interface{}) bool) map[string]string {
-	data := make(map[string]string)
+func loadConfigFile(path string, silent bool) (map[string]string, error) {
+	data := make(map[string]string) // todo: make this a struct and support multiple configs in a single file
 
-	f, _ := os.ReadFile(path)
+	f, rFErr := os.ReadFile(path)
+	if rFErr != nil {
+		if !silent {
+			fmt.Println(fmt.Sprintf("Unable to read config file '%s'.", rFErr))
+			log.Fatal("[FATAL] Error reading config file: ", rFErr)
+		}
+		return nil, rFErr
+	}
 
 	jErr := json.Unmarshal(f, &data)
 	if jErr != nil {
@@ -284,14 +420,27 @@ func loadConfigFile(path string, filter func(map[string]interface{}) bool) map[s
 		log.Println("[ERROR] decoding config file: ", jErr)
 	}
 
-	//filteredData := []map[string]interface{}{}
+	return data, nil
+}
 
-	//for _, data := range data {
-	//	// Do some filtering
-	//	if filter(data) {
-	//		filteredData = append(filteredData, data)
-	//	}
-	//}
+func loadConfigurationFile(path string, silent bool) (ConfigurationFile, error) {
 
-	return data
+	//data := ConfigurationFile{Servers: make(map[string]ConfigurationFileEntry)}
+	data := ConfigurationFile{}
+	f, rFErr := os.ReadFile(path)
+	if rFErr != nil {
+		if !silent {
+			fmt.Println(fmt.Sprintf("Unable to read config file '%s'.", rFErr))
+			log.Fatal("[FATAL] Error reading config file: ", rFErr)
+		}
+		return data, rFErr
+	}
+
+	jErr := json.Unmarshal(f, &data)
+	if jErr != nil {
+		//fmt.Println("Unable to read config file due to invalid format. ", jErr)
+		log.Println("[ERROR] decoding config file: ", jErr)
+	}
+
+	return data, nil
 }

@@ -105,6 +105,15 @@ var exportCmd = &cobra.Command{
 			CustomReports:       []keyfactor.ModelsCustomReportCreationRequest{},
 			SecurityRoles:       []api.CreateSecurityRoleArg{},
 		}
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
+
 		exportPath := cmd.Flag("file").Value.String()
 		if cmd.Flag("all").Value.String() == "true" {
 			out.Collections = getCollections()
@@ -116,7 +125,7 @@ var exportCmd = &cobra.Command{
 			out.Networks = getSslNetworks()
 			out.WorkflowDefinitions = getWorkflowDefinitions()
 			out.BuiltInReports, out.CustomReports = getReports()
-			out.SecurityRoles = getRoles()
+			out.SecurityRoles = getRoles(profile)
 		} else {
 			if cmd.Flag("collections").Value.String() == "true" {
 				out.Collections = getCollections()
@@ -146,7 +155,7 @@ var exportCmd = &cobra.Command{
 				out.BuiltInReports, out.CustomReports = getReports()
 			}
 			if cmd.Flag("security-roles").Value.String() == "true" {
-				out.SecurityRoles = getRoles()
+				out.SecurityRoles = getRoles(profile)
 			}
 		}
 		exportToJSON(out, exportPath)
@@ -366,8 +375,8 @@ func getReports() ([]exportModelsReport, []keyfactor.ModelsCustomReportCreationR
 	return lbReportsReq, lcReportReq
 }
 
-func getRoles() []api.CreateSecurityRoleArg {
-	kfClient, _ := initClient()
+func getRoles(profile string) []api.CreateSecurityRoleArg {
+	kfClient, _ := initClient(profile)
 	roles, reqErr := kfClient.GetSecurityRoles()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get security roles %s%s\n", colorRed, reqErr, colorWhite)

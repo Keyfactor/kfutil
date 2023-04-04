@@ -18,7 +18,7 @@ var statusCmd = &cobra.Command{
 	Long:  `Returns a list of all API endpoints.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		//log.SetOutput(io.Discard)
-		//kfClient, _ := initClient()
+		//kfClient, _ := initClient(profile)
 		//status, err := kfClient.GetStatus()
 		//if err != nil {
 		//	log.Printf("Error: %s", err)

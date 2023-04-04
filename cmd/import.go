@@ -29,6 +29,15 @@ var importCmd = &cobra.Command{
 	Short: "Keyfactor instance import utilities.",
 	Long:  `A collection of APIs and utilities for importing Keyfactor instance data.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
+
 		exportPath := cmd.Flag("file").Value.String()
 		jsonFile, oErr := os.Open(exportPath)
 		if oErr != nil {
@@ -44,7 +53,7 @@ var importCmd = &cobra.Command{
 			log.Fatalf("Error: %s", jErr)
 		}
 		kfClient := initGenClient()
-		oldKfClient, _ := initClient()
+		oldkfClient, _ := initClient(profile)
 		if cmd.Flag("all").Value.String() == "true" {
 			importCollections(out.Collections, kfClient)
 			importMetadataFields(out.MetadataFields, kfClient)
@@ -55,7 +64,7 @@ var importCmd = &cobra.Command{
 			importWorkflowDefinitions(out.WorkflowDefinitions, kfClient)
 			importBuiltInReports(out.BuiltInReports, kfClient)
 			importCustomReports(out.CustomReports, kfClient)
-			importSecurityRoles(out.SecurityRoles, oldKfClient)
+			importSecurityRoles(out.SecurityRoles, oldkfClient)
 		} else {
 			if len(out.Collections) != 0 && cmd.Flag("collections").Value.String() == "true" {
 				importCollections(out.Collections, kfClient)
@@ -85,7 +94,7 @@ var importCmd = &cobra.Command{
 				importCustomReports(out.CustomReports, kfClient)
 			}
 			if len(out.SecurityRoles) != 0 && cmd.Flag("security-roles").Value.String() == "true" {
-				importSecurityRoles(out.SecurityRoles, oldKfClient)
+				importSecurityRoles(out.SecurityRoles, oldkfClient)
 			}
 		}
 	},

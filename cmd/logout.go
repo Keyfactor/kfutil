@@ -8,7 +8,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 
@@ -21,7 +20,14 @@ var logoutCmd = &cobra.Command{
 	Short: "Removes the credentials file '$HOME/.keyfactor/command_config.json'.",
 	Long:  `Removes the credentials file '$HOME/.keyfactor/command_config.json'.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		//profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		err := os.Remove(fmt.Sprintf("%s/.keyfactor/%s", os.Getenv("HOME"), DefaultConfigFileName))
 		if err != nil {
 			fmt.Println("Error removing config file: ", err)

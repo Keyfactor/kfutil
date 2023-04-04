@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -23,7 +24,7 @@ var colorWhite = "\033[37m"
 var xKeyfactorRequestedWith = "APIClient"
 var xKeyfactorApiVersion = "1"
 
-func initClient() (*api.Client, error) {
+func initClient(p string) (*api.Client, error) {
 	log.SetOutput(io.Discard)
 	var clientAuth api.AuthConfig
 	clientAuth.Username = os.Getenv("KEYFACTOR_USERNAME")
@@ -34,9 +35,18 @@ func initClient() (*api.Client, error) {
 	log.Printf("[DEBUG] Domain: %s", clientAuth.Domain)
 	clientAuth.Hostname = os.Getenv("KEYFACTOR_HOSTNAME")
 	log.Printf("[DEBUG] Hostname: %s", clientAuth.Hostname)
+	var profile string
+	if p != "" {
+		profile = p
+	} else {
+		profile = os.Getenv("KFUTIL_PROFILE")
+	}
+	if profile == "" {
+		profile = "default"
+	}
 
 	if clientAuth.Username == "" || clientAuth.Password == "" || clientAuth.Hostname == "" {
-		authConfigFile("", true)
+		authConfigFile("", true, profile)
 		clientAuth.Username = os.Getenv("KEYFACTOR_USERNAME")
 		log.Printf("[DEBUG] Username: %s", clientAuth.Username)
 		clientAuth.Password = os.Getenv("KEYFACTOR_PASSWORD")
@@ -88,13 +98,17 @@ func init() {
 
 	var (
 		configFile   string
+		profile      string
 		noPrompt     bool
 		experimental bool
+		debug        bool
 	)
 
-	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", "config file (default is $HOME/.keyfactor/%s)")
+	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", fmt.Sprintf("Full path to config file in JSON format. (default is $HOME/.keyfactor/%s)", DefaultConfigFileName))
 	RootCmd.PersistentFlags().BoolVar(&noPrompt, "no-prompt", false, "Do not prompt for any user input and assume defaults or environmental variables are set.")
 	RootCmd.PersistentFlags().BoolVar(&experimental, "exp", false, "Enable experimental features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)")
+	RootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging. (USE AT YOUR OWN RISK, this may log sensitive information to the console.)")
+	RootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "default", "Use a specific profile from your config file. Defaults to 'default'.")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -117,6 +131,21 @@ func stringToPointer(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+func checkDebug(v bool) bool {
+	envDebug := os.Getenv("KFUTIL_DEBUG")
+	envValue, _ := strconv.ParseBool(envDebug)
+	if (envValue && !v) || (envValue && v) {
+		// If the env var is set and the flag is not, use the env var
+		log.SetOutput(os.Stdout)
+		return envValue
+	} else if v {
+		log.SetOutput(os.Stdout)
+		return v
+	}
+	log.SetOutput(io.Discard)
+	return v
 }
 
 func GetCurrentTime() string {

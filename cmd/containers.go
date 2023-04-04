@@ -9,7 +9,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -36,9 +35,16 @@ var containersGetCmd = &cobra.Command{
 	Short: "Get certificate store container by ID or name.",
 	Long:  `Get certificate store container by ID or name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id := cmd.Flag("id").Value.String()
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(profile)
 		agents, aErr := kfClient.GetStoreContainer(id)
 		if aErr != nil {
 			fmt.Printf("Error, unable to get container %s. %s\n", id, aErr)
@@ -76,8 +82,16 @@ var containersListCmd = &cobra.Command{
 	Short: "List certificate store containers.",
 	Long:  `List certificate store containers.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
-		kfClient, _ := initClient()
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
+
+		kfClient, _ := initClient(profile)
 		agents, aErr := kfClient.GetStoreContainers()
 		if aErr != nil {
 			fmt.Printf("Error, unable to list store containers. %s\n", aErr)
