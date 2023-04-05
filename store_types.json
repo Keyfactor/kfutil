@@ -821,7 +821,7 @@
         "Name": "spnwithport",
         "DisplayName": "SPN With Port?",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "false",
         "Required": false
       },
@@ -829,7 +829,7 @@
         "Name": "WinRM Protocol",
         "DisplayName": "WinRm Protocol",
         "Type": "MultipleChoice",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "http,https",
         "Required": true
       },
@@ -837,7 +837,7 @@
         "Name": "WinRm Port",
         "DisplayName": "WinRm Port",
         "Type": "String",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "5985",
         "Required": true
       },
@@ -845,7 +845,7 @@
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": null,
         "Required": false
       },
@@ -853,7 +853,7 @@
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": null,
         "Required": false
       },
@@ -861,12 +861,107 @@
         "Name": "ServerUseSsl",
         "DisplayName": "Use SSL?",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "true",
         "Required": true
       }
     ],
-    "EntryParameters": [],
+    "EntryParameters": [
+      {
+        "Name": "IPAddress",
+        "DisplayName": "IP Address",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DefaultValue": "*"
+      },
+      {
+        "Name": "Port",
+        "DisplayName": "Port",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DefaultValue": "443"
+      },
+      {
+        "Name": "HostName",
+        "DisplayName": "Host Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      },
+      {
+        "Name": "SiteName",
+        "DisplayName": "Site Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DefaultValue": "Default Web Site"
+      },
+      {
+        "Name": "SniFlag",
+        "DisplayName": "SNI Flag",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": "0 - No SNI"
+      },
+      {
+        "Name": "Protocol",
+        "DisplayName": "Protocol",
+        "Type": "MultipleChoice",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DefaultValue": "https",
+        "Options": "http, https"
+      },
+      {
+        "Name": "ProviderName",
+        "DisplayName": "Provider Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      },
+      {
+        "Name": "SAN",
+        "DisplayName": "SAN",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": true
+        }
+      }
+    ],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -1337,7 +1432,7 @@
         "Name": "spnwithport",
         "DisplayName": "SPN With Port",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "false",
         "Required": false
       },
@@ -1345,7 +1440,7 @@
         "Name": "WinRM Protocol",
         "DisplayName": "WinRm Protocol",
         "Type": "MultipleChoice",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "http, https",
         "Required": true
       },
@@ -1353,7 +1448,7 @@
         "Name": "WinRm Port",
         "DisplayName": "WinRm Port",
         "Type": "String",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "5985",
         "Required": true
       },
@@ -1361,7 +1456,7 @@
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": null,
         "Required": false
       },
@@ -1369,7 +1464,7 @@
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": null,
         "Required": false
       },
@@ -1377,7 +1472,7 @@
         "Name": "ServerUseSsl",
         "DisplayName": "Use SSL",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "true",
         "Required": true
       }
@@ -1417,7 +1512,7 @@
         "Name": "spnwithport",
         "DisplayName": "SPN With Port?",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "false",
         "Required": false
       },
@@ -1425,7 +1520,7 @@
         "Name": "WinRM Protocol",
         "DisplayName": "WinRm Protocol",
         "Type": "MultipleChoice",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "http,https",
         "Required": true
       },
@@ -1433,7 +1528,7 @@
         "Name": "WinRm Port",
         "DisplayName": "WinRm Port",
         "Type": "String",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "5985",
         "Required": true
       },
@@ -1441,7 +1536,7 @@
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": null,
         "Required": false
       },
@@ -1449,7 +1544,7 @@
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": null,
         "Required": false
       },
@@ -1457,12 +1552,107 @@
         "Name": "ServerUseSsl",
         "DisplayName": "Use SSL?",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "true",
         "Required": true
       }
     ],
-    "EntryParameters": [],
+    "EntryParameters": [
+      {
+        "Name": "IPAddress",
+        "DisplayName": "IP Address",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DefaultValue": "*"
+      },
+      {
+        "Name": "Port",
+        "DisplayName": "Port",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DefaultValue": "443"
+      },
+      {
+        "Name": "HostName",
+        "DisplayName": "Host Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      },
+      {
+        "Name": "SiteName",
+        "DisplayName": "Site Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DefaultValue": "Default Web Site"
+      },
+      {
+        "Name": "SniFlag",
+        "DisplayName": "SNI Flag",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": "0 - No SNI"
+      },
+      {
+        "Name": "Protocol",
+        "DisplayName": "Protocol",
+        "Type": "MultipleChoice",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DefaultValue": "https",
+        "Options": "http, https"
+      },
+      {
+        "Name": "ProviderName",
+        "DisplayName": "Provider Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      },
+      {
+        "Name": "SAN",
+        "DisplayName": "SAN",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": true
+        }
+      }
+    ],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
