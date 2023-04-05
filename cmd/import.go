@@ -168,7 +168,7 @@ func importNetworks(networks []keyfactor.KeyfactorApiModelsSslCreateNetworkReque
 }
 
 // identify matching templates between instances by name, then return the template Id of the matching template in the import instance
-func findMatchingTemplates(exportedWorkflowDef exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest, kfClient *keyfactor.APIClient) *string {
+func findMatchingTemplates(exportedWorkflowDef exportKeyfactorAPIModelsWorkflowsDefinitionCreateRequest, kfClient *keyfactor.APIClient) *string {
 	importInstanceTemplates, _, _ := kfClient.TemplateApi.TemplateGetTemplates(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	for _, template := range importInstanceTemplates {
 		importInstTempNameJson, _ := json.Marshal(template.TemplateName)
@@ -182,7 +182,7 @@ func findMatchingTemplates(exportedWorkflowDef exportKeyfactorApiModelsWorkflows
 	return nil
 }
 
-func importWorkflowDefinitions(workflowDefs []exportKeyfactorApiModelsWorkflowsDefinitionCreateRequest, kfClient *keyfactor.APIClient) {
+func importWorkflowDefinitions(workflowDefs []exportKeyfactorAPIModelsWorkflowsDefinitionCreateRequest, kfClient *keyfactor.APIClient) {
 	for _, workflowDef := range workflowDefs {
 		wJson, _ := json.Marshal(workflowDef)
 		var workflowDefReq keyfactor.KeyfactorApiModelsWorkflowsDefinitionCreateRequest
