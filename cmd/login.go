@@ -35,8 +35,11 @@ type ConfigurationFileEntry struct {
 
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
-	Use:   "login",
-	Short: "User interactive login to Keyfactor. Stores the credentials in the config file '$HOME/.keyfactor/command_config.json'.",
+	Use:        "login",
+	Aliases:    nil,
+	SuggestFor: nil,
+	Short:      "User interactive login to Keyfactor. Stores the credentials in the config file '$HOME/.keyfactor/command_config.json'.",
+	GroupID:    "",
 	Long: `Will prompt the user for a username and password and then attempt to login to Keyfactor.
 You can provide the --config flag to specify a config file to use. If not provided, the default
 config file will be used. The default config file is located at $HOME/.keyfactor/command_config.json.
@@ -47,7 +50,19 @@ KEYFACTOR_PASSWORD and KEYFACTOR_DOMAIN.
 WARNING: The username and password will be stored in the config file in plain text at: 
 '$HOME/.keyfactor/command_config.json.'
 `,
-	Hidden: true,
+	Example:                "",
+	ValidArgs:              nil,
+	ValidArgsFunction:      nil,
+	Args:                   nil,
+	ArgAliases:             nil,
+	BashCompletionFunction: "",
+	Deprecated:             "",
+	Annotations:            nil,
+	Version:                "",
+	PersistentPreRun:       nil,
+	PersistentPreRunE:      nil,
+	PreRun:                 nil,
+	PreRunE:                nil,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
@@ -58,31 +73,196 @@ WARNING: The username and password will be stored in the config file in plain te
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 
-		authenticated := authConfigFile(configFile, noPrompt, profile)
+		authenticated := false
+		var (
+			authConfigErr error
+			authEnvErr    error
+		)
+
+		if profile == "" && configFile == "" {
+			// Check for environment variables
+			log.Println("[DEBUG] Checking for environment variables for kfutil configuration data.")
+			authEnvErr = authenticate(false, true, configFile, noPrompt, profile)
+			if authEnvErr == nil {
+				authenticated = true
+			} else {
+				log.Println("[WARN] Unable to authenticate with environment variables.", authEnvErr)
+				log.Println("[DEBUG] Attempting to authenticate via config 'default' profile.")
+				authConfigFileErr = authenticate(true, false, configFile, noPrompt, profile)
+				if authConfigFileErr == nil {
+					authenticated = true
+				} else {
+					log.Println("[WARN] Unable to authenticate with config file.", authConfigFileErr)
+				}
+				//if noPrompt {
+				//	fmt.Println("Login failed, environment variables not set. Please review https://github.com/Keyfactor/kfutil#environmental-variables for more information.")
+				//	log.Fatal("[FATAL] Unable to authenticate with environment variables.")
+				//}
+			}
+		} else if profile != "" {
+			if configFile == "" {
+				configFile = DefaultConfigFileName
+			}
+			log.Println("Checking for config file: ", configFile)
+			authConfigFileErr := authenticate(true, false, configFile, noPrompt, profile)
+			if authConfigFileErr == nil {
+				authenticated = true
+			} else {
+				log.Println("[WARN] Unable to authenticate with config file.", authConfigFileErr)
+			}
+		} else {
+			log.Println("[INFO] Checking for config file: ", configFile)
+			authConfigFileErr := authenticate(true, false, configFile, noPrompt, profile)
+			if authConfigFileErr == nil {
+				authenticated = true
+			} else {
+				log.Println("[WARN] Unable to authenticate with config file.", authConfigFileErr)
+			}
+		}
+
 		if !authenticated {
 			fmt.Println("Login failed.")
 			log.Fatal("[FATAL] Unable to authenticate")
 		}
 		fmt.Println(fmt.Sprintf("Login successful!"))
 	},
+	RunE:                       nil,
+	PostRun:                    nil,
+	PostRunE:                   nil,
+	PersistentPostRun:          nil,
+	PersistentPostRunE:         nil,
+	FParseErrWhitelist:         cobra.FParseErrWhitelist{},
+	CompletionOptions:          cobra.CompletionOptions{},
+	TraverseChildren:           false,
+	Hidden:                     true,
+	SilenceErrors:              false,
+	SilenceUsage:               false,
+	DisableFlagParsing:         false,
+	DisableAutoGenTag:          false,
+	DisableFlagsInUseLine:      false,
+	DisableSuggestions:         false,
+	SuggestionsMinimumDistance: 0,
 }
 
 func init() {
 	RootCmd.AddCommand(loginCmd)
 }
 
-func authConfigFile(configFile string, noPrompt bool, profile string) bool {
-	var config map[string]string
+func validConfig(hostname string, username string, password string, domain string) bool {
+	if hostname == "" || username == "" || password == "" {
+		return false
+	}
+	if domain == "" && (!strings.Contains(username, "@") || !strings.Contains(username, "\\")) {
+		return false
+	}
+	return true
+}
+
+func getDomainFromUsername(username string) string {
+	if strings.Contains(username, "@") {
+		return strings.Split(username, "@")[1]
+	} else if strings.Contains(username, "\\") {
+		return strings.Split(username, "\\")[0]
+	}
+	return ""
+}
+
+func authenticate(fromConfig bool, fromEnv bool, configFile string, noPrompt bool, profile string) error {
+
+	commandConfig := ConfigurationFile{}
+
+	if fromConfig {
+		commandConfig, _ = authConfigFile(configFile, noPrompt, profile)
+	} else if fromEnv {
+		commandConfig, _ = authEnv(noPrompt, profile)
+	}
+
+	if profile == "" {
+		profile = "default"
+	}
+	authConfig := api.AuthConfig{
+		Hostname: commandConfig.Servers[profile].Hostname,
+		Username: commandConfig.Servers[profile].Username,
+		Password: commandConfig.Servers[profile].Password,
+		Domain:   commandConfig.Servers[profile].Domain,
+	}
+	// Since there's no login command in the API, we'll just try to get the list of CAs
+	_, kfcErr := api.NewKeyfactorClient(&authConfig)
+	if kfcErr != nil {
+		log.Println("[ERROR] initializing Keyfactor client: ", kfcErr)
+		return fmt.Errorf("unable to initialize Keyfactor client. %s. Please check your configuration and try again", kfcErr)
+	}
+
+	return nil
+}
+
+func authEnv(noPrompt bool, profile string) (ConfigurationFile, error) {
+	configuration, err := loadConfigurationFromEnv(noPrompt, profile)
+	if err != nil {
+		log.Println("[ERROR] Error loading configuration from environment: ", err)
+		return ConfigurationFile{}, err
+	}
+	if len(configuration.Servers) == 0 {
+		log.Println("[ERROR] No servers found in configuration")
+		return ConfigurationFile{}, fmt.Errorf("no servers found in configuration")
+	}
+	return configuration, nil
+}
+
+func loadConfigurationFromEnv(noPrompt bool, profile string) (ConfigurationFile, error) {
+	// Get the Keyfactor Command URL
+	envHostName, hostSet := os.LookupEnv("KEYFACTOR_HOSTNAME")
+	envUserName, userSet := os.LookupEnv("KEYFACTOR_USERNAME")
+	envPassword, passSet := os.LookupEnv("KEYFACTOR_PASSWORD")
+	envDomain, domainSet := os.LookupEnv("KEYFACTOR_DOMAIN")
+	if !hostSet || !userSet || !passSet {
+		return ConfigurationFile{}, fmt.Errorf("missing environment variables") //TODO: Add more details
+	}
+	if !domainSet {
+		envDomain = getDomainFromUsername(envUserName)
+		if envDomain != "" {
+			domainSet = true
+		}
+	}
+
+	if !validConfig(envHostName, envUserName, envPassword, envDomain) {
+		return ConfigurationFile{}, fmt.Errorf("invalid configuration") //TODO: Add more details
+	}
+
+	output := ConfigurationFile{
+		Servers: map[string]ConfigurationFileEntry{
+			"default": {
+				Hostname: envHostName,
+				Username: envUserName,
+				Password: envPassword,
+				Domain:   envDomain,
+			},
+		},
+	}
+	return output, nil
+}
+
+func authConfigFile(configFile string, noPrompt bool, profile string) (ConfigurationFile, error) {
 	var configurationFile ConfigurationFile
 
+	envHostName, hostSet := os.LookupEnv("KEYFACTOR_HOSTNAME")
+	envUserName, userSet := os.LookupEnv("KEYFACTOR_USERNAME")
+	envPassword, passSet := os.LookupEnv("KEYFACTOR_PASSWORD")
+	envDomain, domainSet := os.LookupEnv("KEYFACTOR_DOMAIN")
+
+	log.Println("[DEBUG] Using profile: ", profile)
 	userHomeDir, hErr := os.UserHomeDir()
 	if configFile == "" {
 		// Set up home directory config
 		if hErr != nil {
+			log.Println("[ERROR] Error getting user home directory: ", hErr)
 			fmt.Println("Error getting user home directory: ", hErr)
+			fmt.Println("Using current directory to write config file '" + DefaultConfigFileName + "'")
+			userHomeDir = "." // Default to current directory
 		} else {
 			userHomeDir = fmt.Sprintf("%s/.keyfactor", userHomeDir)
 		}
+		log.Println("[DEBUG] Configuration directory: ", userHomeDir)
 		_, err := os.Stat(userHomeDir)
 
 		if os.IsNotExist(err) {
@@ -92,36 +272,67 @@ func authConfigFile(configFile string, noPrompt bool, profile string) bool {
 				log.Printf("[ERROR] creating directory: %s", errDir)
 			}
 		}
-		//config, _ = loadConfigFile(fmt.Sprintf("%s/%s", userHomeDir, DefaultConfigFileName), true)
+
 		configurationFile, _ = loadConfigurationFile(fmt.Sprintf("%s/%s", userHomeDir, DefaultConfigFileName), true)
 		configFile = fmt.Sprintf("%s/%s", userHomeDir, DefaultConfigFileName)
 	} else {
 		// Load config from specified file
-		//config, _ = loadConfigFile(configFile, false)
 		configurationFile, _ = loadConfigurationFile(configFile, false)
-		return true
-	}
-
-	if config == nil {
-		config = make(map[string]string)
+		return configurationFile, nil
 	}
 
 	if configurationFile.Servers == nil {
 		configurationFile.Servers = make(map[string]ConfigurationFileEntry)
 	}
 
-	// Get the Keyfactor Command URL
-	envHostName, hostSet := os.LookupEnv("KEYFACTOR_HOSTNAME")
+	skipEnvConfig := true
+
+	if profile == "" || profile == "default" {
+		skipEnvConfig = false
+	}
+
+	if skipEnvConfig {
+		log.Println("[INFO] Using profile: ", profile)
+		// Check if profile exists in config file
+		configProfile, profileExists := configurationFile.Servers[profile]
+		if !profileExists {
+			log.Println("[WARN] Profile not found in config file.")
+			fmt.Println("Profile '" + profile + "' not found in config file.")
+		} else {
+			log.Println("[INFO] Using kfutil config profile: ", profile)
+			envHostName = configProfile.Hostname
+			envUserName = configProfile.Username
+			envPassword = configProfile.Password
+			envDomain = configProfile.Domain
+			hostSet = true
+			userSet = true
+			passSet = true
+			domainSet = true
+		}
+	}
+
 	if !hostSet {
 		log.Println("[INFO] Hostname not set. Please set the KEYFACTOR_HOSTNAME environment variable.")
 	}
 	var host string
 	if noPrompt {
-		//fmt.Println("Connecting to Keyfactor Command host: ", envHostName)
-		if len(envHostName) == 0 {
-			envHostName = config["host"]
+		if !hostSet && !userSet && !passSet && !domainSet && envHostName == "" && envUserName == "" && envPassword == "" && envDomain == "" {
+			fmt.Println("No login information provided. Please set the KEYFACTOR_HOSTNAME, KEYFACTOR_USERNAME, KEYFACTOR_PASSWORD and KEYFACTOR_DOMAIN environment variables.")
+			log.Fatal("[FATAL] No login information provided. Please use interactive auth or set the KEYFACTOR_HOSTNAME, KEYFACTOR_USERNAME, KEYFACTOR_PASSWORD and KEYFACTOR_DOMAIN environment variables.")
+			return ConfigurationFile{}, fmt.Errorf("no login information provided")
 		}
-		host = envHostName
+		if !hostSet {
+			if len(envHostName) == 0 {
+
+			}
+			host = envHostName
+			//ehErr := os.Setenv("KEYFACTOR_HOSTNAME", host)
+			//if ehErr != nil {
+			//	fmt.Println("Error setting hostname: ", ehErr)
+			//	log.Fatal("[ERROR] setting hostname: ", ehErr)
+			//}
+		}
+
 	} else {
 		fmt.Printf("Enter Keyfactor Command host URL [%s]: \n", envHostName)
 		_, phErr := fmt.Scanln(&host)
@@ -135,21 +346,16 @@ func authConfigFile(configFile string, noPrompt bool, profile string) bool {
 			host = envHostName
 		}
 	}
-	ehErr := os.Setenv("KEYFACTOR_HOSTNAME", host)
-	if ehErr != nil {
-		fmt.Println("Error setting hostname: ", ehErr)
-		log.Fatal("[ERROR] setting hostname: ", ehErr)
-	}
 
 	// Get the username
-	envUserName, userSet := os.LookupEnv("KEYFACTOR_USERNAME")
+
 	if !userSet {
 		log.Println("[INFO] Username not set. Please set the KEYFACTOR_USERNAME environment variable.")
 	}
 	var username string
 	if noPrompt {
 		if len(envUserName) == 0 {
-			envUserName = config["username"]
+			envUserName = configurationFile.Servers[profile].Username
 		}
 		username = envUserName
 	} else {
@@ -164,7 +370,7 @@ func authConfigFile(configFile string, noPrompt bool, profile string) bool {
 	}
 	if len(username) == 0 {
 		if len(envUserName) == 0 {
-			envUserName = config["username"]
+			envUserName = configurationFile.Servers[profile].Username
 		}
 		username = envUserName
 	}
@@ -175,14 +381,14 @@ func authConfigFile(configFile string, noPrompt bool, profile string) bool {
 	}
 
 	// Get the password.
-	envPassword, passSet := os.LookupEnv("KEYFACTOR_PASSWORD")
+
 	if !passSet {
 		log.Println("[INFO] Password not set. Please set the KEYFACTOR_PASSWORD environment variable.")
 	}
 	var p string
 	if noPrompt {
 		if len(envPassword) == 0 {
-			envPassword = config["password"]
+			envPassword = configurationFile.Servers[profile].Password
 		}
 		p = envPassword
 	} else {
@@ -203,7 +409,7 @@ func authConfigFile(configFile string, noPrompt bool, profile string) bool {
 	}
 
 	// Get AD domain if not provided in the username or config file
-	envDomain, domainSet := os.LookupEnv("KEYFACTOR_DOMAIN")
+
 	var domain string
 	var userDomain string
 	var configDomain string
@@ -213,7 +419,7 @@ func authConfigFile(configFile string, noPrompt bool, profile string) bool {
 		} else if strings.Contains(username, "\\") {
 			userDomain = strings.Split(username, "\\")[0]
 		} else {
-			configDomain = config["domain"]
+			configDomain = configurationFile.Servers[profile].Domain
 		}
 	}
 	if noPrompt {
@@ -222,7 +428,7 @@ func authConfigFile(configFile string, noPrompt bool, profile string) bool {
 
 			fmt.Println("Domain not set and unable to be inferred. Please set the KEYFACTOR_DOMAIN environment variable.")
 			log.Fatal("[FATAL] Domain not set. Please set the KEYFACTOR_DOMAIN environment variable.")
-			return false
+			return ConfigurationFile{}, fmt.Errorf("domain not set and unable to be inferred")
 		}
 		if len(configDomain) == 0 {
 			if len(userDomain) > 0 {
@@ -232,6 +438,9 @@ func authConfigFile(configFile string, noPrompt bool, profile string) bool {
 				log.Println("[INFO] Domain not set. Using domain from environment variable KEYFACTOR_DOMAIN", envDomain)
 				domain = envDomain
 			}
+		} else {
+			log.Println("[WARN] KEYFACTOR_DOMAIN environment variable not set. Using domain from config file ", configDomain)
+			domain = configDomain
 		}
 	} else {
 		fmt.Printf("Enter your Keyfactor Command AD domain [%s]: \n", envDomain)
@@ -263,14 +472,8 @@ func authConfigFile(configFile string, noPrompt bool, profile string) bool {
 	_, kfcErr := api.NewKeyfactorClient(&authConfig)
 	if kfcErr != nil {
 		log.Println("[ERROR] initializing Keyfactor client: ", kfcErr)
-		fmt.Println(fmt.Sprintf("Unable to initialize Keyfactor client. %s. Please check your configuration and try again.", kfcErr))
-		return false
+		return ConfigurationFile{}, fmt.Errorf("unable to initialize Keyfactor client. %s. Please check your configuration and try again", kfcErr)
 	}
-
-	config["host"] = host
-	config["username"] = username
-	config["domain"] = domain
-	config["password"] = p
 
 	configuration := ConfigurationFileEntry{
 		Hostname: host,
@@ -280,7 +483,7 @@ func authConfigFile(configFile string, noPrompt bool, profile string) bool {
 	}
 
 	//confErr := createConfigFile(config, configFile)
-	configurationErr := createConfigurationFile(configuration, profile, configFile)
+	configurationErr := createOrUpdateConfigurationFile(configuration, profile, configFile)
 	if configurationErr != nil {
 		log.Fatal("[FATAL] Login failed due to an issue with the configuration file: ", configurationErr)
 	}
@@ -288,45 +491,16 @@ func authConfigFile(configFile string, noPrompt bool, profile string) bool {
 	//	log.Fatal("[FATAL] Login failed due ot an issue with the config file: ", confErr)
 	//}
 
-	return true
+	return configurationFile, nil
 }
 
-func createConfigFile(kfcfg map[string]string, configPath string) error {
-	log.Println("[INFO] creating kfcfg file")
-	log.Println("[DEBUG] kfcfg path: ", configPath)
-
-	entry := ConfigurationFileEntry{
-		Hostname: kfcfg["host"],
-		Username: kfcfg["username"],
-		Password: kfcfg["password"],
-		Domain:   kfcfg["domain"],
-	}
-
-	log.Println("[DEBUG] kfcfg entry: ", entry)
-
-	f, fErr := os.OpenFile(fmt.Sprintf("%s", configPath), os.O_CREATE|os.O_RDWR, 0600)
-	defer f.Close()
-	if fErr != nil {
-		fmt.Println("Error creating kfcfg file: ", fErr)
-		log.Println("[ERROR] creating kfcfg file: ", fErr)
-		return fErr
-	}
-	encoder := json.NewEncoder(f)
-	enErr := encoder.Encode(&kfcfg)
-	if enErr != nil {
-		fmt.Println("Unable to read kfcfg file due to invalid format. ", enErr)
-		log.Println("[ERROR] encoding kfcfg file: ", enErr)
-		return enErr
-	}
-	return nil
-}
-
-func createConfigurationFile(cfgFile ConfigurationFileEntry, configName string, configPath string) error {
-	log.Println("[INFO] creating kfcfg file")
-	log.Println("[DEBUG] kfcfg path: ", configPath)
+func createOrUpdateConfigurationFile(cfgFile ConfigurationFileEntry, configName string, configPath string) error {
+	log.Println("[INFO] Creating or updating configuration file")
+	log.Println("[DEBUG] configuration file path: ", configPath)
 
 	if len(configName) == 0 {
 		configName = "default"
+		log.Println("[WARN] no config name provided. Using '" + configName + "'.")
 	}
 
 	existingConfig, exsErr := loadConfigurationFile(configPath, true)
@@ -342,6 +516,10 @@ func createConfigurationFile(cfgFile ConfigurationFileEntry, configName string, 
 			log.Println(fmt.Sprintf("[DEBUG] new config: %v", cfgFile))
 			// print out the diff between the two configs
 			diff := cmp.Diff(existingConfig.Servers[configName], cfgFile)
+			if len(diff) == 0 {
+				log.Println("[DEBUG] no configuration changes detected")
+				return nil
+			}
 			log.Println(fmt.Sprintf("[DEBUG] diff: %s", diff))
 		} else {
 			log.Println(fmt.Sprintf("[INFO] adding new config name '%s'", configName))
@@ -358,8 +536,9 @@ func createConfigurationFile(cfgFile ConfigurationFileEntry, configName string, 
 	f, fErr := os.OpenFile(fmt.Sprintf("%s", configPath), os.O_CREATE|os.O_RDWR, 0600)
 	defer f.Close()
 	if fErr != nil {
-		fmt.Println("Error creating kfcfg file: ", fErr)
-		log.Println("[ERROR] creating kfcfg file: ", fErr)
+		msg := fmt.Sprintf("Error creating command configuration file %s: %s", configPath, fErr)
+		fmt.Println(msg)
+		log.Println("[ERROR] creating command configuration file: ", fErr)
 		return fErr
 	}
 	encoder := json.NewEncoder(f)

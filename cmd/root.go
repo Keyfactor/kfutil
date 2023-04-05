@@ -108,7 +108,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&noPrompt, "no-prompt", false, "Do not prompt for any user input and assume defaults or environmental variables are set.")
 	RootCmd.PersistentFlags().BoolVar(&experimental, "exp", false, "Enable experimental features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)")
 	RootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging. (USE AT YOUR OWN RISK, this may log sensitive information to the console.)")
-	RootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "default", "Use a specific profile from your config file. Defaults to 'default'.")
+	RootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "", "Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
