@@ -9,7 +9,9 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/spf13/cobra"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,8 +19,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-
-	"github.com/spf13/cobra"
 )
 
 // Flag enums
@@ -152,6 +152,18 @@ var storesTypeCreateCmd = &cobra.Command{
 			return
 		}
 
+		if storeType == "" {
+			prompt := &survey.Select{
+				Message: "Choose an option:",
+				Options: validStoreTypes,
+			}
+			var selected string
+			err := survey.AskOne(prompt, &selected)
+			if err != nil {
+				fmt.Println(err)
+			}
+			storeType = selected
+		}
 		for _, v := range validStoreTypes {
 			if strings.EqualFold(v, strings.ToUpper(storeType)) {
 				log.Printf("[DEBUG] Valid store type: %s", storeType)
@@ -160,7 +172,10 @@ var storesTypeCreateCmd = &cobra.Command{
 			}
 		}
 		if !storeTypeIsValid {
-			fmt.Printf("Error: Invalid store type: %s\nValid types are: %s", storeType, validStoreTypes)
+			fmt.Printf("Error: Invalid store type: %s\nValid types are:\n", storeType)
+			for _, st := range validStoreTypes {
+				fmt.Println(fmt.Sprintf("\t%s", st))
+			}
 			log.Fatalf("Error: Invalid store type: %s", storeType)
 		} else {
 			kfClient, _ := initClient()

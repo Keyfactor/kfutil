@@ -57,7 +57,12 @@ func initClient() (*api.Client, error) {
 }
 
 func initGenClient() *keyfactor.APIClient {
-	configuration := keyfactor.NewConfiguration()
+	config, authErr := authConfigFile("", true)
+	if authErr != nil {
+		fmt.Printf("Error reading config file: %s\n", authErr)
+		log.Fatalf("[ERROR] reading config file: %s", authErr)
+	}
+	configuration := keyfactor.NewConfiguration(config)
 	c := keyfactor.NewAPIClient(configuration)
 	return c
 }
