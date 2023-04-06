@@ -75,8 +75,8 @@ WARNING: The username and password will be stored in the config file in plain te
 
 		authenticated := false
 		var (
-			authConfigErr error
-			authEnvErr    error
+			authConfigFileErr error
+			authEnvErr        error
 		)
 
 		if profile == "" && configFile == "" {
@@ -92,7 +92,8 @@ WARNING: The username and password will be stored in the config file in plain te
 				if authConfigFileErr == nil {
 					authenticated = true
 				} else {
-					log.Println("[WARN] Unable to authenticate with config file.", authConfigFileErr)
+					fmt.Println("Login failed ", authConfigFileErr)
+					log.Fatal("[FATAL] Unable to authenticate with environment variables.", authConfigFileErr)
 				}
 				//if noPrompt {
 				//	fmt.Println("Login failed, environment variables not set. Please review https://github.com/Keyfactor/kfutil#environmental-variables for more information.")
@@ -291,7 +292,7 @@ func authConfigFile(configFile string, noPrompt bool, profile string) (Configura
 		skipEnvConfig = false
 	}
 
-	if skipEnvConfig {
+	if !skipEnvConfig {
 		log.Println("[INFO] Using profile: ", profile)
 		// Check if profile exists in config file
 		configProfile, profileExists := configurationFile.Servers[profile]
