@@ -107,7 +107,6 @@ func authConfigFile(configFile string, noPrompt bool) (map[string]string, error)
 				fmt.Println("Error getting hostname: ", phErr)
 				log.Println("[ERROR] getting hostname: ", phErr)
 			}
-
 		}
 		if len(host) == 0 {
 			host = envHostName
@@ -175,6 +174,30 @@ func authConfigFile(configFile string, noPrompt bool) (map[string]string, error)
 		log.Fatal("[ERROR] setting password: ", epErr)
 	}
 
+	// Get the API path.
+	envAPI, apiSet := os.LookupEnv("KEYFACTOR_API_PATH")
+	if !apiSet {
+		log.Println("[INFO] Password not set. Please set the KEYFACTOR_PASSWORD environment variable.")
+	}
+	var apiPath string
+	if noPrompt {
+		if len(apiPath) == 0 {
+			envAPI = config["api_path"]
+		}
+		if len(envAPI) == 0 {
+			apiPath = "KeyfactorAPI"
+		} else {
+			apiPath = envAPI
+		}
+	} else {
+
+	}
+	apErr := os.Setenv("KEYFACTOR_API_PATH", apiPath)
+	if apErr != nil {
+		fmt.Println("Error setting API path: ", apErr)
+		log.Fatal("[ERROR] setting API path: ", apErr)
+	}
+
 	// Get AD domain if not provided in the username or config file
 	envDomain, domainSet := os.LookupEnv("KEYFACTOR_DOMAIN")
 	var domain string
@@ -218,6 +241,7 @@ func authConfigFile(configFile string, noPrompt bool) (map[string]string, error)
 		Username: username,
 		Password: p,
 		Domain:   domain,
+		APIPath:  apiPath,
 	}
 	// Since there's no login command in the API, we'll just try to get the list of CAs
 	_, kfcErr := api.NewKeyfactorClient(&authConfig)
@@ -234,6 +258,9 @@ func authConfigFile(configFile string, noPrompt bool) (map[string]string, error)
 	config["username"] = username
 	config["domain"] = domain
 	config["password"] = p
+	if len(apiPath) > 0 {
+		config["api_path"] = apiPath
+	}
 	f, fErr := os.OpenFile(fmt.Sprintf("%s/%s", userHomeDir, DefaultConfigFileName), os.O_CREATE|os.O_RDWR, 0700)
 	defer f.Close()
 	if fErr != nil {
