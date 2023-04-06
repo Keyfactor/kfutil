@@ -1,7 +1,7 @@
 github.com/Jeffail/gabs/v2 v2.7.0 h1:Y2edYaTcE8ZpRsR2AtmPu5xQdFDIthFG0jYhu5PY8kg=
 github.com/Jeffail/gabs/v2 v2.7.0/go.mod h1:dp5ocw1FvBBQYssgHsG7I1WYsiLRtkUaB1FEtSwvNUw=
-github.com/Keyfactor/keyfactor-go-client v1.3.2 h1:Jke5iHY0YQ1t5SqsASDslaSnZPyLSzD7WqwxeTLnufg=
-github.com/Keyfactor/keyfactor-go-client v1.3.2/go.mod h1:u1M1AjcwiO/Tbvc7EsNl9YTy757hO5wmey1/W/7Qkbs=
+github.com/Keyfactor/keyfactor-go-client v1.3.3 h1:tqHoqdxqm8c1doueBx7mQTxfol7stgBep0jfwOzcsnU=
+github.com/Keyfactor/keyfactor-go-client v1.3.3/go.mod h1:u1M1AjcwiO/Tbvc7EsNl9YTy757hO5wmey1/W/7Qkbs=
 github.com/Keyfactor/keyfactor-go-client-sdk v0.1.0 h1:dYWy45rhAPsqEifPhMMqnTI/VL9O2gWw+ZqYmWgMF0A=
 github.com/Keyfactor/keyfactor-go-client-sdk v0.1.0/go.mod h1:Z5pSk8YFGXHbKeQ1wTzVN8A4P/fZmtAwqu3NgBHbDOs=
 github.com/cpuguy83/go-md2man/v2 v2.0.2 h1:p1EgwI/C7NhT0JmVkwCD2ZBK8j4aeHQX2pMHHBfMQ6w=
