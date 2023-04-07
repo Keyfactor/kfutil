@@ -43,6 +43,7 @@ export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 export KEYFACTOR_USERNAME="<myusername>" # Do not include domain
 export KEYFACTOR_PASSWORD="<mypassword>"
 export KEYFACTOR_DOMAIN="<mykeyfactordomain>"
+export KEYFACTOR_API_PATH="KeyfactorAPI/" # Optional, defaults to KeyfactorAPI/ only use this if you have a custom API path
 ```
 
 Windows Powershell
@@ -51,6 +52,7 @@ $env:KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 $env:KEYFACTOR_USERNAME="<myusername>" # Do not include domain
 $env:KEYFACTOR_PASSWORD="<mypassword>"
 $env:KEYFACTOR_DOMAIN="<mykeyfactordomain>"
+$env:KEYFACTOR_API_PATH="KeyfactorAPI/" # Optional, defaults to KeyfactorAPI/ only use this if you have a custom API path
 ```
 
 ## Commands
@@ -64,6 +66,40 @@ shared machine. Instead of using the `login` command, you can set the environmen
 
 ```bash
 kfutil login
+```
+
+#### Example Config File v1
+```json
+{
+  "api_path": "KeyfactorAPI",
+  "domain": "command",
+  "host": "lab.mydomain.com",
+  "password": "dontusethispassword",
+  "username": "myusername"
+}
+```
+
+#### Example Config File v2
+**Must use kfutil version v1.0.0 or higher.**
+```json
+{
+  "servers": { 
+    "lab1" : {
+      "api_path": "KeyfactorAPI",
+      "domain": "command",
+      "host": "lab.mydomain.com",
+      "password": "dontusethispassword",
+      "username": "myusername"
+    },
+    "lab2" : {
+      "api_path": "KeyfactorAPI",
+      "domain": "command",
+      "host": "lab2.mydomain.com",
+      "password": "dontusethispassword",
+      "username": "myusername"
+    }
+  }
+}
 ```
 
 ### Logout
