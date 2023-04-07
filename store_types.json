@@ -1666,7 +1666,30 @@
         "Required": true
       }
     ],
-    "EntryParameters": [],
+    "EntryParameters": [
+      {
+        "Name": "ProviderName",
+        "DisplayName": "Provider Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      },
+      {
+        "Name": "SAN",
+        "DisplayName": "SAN",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": true
+        }
+      }
+    ],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
