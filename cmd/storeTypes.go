@@ -9,15 +9,15 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/spf13/cobra"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"sort"
 	"strings"
-
-	"github.com/spf13/cobra"
 )
 
 // Flag enums
@@ -61,13 +61,13 @@ var storesTypesListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(profile)
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
 		if err != nil {
 			log.Printf("Error: %s", err)
@@ -89,15 +89,15 @@ var storesTypeGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id, _ := cmd.Flags().GetInt("id")
 		name, _ := cmd.Flags().GetString("name")
-		kfClient, _ := initClient(profile)
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 		var st interface{}
 		// Check inputs
 		if id < 0 && name == "" {
@@ -140,7 +140,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
 		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
@@ -150,6 +150,8 @@ var storesTypeCreateCmd = &cobra.Command{
 		storeType, _ := cmd.Flags().GetString("name")
 		listTypes, _ := cmd.Flags().GetBool("list")
 		configFile, _ := cmd.Flags().GetString("from-file")
+
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 
 		storeTypeIsValid := false
 
@@ -163,7 +165,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		}
 
 		if configFile != "" {
-			createdStore, err := createStoreFromFile(configFile, profile)
+			createdStore, err := createStoreFromFile(configFile, kfClient)
 			if err != nil {
 				fmt.Printf("Failed to create store type from file \"%s\"", err)
 				return
@@ -173,6 +175,18 @@ var storesTypeCreateCmd = &cobra.Command{
 			return
 		}
 
+		if storeType == "" {
+			prompt := &survey.Select{
+				Message: "Choose an option:",
+				Options: validStoreTypes,
+			}
+			var selected string
+			err := survey.AskOne(prompt, &selected)
+			if err != nil {
+				fmt.Println(err)
+			}
+			storeType = selected
+		}
 		for _, v := range validStoreTypes {
 			if strings.EqualFold(v, strings.ToUpper(storeType)) {
 				log.Printf("[DEBUG] Valid store type: %s", storeType)
@@ -181,10 +195,13 @@ var storesTypeCreateCmd = &cobra.Command{
 			}
 		}
 		if !storeTypeIsValid {
-			fmt.Printf("Error: Invalid store type: %s\nValid types are: %s", storeType, validStoreTypes)
+			fmt.Printf("Error: Invalid store type: %s\nValid types are:\n", storeType)
+			for _, st := range validStoreTypes {
+				fmt.Println(fmt.Sprintf("\t%s", st))
+			}
 			log.Fatalf("Error: Invalid store type: %s", storeType)
 		} else {
-			kfClient, _ := initClient(profile)
+			kfClient, _ := initClient(configFile, profile, noPrompt)
 			storeTypeConfig, stErr := readStoreTypesConfig("")
 			if stErr != nil {
 				fmt.Printf("Error: %s", stErr)
@@ -241,8 +258,8 @@ var storesTypeCreateCmd = &cobra.Command{
 	},
 }
 
-func createStoreFromFile(filename string, profile string) (*api.CertificateStoreType, error) {
-	kfClient, _ := initClient(profile)
+func createStoreFromFile(filename string, kfClient *api.Client) (*api.CertificateStoreType, error) {
+
 	// Read the file
 	file, err := os.Open(filename)
 	if err != nil {
@@ -273,13 +290,16 @@ var storesTypeUpdateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		//profile, _ := cmd.Flags().GetString("profile")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		fmt.Println("update called")
+
+		_, _ = initClient(configFile, profile, noPrompt)
+
 	},
 }
 
@@ -290,15 +310,15 @@ var storesTypeDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id, _ := cmd.Flags().GetInt("id")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		kfClient, _ := initClient(profile)
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 		_, err := kfClient.GetCertificateStoreType(id)
 		if err != nil {
 			log.Printf("Error: %s", err)

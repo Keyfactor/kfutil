@@ -107,63 +107,65 @@ var exportCmd = &cobra.Command{
 		}
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 
 		exportPath := cmd.Flag("file").Value.String()
+
+		kfClient := initGenClient(profile)
+		oldkfClient, _ := initClient(configFile, profile, noPrompt)
 		if cmd.Flag("all").Value.String() == "true" {
-			out.Collections = getCollections()
-			out.MetadataFields = getMetadata()
-			out.ExpirationAlerts = getExpirationAlerts()
-			out.IssuedCertAlerts = getIssuedAlerts()
-			out.DeniedCertAlerts = getDeniedAlerts()
-			out.PendingCertAlerts = getPendingAlerts()
-			out.Networks = getSslNetworks()
-			out.WorkflowDefinitions = getWorkflowDefinitions()
-			out.BuiltInReports, out.CustomReports = getReports()
-			out.SecurityRoles = getRoles(profile)
+			out.Collections = getCollections(kfClient)
+			out.MetadataFields = getMetadata(kfClient)
+			out.ExpirationAlerts = getExpirationAlerts(kfClient)
+			out.IssuedCertAlerts = getIssuedAlerts(kfClient)
+			out.DeniedCertAlerts = getDeniedAlerts(kfClient)
+			out.PendingCertAlerts = getPendingAlerts(kfClient)
+			out.Networks = getSslNetworks(kfClient)
+			out.WorkflowDefinitions = getWorkflowDefinitions(kfClient)
+			out.BuiltInReports, out.CustomReports = getReports(kfClient)
+			out.SecurityRoles = getRoles(oldkfClient)
 		} else {
 			if cmd.Flag("collections").Value.String() == "true" {
-				out.Collections = getCollections()
+				out.Collections = getCollections(kfClient)
 			}
 			if cmd.Flag("metadata").Value.String() == "true" {
-				out.MetadataFields = getMetadata()
+				out.MetadataFields = getMetadata(kfClient)
 			}
 			if cmd.Flag("expiration-alerts").Value.String() == "true" {
-				out.ExpirationAlerts = getExpirationAlerts()
+				out.ExpirationAlerts = getExpirationAlerts(kfClient)
 			}
 			if cmd.Flag("issued-alerts").Value.String() == "true" {
-				out.IssuedCertAlerts = getIssuedAlerts()
+				out.IssuedCertAlerts = getIssuedAlerts(kfClient)
 			}
 			if cmd.Flag("denied-alerts").Value.String() == "true" {
-				out.DeniedCertAlerts = getDeniedAlerts()
+				out.DeniedCertAlerts = getDeniedAlerts(kfClient)
 			}
 			if cmd.Flag("pending-alerts").Value.String() == "true" {
-				out.PendingCertAlerts = getPendingAlerts()
+				out.PendingCertAlerts = getPendingAlerts(kfClient)
 			}
 			if cmd.Flag("networks").Value.String() == "true" {
-				out.Networks = getSslNetworks()
+				out.Networks = getSslNetworks(kfClient)
 			}
 			if cmd.Flag("workflow-definitions").Value.String() == "true" {
-				out.WorkflowDefinitions = getWorkflowDefinitions()
+				out.WorkflowDefinitions = getWorkflowDefinitions(kfClient)
 			}
 			if cmd.Flag("reports").Value.String() == "true" {
-				out.BuiltInReports, out.CustomReports = getReports()
+				out.BuiltInReports, out.CustomReports = getReports(kfClient)
 			}
 			if cmd.Flag("security-roles").Value.String() == "true" {
-				out.SecurityRoles = getRoles(profile)
+				out.SecurityRoles = getRoles(oldkfClient)
 			}
 		}
 		exportToJSON(out, exportPath)
 	},
 }
 
-func getCollections() []keyfactor.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest {
-	kfClient := initGenClient()
+func getCollections(kfClient *keyfactor.APIClient) []keyfactor.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest {
 	collections, _, reqErr := kfClient.CertificateCollectionApi.CertificateCollectionGetCollections(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get collections %s%s\n", colorRed, reqErr, colorWhite)
@@ -184,8 +186,8 @@ func getCollections() []keyfactor.KeyfactorApiModelsCertificateCollectionsCertif
 	return lCollectionReq
 }
 
-func getMetadata() []keyfactor.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest {
-	kfClient := initGenClient()
+func getMetadata(kfClient *keyfactor.APIClient) []keyfactor.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest {
+
 	metadata, _, reqErr := kfClient.MetadataFieldApi.MetadataFieldGetAllMetadataFields(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get metadata %s%s\n", colorRed, reqErr, colorWhite)
@@ -205,8 +207,8 @@ func getMetadata() []keyfactor.KeyfactorApiModelsMetadataFieldMetadataFieldCreat
 	return lMetadataReq
 }
 
-func getExpirationAlerts() []keyfactor.KeyfactorApiModelsAlertsExpirationExpirationAlertCreationRequest {
-	kfClient := initGenClient()
+func getExpirationAlerts(kfClient *keyfactor.APIClient) []keyfactor.KeyfactorApiModelsAlertsExpirationExpirationAlertCreationRequest {
+
 	alerts, _, reqErr := kfClient.ExpirationAlertApi.ExpirationAlertGetExpirationAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get expiration alerts %s%s\n", colorRed, reqErr, colorWhite)
@@ -225,8 +227,8 @@ func getExpirationAlerts() []keyfactor.KeyfactorApiModelsAlertsExpirationExpirat
 	return lAlertReq
 }
 
-func getIssuedAlerts() []keyfactor.KeyfactorApiModelsAlertsIssuedIssuedAlertCreationRequest {
-	kfClient := initGenClient()
+func getIssuedAlerts(kfClient *keyfactor.APIClient) []keyfactor.KeyfactorApiModelsAlertsIssuedIssuedAlertCreationRequest {
+
 	alerts, _, reqErr := kfClient.IssuedAlertApi.IssuedAlertGetIssuedAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get issued cert alerts %s%s\n", colorRed, reqErr, colorWhite)
@@ -246,8 +248,8 @@ func getIssuedAlerts() []keyfactor.KeyfactorApiModelsAlertsIssuedIssuedAlertCrea
 	return lAlertReq
 }
 
-func getDeniedAlerts() []keyfactor.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest {
-	kfClient := initGenClient()
+func getDeniedAlerts(kfClient *keyfactor.APIClient) []keyfactor.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest {
+
 	alerts, _, reqErr := kfClient.DeniedAlertApi.DeniedAlertGetDeniedAlerts(
 		context.Background()).XKeyfactorRequestedWith(
 		xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
@@ -269,8 +271,8 @@ func getDeniedAlerts() []keyfactor.KeyfactorApiModelsAlertsDeniedDeniedAlertCrea
 	return lAlertReq
 }
 
-func getPendingAlerts() []keyfactor.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest {
-	kfClient := initGenClient()
+func getPendingAlerts(kfClient *keyfactor.APIClient) []keyfactor.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest {
+
 	alerts, _, reqErr := kfClient.PendingAlertApi.PendingAlertGetPendingAlerts(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get pending cert alerts %s%s\n", colorRed, reqErr, colorWhite)
@@ -290,8 +292,8 @@ func getPendingAlerts() []keyfactor.KeyfactorApiModelsAlertsPendingPendingAlertC
 	return lAlertReq
 }
 
-func getSslNetworks() []keyfactor.KeyfactorApiModelsSslCreateNetworkRequest {
-	kfClient := initGenClient()
+func getSslNetworks(kfClient *keyfactor.APIClient) []keyfactor.KeyfactorApiModelsSslCreateNetworkRequest {
+
 	networks, _, reqErr := kfClient.SslApi.SslGetNetworks(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get SSL networks %s%s\n", colorRed, reqErr, colorWhite)
@@ -310,8 +312,8 @@ func getSslNetworks() []keyfactor.KeyfactorApiModelsSslCreateNetworkRequest {
 	return lNetworkReq
 }
 
-func getWorkflowDefinitions() []exportKeyfactorAPIModelsWorkflowsDefinitionCreateRequest {
-	kfClient := initGenClient()
+func getWorkflowDefinitions(kfClient *keyfactor.APIClient) []exportKeyfactorAPIModelsWorkflowsDefinitionCreateRequest {
+
 	workflowDefs, _, reqErr := kfClient.WorkflowDefinitionApi.WorkflowDefinitionQuery(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get workflow definitions %s%s\n", colorRed, reqErr, colorWhite)
@@ -337,8 +339,8 @@ func getWorkflowDefinitions() []exportKeyfactorAPIModelsWorkflowsDefinitionCreat
 	return lWorkflowReq
 }
 
-func getReports() ([]exportModelsReport, []keyfactor.ModelsCustomReportCreationRequest) {
-	kfClient := initGenClient()
+func getReports(kfClient *keyfactor.APIClient) ([]exportModelsReport, []keyfactor.ModelsCustomReportCreationRequest) {
+
 	//Gets all built-in reports
 	bReports, _, bErr := kfClient.ReportsApi.ReportsQueryReports(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
 	if bErr != nil {
@@ -375,8 +377,7 @@ func getReports() ([]exportModelsReport, []keyfactor.ModelsCustomReportCreationR
 	return lbReportsReq, lcReportReq
 }
 
-func getRoles(profile string) []api.CreateSecurityRoleArg {
-	kfClient, _ := initClient(profile)
+func getRoles(kfClient *api.Client) []api.CreateSecurityRoleArg {
 	roles, reqErr := kfClient.GetSecurityRoles()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get security roles %s%s\n", colorRed, reqErr, colorWhite)

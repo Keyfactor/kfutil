@@ -31,8 +31,8 @@ var importCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
@@ -52,8 +52,8 @@ var importCmd = &cobra.Command{
 			fmt.Printf("Error reading exported file: %s\n", jErr)
 			log.Fatalf("Error: %s", jErr)
 		}
-		kfClient := initGenClient()
-		oldkfClient, _ := initClient(profile)
+		kfClient := initGenClient(profile)
+		oldkfClient, _ := initClient(configFile, profile, noPrompt)
 		if cmd.Flag("all").Value.String() == "true" {
 			importCollections(out.Collections, kfClient)
 			importMetadataFields(out.MetadataFields, kfClient)

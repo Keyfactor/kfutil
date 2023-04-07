@@ -24,38 +24,21 @@ var colorWhite = "\033[37m"
 var xKeyfactorRequestedWith = "APIClient"
 var xKeyfactorApiVersion = "1"
 
-func initClient(p string) (*api.Client, error) {
+func initClient(flagConfig string, flagProfile string, noPrompt bool) (*api.Client, error) {
 	log.SetOutput(io.Discard)
 	var clientAuth api.AuthConfig
-	clientAuth.Username = os.Getenv("KEYFACTOR_USERNAME")
-	log.Printf("[DEBUG] Username: %s", clientAuth.Username)
-	clientAuth.Password = os.Getenv("KEYFACTOR_PASSWORD")
-	log.Printf("[DEBUG] Password: %s", clientAuth.Password)
-	clientAuth.Domain = os.Getenv("KEYFACTOR_DOMAIN")
-	log.Printf("[DEBUG] Domain: %s", clientAuth.Domain)
-	clientAuth.Hostname = os.Getenv("KEYFACTOR_HOSTNAME")
-	log.Printf("[DEBUG] Hostname: %s", clientAuth.Hostname)
-	var profile string
-	if p != "" {
-		profile = p
-	} else {
-		profile = os.Getenv("KFUTIL_PROFILE")
-	}
-	if profile == "" {
-		profile = "default"
-	}
 
-	if clientAuth.Username == "" || clientAuth.Password == "" || clientAuth.Hostname == "" {
-		authConfigFile("", true, profile)
-		clientAuth.Username = os.Getenv("KEYFACTOR_USERNAME")
-		log.Printf("[DEBUG] Username: %s", clientAuth.Username)
-		clientAuth.Password = os.Getenv("KEYFACTOR_PASSWORD")
-		log.Printf("[DEBUG] Password: %s", clientAuth.Password)
-		clientAuth.Domain = os.Getenv("KEYFACTOR_DOMAIN")
-		log.Printf("[DEBUG] Domain: %s", clientAuth.Domain)
-		clientAuth.Hostname = os.Getenv("KEYFACTOR_HOSTNAME")
-		log.Printf("[DEBUG] Hostname: %s", clientAuth.Hostname)
+	commandConfig, _ := authConfigFile(flagConfig, noPrompt, flagProfile)
+
+	if flagProfile == "" {
+		flagProfile = "default"
 	}
+	clientAuth.Username = commandConfig.Servers[flagProfile].Username
+	clientAuth.Password = commandConfig.Servers[flagProfile].Password
+	clientAuth.Domain = commandConfig.Servers[flagProfile].Domain
+	clientAuth.Hostname = commandConfig.Servers[flagProfile].Hostname
+	clientAuth.APIPath = commandConfig.Servers[flagProfile].APIPath
+
 	c, err := api.NewKeyfactorClient(&clientAuth)
 
 	if err != nil {
@@ -66,8 +49,25 @@ func initClient(p string) (*api.Client, error) {
 	return c, nil
 }
 
-func initGenClient() *keyfactor.APIClient {
-	configuration := keyfactor.NewConfiguration()
+func initGenClient(profile string) *keyfactor.APIClient {
+	configs, authErr := authConfigFile("", true, profile)
+	if profile == "" {
+		profile = "default"
+	}
+	cmdConfig := configs.Servers[profile]
+
+	if authErr != nil {
+		fmt.Printf("Error reading config file: %s\n", authErr)
+		log.Fatalf("[ERROR] reading config file: %s", authErr)
+	}
+
+	sdkClientConfig := make(map[string]string)
+	sdkClientConfig["host"] = cmdConfig.Hostname
+	sdkClientConfig["username"] = cmdConfig.Username
+	sdkClientConfig["password"] = cmdConfig.Password
+	sdkClientConfig["domain"] = cmdConfig.Domain
+
+	configuration := keyfactor.NewConfiguration(sdkClientConfig)
 	c := keyfactor.NewAPIClient(configuration)
 	return c
 }
@@ -104,11 +104,11 @@ func init() {
 		debug        bool
 	)
 
-	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "c", "", fmt.Sprintf("Full path to config file in JSON format. (default is $HOME/.keyfactor/%s)", DefaultConfigFileName))
+	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "", "", fmt.Sprintf("Full path to config file in JSON format. (default is $HOME/.keyfactor/%s)", DefaultConfigFileName))
 	RootCmd.PersistentFlags().BoolVar(&noPrompt, "no-prompt", false, "Do not prompt for any user input and assume defaults or environmental variables are set.")
 	RootCmd.PersistentFlags().BoolVar(&experimental, "exp", false, "Enable experimental features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)")
 	RootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging. (USE AT YOUR OWN RISK, this may log sensitive information to the console.)")
-	RootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "", "Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.")
+	RootCmd.PersistentFlags().StringVarP(&profile, "profile", "", "", "Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

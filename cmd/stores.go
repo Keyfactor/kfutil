@@ -30,13 +30,13 @@ var storesListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(profile)
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 		params := make(map[string]interface{})
 		stores, err := kfClient.ListCertificateStores(&params)
 
@@ -58,14 +58,14 @@ var storesGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		storeId, _ := cmd.Flags().GetString("id")
-		kfClient, _ := initClient(profile)
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 		stores, err := kfClient.GetCertificateStoreByID(storeId)
 		if err != nil {
 			log.Printf("Error: %s", err)

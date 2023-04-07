@@ -29,14 +29,14 @@ var getOrchestratorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, _ := initClient(profile)
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 		agents, aErr := kfClient.GetAgent(client)
 		if aErr != nil {
 			fmt.Printf("Error, unable to get orchestrator %s. %s\n", client, aErr)
@@ -59,14 +59,14 @@ var approveOrchestratorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient(profile)
+		kfClient, cErr := initClient(configFile, profile, noPrompt)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -94,14 +94,14 @@ var disapproveOrchestratorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient(profile)
+		kfClient, cErr := initClient(configFile, profile, noPrompt)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -139,15 +139,15 @@ var getLogsOrchestratorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient(profile)
+		kfClient, cErr := initClient(configFile, profile, noPrompt)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -175,13 +175,13 @@ var listOrchestratorsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(profile)
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 		agents, aErr := kfClient.GetAgentList()
 		if aErr != nil {
 			fmt.Printf("Error, unable to get orchestrators list. %s\n", aErr)

@@ -67,13 +67,13 @@ resultspath is where the import results will be written to.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(profile)
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 		storeTypeName, _ := cmd.Flags().GetString("store-type-name")
 		storeTypeId, _ := cmd.Flags().GetInt("store-type-id")
 		filePath, _ := cmd.Flags().GetString("file")
@@ -263,13 +263,13 @@ Store type IDs can be found by running the "store-types" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(profile)
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 		storeTypeName, _ := cmd.Flags().GetString("store-type-name")
 		storeTypeId, _ := cmd.Flags().GetInt("store-type-id")
 		outpath, _ := cmd.Flags().GetString("outpath")
