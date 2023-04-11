@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client/api"
 	"github.com/spf13/cobra"
-	"io"
 	"log"
 )
 
@@ -43,7 +42,14 @@ var inventoryClearCmd = &cobra.Command{
 	PreRun:                 nil,
 	PreRunE:                nil,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		force, _ := cmd.Flags().GetBool("force")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
@@ -53,7 +59,7 @@ var inventoryClearCmd = &cobra.Command{
 		containerType, _ := cmd.Flags().GetStringSlice("container")
 		allStores, _ := cmd.Flags().GetBool("all")
 
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 
 		if storeID == nil && machineName == nil && storeType == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -115,7 +121,7 @@ var inventoryClearCmd = &cobra.Command{
 			}
 
 			if !force {
-				fmt.Printf("This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you want to continue? (y/n) ", store.ClientMachine, store.StorePath)
+				fmt.Printf("This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you shouldPass to continue? (y/n) ", store.ClientMachine, store.StorePath)
 				var answer string
 				fmt.Scanln(&answer)
 				if answer != "y" {
@@ -185,7 +191,14 @@ specified by Keyfactor command store ID, client machine name, store type, or con
 and one or more certificates must be specified. If multiple stores and/or certificates are specified, the command will
 attempt to add all the certificate(s) meeting the specified criteria to all stores meeting the specified criteria.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		force, _ := cmd.Flags().GetBool("force")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
@@ -208,7 +221,7 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 			log.Fatalf("At least one certificate must be specified")
 		}
 
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 
 		if storeIDs == nil && machineNames == nil && storeTypes == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -311,7 +324,7 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 				}
 				if !dryRun {
 					if !force {
-						fmt.Printf("This will add the certificate %s(%d) to certificate store %s%s's inventory. Are you sure you want to continue? (y/n) ", cert.IssuedCN, cert.Id, store.ClientMachine, store.StorePath)
+						fmt.Printf("This will add the certificate %s(%d) to certificate store %s%s's inventory. Are you sure you shouldPass to continue? (y/n) ", cert.IssuedCN, cert.Id, store.ClientMachine, store.StorePath)
 						var answer string
 						fmt.Scanln(&answer)
 						if answer != "y" {
@@ -340,7 +353,14 @@ var inventoryRemoveCmd = &cobra.Command{
 	Short: "Removes a certificate from the certificate store inventory.",
 	Long:  `Removes a certificate from the certificate store inventory.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		force, _ := cmd.Flags().GetBool("force")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
@@ -363,7 +383,7 @@ var inventoryRemoveCmd = &cobra.Command{
 			log.Fatalf("At least one certificate must be specified")
 		}
 
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 
 		if storeIDs == nil && machineNames == nil && storeTypes == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -467,7 +487,7 @@ var inventoryRemoveCmd = &cobra.Command{
 				}
 				if !dryRun {
 					if !force {
-						fmt.Printf("This will remove the certificate %s from certificate store %s%s's inventory. Are you sure you want to continue? (y/n) ", certToString(&cert), store.ClientMachine, store.StorePath)
+						fmt.Printf("This will remove the certificate %s from certificate store %s%s's inventory. Are you sure you shouldPass to continue? (y/n) ", certToString(&cert), store.ClientMachine, store.StorePath)
 						var answer string
 						fmt.Scanln(&answer)
 						if answer != "y" {
@@ -512,13 +532,20 @@ var inventoryShowCmd = &cobra.Command{
 	PreRun:                 nil,
 	PreRunE:                nil,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		storeIDs, _ := cmd.Flags().GetStringSlice("sid")
 		clientMachineNames, _ := cmd.Flags().GetStringSlice("client")
 		storeTypes, _ := cmd.Flags().GetStringSlice("store-type")
 		containers, _ := cmd.Flags().GetStringSlice("container")
 
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 
 		if len(storeIDs) == 0 && len(clientMachineNames) == 0 && len(storeTypes) == 0 && len(containers) == 0 {
 			fmt.Println("No filters specified. Unable to show inventory. Please specify at least one filter: [--sid, --client, --store-type, --container]")

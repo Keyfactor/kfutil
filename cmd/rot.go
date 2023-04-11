@@ -383,8 +383,16 @@ kfutil stores rot reconcile --import-csv <audit-file>
 		PreRun:                 nil,
 		PreRunE:                nil,
 		Run: func(cmd *cobra.Command, args []string) {
+			// Global flags
+			debugFlag, _ := cmd.Flags().GetBool("debug")
+			configFile, _ := cmd.Flags().GetString("config")
+			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+			profile, _ := cmd.Flags().GetString("profile")
+
+			debugModeEnabled := checkDebug(debugFlag)
+			log.Println("Debug mode enabled: ", debugModeEnabled)
 			var lookupFailures []string
-			kfClient, _ := initClient()
+			kfClient, _ := initClient(configFile, profile, noPrompt)
 			storesFile, _ := cmd.Flags().GetString("stores")
 			addRootsFile, _ := cmd.Flags().GetString("add-certs")
 			removeRootsFile, _ := cmd.Flags().GetString("remove-certs")
@@ -534,8 +542,16 @@ the utility will first generate an audit report and then execute the add/remove 
 		PreRun:                 nil,
 		PreRunE:                nil,
 		Run: func(cmd *cobra.Command, args []string) {
+			// Global flags
+			debugFlag, _ := cmd.Flags().GetBool("debug")
+			configFile, _ := cmd.Flags().GetString("config")
+			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+			profile, _ := cmd.Flags().GetString("profile")
+
+			debugModeEnabled := checkDebug(debugFlag)
+			log.Println("Debug mode enabled: ", debugModeEnabled)
 			var lookupFailures []string
-			kfClient, _ := initClient()
+			kfClient, _ := initClient(configFile, profile, noPrompt)
 			storesFile, _ := cmd.Flags().GetString("stores")
 			addRootsFile, _ := cmd.Flags().GetString("add-certs")
 			isCSV, _ := cmd.Flags().GetBool("import-csv")
@@ -819,6 +835,14 @@ the utility will first generate an audit report and then execute the add/remove 
 		PreRun:                 nil,
 		PreRunE:                nil,
 		Run: func(cmd *cobra.Command, args []string) {
+			// Global flags
+			debugFlag, _ := cmd.Flags().GetBool("debug")
+			configFile, _ := cmd.Flags().GetString("config")
+			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+			profile, _ := cmd.Flags().GetString("profile")
+
+			debugModeEnabled := checkDebug(debugFlag)
+			log.Println("Debug mode enabled: ", debugModeEnabled)
 
 			templateType, _ := cmd.Flags().GetString("type")
 			format, _ := cmd.Flags().GetString("format")
@@ -834,9 +858,9 @@ the utility will first generate an audit report and then execute the add/remove 
 			var rowLookup = make(map[string]bool)
 			if len(storeType) != 0 {
 				for _, s := range storeType {
-					kfClient, err := initClient()
-					if err != nil {
-						log.Fatalf("[ERROR] creating client: %s", err)
+					kfClient, cErr := initClient(configFile, profile, noPrompt)
+					if cErr != nil {
+						log.Fatalf("[ERROR] creating client: %s", cErr)
 					}
 					var sType *api.CertificateStoreType
 					var stErr error
@@ -904,9 +928,9 @@ the utility will first generate an audit report and then execute the add/remove 
 			}
 			if len(containerType) != 0 {
 				for _, c := range containerType {
-					kfClient, err := initClient()
-					if err != nil {
-						log.Fatalf("[ERROR] creating client: %s", err)
+					kfClient, cErr := initClient(configFile, profile, noPrompt)
+					if cErr != nil {
+						log.Fatalf("[ERROR] creating client: %s", cErr)
 					}
 					cStoresResp, scErr := kfClient.GetCertificateStoreByContainerID(c)
 					if scErr != nil {
@@ -935,10 +959,10 @@ the utility will first generate an audit report and then execute the add/remove 
 			}
 			if len(collection) != 0 {
 				for _, c := range collection {
-					kfClient, err := initClient()
-					if err != nil {
+					kfClient, cErr := initClient(configFile, profile, noPrompt)
+					if cErr != nil {
 						fmt.Println("[ERROR] connecting to Keyfactor. Please check your configuration and try again.")
-						log.Fatalf("[ERROR] creating client: %s", err)
+						log.Fatalf("[ERROR] creating client: %s", cErr)
 					}
 					q := make(map[string]string)
 					q["collection"] = c
@@ -963,10 +987,10 @@ the utility will first generate an audit report and then execute the add/remove 
 			}
 			if len(subjectName) != 0 {
 				for _, s := range subjectName {
-					kfClient, err := initClient()
-					if err != nil {
+					kfClient, cErr := initClient(configFile, profile, noPrompt)
+					if cErr != nil {
 						fmt.Println("[ERROR] connecting to Keyfactor. Please check your configuration and try again.")
-						log.Fatalf("[ERROR] creating client: %s", err)
+						log.Fatalf("[ERROR] creating client: %s", cErr)
 					}
 					q := make(map[string]string)
 					q["subject"] = s
