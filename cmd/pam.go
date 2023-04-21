@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -61,12 +62,30 @@ var pamTypesCreateCmd = &cobra.Command{
 		log.SetOutput(io.Discard)
 		sdkClient := initGenClient()
 		configFile, _ := cmd.Flags().GetString("from-file")
+		providerName, _ := cmd.Flags().GetString("name")
+		repoName, _ := cmd.Flags().GetString("repo")
+		branchName, _ := cmd.Flags().GetString("branch")
+
+		if configFile == "" && repoName == "" {
+			log.Printf("%sError - must supply either a config file or GitHub repository to get file from.", colorRed)
+			return
+		}
 
 		var pamProviderType *keyfactor.KeyfactorApiPAMProviderTypeCreateRequest
-		pamProviderType, errors := GetTypeFromConfigFile(configFile, pamProviderType)
-		if errors != nil {
-			log.Printf("%sError reading from file %s: %s", colorRed, configFile, errors)
-			return
+		var errors error
+		if repoName != "" {
+			// get JSON config from integration-manifest on github
+			pamProviderType, errors = GetTypeFromInternet(providerName, repoName, branchName, pamProviderType)
+			if errors != nil {
+				log.Printf("%sError reading from GitHub %s/%s: %s", colorRed, repoName, branchName, errors)
+				return
+			}
+		} else {
+			pamProviderType, errors = GetTypeFromConfigFile(configFile, pamProviderType)
+			if errors != nil {
+				log.Printf("%sError reading from file %s: %s", colorRed, configFile, errors)
+				return
+			}
 		}
 
 		// pamType, errors :=
@@ -225,8 +244,54 @@ var pamProvidersDeleteCmd = &cobra.Command{
 	},
 }
 
+func GetPamTypeInternet(providerName string, repo string, branch string) (interface{}, error) {
+	if branch == "" {
+		branch = "main"
+	}
+	response, errors := http.Get(fmt.Sprintf("https://raw.githubusercontent.com/Keyfactor/%s/%s/integration-manifest.json", repo, branch))
+	if errors != nil {
+		return nil, errors
+	}
+	defer response.Body.Close()
+	manifest, errors := ioutil.ReadAll(response.Body)
+	if errors != nil {
+		return nil, errors
+	}
+	var manifestJson map[string]interface{}
+	errors = json.Unmarshal([]byte(manifest), &manifestJson)
+	if errors != nil {
+		log.Printf("%sError during Unmarshal() of PAM integration-manifest", colorRed)
+		return nil, errors
+	}
+	pamTypeJson := manifestJson["about"].(map[string]interface{})["pam"].(map[string]interface{})["pam_types"].(map[string]interface{})[providerName]
+
+	return pamTypeJson, nil
+}
+
 func WriteApiError(process string, httpResponse *http.Response, errors error) {
 	fmt.Printf("%s Error processing request for %s - %s - %s", colorRed, process, errors, parseError(httpResponse.Body))
+}
+
+func GetTypeFromInternet[T JsonImportableObject](providerName string, repo string, branch string, returnType *T) (*T, error) {
+	manifestJson, errors := GetPamTypeInternet(providerName, repo, branch)
+	if errors != nil {
+		return new(T), errors
+	}
+
+	manifestJsonBytes, errors := json.Marshal(manifestJson)
+	if errors != nil {
+		log.Printf("Error during Marshal() of PAM Type from manifest: %s", errors)
+		return new(T), errors
+	}
+
+	var objectFromJson T
+	errors = json.Unmarshal(manifestJsonBytes, &objectFromJson)
+	if errors != nil {
+		log.Printf("Error during Unmarshal(): %s", errors)
+		return new(T), errors
+	}
+
+	return &objectFromJson, nil
 }
 
 func GetTypeFromConfigFile[T JsonImportableObject](filename string, returnType *T) (*T, error) {
@@ -247,6 +312,9 @@ func GetTypeFromConfigFile[T JsonImportableObject](filename string, returnType *
 
 func init() {
 	var filePath string
+	var name string
+	var repo string
+	var branch string
 	var id int32
 	RootCmd.AddCommand(pamCmd)
 
@@ -254,7 +322,9 @@ func init() {
 	pamCmd.AddCommand(pamTypesListCmd)
 	pamCmd.AddCommand(pamTypesCreateCmd)
 	pamTypesCreateCmd.Flags().StringVarP(&filePath, "from-file", "f", "", "Path to a JSON file containing the PAM Type Object Data.")
-	pamTypesCreateCmd.MarkFlagRequired("from-file")
+	pamTypesCreateCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the PAM Provider Type.")
+	pamTypesCreateCmd.Flags().StringVarP(&repo, "repo", "r", "", "Keyfactor repository name of the PAM Provider Type.")
+	pamTypesCreateCmd.Flags().StringVarP(&branch, "branch", "b", "", "Branch name for the repository. Can be left blank for 'main' by default.")
 
 	// PAM Providers
 	pamCmd.AddCommand(pamProvidersListCmd)
