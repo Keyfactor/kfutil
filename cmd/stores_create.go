@@ -158,7 +158,6 @@ resultspath is where the import results will be written to.`,
 				continue
 			}
 			reqJson := getJsonForRequest(headerRow, row)
-			// fmt.Printf("All JSON from CSV: %s\n\n\n", reqJson.String()) // TODO: REMOVE
 			reqJson.Set(intId, "CertStoreType")
 
 			// cannot send in 0 as ContainerId, need to omit
@@ -171,9 +170,6 @@ resultspath is where the import results will be written to.`,
 			props := unmarshalPropertiesString(reqJson.S("Properties").String())
 			reqJson.Delete("Properties")
 			mJson, _ := reqJson.MarshalJSON()
-			// fmt.Printf("JSON to make Create Store: %s\n\n", string(mJson))
-			// x, _ := json.Marshal(props) // TODO:Remove
-			// fmt.Printf("JSON for properties: %s\n\n", string(x))
 			conversionError := json.Unmarshal(mJson, &createStoreReqParameters)
 
 			if conversionError != nil {
@@ -226,14 +222,6 @@ func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 			if errors == nil {
 				reqJson.Set(tryInt, strings.Split(header, ".")...)
 			} else {
-				// // try Unmarshalling as api.StorePasswordConfig
-				// // var secret api.StorePasswordConfig
-				// // errors = json.Unmarshal([]byte(row[hIdx]), &secret)
-				// // if errors == nil {
-				// // 	reqJson.Set(secret, strings.Split(header, ".")...)
-				// // } else {
-				// reqJson.Set(row[hIdx], strings.Split(header, ".")...)
-				// // }
 				var obj map[string]interface{}
 				errors = json.Unmarshal([]byte(row[hIdx]), &obj)
 				if errors == nil {
@@ -387,7 +375,6 @@ var storesExportCmd = &cobra.Command{
 		csvData := make(map[string]map[string]interface{}, len(*storeList))
 
 		for _, listedStore := range *storeList {
-			// TODO: remove when targeting go-client 1.3.7
 			if listedStore.CertStoreType != int(typeId) {
 				continue
 			}
@@ -423,18 +410,11 @@ var storesExportCmd = &cobra.Command{
 
 			// conditionally set secret values
 			if storeType.PasswordOptions.StoreRequired {
-				// x, _ := json.Marshal(store.Password) // TODO: REMOVE
-				// fmt.Printf("Parsing Password: %s\n", string(x))
 				csvData[store.Id]["Password"] = ParseSecretField(store.Password)
-				// csvData[store.Id]["Password"] = store.Password
 			}
 			// add ServerUsername and ServerPassword Properties if required for type
 			if storeType.ServerRequired {
-				// x, _ := json.Marshal(store.Properties["ServerUsername"]) // TODO: REMOVE
-				// fmt.Printf("Parsing ServerUsername: %s\n", string(x))
 				csvData[store.Id]["Properties.ServerUsername"] = ParseSecretField(store.Properties["ServerUsername"])
-				// x, _ = json.Marshal(store.Properties["ServerPassword"]) // TODO: REMOVE
-				// fmt.Printf("Parsing ServerPassword: %s\n", string(x))
 				csvData[store.Id]["Properties.ServerPassword"] = ParseSecretField(store.Properties["ServerPassword"])
 			}
 		}
@@ -467,7 +447,6 @@ var storesExportCmd = &cobra.Command{
 						strData, _ := json.Marshal(data[header])
 						row[i] = string(strData)
 					}
-					// fmt.Printf("%s : %s\n", header, row[i]) // TODO: REMOVE
 				}
 			}
 			csvContent[index] = row
@@ -521,11 +500,6 @@ func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, map[int
 	if storeType.PasswordOptions.StoreRequired {
 		csvHeaders[len(csvHeaders)] = "Password"
 	}
-	// // add ServerUsername and ServerPassword Properties if required for type
-	// if storeType.ServerRequired {
-	// 	csvHeaders[len(csvHeaders)] = "Properties.ServerUsername"
-	// 	csvHeaders[len(csvHeaders)] = "Properties.ServerPassword"
-	// }
 	intId, _ := jsonParsedObj.S("StoreType").Data().(json.Number).Int64()
 	return intId, csvHeaders
 }
@@ -584,8 +558,6 @@ func unmarshalPropertiesString(properties string) map[string]interface{} {
 }
 
 func ParseSecretField(secretField interface{}) interface{} {
-	// secret, _ := secretField.(api.StorePasswordConfig)
-	// if !ok {
 	var secret api.StorePasswordConfig
 	secretByte, errors := json.Marshal(secretField)
 	if errors != nil {
@@ -600,10 +572,6 @@ func ParseSecretField(secretField interface{}) interface{} {
 		fmt.Printf("Error in Unmarshalling: %s\n", errors)
 		panic("error unmarshalling secret field as StorePasswordConfig")
 	}
-	// }
-
-	// jbytes, _ := json.Marshal(secret)
-	// fmt.Printf("Parsing secret, found type: %s\n", string(jbytes)) // TODO: REMOVE
 
 	if secret.IsManaged {
 		params := make(map[string]string)
