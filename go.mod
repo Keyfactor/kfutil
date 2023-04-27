@@ -3,7 +3,7 @@ module kfutil
 go 1.19
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.2.12
+	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Jeffail/gabs/v2 v2.7.0
 	github.com/Keyfactor/keyfactor-go-client v1.4.1
 	github.com/Keyfactor/keyfactor-go-client-sdk v1.0.1
