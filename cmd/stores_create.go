@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/Jeffail/gabs/v2"
@@ -167,6 +168,12 @@ resultspath is where the import results will be written to.`,
 			reqJson := getJsonForRequest(headerRow, row)
 			reqJson.Set(intId, "CertStoreType")
 
+			// cannot send in 0 as ContainerId, need to omit
+			containerId, _ := strconv.Atoi(reqJson.S("ContainerId").String())
+			if containerId == 0 {
+				reqJson.Set(nil, "ContainerId")
+			}
+
 			var createStoreReqParameters api.CreateStoreFctArgs
 			props := unmarshalPropertiesString(reqJson.S("Properties").String())
 			reqJson.Delete("Properties")
@@ -219,7 +226,18 @@ func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 		} else if strings.ToUpper(row[hIdx]) == "FALSE" {
 			reqJson.Set(false, strings.Split(header, ".")...)
 		} else if row[hIdx] != "" {
-			reqJson.Set(row[hIdx], strings.Split(header, ".")...)
+			tryInt, errors := strconv.Atoi(row[hIdx])
+			if errors == nil {
+				reqJson.Set(tryInt, strings.Split(header, ".")...)
+			} else {
+				var obj map[string]interface{}
+				errors = json.Unmarshal([]byte(row[hIdx]), &obj)
+				if errors == nil {
+					reqJson.Set(obj, strings.Split(header, ".")...)
+				} else {
+					reqJson.Set(row[hIdx], strings.Split(header, ".")...)
+				}
+			}
 		}
 	}
 	//fmt.Printf("[DEBUG] get JSON for create store request: %s", reqJson.String())
@@ -319,7 +337,144 @@ Store type IDs can be found by running the "store-types" command.`,
 		writeCsvFile(filePath, csvContent)
 
 		fmt.Printf("\nTemplate file for store type with id %d written to %s\n", intId, filePath)
-	}}
+	},
+}
+
+var storesExportCmd = &cobra.Command{
+	Use:   "export",
+	Short: "Export existing defined certificate stores by type or store Id.",
+	Long:  "Export the parameter values of defined certificate stores either by type or a specific store by Id. These parameters are stored in CSV for importing later.",
+	Run: func(cmd *cobra.Command, args []string) {
+		kfClient, _ := initClient()
+		storeTypeName, _ := cmd.Flags().GetString("store-type-name")
+		storeTypeId, _ := cmd.Flags().GetInt("store-type-id")
+		outpath, _ := cmd.Flags().GetString("outpath")
+
+		var st interface{}
+		// Check inputs
+		if storeTypeId < 0 && storeTypeName == "" {
+			log.Printf("Error: ID must be a positive integer.")
+			fmt.Printf("Error: ID must be a positive integer.\n")
+			return
+		} else if storeTypeId >= 0 && storeTypeName != "" {
+			log.Printf("Error: ID and Name are mutually exclusive.")
+			fmt.Printf("Error: ID and Name are mutually exclusive.\n")
+			return
+		} else if storeTypeId >= 0 {
+			st = storeTypeId
+		} else if storeTypeName != "" {
+			st = storeTypeName
+		} else {
+			log.Printf("Error: Invalid input.")
+			fmt.Printf("Error: Invalid input.\n")
+			return
+		}
+
+		storeType, err := kfClient.GetCertificateStoreType(st)
+		if err != nil {
+			log.Printf("Error: %s", err)
+			fmt.Printf("Error: %s\n", err)
+			panic("error retrieving store type")
+		}
+		typeId, csvHeaders := getHeadersForStoreType(st, *kfClient)
+
+		query := map[string]interface{}{"Category": typeId}
+		storeList, err := kfClient.ListCertificateStores(&query)
+		if err != nil {
+			log.Printf("Error: %s", err)
+			fmt.Printf("Error: %s\n", err)
+			panic("error listing stores of type")
+		}
+
+		// add Id header to csvHeaders at -1
+		csvHeaders[len(csvHeaders)] = "Id"
+		csvData := make(map[string]map[string]interface{}, len(*storeList))
+
+		for _, listedStore := range *storeList {
+			if listedStore.CertStoreType != int(typeId) {
+				continue
+			}
+			store, err := kfClient.GetCertificateStoreByID(listedStore.Id)
+			if err != nil {
+				log.Printf("Error: %s", err)
+				fmt.Printf("Error: %s\n", err)
+				panic("error retrieving store by id")
+			}
+
+			// populate store data into csv
+			csvData[store.Id] = map[string]interface{}{
+				"Id":              store.Id,
+				"ContainerId":     store.ContainerId,
+				"ClientMachine":   store.ClientMachine,
+				"StorePath":       store.StorePath,
+				"CreateIfMissing": store.CreateIfMissing,
+				"AgentId":         store.AgentId,
+			}
+			if store.InventorySchedule.Immediate != nil {
+				csvData[store.Id]["InventorySchedule.Immediate"] = store.InventorySchedule.Immediate
+			}
+			if store.InventorySchedule.Interval != nil {
+				csvData[store.Id]["InventorySchedule.Interval.Minutes"] = store.InventorySchedule.Interval.Minutes
+			}
+			if store.InventorySchedule.Daily != nil {
+				csvData[store.Id]["InventorySchedule.Daily.Time"] = store.InventorySchedule.Daily.Time
+			}
+
+			for name, prop := range store.Properties {
+				csvData[store.Id]["Properties."+name] = prop
+			}
+
+			// conditionally set secret values
+			if storeType.PasswordOptions.StoreRequired {
+				csvData[store.Id]["Password"] = ParseSecretField(store.Password)
+			}
+			// add ServerUsername and ServerPassword Properties if required for type
+			if storeType.ServerRequired {
+				csvData[store.Id]["Properties.ServerUsername"] = ParseSecretField(store.Properties["ServerUsername"])
+				csvData[store.Id]["Properties.ServerPassword"] = ParseSecretField(store.Properties["ServerPassword"])
+			}
+		}
+
+		// write csv file header row
+		var filePath string
+		if outpath != "" {
+			filePath = outpath
+		} else {
+			filePath = fmt.Sprintf("export_stores_%d.%s", &typeId, "csv")
+		}
+
+		csvContent := make(map[int][]string)
+
+		row := make([]string, len(csvHeaders))
+
+		for k, v := range csvHeaders {
+			row[k] = v
+		}
+		csvContent[0] = row
+		index := 2
+
+		for _, data := range csvData {
+			row = make([]string, len(csvHeaders)) // reset row
+			for i, header := range csvHeaders {
+				if data[header] != nil {
+					if str, ok := data[header].(string); ok {
+						row[i] = str
+					} else {
+						strData, _ := json.Marshal(data[header])
+						row[i] = string(strData)
+					}
+				}
+			}
+			csvContent[index] = row
+			index++
+		}
+
+		writeCsvFile(filePath, csvContent)
+
+		fmt.Printf("\nStores exported for store type with id %d written to %s\n", typeId, filePath)
+
+	},
+}
 
 func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, map[int]string) {
 	csvHeaders := make(map[int]string)
@@ -356,6 +511,10 @@ func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, map[int
 		} else {
 			csvHeaders[idx+offset] = name
 		}
+	}
+	// add Password field if flag was set
+	if storeType.PasswordOptions.StoreRequired {
+		csvHeaders[len(csvHeaders)] = "Password"
 	}
 	intId, _ := jsonParsedObj.S("StoreType").Data().(json.Number).Int64()
 	return intId, csvHeaders
@@ -396,22 +555,60 @@ func getRequiredProperties(id interface{}, kfClient api.Client) (int64, []string
 	return intId, reqProps
 }
 
-func unmarshalPropertiesString(properties string) map[string]string {
+func unmarshalPropertiesString(properties string) map[string]interface{} {
 	if properties != "" {
 		// First, unmarshal JSON properties string to []interface{}
 		var tempInterface interface{}
 		if err := json.Unmarshal([]byte(properties), &tempInterface); err != nil {
-			return make(map[string]string)
+			return make(map[string]interface{})
 		}
 		// Then, iterate through each key:value pair and serialize into map[string]string
-		newMap := make(map[string]string)
+		newMap := make(map[string]interface{})
 		for key, value := range tempInterface.(map[string]interface{}) {
-			newMap[key] = value.(string)
+			newMap[key] = value
 		}
 		return newMap
 	}
 
-	return make(map[string]string)
+	return make(map[string]interface{})
+}
+
+func ParseSecretField(secretField interface{}) interface{} {
+	var secret api.StorePasswordConfig
+	secretByte, errors := json.Marshal(secretField)
+	if errors != nil {
+		log.Printf("Error in Marshalling: %s", errors)
+		fmt.Printf("Error in Marshalling: %s\n", errors)
+		panic("error marshalling secret field as StorePasswordConfig")
+	}
+
+	errors = json.Unmarshal(secretByte, &secret)
+	if errors != nil {
+		log.Printf("Error in Unmarshalling: %s", errors)
+		fmt.Printf("Error in Unmarshalling: %s\n", errors)
+		panic("error unmarshalling secret field as StorePasswordConfig")
+	}
+
+	if secret.IsManaged {
+		params := make(map[string]string)
+		for _, p := range *secret.ProviderTypeParameterValues {
+			params[*p.ProviderTypeParam.Name] = *p.Value
+		}
+		return map[string]interface{}{
+			"Provider":   secret.ProviderId,
+			"Parameters": params,
+		}
+	} else {
+		if secret.Value != "" {
+			return map[string]string{
+				"SecretValue": secret.Value,
+			}
+		} else {
+			return map[string]*string{
+				"SecretValue": nil,
+			}
+		}
+	}
 }
 
 //command initialization
@@ -426,6 +623,7 @@ var (
 
 func init() {
 	storesCmd.AddCommand(importStoresCmd)
+	storesCmd.AddCommand(storesExportCmd)
 	importStoresCmd.AddCommand(storesCreateTemplateCmd)
 	importStoresCmd.AddCommand(storesCreateCmd)
 
@@ -441,4 +639,11 @@ func init() {
 	storesCreateCmd.MarkFlagRequired("file")
 	storesCreateCmd.Flags().BoolP("dry-run", "d", false, "Do not import, just check for necessary fields.")
 	storesCreateCmd.Flags().StringVarP(&resultsPath, "results-path", "o", "", "CSV file containing cert stores to create. defaults to <imported file name>_results.csv")
+
+	storesExportCmd.Flags().StringVarP(&storeTypeName, "store-type-name", "n", "", "The name of the cert store type for the template.  Use if store-type-id is unknown.")
+	storesExportCmd.Flags().IntVarP(&storeTypeId, "store-type-id", "i", -1, "The ID of the cert store type for the template.")
+	storesExportCmd.Flags().StringVarP(&outPath, "outpath", "o", "",
+		"Path and name of the template file to generate.. If not specified, the file will be written to the current directory.")
+	storesExportCmd.MarkFlagsMutuallyExclusive("store-type-name", "store-type-id")
+
 }
