@@ -15,6 +15,16 @@ bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/gh-dl-rel
 All the variables listed below need to be set in your environment. The `kfutil` command will look for these variables
 and use them if they are set. If they are not set, the utility will fail to connect to Keyfactor.
 
+| Variable Name      | Description                                                                              |
+|--------------------|------------------------------------------------------------------------------------------|
+| KEYFACTOR_HOSTNAME | The hostname of your Keyfactor instance. ex: `my.domain.com`                             |
+| KEYFACTOR_USERNAME | The username to use to connect to Keyfactor. Do not include the domain. ex: `myusername` |
+| KEYFACTOR_PASSWORD | The password to use to connect to Keyfactor. ex: `mypassword`                            |
+| KEYFACTOR_DOMAIN   | The domain to use to connect to Keyfactor. ex: `mydomain`                                |
+| KEYFACTOR_API_PATH | The path to the Keyfactor API. Defaults to `/KeyfactorAPI`.                              |
+| KFUTIL_EXP         | Set to `1` or `true` to enable experimental features.                                    |
+| KFUTIL_DEBUG       | Set to `1` or `true` to enable debug logging.                                            |
+
 Linux/MacOS:
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
@@ -22,13 +32,26 @@ export KEYFACTOR_USERNAME="<myusername>" # Do not include domain
 export KEYFACTOR_PASSWORD="<mypassword>"
 export KEYFACTOR_DOMAIN="<mykeyfactordomain>"
 ```
+Additional variables:
+```bash
+export KEYFACTOR_API_PATH="/KeyfactorAPI" # Defaults to /KeyfactorAPI if not set ex. my.domain.com/KeyfactorAPI
+export KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
+export KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
+```
 
-Windows Powershell
+Windows Powershell:
 ```powershell
 $env:KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 $env:KEYFACTOR_USERNAME="<myusername>" # Do not include domain
 $env:KEYFACTOR_PASSWORD="<mypassword>"
 $env:KEYFACTOR_DOMAIN="<mykeyfactordomain>"
+```
+
+Additional variables:
+```bash
+$env:KEYFACTOR_API_PATH="/KeyfactorAPI" # Defaults to /KeyfactorAPI if not set ex. my.domain.com/KeyfactorAPI
+$env:KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
+$env:KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 ```
 
 ## Commands

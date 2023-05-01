@@ -26,6 +26,19 @@ var containersCreateCmd = &cobra.Command{
 	Short: "Create certificate store container.",
 	Long:  `Create certificate store container.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
+		//debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		//profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 		fmt.Println("Create store containers not implemented.")
 	},
 }
@@ -40,6 +53,14 @@ var containersGetCmd = &cobra.Command{
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
@@ -64,6 +85,19 @@ var containersUpdateCmd = &cobra.Command{
 	Short: "Update certificate store container by ID or name.",
 	Long:  `Update certificate store container by ID or name.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
+		//debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		//profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 		fmt.Println("Update store containers not implemented.")
 	},
 }
@@ -73,6 +107,19 @@ var containersDeleteCmd = &cobra.Command{
 	Short: "Delete certificate store container by ID or name.",
 	Long:  `Delete certificate store container by ID or name.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
+		//debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		//profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 		fmt.Println("Delete store containers not implemented.")
 	},
 }
@@ -87,6 +134,14 @@ var containersListCmd = &cobra.Command{
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)

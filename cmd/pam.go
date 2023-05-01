@@ -35,10 +35,19 @@ var pamTypesListCmd = &cobra.Command{
 	Short: "List defined PAM Provider types.",
 	Long:  "List defined PAM Provider types.",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
@@ -65,20 +74,29 @@ var pamTypesCreateCmd = &cobra.Command{
 	Short: "Create a new PAM Provider type, currently only supported from file.",
 	Long:  "Create a new PAM Provider type, currently only supported from file.",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		sdkClient := initGenClient(profile)
-		configFile, _ := cmd.Flags().GetString("from-file")
+		pamConfigFile, _ := cmd.Flags().GetString("from-file")
 		providerName, _ := cmd.Flags().GetString("name")
 		repoName, _ := cmd.Flags().GetString("repo")
 		branchName, _ := cmd.Flags().GetString("branch")
 
-		if configFile == "" && repoName == "" {
+		if pamConfigFile == "" && repoName == "" {
 			log.Printf("%sError - must supply either a config file or GitHub repository to get file from.", colorRed)
 			return
 		}
@@ -93,9 +111,9 @@ var pamTypesCreateCmd = &cobra.Command{
 				return
 			}
 		} else {
-			pamProviderType, errors = GetTypeFromConfigFile(configFile, pamProviderType)
+			pamProviderType, errors = GetTypeFromConfigFile(pamConfigFile, pamProviderType)
 			if errors != nil {
-				log.Printf("%sError reading from file %s: %s", colorRed, configFile, errors)
+				log.Printf("%sError reading from file %s: %s", colorRed, pamConfigFile, errors)
 				return
 			}
 		}
@@ -123,10 +141,19 @@ var pamProvidersListCmd = &cobra.Command{
 	Short: "List defined PAM Providers.",
 	Long:  "List defined PAM Providers.",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
@@ -151,10 +178,19 @@ var pamProvidersGetCmd = &cobra.Command{
 	Short: "Get a specific defined PAM Provider by ID.",
 	Long:  "Get a specific defined PAM Provider by ID.",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
@@ -183,20 +219,29 @@ var pamProvidersCreateCmd = &cobra.Command{
 	Short: "Create a new PAM Provider, currently only supported from file.",
 	Long:  "Create a new PAM Provider, currently only supported from file.",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		sdkClient := initGenClient(profile)
-		configFile, _ := cmd.Flags().GetString("from-file")
+		pamConfigFile, _ := cmd.Flags().GetString("from-file")
 
 		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
-		pamProvider, errors := GetTypeFromConfigFile(configFile, pamProvider)
+		pamProvider, errors := GetTypeFromConfigFile(pamConfigFile, pamProvider)
 		if errors != nil {
-			log.Printf("%sError reading from file %s: %s", colorRed, configFile, errors)
+			log.Printf("%sError reading from file %s: %s", colorRed, pamConfigFile, errors)
 			return
 		}
 
@@ -223,20 +268,29 @@ var pamProvidersUpdateCmd = &cobra.Command{
 	Short: "Update an existing PAM Provider, currently only supported from file.",
 	Long:  "Update an existing PAM Provider, currently only supported from file.",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		sdkClient := initGenClient(profile)
-		configFile, _ := cmd.Flags().GetString("from-file")
+		pamConfigFile, _ := cmd.Flags().GetString("from-file")
 
 		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
-		pamProvider, errors := GetTypeFromConfigFile(configFile, pamProvider)
+		pamProvider, errors := GetTypeFromConfigFile(pamConfigFile, pamProvider)
 		if errors != nil {
-			log.Printf("%sError reading from file %s: %s", colorRed, configFile, errors)
+			log.Printf("%sError reading from file %s: %s", colorRed, pamConfigFile, errors)
 			return
 		}
 
@@ -263,10 +317,19 @@ var pamProvidersDeleteCmd = &cobra.Command{
 	Short: "Delete a defined PAM Provider by ID.",
 	Long:  "Delete a defined PAM Provider by ID.",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)

@@ -151,3 +151,15 @@ func checkDebug(v bool) bool {
 func GetCurrentTime() string {
 	return time.Now().Format(time.RFC3339)
 }
+
+func IsExperimentalFeatureEnabled(expFlag bool, isExperimental bool) (bool, error) {
+	envExp := os.Getenv("KFUTIL_EXP")
+	envValue, _ := strconv.ParseBool(envExp)
+	if envValue {
+		return envValue, nil
+	}
+	if isExperimental && !expFlag {
+		return false, fmt.Errorf("experimental features are not enabled. To enable experimental features, use the --exp flag or set the KFUTIL_EXP environment variable to true")
+	}
+	return envValue, nil
+}

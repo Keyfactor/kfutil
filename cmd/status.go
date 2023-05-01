@@ -9,6 +9,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"log"
 )
 
 // statusCmd represents the status command
@@ -17,6 +18,19 @@ var statusCmd = &cobra.Command{
 	Short: "List the status of Keyfactor services.",
 	Long:  `Returns a list of all API endpoints.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
+		//debugFlag, _ := cmd.Flags().GetBool("debug")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		//profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
 		//log.SetOutput(io.Discard)
 		//kfClient, _ := initClient(configFile, profile, noPrompt)
 		//status, err := kfClient.GetStatus()
