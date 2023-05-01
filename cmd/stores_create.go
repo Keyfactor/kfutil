@@ -345,7 +345,14 @@ var storesExportCmd = &cobra.Command{
 	Short: "Export existing defined certificate stores by type or store Id.",
 	Long:  "Export the parameter values of defined certificate stores either by type or a specific store by Id. These parameters are stored in CSV for importing later.",
 	Run: func(cmd *cobra.Command, args []string) {
-		kfClient, _ := initClient()
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
+		kfClient, _ := initClient(configFile, profile, noPrompt)
 		storeTypeName, _ := cmd.Flags().GetString("store-type-name")
 		storeTypeId, _ := cmd.Flags().GetInt("store-type-id")
 		outpath, _ := cmd.Flags().GetString("outpath")
