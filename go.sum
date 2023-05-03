@@ -2,8 +2,8 @@ github.com/AlecAivazis/survey/v2 v2.2.12 h1:5a07y93zA6SZ09gOa9wLVLznF5zTJMQ+pJ3c
 github.com/AlecAivazis/survey/v2 v2.2.12/go.mod h1:6d4saEvBsfSHXeN1a5OA5m2+HJ2LuVokllnC77pAIKI=
 github.com/Jeffail/gabs/v2 v2.7.0 h1:Y2edYaTcE8ZpRsR2AtmPu5xQdFDIthFG0jYhu5PY8kg=
 github.com/Jeffail/gabs/v2 v2.7.0/go.mod h1:dp5ocw1FvBBQYssgHsG7I1WYsiLRtkUaB1FEtSwvNUw=
-github.com/Keyfactor/keyfactor-go-client v1.4.1 h1:sFgBQ34uLLmiwJZlsedRHN4bKCOND9cPa1GZLz76uZM=
-github.com/Keyfactor/keyfactor-go-client v1.4.1/go.mod h1:3ZymLNCaSazglcuYeNfm9nrzn22wcwLjIWURrnUygBo=
+github.com/Keyfactor/keyfactor-go-client v1.4.3 h1:CmGvWcuIbDRFM0PfYOQH6UdtAgplvZBpU++KTU8iseg=
+github.com/Keyfactor/keyfactor-go-client v1.4.3/go.mod h1:3ZymLNCaSazglcuYeNfm9nrzn22wcwLjIWURrnUygBo=
 github.com/Keyfactor/keyfactor-go-client-sdk v1.0.1 h1:cs8hhvsY3MJ2o1K11HLTRCjRT8SbsKhhi73Y4By2CI0=
 github.com/Keyfactor/keyfactor-go-client-sdk v1.0.1/go.mod h1:Z5pSk8YFGXHbKeQ1wTzVN8A4P/fZmtAwqu3NgBHbDOs=
 github.com/Netflix/go-expect v0.0.0-20180615182759-c93bf25de8e8 h1:xzYJEypr/85nBpB11F9br+3HUrpgb+fcm5iADzXXYEw=
