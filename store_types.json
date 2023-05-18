@@ -1067,22 +1067,25 @@
     },
     "Properties": [
       {
+        "StoreTypeId;omitempty": 0,
         "Name": "KubeNamespace",
         "DisplayName": "KubeNamespace",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "default",
-        "Required": false
+        "Required": true
       },
       {
+        "StoreTypeId;omitempty": 0,
         "Name": "KubeSecretName",
         "DisplayName": "KubeSecretName",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": null,
-        "Required": false
+        "Required": true
       },
       {
+        "StoreTypeId;omitempty": 0,
         "Name": "KubeSecretType",
         "DisplayName": "KubeSecretType",
         "Type": "String",
@@ -1120,22 +1123,25 @@
     },
     "Properties": [
       {
+        "StoreTypeId;omitempty": 0,
         "Name": "KubeNamespace",
         "DisplayName": "KubeNamespace",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "default",
-        "Required": false
+        "Required": true
       },
       {
+        "StoreTypeId;omitempty": 0,
         "Name": "KubeSecretName",
         "DisplayName": "KubeSecretName",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": null,
-        "Required": false
+        "Required": true
       },
       {
+        "StoreTypeId;omitempty": 0,
         "Name": "KubeSecretType",
         "DisplayName": "KubeSecretType",
         "Type": "String",
@@ -1173,22 +1179,25 @@
     },
     "Properties": [
       {
+        "StoreTypeId;omitempty": 0,
         "Name": "KubeNamespace",
         "DisplayName": "KubeNamespace",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "default",
-        "Required": false
+        "Required": true
       },
       {
+        "StoreTypeId;omitempty": 0,
         "Name": "KubeSecretName",
         "DisplayName": "KubeSecretName",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": null,
-        "Required": false
+        "Required": true
       },
       {
+        "StoreTypeId;omitempty": 0,
         "Name": "KubeSecretType",
         "DisplayName": "KubeSecretType",
         "Type": "String",
