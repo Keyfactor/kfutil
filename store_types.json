@@ -1887,5 +1887,65 @@
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden",
     "InventoryEndpoint": "/AnyInventory/Update"
+  },
+  "NEWTEST": {
+    "Name": "NEWTEST",
+    "ShortName": "NEWTEST",
+    "Capability": "NEWTEST",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "IsTrustStore",
+        "DisplayName": "Trust Store",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": false
+      },
+      {
+        "Name": "IncludesChain",
+        "DisplayName": "Store Includes Chain",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": false
+      },
+      {
+        "Name": "SeparatePrivateKeyFilePath",
+        "DisplayName": "Separate Private Key File Location",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "IsRSAPrivateKey",
+        "DisplayName": "Is RSA Private Key",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": false
+      }
+    ]
   }
 }
