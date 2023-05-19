@@ -3,7 +3,7 @@ kfutil logout
 
 export DEMO_CERT_CN="CommandCA1" # Change this to the CN of the cert you want to add to all stores
 
-echo "Sourving Keyfactor command environment variables from ~/.env_kf-int-lab1022..."
+echo "Sourcing Keyfactor command environment variables from ~/.env_kf-int-lab1022..."
 source ~/.env_kf-int-lab1022
 
 #echo "Setting up Keyfactor command environment variables..."
