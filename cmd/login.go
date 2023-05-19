@@ -184,7 +184,12 @@ func authenticate(fromConfig bool, fromEnv bool, configFile string, noPrompt boo
 			profile = "default"
 		}
 
-		_ = createOrUpdateConfigurationFile(commandConfig.Servers[profile], profile, configFile)
+		//Check if commandConfig.Servers["default"] is empty
+		if commandConfig.Servers != nil {
+			_ = createOrUpdateConfigurationFile(commandConfig.Servers[profile], profile, configFile)
+		} else {
+			_ = createOrUpdateConfigurationFile(ConfigurationFileEntry{}, profile, configFile)
+		}
 	}
 
 	if profile == "" {
@@ -447,10 +452,10 @@ func authConfigFile(configFile string, noPrompt bool, profile string) (Configura
 	// Get the API path.
 	envAPI, apiSet := os.LookupEnv("KEYFACTOR_API_PATH")
 	if !apiSet {
-		log.Println("[INFO] Password not set. Please set the KEYFACTOR_PASSWORD environment variable.")
+		log.Println("[INFO] KeyfactorAPIKEYFACTOR_API_PATH not set. Please set the KEYFACTOR_API_PATH environment variable.")
 	}
 	var apiPath string
-	if apiSet || noPrompt {
+	if !apiSet || noPrompt {
 		if len(apiPath) == 0 {
 			envAPI = configurationFile.Servers[profile].APIPath
 		}
@@ -458,6 +463,7 @@ func authConfigFile(configFile string, noPrompt bool, profile string) (Configura
 			apiPath = "KeyfactorAPI"
 		} else {
 			apiPath = envAPI
+			apiSet = true
 		}
 	} else {
 		fmt.Printf("Enter the Keyfactor Command API path [%s]: \n", envAPI)
@@ -719,6 +725,7 @@ func loadConfigurationFile(path string, silent bool) (ConfigurationFile, error) 
 	if jErr != nil {
 		//fmt.Println("Unable to read config file due to invalid format. ", jErr)
 		log.Println("[ERROR] decoding config file: ", jErr)
+		return data, jErr
 	}
 
 	return data, nil

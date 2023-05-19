@@ -12,7 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/spf13/cobra"
 	"io"
 	"log"
@@ -848,7 +848,7 @@ the utility will first generate an audit report and then execute the add/remove 
 			format, _ := cmd.Flags().GetString("format")
 			outPath, _ := cmd.Flags().GetString("outpath")
 			storeType, _ := cmd.Flags().GetStringSlice("store-type")
-			containerType, _ := cmd.Flags().GetStringSlice("container-type")
+			containerName, _ := cmd.Flags().GetStringSlice("container-name")
 			collection, _ := cmd.Flags().GetStringSlice("collection")
 			subjectName, _ := cmd.Flags().GetStringSlice("cn")
 			stID := -1
@@ -856,9 +856,9 @@ the utility will first generate an audit report and then execute the add/remove 
 			var csvStoreData [][]string
 			var csvCertData [][]string
 			var rowLookup = make(map[string]bool)
+			kfClient, cErr := initClient(configFile, profile, noPrompt)
 			if len(storeType) != 0 {
 				for _, s := range storeType {
-					kfClient, cErr := initClient(configFile, profile, noPrompt)
 					if cErr != nil {
 						log.Fatalf("[ERROR] creating client: %s", cErr)
 					}
@@ -926,9 +926,9 @@ the utility will first generate an audit report and then execute the add/remove 
 				}
 				fmt.Println("Done")
 			}
-			if len(containerType) != 0 {
-				for _, c := range containerType {
-					kfClient, cErr := initClient(configFile, profile, noPrompt)
+			if len(containerName) != 0 {
+				for _, c := range containerName {
+
 					if cErr != nil {
 						log.Fatalf("[ERROR] creating client: %s", cErr)
 					}
@@ -1099,7 +1099,7 @@ func init() {
 		outputFormat    string
 		inputFile       string
 		storeTypes      []string
-		containerTypes  []string
+		containerNames  []string
 		collections     []string
 		subjectNames    []string
 	)
@@ -1157,7 +1157,7 @@ func init() {
 	rotGenStoreTemplateCmd.Flags().Var(&tType, "type",
 		`The type of template to generate. Only "certs|stores|actions" are supported at this time.`)
 	rotGenStoreTemplateCmd.Flags().StringSliceVar(&storeTypes, "store-type", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified store types. If not specified, the template will be empty.")
-	rotGenStoreTemplateCmd.Flags().StringSliceVar(&containerTypes, "container-type", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified container types. If not specified, the template will be empty.")
+	rotGenStoreTemplateCmd.Flags().StringSliceVar(&containerNames, "container-name", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified container types. If not specified, the template will be empty.")
 	rotGenStoreTemplateCmd.Flags().StringSliceVar(&subjectNames, "cn", []string{}, "Subject name(s) to pre-populate the stores template with. If not specified, the template will be empty. Does not work with SANs.")
 	rotGenStoreTemplateCmd.Flags().StringSliceVar(&collections, "collection", []string{}, "Certificate collection name(s) to pre-populate the stores template with. If not specified, the template will be empty.")
 

@@ -9,7 +9,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
-	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/spf13/cobra"
 	"io"
 	"log"
