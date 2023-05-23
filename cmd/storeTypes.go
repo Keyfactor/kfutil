@@ -116,9 +116,18 @@ var storesTypeGetCmd = &cobra.Command{
 		kfClient, _ := initClient(configFile, profile, noPrompt)
 		var st interface{}
 		// Check inputs
-		if id < 0 && name == "" {
-			log.Printf("Error: ID must be a positive integer.")
-			fmt.Printf("Error: ID must be a positive integer.\n")
+		if id <= 0 && name == "" {
+			validStoreTypes := getValidStoreTypes("")
+			prompt := &survey.Select{
+				Message: "Choose an option:",
+				Options: validStoreTypes,
+			}
+			var selected string
+			err := survey.AskOne(prompt, &selected)
+			if err != nil {
+				fmt.Println(err)
+			}
+			st = selected
 			return
 		} else if id >= 0 && name != "" {
 			log.Printf("Error: ID and Name are mutually exclusive.")
@@ -329,8 +338,8 @@ var storesTypeUpdateCmd = &cobra.Command{
 
 var storesTypeDeleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a specific store type by ID.",
-	Long:  `Delete a specific store type by ID.`,
+	Short: "Delete a specific store type by name or ID.",
+	Long:  `Delete a specific store type by name or ID.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
@@ -338,6 +347,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
+		storeType, _ := cmd.Flags().GetString("name")
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -351,22 +361,60 @@ var storesTypeDeleteCmd = &cobra.Command{
 		id, _ := cmd.Flags().GetInt("id")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		kfClient, _ := initClient(configFile, profile, noPrompt)
-		_, err := kfClient.GetCertificateStoreType(id)
+		var st interface{}
+
+		if id <= 0 && storeType == "" {
+			validStoreTypes := getValidStoreTypes("")
+			prompt := &survey.Select{
+				Message: "Choose an option:",
+				Options: validStoreTypes,
+			}
+			var selected string
+			err := survey.AskOne(prompt, &selected)
+			if err != nil {
+				fmt.Println(err)
+			}
+			st = selected
+		} else if id >= 0 && storeType != "" {
+			log.Printf("Error: ID and Name are mutually exclusive.")
+			fmt.Printf("Error: ID and Name are mutually exclusive.\n")
+			return
+		} else if id >= 0 {
+			st = id
+		} else if storeType != "" {
+			st = storeType
+		} else {
+			log.Printf("Error: Invalid input.")
+			fmt.Printf("Error: Invalid input.\n")
+			return
+		}
+
+		log.Printf("Deleting certificate store type with ID: %d", id)
+		storeTypeResponse, err := kfClient.GetCertificateStoreType(st)
+		log.Printf("storeTypeResponse: %v", storeTypeResponse)
 		if err != nil {
 			log.Printf("Error: %s", err)
 			fmt.Printf("Error: %s\n", err)
 			return
 		}
+
+		if storeTypeResponse.StoreType > 0 {
+			log.Printf("Certificate store type with ID: %d found", storeTypeResponse.StoreType)
+			id = storeTypeResponse.StoreType
+		}
+
 		if dryRun {
 			fmt.Printf("dry run delete called on certificate store type with ID: %d", id)
 		} else {
+			log.Printf("Calling API to delete certificate store type with ID: %d", id)
 			d, err := kfClient.DeleteCertificateStoreType(id)
 			if err != nil {
 				log.Printf("Error: %s", err)
-				fmt.Printf("Error: %s\n", err)
+				fmt.Printf("%s\n", err)
 				return
 			}
-			fmt.Printf("Certificate store type with ID: %d deleted", d.ID)
+			log.Printf("Certificate store type %v deleted", d)
+			fmt.Printf("Certificate store type %v deleted", st)
 		}
 	},
 }
@@ -512,8 +560,9 @@ func init() {
 
 	// DELETE command
 	storeTypesCmd.AddCommand(storesTypeDeleteCmd)
-	storesTypeDeleteCmd.Flags().IntVarP(&storeTypeID, "id", "i", -1, "ID of the certificate store type to get.")
+	storesTypeDeleteCmd.Flags().IntVarP(&storeTypeID, "id", "i", -1, "ID of the certificate store type to delete.")
+	storesTypeDeleteCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to delete.")
 	storesTypeDeleteCmd.Flags().BoolVarP(&dryRun, "dry-run", "t", false, "Specifies whether to perform a dry run.")
-	storesTypeDeleteCmd.MarkFlagRequired("id")
+	storesTypeDeleteCmd.MarkFlagsMutuallyExclusive("id", "name")
 
 }
