@@ -701,7 +701,10 @@ the utility will first generate an audit report and then execute the add/remove 
 					log.Fatalf("[ERROR] reconciling roots: %s", rErr)
 				}
 				defer csvFile.Close()
-				fmt.Println("Reconciliation completed. Check orchestrator jobs for details.")
+
+				orchsURL := fmt.Sprintf("https://%s/Keyfactor/Portal/AgentJobStatus/Index", kfClient.Hostname)
+
+				fmt.Println(fmt.Sprintf("Reconciliation completed. Check orchestrator jobs for details. %s", orchsURL))
 			} else {
 				// Read in the stores CSV
 				csvFile, _ := os.Open(storesFile)
@@ -794,7 +797,9 @@ the utility will first generate an audit report and then execute the add/remove 
 				if lookupFailures != nil {
 					fmt.Printf("The following stores could not be found: %s", strings.Join(lookupFailures, ","))
 				}
-				fmt.Println("Reconciliation completed. Check orchestrator jobs for details.")
+				orchsURL := fmt.Sprintf("https://%s/Keyfactor/Portal/AgentJobStatus/Index", kfClient.Hostname)
+
+				fmt.Println(fmt.Sprintf("Reconciliation completed. Check orchestrator jobs for details. %s", orchsURL))
 			}
 
 		},
@@ -959,7 +964,6 @@ the utility will first generate an audit report and then execute the add/remove 
 			}
 			if len(collection) != 0 {
 				for _, c := range collection {
-					kfClient, cErr := initClient(configFile, profile, noPrompt)
 					if cErr != nil {
 						fmt.Println("[ERROR] connecting to Keyfactor. Please check your configuration and try again.")
 						log.Fatalf("[ERROR] creating client: %s", cErr)
@@ -987,7 +991,6 @@ the utility will first generate an audit report and then execute the add/remove 
 			}
 			if len(subjectName) != 0 {
 				for _, s := range subjectName {
-					kfClient, cErr := initClient(configFile, profile, noPrompt)
 					if cErr != nil {
 						fmt.Println("[ERROR] connecting to Keyfactor. Please check your configuration and try again.")
 						log.Fatalf("[ERROR] creating client: %s", cErr)

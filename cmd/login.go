@@ -466,14 +466,14 @@ func authConfigFile(configFile string, noPrompt bool, profile string) (Configura
 			apiSet = true
 		}
 	} else {
-		fmt.Printf("Enter the Keyfactor Command API path [%s]: \n", envAPI)
-		_, paErr := fmt.Scanln(&apiPath)
-		if paErr != nil {
-			if paErr.Error() != "unexpected newline" {
-				fmt.Println("Error getting API path: ", paErr)
-				log.Println("[ERROR] getting API path: ", paErr)
-			}
-		}
+		//fmt.Printf("Enter the Keyfactor Command API path [%s]: \n", envAPI)
+		//_, paErr := fmt.Scanln(&apiPath)
+		//if paErr != nil {
+		//	if paErr.Error() != "unexpected newline" {
+		//		fmt.Println("Error getting API path: ", paErr)
+		//		log.Println("[ERROR] getting API path: ", paErr)
+		//	}
+		//}
 		if len(apiPath) == 0 {
 			if len(envAPI) == 0 {
 				envAPI = configurationFile.Servers[profile].APIPath
