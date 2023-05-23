@@ -6,7 +6,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Keyfactor/keyfactor-go-client v1.4.3
 	github.com/Keyfactor/keyfactor-go-client-sdk v1.0.1
-	github.com/Keyfactor/keyfactor-go-client/v2 v2.0.2-rc.1
+	github.com/Keyfactor/keyfactor-go-client/v2 v2.0.2-rc.2
 	github.com/google/go-cmp v0.5.9
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/crypto v0.9.0
