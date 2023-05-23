@@ -234,7 +234,15 @@ var storesTypeCreateCmd = &cobra.Command{
 			}
 			log.Printf("[DEBUG] Store type config: %v", storeTypeConfig[storeType])
 			sConfig := storeTypeConfig[storeType].(map[string]interface{})
-			props, pErr := buildStoreTypePropertiesInterface(sConfig["Properties"].([]interface{}))
+			// Build properties if sConfig["Properties"] is not nil
+			var props []api.StoreTypePropertyDefinition
+			var pErr error
+			if sConfig["Properties"] != nil {
+				props, pErr = buildStoreTypePropertiesInterface(sConfig["Properties"].([]interface{}))
+			} else {
+				props = []api.StoreTypePropertyDefinition{}
+			}
+
 			if pErr != nil {
 				fmt.Printf("Error: %s", pErr)
 				log.Printf("Error: %s", pErr)
