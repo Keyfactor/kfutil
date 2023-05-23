@@ -1973,5 +1973,18 @@
   "BlueprintAllowed": false,
   "CustomAliasAllowed": "Required",
   "ServerRegistration": 13,
-  "InventoryEndpoint": "/AnyInventory/Update"
+  "InventoryEndpoint": "/AnyInventory/Update",
+  "AzureAppGW": {
+    "Name": "Azure Application Gateway",
+    "ShortName": "AzureAppGW",
+    "Capability": "AzureAppGW",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    }
+  }
 }
