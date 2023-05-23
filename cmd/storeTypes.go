@@ -116,7 +116,7 @@ var storesTypeGetCmd = &cobra.Command{
 		kfClient, _ := initClient(configFile, profile, noPrompt)
 		var st interface{}
 		// Check inputs
-		if id <= 0 && name == "" {
+		if id < 0 && name == "" {
 			validStoreTypes := getValidStoreTypes("")
 			prompt := &survey.Select{
 				Message: "Choose an option:",
@@ -363,8 +363,17 @@ var storesTypeDeleteCmd = &cobra.Command{
 		kfClient, _ := initClient(configFile, profile, noPrompt)
 		var st interface{}
 
-		if id <= 0 && storeType == "" {
-			validStoreTypes := getValidStoreTypes("")
+		var validStoreTypes []string
+		if id < 0 && storeType == "" {
+			validStoreTypesResp, vstErr := kfClient.ListCertificateStoreTypes()
+			if vstErr != nil {
+				fmt.Println(vstErr)
+				validStoreTypes = getValidStoreTypes("")
+			} else {
+				for _, v := range *validStoreTypesResp {
+					validStoreTypes = append(validStoreTypes, v.ShortName)
+				}
+			}
 			prompt := &survey.Select{
 				Message: "Choose an option:",
 				Options: validStoreTypes,
@@ -398,7 +407,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 			return
 		}
 
-		if storeTypeResponse.StoreType > 0 {
+		if storeTypeResponse.StoreType >= 0 {
 			log.Printf("Certificate store type with ID: %d found", storeTypeResponse.StoreType)
 			id = storeTypeResponse.StoreType
 		}
