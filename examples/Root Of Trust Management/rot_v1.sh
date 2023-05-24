@@ -76,4 +76,5 @@ read -p "Press enter to continue"
 
 echo "Reconcile stores using the audit report and any changes you made to it..."
 kfutil stores rot reconcile \
-  --import-csv rot_audit.csv
+  --import-csv \
+  --input-file rot_audit.csv
