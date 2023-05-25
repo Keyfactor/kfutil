@@ -1,0 +1,55 @@
+---
+- sub_cli_name: login
+  tests:
+    - name: LOGIN - Prompted
+      description: Login to the CLI prompted.
+      script:
+        - kfutil logout || true # ignore error and ensure all config files are removed
+        - kfutil login
+      expected:
+        - exit_code: 0
+          contains:
+            - "Please enter your username:"
+            - "Please enter your password:"
+            - "Login successful"
+    - name: LOGIN - Prompted user implied domain
+      description: Login to the CLI prompted but don't specify domain in the username.
+      script:
+        - kfutil logout || true # ignore error and ensure all config files are removed
+        - kfutil login
+      expected:
+        - exit_code: 0
+          contains:
+            - "Please enter your username:"
+            - "Please enter your password:"
+            - "Login successful"
+    - name: LOGIN - Prompted w/ valid config file
+      description: Login to the CLI prompted w/ valid condif file.
+      script:
+        - test -f ~/.keyfactor/command_config.json
+        - kfutil login
+      expected:
+        - exit_code: 0
+          contains:
+            - "Please enter your username:"
+            - "Please enter your password:"
+            - "Login successful"
+    - name: LOGIN - Environment Variables
+      description: Login to the CLI with environmental variables
+      script:
+        - kfutil logout || true # ignore error and ensure all config files are removed
+        - source .env
+        - kfutil login --no-prompt
+      expected:
+        - exit_code: 0
+          contains:
+            - "Login successful"
+     - name: LOGIN - No Prompt w/ valid config file
+       description: Login to the CLI with no prompt w/ valid config file.
+       script:
+        - test -f ~/.keyfactor/command_config.json
+        - kfutil login --no-prompt
+       expected:
+        - exit_code: 0
+          contains:
+            - "Login successful"
