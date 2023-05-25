@@ -16,7 +16,7 @@ already configured in Keyfactor Command to audit and manage the root(s) of trust
 
 ## Prerequisites
 * Keyfactor Command 10.x or later
-* [kfutil](https://github.com/Keyfactor/kfutil/releases) `v1.0.0-rc.5` or later
+* [kfutil](https://github.com/Keyfactor/kfutil/releases) `v1.0.0` or later
 * [jq](https://stedolan.github.io/jq/) `v1.6` or later
 * Keyfactor Command API credentials with appropriate permissions:
   * read/write access to Certificate Stores
