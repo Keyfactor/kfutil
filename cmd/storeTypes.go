@@ -65,7 +65,7 @@ var storesTypesListCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -101,7 +101,7 @@ var storesTypeGetCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -287,6 +287,7 @@ var storesTypeCreateCmd = &cobra.Command{
 				log.Printf("[ERROR] creating store type : %s", err)
 			}
 			log.Printf("[DEBUG] Create response: %v", createResp)
+			fmt.Printf("Certificate store type %s created with ID: %d", storeType, createResp.StoreType)
 		}
 	},
 }
@@ -356,7 +357,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
 		storeType, _ := cmd.Flags().GetString("name")
-		isExperimental := true
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -572,8 +573,8 @@ func init() {
 	//storesTypeCreateCmd.MarkFlagRequired("name")
 
 	// UPDATE command
-	storeTypesCmd.AddCommand(storesTypeUpdateCmd)
-	storesTypeUpdateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to get.")
+	//storeTypesCmd.AddCommand(storesTypeUpdateCmd)
+	//storesTypeUpdateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to get.")
 
 	// DELETE command
 	storeTypesCmd.AddCommand(storesTypeDeleteCmd)
