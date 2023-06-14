@@ -129,7 +129,7 @@ var inventoryClearCmd = &cobra.Command{
 			}
 
 			if !force {
-				fmt.Printf("This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you shouldPass to continue? (y/n) ", store.ClientMachine, store.StorePath)
+				fmt.Printf("This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you sure?! Press 'y' to continue? (y/n) ", store.ClientMachine, store.StorePath)
 				var answer string
 				fmt.Scanln(&answer)
 				if answer != "y" {
