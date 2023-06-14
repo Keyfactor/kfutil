@@ -679,7 +679,7 @@ func init() {
 	inventoryCmd.AddCommand(inventoryClearCmd)
 	inventoryClearCmd.Flags().StringSliceVar(&ids, "sid", []string{}, "The Keyfactor Command ID of the certificate store(s) remove all inventory from.")
 	inventoryClearCmd.Flags().StringSliceVar(&clients, "client", []string{}, "Remove all inventory from store(s) of specific client machine(s).")
-	inventoryClearCmd.Flags().StringSliceVar(&types, "store-ype", []string{}, "Remove all inventory from store(s) of specific store type(s).")
+	inventoryClearCmd.Flags().StringSliceVar(&types, "store-type", []string{}, "Remove all inventory from store(s) of specific store type(s).")
 	inventoryClearCmd.Flags().StringSliceVar(&containers, "container", []string{}, "Remove all inventory from store(s) of specific container type(s).")
 	inventoryClearCmd.Flags().BoolVar(&all, "all", false, "Remove all inventory from all certificate stores.")
 	inventoryClearCmd.Flags().BoolVar(&force, "force", false, "Force removal of inventory without prompting for confirmation.")

@@ -62,8 +62,8 @@ var getOrchestratorCmd = &cobra.Command{
 // listOrchestratorsCmd represents the list orchestrators command
 var approveOrchestratorCmd = &cobra.Command{
 	Use:   "approve",
-	Short: "Approve orchestrator by ID or machine/client name.",
-	Long:  `Approve orchestrator by ID or machine/client name.`,
+	Short: "Approve orchestrator by machine/client name.",
+	Long:  `Approve orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
@@ -105,8 +105,8 @@ var approveOrchestratorCmd = &cobra.Command{
 // disapproveOrchestratorCmd represents the disapprove orchestrator command
 var disapproveOrchestratorCmd = &cobra.Command{
 	Use:   "disapprove",
-	Short: "Disapprove orchestrator by ID or machine/client name.",
-	Long:  `Disapprove orchestrator by ID or machine/client name.`,
+	Short: "Disapprove orchestrator by machine/client name.",
+	Long:  `Disapprove orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
@@ -148,8 +148,8 @@ var disapproveOrchestratorCmd = &cobra.Command{
 // resetOrchestratorCmd represents the reset orchestrator command
 var resetOrchestratorCmd = &cobra.Command{
 	Use:   "reset",
-	Short: "Reset orchestrator by ID or machine/client name.",
-	Long:  `Reset orchestrator by ID or machine/client name.`,
+	Short: "Reset orchestrator by machine/client name.",
+	Long:  `Reset orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("orchestrator reset called")
 	},
@@ -158,8 +158,8 @@ var resetOrchestratorCmd = &cobra.Command{
 // getLogsOrchestratorCmd represents the get logs orchestrator command
 var getLogsOrchestratorCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "Get orchestrator logs by ID or machine/client name.",
-	Long:  `Get orchestrator logs by ID or machine/client name.`,
+	Short: "Get orchestrator logs by machine/client name.",
+	Long:  `Get orchestrator logs by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
