@@ -825,7 +825,7 @@ the utility will first generate an audit report and then execute the add/remove 
 		Aliases:                nil,
 		SuggestFor:             nil,
 		Short:                  "For generating Root Of Trust template(s)",
-		Long:                   `Root Of Trust: Will parse a CSV and attempt to enroll a cert or set of certs into a list of cert stores.`,
+		Long:                   `Root Of Trust: Will parse a CSV and attempt to deploy a cert or set of certs into a list of cert stores.`,
 		Example:                "",
 		ValidArgs:              nil,
 		ValidArgsFunction:      nil,
@@ -897,13 +897,18 @@ the utility will first generate an audit report and then execute the add/remove 
 							EnrollmentJobType:   "",
 						}
 					} else {
-						sType, stErr = kfClient.GetCertificateStoreTypeByName(s)
+						// check if s is an int
+						sInt, err := strconv.Atoi(s)
+						if err == nil {
+							sType, stErr = kfClient.GetCertificateStoreTypeById(sInt)
+						} else {
+							sType, stErr = kfClient.GetCertificateStoreTypeByName(s)
+						}
+						if stErr != nil {
+							fmt.Printf("[ERROR] getting store type '%s'. %s\n", s, stErr)
+							continue
+						}
 						stID = sType.StoreType // This is the template type ID
-					}
-
-					if stErr != nil {
-						fmt.Printf("[ERROR] getting store type: %s\n", stErr)
-						continue
 					}
 
 					if stID >= 0 || s == "all" {
@@ -1161,7 +1166,7 @@ func init() {
 		`The type of template to generate. Only "certs|stores|actions" are supported at this time.`)
 	rotGenStoreTemplateCmd.Flags().StringSliceVar(&storeTypes, "store-type", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified store types. If not specified, the template will be empty.")
 	rotGenStoreTemplateCmd.Flags().StringSliceVar(&containerNames, "container-name", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified container types. If not specified, the template will be empty.")
-	rotGenStoreTemplateCmd.Flags().StringSliceVar(&subjectNames, "cn", []string{}, "Subject name(s) to pre-populate the stores template with. If not specified, the template will be empty. Does not work with SANs.")
+	rotGenStoreTemplateCmd.Flags().StringSliceVar(&subjectNames, "cn", []string{}, "Subject name(s) to pre-populate the 'certs' template with. If not specified, the template will be empty. Does not work with SANs.")
 	rotGenStoreTemplateCmd.Flags().StringSliceVar(&collections, "collection", []string{}, "Certificate collection name(s) to pre-populate the stores template with. If not specified, the template will be empty.")
 
 	rotGenStoreTemplateCmd.RegisterFlagCompletionFunc("type", templateTypeCompletion)
