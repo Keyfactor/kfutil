@@ -257,6 +257,8 @@ func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, report
 					}
 					log.Printf("[DEBUG] Adding cert %s to store %s", thumbprint, a.StoreID)
 					log.Printf("[TRACE] Add request: %+v", addReq)
+					addReqJSON, _ := json.Marshal(addReq)
+					log.Printf("[TRACE] Add request JSON: %s", addReqJSON)
 					_, err := kfClient.AddCertificateToStores(&addReq)
 					if err != nil {
 						fmt.Printf("[ERROR] adding cert %s (%d) to store %s (%s): %s\n", a.Thumbprint, a.CertID, a.StoreID, a.StorePath, err)
