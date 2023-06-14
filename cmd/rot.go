@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/spf13/cobra"
-	"io"
 	"log"
 	"os"
 	"strconv"
@@ -256,6 +255,8 @@ func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, report
 						CertificateStores: &stores,
 						InventorySchedule: schedule,
 					}
+					log.Printf("[DEBUG] Adding cert %s to store %s", thumbprint, a.StoreID)
+					log.Printf("[TRACE] Add request: %+v", addReq)
 					_, err := kfClient.AddCertificateToStores(&addReq)
 					if err != nil {
 						fmt.Printf("[ERROR] adding cert %s (%d) to store %s (%s): %s\n", a.Thumbprint, a.CertID, a.StoreID, a.StorePath, err)
@@ -549,7 +550,9 @@ the utility will first generate an audit report and then execute the add/remove 
 			profile, _ := cmd.Flags().GetString("profile")
 
 			debugModeEnabled := checkDebug(debugFlag)
+
 			log.Println("Debug mode enabled: ", debugModeEnabled)
+
 			var lookupFailures []string
 			kfClient, _ := initClient(configFile, profile, noPrompt)
 			storesFile, _ := cmd.Flags().GetString("stores")
@@ -562,6 +565,8 @@ the utility will first generate an audit report and then execute the add/remove 
 			maxKeys, _ := cmd.Flags().GetInt("max-keys")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			outpath, _ := cmd.Flags().GetString("outpath")
+
+			log.Printf("[DEBUG] configFile: %s", configFile)
 			log.Printf("[DEBUG] storesFile: %s", storesFile)
 			log.Printf("[DEBUG] addRootsFile: %s", addRootsFile)
 			log.Printf("[DEBUG] removeRootsFile: %s", removeRootsFile)
@@ -1094,7 +1099,6 @@ the utility will first generate an audit report and then execute the add/remove 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.SetOutput(os.Stdout)
-	log.SetOutput(io.Discard)
 	var (
 		stores          string
 		addCerts        string

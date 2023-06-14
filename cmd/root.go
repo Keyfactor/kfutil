@@ -25,7 +25,6 @@ var xKeyfactorRequestedWith = "APIClient"
 var xKeyfactorApiVersion = "1"
 
 func initClient(flagConfig string, flagProfile string, noPrompt bool) (*api.Client, error) {
-	log.SetOutput(io.Discard)
 	var clientAuth api.AuthConfig
 
 	commandConfig, _ := authConfigFile(flagConfig, noPrompt, flagProfile)
@@ -136,16 +135,17 @@ func stringToPointer(s string) *string {
 func checkDebug(v bool) bool {
 	envDebug := os.Getenv("KFUTIL_DEBUG")
 	envValue, _ := strconv.ParseBool(envDebug)
-	if (envValue && !v) || (envValue && v) {
-		// If the env var is set and the flag is not, use the env var
+	switch {
+	case (envValue && !v) || (envValue && v):
 		log.SetOutput(os.Stdout)
 		return envValue
-	} else if v {
+	case v:
 		log.SetOutput(os.Stdout)
 		return v
+	default:
+		log.SetOutput(io.Discard)
+		return v
 	}
-	log.SetOutput(io.Discard)
-	return v
 }
 
 func GetCurrentTime() string {
