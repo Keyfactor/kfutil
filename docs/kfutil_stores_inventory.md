@@ -26,7 +26,6 @@ Commands related to certificate store inventory management
 
 * [kfutil stores](kfutil_stores.md)	 - Keyfactor certificate stores APIs and utilities.
 * [kfutil stores inventory add](kfutil_stores_inventory_add.md)	 - Adds one or more certificates to one or more certificate store inventories.
-* [kfutil stores inventory clear](kfutil_stores_inventory_clear.md)	 - Clears the certificate store store inventory of ALL certificates.
 * [kfutil stores inventory remove](kfutil_stores_inventory_remove.md)	 - Removes a certificate from the certificate store inventory.
 * [kfutil stores inventory show](kfutil_stores_inventory_show.md)	 - Show the inventory of a certificate store.
 
