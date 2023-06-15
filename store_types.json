@@ -1981,8 +1981,6 @@
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Optional",
-    "ServerRegistration": 7,
-    "InventoryEndpoint": "/AnyInventory/Update"
+    "CustomAliasAllowed": "Optional"
   }
 }
