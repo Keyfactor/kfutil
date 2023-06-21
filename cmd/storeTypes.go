@@ -12,7 +12,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/spf13/cobra"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -285,6 +285,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			if err != nil {
 				fmt.Printf("Error creating store type: %s", err)
 				log.Printf("[ERROR] creating store type : %s", err)
+				return
 			}
 			log.Printf("[DEBUG] Create response: %v", createResp)
 			fmt.Printf("Certificate store type %s created with ID: %d", storeType, createResp.StoreType)
@@ -483,13 +484,23 @@ func getStoreTypesInternet() (map[string]interface{}, error) {
 		return nil, rErr
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	var result map[string]interface{}
+	// read as list of interfaces
+	var result []interface{}
 	json.Unmarshal([]byte(body), &result)
-	return result, nil
+
+	// convert to map
+	var result2 map[string]interface{}
+	result2 = make(map[string]interface{})
+	for _, v := range result {
+		v2 := v.(map[string]interface{})
+		result2[v2["ShortName"].(string)] = v2
+	}
+
+	return result2, nil
 }
 
 func readStoreTypesConfig(fp string) (map[string]interface{}, error) {
