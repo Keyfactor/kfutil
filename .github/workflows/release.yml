@@ -1,43 +1,96 @@
-# Terraform Provider release workflow.
+## Terraform Provider release workflow.
+#name: Release
+#
+## This GitHub action creates a release when a tag that matches the pattern
+## "v*" (e.g. v0.1.0) is created.
+#on:
+#  push:
+#    tags:
+#      - 'v*'
+#
+## Releases need permissions to read and write the repository contents.
+## GitHub considers creating releases and uploading assets as writing contents.
+#permissions:
+#  contents: write
+#
+#jobs:
+#  goreleaser:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#        with:
+#          # Allow goreleaser to access older tag information.
+#          fetch-depth: 0
+#      - uses: actions/setup-go@v4
+#        with:
+#          go-version-file: 'go.mod'
+#          cache: true
+#      - name: Import GPG key
+#        uses: crazy-max/ghaction-import-gpg@v5
+#        id: import_gpg
+#        with:
+#          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+#          passphrase: ${{ secrets.PASSPHRASE }}
+#      - name: Run GoReleaser
+#        uses: goreleaser/goreleaser-action@v4
+#        with:
+#          args: release --clean
+#        env:
+#          # GitHub sets the GITHUB_TOKEN secret automatically.
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          PAT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+#          GPG_TTY: $(tty)
+
 name: Release
 
-# This GitHub action creates a release when a tag that matches the pattern
-# "v*" (e.g. v0.1.0) is created.
 on:
-  push:
-    tags:
-      - 'v*'
-
-# Releases need permissions to read and write the repository contents.
-# GitHub considers creating releases and uploading assets as writing contents.
-permissions:
-  contents: write
+  pull_request:
+    branches-ignore:
+      - '*'
 
 jobs:
-  goreleaser:
+  release:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
         with:
-          # Allow goreleaser to access older tag information.
-          fetch-depth: 0
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: 'go.mod'
-          cache: true
+          go-version: 1.19  # Replace with your desired Go version
+
+      - name: Install GoReleaser
+        run: go install github.com/goreleaser/goreleaser@latest
+
       - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v5
-        id: import_gpg
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.PASSPHRASE }}
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
-        with:
-          args: release --clean
-        env:
-          # GitHub sets the GITHUB_TOKEN secret automatically.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PAT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
-          GPG_TTY: $(tty)
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --import
+          echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --passphrase-fd 0 --pinentry-mode loopback --armor --detach-sign --output .github/gpg_signature.asc path/to/binary
+
+      - name: Run Conventional Commits
+        run: |
+          # Replace with your conventional commits tool command
+          # This example uses Conventional Commits with the Conventional Changelog CLI
+          npm install -g conventional-changelog-cli
+          conventional-changelog -p angular -i CHANGELOG.md -s -r 0
+
+      - name: Determine Release Type
+        id: release-type
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "release-type=full" >> $GITHUB_ENV
+          else
+            echo "release-type=prerelease" >> $GITHUB_ENV
+          fi
+
+      - name: Create Tag and Release with GoReleaser
+        run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          if [ "${{ steps.release-type.outputs.release-type }}" == "full" ]; then
+            goreleaser release --rm-dist --sign
+          else
+            goreleaser release --rm-dist --prerelease --sign
+          fi
