@@ -45,9 +45,10 @@
 name: Release
 
 on:
-  pull_request:
-    branches-ignore:
-      - '*'
+  push:
+    branches:
+      - main
+      - 'prerelease*'
 
 jobs:
   release:
