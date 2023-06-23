@@ -31,7 +31,7 @@ var statusCmd = &cobra.Command{
 			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
-		//log.SetOutput(io.Discard)
+
 		//kfClient, _ := initClient(configFile, profile, noPrompt)
 		//status, err := kfClient.GetStatus()
 		//if err != nil {

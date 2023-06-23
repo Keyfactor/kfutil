@@ -1,4 +1,4 @@
-// Package cmd Copyright 2022 Keyfactor
+// Package cmd Copyright 2023 Keyfactor
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
@@ -9,7 +9,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/spf13/cobra"
 	"log"
 )
@@ -25,9 +25,9 @@ var inventoryClearCmd = &cobra.Command{
 	Use:                    "clear",
 	Aliases:                nil,
 	SuggestFor:             nil,
-	Short:                  "Clears the certificate store store inventory of ALL certificates.",
+	Short:                  "Clears the certificate store inventory of ALL certificates.",
 	GroupID:                "",
-	Long:                   `Clears the certificate store store inventory of ALL certificates.`,
+	Long:                   `Clears the certificate store inventory of ALL certificates.`,
 	Example:                "",
 	ValidArgs:              nil,
 	ValidArgsFunction:      nil,
@@ -129,7 +129,7 @@ var inventoryClearCmd = &cobra.Command{
 			}
 
 			if !force {
-				fmt.Printf("This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you shouldPass to continue? (y/n) ", store.ClientMachine, store.StorePath)
+				fmt.Printf("This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you sure?! Press 'y' to continue? (y/n) ", store.ClientMachine, store.StorePath)
 				var answer string
 				fmt.Scanln(&answer)
 				if answer != "y" {
@@ -180,13 +180,13 @@ var inventoryClearCmd = &cobra.Command{
 	FParseErrWhitelist:         cobra.FParseErrWhitelist{},
 	CompletionOptions:          cobra.CompletionOptions{},
 	TraverseChildren:           false,
-	Hidden:                     false,
+	Hidden:                     true,
 	SilenceErrors:              false,
-	SilenceUsage:               false,
+	SilenceUsage:               true,
 	DisableFlagParsing:         false,
 	DisableAutoGenTag:          false,
 	DisableFlagsInUseLine:      false,
-	DisableSuggestions:         false,
+	DisableSuggestions:         true,
 	SuggestionsMinimumDistance: 0,
 }
 
@@ -618,7 +618,7 @@ var inventoryShowCmd = &cobra.Command{
 		for _, cStore := range *stResp {
 			inv, err := kfClient.GetCertStoreInventory(cStore.Id)
 			if err != nil {
-				fmt.Printf("Error, unable to retrieve certificate store inventory from %s: %s\n", cStore, err)
+				fmt.Printf("Error, unable to retrieve certificate store inventory from %v: %s\n", cStore, err)
 				log.Printf("[ERROR]  %s", err)
 			}
 			invData := make(map[string]interface{})
@@ -679,7 +679,7 @@ func init() {
 	inventoryCmd.AddCommand(inventoryClearCmd)
 	inventoryClearCmd.Flags().StringSliceVar(&ids, "sid", []string{}, "The Keyfactor Command ID of the certificate store(s) remove all inventory from.")
 	inventoryClearCmd.Flags().StringSliceVar(&clients, "client", []string{}, "Remove all inventory from store(s) of specific client machine(s).")
-	inventoryClearCmd.Flags().StringSliceVar(&types, "store-ype", []string{}, "Remove all inventory from store(s) of specific store type(s).")
+	inventoryClearCmd.Flags().StringSliceVar(&types, "store-type", []string{}, "Remove all inventory from store(s) of specific store type(s).")
 	inventoryClearCmd.Flags().StringSliceVar(&containers, "container", []string{}, "Remove all inventory from store(s) of specific container type(s).")
 	inventoryClearCmd.Flags().BoolVar(&all, "all", false, "Remove all inventory from all certificate stores.")
 	inventoryClearCmd.Flags().BoolVar(&force, "force", false, "Force removal of inventory without prompting for confirmation.")

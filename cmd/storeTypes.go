@@ -1,4 +1,4 @@
-// Package cmd Copyright 2022 Keyfactor
+// Package cmd Copyright 2023 Keyfactor
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
@@ -10,9 +10,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/spf13/cobra"
-	"io/ioutil"
+	"gopkg.in/yaml.v3"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -65,7 +66,7 @@ var storesTypesListCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -101,7 +102,14 @@ var storesTypeGetCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		genericFormat, _ := cmd.Flags().GetBool("generic")
+		outputFormat, _ := cmd.Flags().GetString("format")
+		isExperimental := false
+		outputType := "full"
+
+		if genericFormat {
+			outputType = "generic"
+		}
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -117,8 +125,17 @@ var storesTypeGetCmd = &cobra.Command{
 		var st interface{}
 		// Check inputs
 		if id < 0 && name == "" {
-			log.Printf("Error: ID must be a positive integer.")
-			fmt.Printf("Error: ID must be a positive integer.\n")
+			validStoreTypes := getValidStoreTypes("")
+			prompt := &survey.Select{
+				Message: "Choose an option:",
+				Options: validStoreTypes,
+			}
+			var selected string
+			err := survey.AskOne(prompt, &selected)
+			if err != nil {
+				fmt.Println(err)
+			}
+			st = selected
 			return
 		} else if id >= 0 && name != "" {
 			log.Printf("Error: ID and Name are mutually exclusive.")
@@ -140,12 +157,81 @@ var storesTypeGetCmd = &cobra.Command{
 			fmt.Printf("Error: %s\n", err)
 			return
 		}
-		output, jErr := json.Marshal(storeTypes)
+		output, jErr := formatStoreTypeOutput(storeTypes, outputFormat, outputType)
 		if jErr != nil {
 			log.Printf("Error: %s", jErr)
 		}
 		fmt.Printf("%s", output)
 	},
+}
+
+func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat string, outputType string) (string, error) {
+	var sOut interface{}
+	sOut = storeType
+	if outputType == "generic" {
+		// Convert to api.GenericCertificateStoreType
+		var genericProperties []api.StoreTypePropertyDefinitionGeneric
+		for _, prop := range *storeType.Properties {
+			genericProp := api.StoreTypePropertyDefinitionGeneric{
+				Name:         prop.Name,
+				DisplayName:  prop.DisplayName,
+				Type:         prop.Type,
+				DependsOn:    prop.DependsOn,
+				DefaultValue: prop.DefaultValue,
+				Required:     prop.Required,
+			}
+			genericProperties = append(genericProperties, genericProp)
+		}
+
+		var genericEntryParameters []api.EntryParameterGeneric
+		for _, param := range *storeType.EntryParameters {
+			genericParam := api.EntryParameterGeneric{
+				Name:         param.Name,
+				DisplayName:  param.DisplayName,
+				Type:         param.Type,
+				RequiredWhen: param.RequiredWhen,
+				DependsOn:    param.DependsOn,
+				DefaultValue: param.DefaultValue,
+			}
+			genericEntryParameters = append(genericEntryParameters, genericParam)
+		}
+
+		genericStoreType := api.CertificateStoreTypeGeneric{
+			Name:                storeType.Name,
+			ShortName:           storeType.ShortName,
+			Capability:          storeType.Capability,
+			SupportedOperations: storeType.SupportedOperations,
+			Properties:          &genericProperties,
+			EntryParameters:     &genericEntryParameters,
+			PasswordOptions:     storeType.PasswordOptions,
+			StorePathType:       storeType.StorePathType,
+			PrivateKeyAllowed:   storeType.PrivateKeyAllowed,
+			JobProperties:       storeType.JobProperties,
+			ServerRequired:      storeType.ServerRequired,
+			PowerShell:          storeType.PowerShell,
+			BlueprintAllowed:    storeType.BlueprintAllowed,
+			CustomAliasAllowed:  storeType.CustomAliasAllowed,
+		}
+		sOut = genericStoreType
+	}
+
+	if outputFormat == "json" {
+		output, jErr := json.MarshalIndent(sOut, "", "  ")
+		if jErr != nil {
+			log.Printf("Error: %s", jErr)
+			return "", jErr
+		}
+		return fmt.Sprintf("%s", output), nil
+	} else if outputFormat == "yaml" || outputFormat == "yml" {
+		output, jErr := yaml.Marshal(sOut)
+		if jErr != nil {
+			log.Printf("Error: %s", jErr)
+			return "", jErr
+		}
+		return fmt.Sprintf("%s", output), nil
+	} else {
+		return "", fmt.Errorf("invalid output format: %s", outputFormat)
+	}
 }
 
 var storesTypeCreateCmd = &cobra.Command{
@@ -225,7 +311,15 @@ var storesTypeCreateCmd = &cobra.Command{
 			}
 			log.Printf("[DEBUG] Store type config: %v", storeTypeConfig[storeType])
 			sConfig := storeTypeConfig[storeType].(map[string]interface{})
-			props, pErr := buildStoreTypePropertiesInterface(sConfig["Properties"].([]interface{}))
+			// Build properties if sConfig["Properties"] is not nil
+			var props []api.StoreTypePropertyDefinition
+			var pErr error
+			if sConfig["Properties"] != nil {
+				props, pErr = buildStoreTypePropertiesInterface(sConfig["Properties"].([]interface{}))
+			} else {
+				props = []api.StoreTypePropertyDefinition{}
+			}
+
 			if pErr != nil {
 				fmt.Printf("Error: %s", pErr)
 				log.Printf("Error: %s", pErr)
@@ -268,8 +362,10 @@ var storesTypeCreateCmd = &cobra.Command{
 			if err != nil {
 				fmt.Printf("Error creating store type: %s", err)
 				log.Printf("[ERROR] creating store type : %s", err)
+				return
 			}
 			log.Printf("[DEBUG] Create response: %v", createResp)
+			fmt.Printf("Certificate store type %s created with ID: %d", storeType, createResp.StoreType)
 		}
 	},
 }
@@ -329,8 +425,8 @@ var storesTypeUpdateCmd = &cobra.Command{
 
 var storesTypeDeleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete a specific store type by ID.",
-	Long:  `Delete a specific store type by ID.`,
+	Short: "Delete a specific store type by name or ID.",
+	Long:  `Delete a specific store type by name or ID.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
@@ -338,7 +434,8 @@ var storesTypeDeleteCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		storeType, _ := cmd.Flags().GetString("name")
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -351,22 +448,69 @@ var storesTypeDeleteCmd = &cobra.Command{
 		id, _ := cmd.Flags().GetInt("id")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		kfClient, _ := initClient(configFile, profile, noPrompt)
-		_, err := kfClient.GetCertificateStoreType(id)
+		var st interface{}
+
+		var validStoreTypes []string
+		if id < 0 && storeType == "" {
+			validStoreTypesResp, vstErr := kfClient.ListCertificateStoreTypes()
+			if vstErr != nil {
+				fmt.Println(vstErr)
+				validStoreTypes = getValidStoreTypes("")
+			} else {
+				for _, v := range *validStoreTypesResp {
+					validStoreTypes = append(validStoreTypes, v.ShortName)
+				}
+			}
+			prompt := &survey.Select{
+				Message: "Choose an option:",
+				Options: validStoreTypes,
+			}
+			var selected string
+			err := survey.AskOne(prompt, &selected)
+			if err != nil {
+				fmt.Println(err)
+			}
+			st = selected
+		} else if id >= 0 && storeType != "" {
+			log.Printf("Error: ID and Name are mutually exclusive.")
+			fmt.Printf("Error: ID and Name are mutually exclusive.\n")
+			return
+		} else if id >= 0 {
+			st = id
+		} else if storeType != "" {
+			st = storeType
+		} else {
+			log.Printf("Error: Invalid input.")
+			fmt.Printf("Error: Invalid input.\n")
+			return
+		}
+
+		log.Printf("Deleting certificate store type with ID: %d", id)
+		storeTypeResponse, err := kfClient.GetCertificateStoreType(st)
+		log.Printf("storeTypeResponse: %v", storeTypeResponse)
 		if err != nil {
 			log.Printf("Error: %s", err)
 			fmt.Printf("Error: %s\n", err)
 			return
 		}
+
+		if storeTypeResponse.StoreType >= 0 {
+			log.Printf("Certificate store type with ID: %d found", storeTypeResponse.StoreType)
+			id = storeTypeResponse.StoreType
+		}
+
 		if dryRun {
 			fmt.Printf("dry run delete called on certificate store type with ID: %d", id)
 		} else {
+			log.Printf("Calling API to delete certificate store type with ID: %d", id)
 			d, err := kfClient.DeleteCertificateStoreType(id)
 			if err != nil {
 				log.Printf("Error: %s", err)
-				fmt.Printf("Error: %s\n", err)
+				fmt.Printf("%s\n", err)
 				return
 			}
-			fmt.Printf("Certificate store type with ID: %d deleted", d.ID)
+			log.Printf("Certificate store type %v deleted", d)
+			fmt.Printf("Certificate store type %v deleted", st)
 		}
 	},
 }
@@ -417,13 +561,23 @@ func getStoreTypesInternet() (map[string]interface{}, error) {
 		return nil, rErr
 	}
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	var result map[string]interface{}
+	// read as list of interfaces
+	var result []interface{}
 	json.Unmarshal([]byte(body), &result)
-	return result, nil
+
+	// convert to map
+	var result2 map[string]interface{}
+	result2 = make(map[string]interface{})
+	for _, v := range result {
+		v2 := v.(map[string]interface{})
+		result2[v2["ShortName"].(string)] = v2
+	}
+
+	return result2, nil
 }
 
 func readStoreTypesConfig(fp string) (map[string]interface{}, error) {
@@ -493,9 +647,13 @@ func init() {
 	var storeTypeID int
 	var storeTypeName string
 	var dryRun bool
+	var genericFormat bool
+	var outputFormat string
 	storesTypeGetCmd.Flags().IntVarP(&storeTypeID, "id", "i", -1, "ID of the certificate store type to get.")
 	storesTypeGetCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to get.")
 	storesTypeGetCmd.MarkFlagsMutuallyExclusive("id", "name")
+	storesTypeGetCmd.Flags().BoolVarP(&genericFormat, "generic", "g", false, "Output the store type in a generic format stripped of all fields specific to the Command instance.")
+	storesTypeGetCmd.Flags().StringVarP(&outputFormat, "format", "f", "json", "Output format. Valid choices are: 'json', 'yaml'. Default is 'json'.")
 
 	// CREATE command
 	var listValidStoreTypes bool
@@ -507,13 +665,14 @@ func init() {
 	//storesTypeCreateCmd.MarkFlagRequired("name")
 
 	// UPDATE command
-	storeTypesCmd.AddCommand(storesTypeUpdateCmd)
-	storesTypeUpdateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to get.")
+	//storeTypesCmd.AddCommand(storesTypeUpdateCmd)
+	//storesTypeUpdateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to get.")
 
 	// DELETE command
 	storeTypesCmd.AddCommand(storesTypeDeleteCmd)
-	storesTypeDeleteCmd.Flags().IntVarP(&storeTypeID, "id", "i", -1, "ID of the certificate store type to get.")
+	storesTypeDeleteCmd.Flags().IntVarP(&storeTypeID, "id", "i", -1, "ID of the certificate store type to delete.")
+	storesTypeDeleteCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to delete.")
 	storesTypeDeleteCmd.Flags().BoolVarP(&dryRun, "dry-run", "t", false, "Specifies whether to perform a dry run.")
-	storesTypeDeleteCmd.MarkFlagRequired("id")
+	storesTypeDeleteCmd.MarkFlagsMutuallyExclusive("id", "name")
 
 }

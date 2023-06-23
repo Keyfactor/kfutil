@@ -8,7 +8,7 @@ NAME=kfutil
 BINARY=${NAME}
 VERSION := $(GITHUB_REF_NAME)
 ifeq ($(VERSION),)
-	VERSION := v1.0.0-rc2
+	VERSION := v1.0.0-rc.13
 endif
 OS_ARCH := $(shell go env GOOS)_$(shell go env GOARCH)
 BASEDIR := ${HOME}/go/bin
@@ -20,7 +20,14 @@ build: fmt
 	go install
 
 release:
-	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_amd64
+	mkdir -p ./bin/${BINARY}_${VERSION}_darwin_amd64
+	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_amd64/kfutil
+	cp README.md ./bin/${BINARY}_${VERSION}_darwin_amd64
+	cp LICENSE ./bin/${BINARY}_${VERSION}_darwin_amd64
+	cp CHANGELOG.md ./bin/${BINARY}_${VERSION}_darwin_amd64
+	cp -r docs ./bin/${BINARY}_${VERSION}_darwin_amd64
+	cd ./bin && zip ./${BINARY}_${VERSION}_darwin_amd64.zip ./${BINARY}_${VERSION}_darwin_amd64/* && cd ..
+	rm -rf ./bin/${BINARY}_${VERSION}_darwin_amd64
 	GOOS=freebsd GOARCH=386 go build -o ./bin/${BINARY}_${VERSION}_freebsd_386
 	GOOS=freebsd GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_freebsd_amd64
 	GOOS=freebsd GOARCH=arm go build -o ./bin/${BINARY}_${VERSION}_freebsd_arm
