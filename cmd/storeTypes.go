@@ -12,6 +12,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 	"io"
 	"log"
 	"net/http"
@@ -101,7 +102,14 @@ var storesTypeGetCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
+		genericFormat, _ := cmd.Flags().GetBool("generic")
+		outputFormat, _ := cmd.Flags().GetString("format")
 		isExperimental := false
+		outputType := "full"
+
+		if genericFormat {
+			outputType = "generic"
+		}
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -149,12 +157,81 @@ var storesTypeGetCmd = &cobra.Command{
 			fmt.Printf("Error: %s\n", err)
 			return
 		}
-		output, jErr := json.Marshal(storeTypes)
+		output, jErr := formatStoreTypeOutput(storeTypes, outputFormat, outputType)
 		if jErr != nil {
 			log.Printf("Error: %s", jErr)
 		}
 		fmt.Printf("%s", output)
 	},
+}
+
+func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat string, outputType string) (string, error) {
+	var sOut interface{}
+	sOut = storeType
+	if outputType == "generic" {
+		// Convert to api.GenericCertificateStoreType
+		var genericProperties []api.StoreTypePropertyDefinitionGeneric
+		for _, prop := range *storeType.Properties {
+			genericProp := api.StoreTypePropertyDefinitionGeneric{
+				Name:         prop.Name,
+				DisplayName:  prop.DisplayName,
+				Type:         prop.Type,
+				DependsOn:    prop.DependsOn,
+				DefaultValue: prop.DefaultValue,
+				Required:     prop.Required,
+			}
+			genericProperties = append(genericProperties, genericProp)
+		}
+
+		var genericEntryParameters []api.EntryParameterGeneric
+		for _, param := range *storeType.EntryParameters {
+			genericParam := api.EntryParameterGeneric{
+				Name:         param.Name,
+				DisplayName:  param.DisplayName,
+				Type:         param.Type,
+				RequiredWhen: param.RequiredWhen,
+				DependsOn:    param.DependsOn,
+				DefaultValue: param.DefaultValue,
+			}
+			genericEntryParameters = append(genericEntryParameters, genericParam)
+		}
+
+		genericStoreType := api.CertificateStoreTypeGeneric{
+			Name:                storeType.Name,
+			ShortName:           storeType.ShortName,
+			Capability:          storeType.Capability,
+			SupportedOperations: storeType.SupportedOperations,
+			Properties:          &genericProperties,
+			EntryParameters:     &genericEntryParameters,
+			PasswordOptions:     storeType.PasswordOptions,
+			StorePathType:       storeType.StorePathType,
+			PrivateKeyAllowed:   storeType.PrivateKeyAllowed,
+			JobProperties:       storeType.JobProperties,
+			ServerRequired:      storeType.ServerRequired,
+			PowerShell:          storeType.PowerShell,
+			BlueprintAllowed:    storeType.BlueprintAllowed,
+			CustomAliasAllowed:  storeType.CustomAliasAllowed,
+		}
+		sOut = genericStoreType
+	}
+
+	if outputFormat == "json" {
+		output, jErr := json.MarshalIndent(sOut, "", "  ")
+		if jErr != nil {
+			log.Printf("Error: %s", jErr)
+			return "", jErr
+		}
+		return fmt.Sprintf("%s", output), nil
+	} else if outputFormat == "yaml" || outputFormat == "yml" {
+		output, jErr := yaml.Marshal(sOut)
+		if jErr != nil {
+			log.Printf("Error: %s", jErr)
+			return "", jErr
+		}
+		return fmt.Sprintf("%s", output), nil
+	} else {
+		return "", fmt.Errorf("invalid output format: %s", outputFormat)
+	}
 }
 
 var storesTypeCreateCmd = &cobra.Command{
@@ -570,9 +647,13 @@ func init() {
 	var storeTypeID int
 	var storeTypeName string
 	var dryRun bool
+	var genericFormat bool
+	var outputFormat string
 	storesTypeGetCmd.Flags().IntVarP(&storeTypeID, "id", "i", -1, "ID of the certificate store type to get.")
 	storesTypeGetCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to get.")
 	storesTypeGetCmd.MarkFlagsMutuallyExclusive("id", "name")
+	storesTypeGetCmd.Flags().BoolVarP(&genericFormat, "generic", "g", false, "Output the store type in a generic format stripped of all fields specific to the Command instance.")
+	storesTypeGetCmd.Flags().StringVarP(&outputFormat, "format", "f", "json", "Output format. Valid choices are: 'json', 'yaml'. Default is 'json'.")
 
 	// CREATE command
 	var listValidStoreTypes bool
