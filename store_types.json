@@ -1879,5 +1879,337 @@
         "DefaultValue": false
       }
     ]
+  },
+  {
+    "Name": "K8SCluster",
+    "ShortName": "K8SCluster",
+    "Capability": "K8SCluster",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true
+      }
+    ],
+    "EntryParameters": null,
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  {
+    "Name": "K8SJKS",
+    "ShortName": "K8SJKS",
+    "Capability": "K8SJKS",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "KubeNamespace",
+        "DisplayName": "KubeNamespace",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "default",
+        "Required": false
+      },
+      {
+        "Name": "KubeSecretName",
+        "DisplayName": "KubeSecretName",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "KubeSecretType",
+        "DisplayName": "KubeSecretType",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "jks",
+        "Required": true
+      },
+      {
+        "Name": "CertificateDataFieldName",
+        "DisplayName": "CertificateDataFieldName",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "PasswordFieldName",
+        "DisplayName": "PasswordFieldName",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "password",
+        "Required": false
+      },
+      {
+        "Name": "PasswordIsK8SSecret",
+        "DisplayName": "PasswordIsK8SSecret",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false
+      },
+      {
+        "Name": "StorePasswordPath",
+        "DisplayName": "StorePasswordPath",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true
+      }
+    ],
+    "EntryParameters": null,
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": true,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  {
+    "Name": "K8SNS",
+    "ShortName": "K8SNS",
+    "Capability": "K8SNS",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "KubeNamespace",
+        "DisplayName": "Kube Namespace",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "default",
+        "Required": false
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true
+      }
+    ],
+    "EntryParameters": null,
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  {
+    "Name": "K8SPKCS12",
+    "ShortName": "K8SPKCS12",
+    "Capability": "K8SPKCS12",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "KubeSecretKey",
+        "DisplayName": "Kube Secret Key",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "pfx",
+        "Required": false
+      },
+      {
+        "Name": "PasswordFieldName",
+        "DisplayName": "Password Field Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "password",
+        "Required": false
+      },
+      {
+        "Name": "PasswordIsK8SSecret",
+        "DisplayName": "Password Is K8S Secret",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false
+      },
+      {
+        "Name": "KubeNamespace",
+        "DisplayName": "Kube Namespace",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "default",
+        "Required": false
+      },
+      {
+        "Name": "KubeSecretName",
+        "DisplayName": "Kube Secret Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true
+      },
+      {
+        "Name": "KubeSecretType",
+        "DisplayName": "Kube Secret Type",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "pkcs12",
+        "Required": true
+      },
+      {
+        "Name": "StorePasswordPath",
+        "DisplayName": "StorePasswordPath",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      }
+    ],
+    "EntryParameters": null,
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": true,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
   }
 ]
