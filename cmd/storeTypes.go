@@ -197,6 +197,13 @@ func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat str
 			genericEntryParameters = append(genericEntryParameters, genericParam)
 		}
 
+		// Check if entry parameters are empty and if they aren't then set jobProperties to empty list
+		jobProperties := storeType.JobProperties
+		if len(genericEntryParameters) > 0 {
+			log.Println("[WARN] Entry parameters are not empty, setting jobProperties to empty list to prevent 'Only the job properties or entry parameters fields can be set, not both.'")
+			jobProperties = &[]string{}
+		}
+
 		genericStoreType := api.CertificateStoreTypeGeneric{
 			Name:                storeType.Name,
 			ShortName:           storeType.ShortName,
@@ -208,7 +215,7 @@ func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat str
 			StorePathType:       storeType.StorePathType,
 			StorePathValue:      storeType.StorePathValue,
 			PrivateKeyAllowed:   storeType.PrivateKeyAllowed,
-			JobProperties:       storeType.JobProperties,
+			JobProperties:       jobProperties,
 			ServerRequired:      storeType.ServerRequired,
 			PowerShell:          storeType.PowerShell,
 			BlueprintAllowed:    storeType.BlueprintAllowed,
