@@ -772,7 +772,7 @@
     "CustomAliasAllowed": "Forbidden"
   },
   {
-    "Name": "IISU",
+    "Name": "IIS Bound Certificate",
     "ShortName": "IISU",
     "Capability": "IISU",
     "LocalStore": false,
@@ -786,18 +786,18 @@
     "Properties": [
       {
         "Name": "spnwithport",
-        "DisplayName": "SPN With Port?",
+        "DisplayName": "SPN With Port",
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
         "Required": false
       },
       {
-        "Name": "WinRM Protocol",
+        "Name": "WinRm Protocol",
         "DisplayName": "WinRm Protocol",
         "Type": "MultipleChoice",
         "DependsOn": "",
-        "DefaultValue": "http,https",
+        "DefaultValue": "https,http",
         "Required": true
       },
       {
@@ -805,7 +805,7 @@
         "DisplayName": "WinRm Port",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": "5985",
+        "DefaultValue": "5986",
         "Required": true
       },
       {
@@ -826,7 +826,7 @@
       },
       {
         "Name": "ServerUseSsl",
-        "DisplayName": "Use SSL?",
+        "DisplayName": "Use SSL",
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "true",
@@ -834,6 +834,20 @@
       }
     ],
     "EntryParameters": [
+      {
+        "Name": "Port",
+        "DisplayName": "Port",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "443",
+        "Options": ""
+      },
       {
         "Name": "IPAddress",
         "DisplayName": "IP Address",
@@ -844,19 +858,9 @@
           "OnRemove": true,
           "OnReenrollment": true
         },
-        "DefaultValue": "*"
-      },
-      {
-        "Name": "Port",
-        "DisplayName": "Port",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": true,
-          "OnRemove": true,
-          "OnReenrollment": true
-        },
-        "DefaultValue": "443"
+        "DependsOn": "",
+        "DefaultValue": "*",
+        "Options": ""
       },
       {
         "Name": "HostName",
@@ -867,11 +871,14 @@
           "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": false
-        }
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
       },
       {
         "Name": "SiteName",
-        "DisplayName": "Site Name",
+        "DisplayName": "IIS Site Name",
         "Type": "String",
         "RequiredWhen": {
           "HasPrivateKey": false,
@@ -879,19 +886,23 @@
           "OnRemove": true,
           "OnReenrollment": true
         },
-        "DefaultValue": "Default Web Site"
+        "DependsOn": "",
+        "DefaultValue": "Default Web Site",
+        "Options": ""
       },
       {
         "Name": "SniFlag",
-        "DisplayName": "SNI Flag",
-        "Type": "String",
+        "DisplayName": "SNI Support",
+        "Type": "MultipleChoice",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": false
         },
-        "DefaultValue": "0 - No SNI"
+        "DependsOn": "",
+        "DefaultValue": "0 - No SNI",
+        "Options": "0 - No SNI,1 - SNI Enabled,2 - Non SNI Binding,3 - SNI Binding"
       },
       {
         "Name": "Protocol",
@@ -903,19 +914,23 @@
           "OnRemove": true,
           "OnReenrollment": true
         },
+        "DependsOn": "",
         "DefaultValue": "https",
-        "Options": "http, https"
+        "Options": "https,http"
       },
       {
         "Name": "ProviderName",
-        "DisplayName": "Provider Name",
+        "DisplayName": "Crypto Provider Name",
         "Type": "String",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": false
-        }
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
       },
       {
         "Name": "SAN",
@@ -925,8 +940,11 @@
           "HasPrivateKey": false,
           "OnAdd": false,
           "OnRemove": false,
-          "OnReenrollment": true
-        }
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
       }
     ],
     "PasswordOptions": {
@@ -936,21 +954,10 @@
     },
     "StorePathValue": "[\"My\",\"WebHosting\"]",
     "PrivateKeyAllowed": "Required",
-    "JobProperties": [
-      "IPAddress",
-      "Port",
-      "HostName",
-      "SiteName",
-      "SniFlag",
-      "Protocol",
-      "ProviderName",
-      "SAN"
-    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden",
-    "InventoryEndpoint": "/AnyInventory/Update"
+    "CustomAliasAllowed": "Forbidden"
   },
   {
     "Name": "JavaKeystore",
