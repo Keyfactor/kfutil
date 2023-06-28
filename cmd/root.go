@@ -27,6 +27,20 @@ var xKeyfactorApiVersion = "1"
 func initClient(flagConfig string, flagProfile string, noPrompt bool) (*api.Client, error) {
 	var clientAuth api.AuthConfig
 
+	//Check if env vars are set if they are then ignore config file
+	if os.Getenv("KEYFACTOR_HOSTNAME") != "" && os.Getenv("KEYFACTOR_USERNAME") != "" && os.Getenv("KEYFACTOR_PASSWORD") != "" {
+		if os.Getenv("KEYFACTOR_DOMAIN") != "" {
+			clientAuth.Domain = os.Getenv("KEYFACTOR_DOMAIN")
+		} else {
+
+		}
+		clientAuth.Hostname = os.Getenv("KEYFACTOR_HOSTNAME")
+		clientAuth.Username = os.Getenv("KEYFACTOR_USERNAME")
+		clientAuth.Password = os.Getenv("KEYFACTOR_PASSWORD")
+	}
+
+	//Else check if config file exists
+
 	commandConfig, _ := authConfigFile(flagConfig, noPrompt, flagProfile)
 
 	if flagProfile == "" {
