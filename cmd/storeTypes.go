@@ -206,6 +206,7 @@ func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat str
 			EntryParameters:     &genericEntryParameters,
 			PasswordOptions:     storeType.PasswordOptions,
 			StorePathType:       storeType.StorePathType,
+			StorePathValue:      storeType.StorePathValue,
 			PrivateKeyAllowed:   storeType.PrivateKeyAllowed,
 			JobProperties:       storeType.JobProperties,
 			ServerRequired:      storeType.ServerRequired,
