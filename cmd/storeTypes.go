@@ -192,6 +192,7 @@ func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat str
 				RequiredWhen: param.RequiredWhen,
 				DependsOn:    param.DependsOn,
 				DefaultValue: param.DefaultValue,
+				Options:      param.Options,
 			}
 			genericEntryParameters = append(genericEntryParameters, genericParam)
 		}
