@@ -1779,10 +1779,6 @@
       "Style": "Default"
     },
     "PrivateKeyAllowed": "Required",
-    "JobProperties": [
-      "ProviderName",
-      "SAN"
-    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
