@@ -1356,7 +1356,7 @@
     "CustomAliasAllowed": "Forbidden"
   },
   {
-    "Name": "WinCert",
+    "Name": "Windows Certificate",
     "ShortName": "WinCert",
     "Capability": "WinCert",
     "LocalStore": false,
@@ -1378,18 +1378,18 @@
       },
       {
         "Name": "WinRM Protocol",
-        "DisplayName": "WinRm Protocol",
+        "DisplayName": "WinRM Protocol",
         "Type": "MultipleChoice",
         "DependsOn": "",
-        "DefaultValue": "http, https",
+        "DefaultValue": "https,http",
         "Required": true
       },
       {
-        "Name": "WinRm Port",
-        "DisplayName": "WinRm Port",
+        "Name": "WinRM Port",
+        "DisplayName": "WinRM Port",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": "5985",
+        "DefaultValue": "5986",
         "Required": true
       },
       {
@@ -1420,14 +1420,17 @@
     "EntryParameters": [
       {
         "Name": "ProviderName",
-        "DisplayName": "Provider Name",
+        "DisplayName": "Crypto Provider Name",
         "Type": "String",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": false
-        }
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
       },
       {
         "Name": "SAN",
@@ -1438,7 +1441,10 @@
           "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": true
-        }
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
       }
     ],
     "PasswordOptions": {
@@ -1446,17 +1452,12 @@
       "StoreRequired": false,
       "Style": "Default"
     },
+    "StorePathValue": "",
     "PrivateKeyAllowed": "Required",
-    "JobProperties": [
-      "ProviderName",
-      "SAN"
-    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden",
-    "ServerRegistration": 7,
-    "InventoryEndpoint": "/AnyInventory/Update"
+    "CustomAliasAllowed": "Forbidden"
   },
   {
     "Name": "WinIIS",

@@ -202,11 +202,11 @@ func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat str
 		}
 
 		// Check if entry parameters are empty and if they aren't then set jobProperties to empty list
-		jobProperties := storeType.JobProperties
-		if len(genericEntryParameters) > 0 {
-			log.Println("[WARN] Entry parameters are not empty, setting jobProperties to empty list to prevent 'Only the job properties or entry parameters fields can be set, not both.'")
-			jobProperties = &[]string{}
-		}
+		//jobProperties := storeType.JobProperties
+		//if len(genericEntryParameters) > 0 {
+		//	log.Println("[WARN] Entry parameters are not empty, setting jobProperties to empty list to prevent 'Only the job properties or entry parameters fields can be set, not both.'")
+		//	jobProperties = &[]string{}
+		//}
 
 		genericStoreType := api.CertificateStoreTypeGeneric{
 			Name:                storeType.Name,
@@ -217,9 +217,9 @@ func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat str
 			EntryParameters:     &genericEntryParameters,
 			PasswordOptions:     storeType.PasswordOptions,
 			//StorePathType:       storeType.StorePathType,
-			StorePathValue:     storeType.StorePathValue,
-			PrivateKeyAllowed:  storeType.PrivateKeyAllowed,
-			JobProperties:      jobProperties,
+			StorePathValue:    storeType.StorePathValue,
+			PrivateKeyAllowed: storeType.PrivateKeyAllowed,
+			//JobProperties:      jobProperties,
 			ServerRequired:     storeType.ServerRequired,
 			PowerShell:         storeType.PowerShell,
 			BlueprintAllowed:   storeType.BlueprintAllowed,
@@ -332,55 +332,22 @@ var storesTypeCreateCmd = &cobra.Command{
 				log.Fatalf("Error: %s", stErr)
 			}
 			log.Printf("[DEBUG] Store type config: %v", storeTypeConfig[storeType])
-			sConfig := storeTypeConfig[storeType].(map[string]interface{})
-			// Build properties if sConfig["Properties"] is not nil
-			var props []api.StoreTypePropertyDefinition
-			var pErr error
-			if sConfig["Properties"] != nil {
-				props, pErr = buildStoreTypePropertiesInterface(sConfig["Properties"].([]interface{}))
-			} else {
-				props = []api.StoreTypePropertyDefinition{}
+			storeTypeInterface := storeTypeConfig[storeType].(map[string]interface{})
+
+			//convert storeTypeInterface to json string
+			storeTypeJson, _ := json.Marshal(storeTypeInterface)
+
+			//convert storeTypeJson to api.StoreType
+			var storeTypeObj api.CertificateStoreType
+			convErr := json.Unmarshal(storeTypeJson, &storeTypeObj)
+			if convErr != nil {
+				fmt.Printf("Error: %s", convErr)
+				log.Printf("Error: %s", convErr)
+				return
 			}
 
-			if pErr != nil {
-				fmt.Printf("Error: %s", pErr)
-				log.Printf("Error: %s", pErr)
-			}
-			createReq := api.CertificateStoreType{
-				Name:       storeTypeConfig[storeType].(map[string]interface{})["Name"].(string),
-				ShortName:  storeTypeConfig[storeType].(map[string]interface{})["ShortName"].(string),
-				Capability: storeTypeConfig[storeType].(map[string]interface{})["Capability"].(string),
-				SupportedOperations: &api.StoreTypeSupportedOperations{
-					Add:        storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Add"].(bool),
-					Create:     storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Create"].(bool),
-					Discovery:  storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Discovery"].(bool),
-					Enrollment: storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Enrollment"].(bool),
-					Remove:     storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Remove"].(bool),
-				},
-				Properties:      &props,
-				EntryParameters: &[]api.EntryParameter{},
-				PasswordOptions: &api.StoreTypePasswordOptions{
-					EntrySupported: storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["EntrySupported"].(bool),
-					StoreRequired:  storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["StoreRequired"].(bool),
-					Style:          storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["Style"].(string),
-				},
-				//StorePathType:      "",
-				//StorePathValue:     "",
-				PrivateKeyAllowed:  storeTypeConfig[storeType].(map[string]interface{})["PrivateKeyAllowed"].(string),
-				JobProperties:      nil,
-				ServerRequired:     storeTypeConfig[storeType].(map[string]interface{})["ServerRequired"].(bool),
-				PowerShell:         storeTypeConfig[storeType].(map[string]interface{})["PowerShell"].(bool),
-				BlueprintAllowed:   storeTypeConfig[storeType].(map[string]interface{})["BlueprintAllowed"].(bool),
-				CustomAliasAllowed: storeTypeConfig[storeType].(map[string]interface{})["CustomAliasAllowed"].(string),
-				//ServerRegistration: 0,
-				//InventoryEndpoint:  "",
-				//InventoryJobType:   "",
-				//ManagementJobType:  "",
-				//DiscoveryJobType:   "",
-				//EnrollmentJobType:  "",
-			}
-			log.Printf("[DEBUG] Create request: %v", createReq)
-			createResp, err := kfClient.CreateStoreType(&createReq)
+			log.Printf("[DEBUG] Create request: %v", storeTypeObj)
+			createResp, err := kfClient.CreateStoreType(&storeTypeObj)
 			if err != nil {
 				fmt.Printf("Error creating store type: %s", err)
 				log.Printf("[ERROR] creating store type : %s", err)
