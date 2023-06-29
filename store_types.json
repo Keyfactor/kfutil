@@ -1974,64 +1974,295 @@
     "CustomAliasAllowed": "Forbidden"
   },
   {
-    "Name": "Azure Keyvault",
-    "ShortName": "AKV",
-    "Capability": "AKV",
+    "Name": "Windows Certificate",
+    "ShortName": "WinCert",
+    "Capability": "WinCert",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
-      "Create": true,
-      "Discovery": true,
-      "Enrollment": false,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": true,
       "Remove": true
     },
     "Properties": [
       {
-        "Name": "VaultName",
-        "DisplayName": "VaultName",
-        "Type": "String",
+        "Name": "spnwithport",
+        "DisplayName": "SPN With Port",
+        "Type": "Bool",
         "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
-      },
-      {
-        "Name": "ResourceGroupName",
-        "DisplayName": "ResourceGroupName",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
-      },
-      {
-        "Name": "SkuType",
-        "DisplayName": "SKU Type",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "standard,premium",
+        "DefaultValue": "false",
         "Required": false
       },
       {
-        "Name": "VaultRegion",
-        "DisplayName": "Vault Region",
+        "Name": "WinRM Protocol",
+        "DisplayName": "WinRM Protocol",
         "Type": "MultipleChoice",
         "DependsOn": "",
-        "DefaultValue": "eastus,westus",
+        "DefaultValue": "https,http",
+        "Required": true
+      },
+      {
+        "Name": "WinRM Port",
+        "DisplayName": "WinRM Port",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "5986",
+        "Required": true
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
         "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [
+      {
+        "Name": "ProviderName",
+        "DisplayName": "Crypto Provider Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
+      },
+      {
+        "Name": "SAN",
+        "DisplayName": "SAN",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
+      }
+    ],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
       "Style": "Default"
     },
-    "StorePathType": "",
     "StorePathValue": "",
-    "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
+    "PrivateKeyAllowed": "Required",
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Optional"
+    "CustomAliasAllowed": "Forbidden"
+  },
+  {
+    "Name": "IIS Bound Certificate",
+    "ShortName": "IISU",
+    "Capability": "IISU",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": true,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "spnwithport",
+        "DisplayName": "SPN With Port",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false
+      },
+      {
+        "Name": "WinRm Protocol",
+        "DisplayName": "WinRm Protocol",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "https,http",
+        "Required": true
+      },
+      {
+        "Name": "WinRm Port",
+        "DisplayName": "WinRm Port",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "5986",
+        "Required": true
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "Port",
+        "DisplayName": "Port",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "443",
+        "Options": ""
+      },
+      {
+        "Name": "IPAddress",
+        "DisplayName": "IP Address",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "*",
+        "Options": ""
+      },
+      {
+        "Name": "HostName",
+        "DisplayName": "Host Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
+      },
+      {
+        "Name": "SiteName",
+        "DisplayName": "IIS Site Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "Default Web Site",
+        "Options": ""
+      },
+      {
+        "Name": "SniFlag",
+        "DisplayName": "SNI Support",
+        "Type": "MultipleChoice",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "0 - No SNI",
+        "Options": "0 - No SNI,1 - SNI Enabled,2 - Non SNI Binding,3 - SNI Binding"
+      },
+      {
+        "Name": "Protocol",
+        "DisplayName": "Protocol",
+        "Type": "MultipleChoice",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "https",
+        "Options": "https,http"
+      },
+      {
+        "Name": "ProviderName",
+        "DisplayName": "Crypto Provider Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
+      },
+      {
+        "Name": "SAN",
+        "DisplayName": "SAN",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathValue": "[\"My\",\"WebHosting\"]",
+    "PrivateKeyAllowed": "Required",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
   }
 ]
