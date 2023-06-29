@@ -1870,191 +1870,76 @@
     "CustomAliasAllowed": "Forbidden"
   },
   {
-    "Name": "IIS Bound Certificate",
-    "ShortName": "IISU",
-    "Capability": "IISU",
+    "Name": "Azure Keyvault",
+    "ShortName": "AKV",
+    "Capability": "AKV",
+    "StoreType": 1102,
+    "ImportType": 1102,
     "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
-      "Create": false,
-      "Discovery": false,
-      "Enrollment": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
       "Remove": true
     },
     "Properties": [
       {
-        "Name": "spnwithport",
-        "DisplayName": "SPN With Port",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "false",
-        "Required": false
-      },
-      {
-        "Name": "WinRm Protocol",
-        "DisplayName": "WinRm Protocol",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "https,http",
-        "Required": true
-      },
-      {
-        "Name": "WinRm Port",
-        "DisplayName": "WinRm Port",
+        "StoreTypeId": 1102,
+        "Name": "VaultName",
+        "DisplayName": "VaultName",
         "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": "5986",
-        "Required": true
-      },
-      {
-        "Name": "ServerUsername",
-        "DisplayName": "Server Username",
-        "Type": "Secret",
         "DependsOn": "",
         "DefaultValue": null,
-        "Required": false
+        "Required": true
       },
       {
-        "Name": "ServerPassword",
-        "DisplayName": "Server Password",
-        "Type": "Secret",
+        "StoreTypeId": 1102,
+        "Name": "ResourceGroupName",
+        "DisplayName": "ResourceGroupName",
+        "Type": "String",
         "DependsOn": "",
         "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "StoreTypeId": 1102,
+        "Name": "SkuType",
+        "DisplayName": "SKU Type",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "standard,premium",
         "Required": false
       },
       {
-        "Name": "ServerUseSsl",
-        "DisplayName": "Use SSL",
-        "Type": "Bool",
+        "StoreTypeId": 1102,
+        "Name": "VaultRegion",
+        "DisplayName": "Vault Region",
+        "Type": "MultipleChoice",
         "DependsOn": "",
-        "DefaultValue": "true",
-        "Required": true
+        "DefaultValue": "eastus,westus",
+        "Required": false
       }
     ],
-    "EntryParameters": [
-      {
-        "Name": "Port",
-        "DisplayName": "Port",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "443",
-        "Options": ""
-      },
-      {
-        "Name": "IPAddress",
-        "DisplayName": "IP Address",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": true,
-          "OnRemove": true,
-          "OnReenrollment": true
-        },
-        "DependsOn": "",
-        "DefaultValue": "*",
-        "Options": ""
-      },
-      {
-        "Name": "HostName",
-        "DisplayName": "Host Name",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "",
-        "Options": ""
-      },
-      {
-        "Name": "SiteName",
-        "DisplayName": "IIS Site Name",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": true,
-          "OnRemove": true,
-          "OnReenrollment": true
-        },
-        "DependsOn": "",
-        "DefaultValue": "Default Web Site",
-        "Options": ""
-      },
-      {
-        "Name": "SniFlag",
-        "DisplayName": "SNI Support",
-        "Type": "MultipleChoice",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "0 - No SNI",
-        "Options": "0 - No SNI,1 - SNI Enabled,2 - Non SNI Binding,3 - SNI Binding"
-      },
-      {
-        "Name": "Protocol",
-        "DisplayName": "Protocol",
-        "Type": "MultipleChoice",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": true,
-          "OnRemove": true,
-          "OnReenrollment": true
-        },
-        "DependsOn": "",
-        "DefaultValue": "https",
-        "Options": "https,http"
-      },
-      {
-        "Name": "ProviderName",
-        "DisplayName": "Crypto Provider Name",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "",
-        "Options": ""
-      },
-      {
-        "Name": "SAN",
-        "DisplayName": "SAN",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "",
-        "Options": ""
-      }
-    ],
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
       "Style": "Default"
     },
-    "StorePathValue": "[\"My\",\"WebHosting\"]",
-    "PrivateKeyAllowed": "Required",
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden"
+    "CustomAliasAllowed": "Optional",
+    "ServerRegistration": 9,
+    "InventoryEndpoint": "/AnyInventory/Update",
+    "InventoryJobType": "0e9f29c0-2932-490f-afc3-f5f0a805b712",
+    "ManagementJobType": "2d43fc56-ec5e-4ced-85c5-365439415014",
+    "DiscoveryJobType": "0746af32-0c66-4e7c-a47c-199c6f89a28c",
+    "EnrollmentJobType": ""
   }
 ]
