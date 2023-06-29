@@ -1882,5 +1882,66 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden"
+  },
+  {
+    "Name": "Azure Keyvault",
+    "ShortName": "AKV",
+    "Capability": "AKV",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "VaultName",
+        "DisplayName": "VaultName",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ResourceGroupName",
+        "DisplayName": "ResourceGroupName",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "SkuType",
+        "DisplayName": "SKU Type",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "standard,premium",
+        "Required": false
+      },
+      {
+        "Name": "VaultRegion",
+        "DisplayName": "Vault Region",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "eastus,westus",
+        "Required": false
+      }
+    ],
+    "EntryParameters": null,
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Optional"
   }
 ]
