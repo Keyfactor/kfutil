@@ -1884,9 +1884,9 @@
     "CustomAliasAllowed": "Forbidden"
   },
   {
-    "Name": "Azure Keyvault",
-    "ShortName": "AKV",
-    "Capability": "AKV",
+    "Name": "K8STLSSecr",
+    "ShortName": "K8STLSSecr",
+    "Capability": "K8STLSSecr",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
@@ -1897,36 +1897,52 @@
     },
     "Properties": [
       {
-        "Name": "VaultName",
-        "DisplayName": "VaultName",
+        "Name": "KubeNamespace",
+        "DisplayName": "KubeNamespace",
         "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "KubeSecretName",
+        "DisplayName": "KubeSecretName",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "KubeSecretType",
+        "DisplayName": "KubeSecretType",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "tls_secret",
+        "Required": true
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
         "DependsOn": "",
         "DefaultValue": null,
         "Required": true
       },
       {
-        "Name": "ResourceGroupName",
-        "DisplayName": "ResourceGroupName",
-        "Type": "String",
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "true",
         "Required": true
-      },
-      {
-        "Name": "SkuType",
-        "DisplayName": "SKU Type",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "standard,premium",
-        "Required": false
-      },
-      {
-        "Name": "VaultRegion",
-        "DisplayName": "Vault Region",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "eastus,westus",
-        "Required": false
       }
     ],
     "EntryParameters": null,
@@ -1942,6 +1958,6 @@
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Optional"
+    "CustomAliasAllowed": "Forbidden"
   }
 ]
