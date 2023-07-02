@@ -104,6 +104,10 @@ var storesTypeGetCmd = &cobra.Command{
 		expEnabled, _ := cmd.Flags().GetBool("exp")
 		genericFormat, _ := cmd.Flags().GetBool("generic")
 		outputFormat, _ := cmd.Flags().GetString("format")
+		gitRef, _ := cmd.Flags().GetString("git-ref")
+		if gitRef == "" {
+			gitRef = "main"
+		}
 		isExperimental := false
 		outputType := "full"
 
@@ -125,7 +129,7 @@ var storesTypeGetCmd = &cobra.Command{
 		var st interface{}
 		// Check inputs
 		if id < 0 && name == "" {
-			validStoreTypes := getValidStoreTypes("")
+			validStoreTypes := getValidStoreTypes("", gitRef)
 			prompt := &survey.Select{
 				Message: "Choose an option:",
 				Options: validStoreTypes,
@@ -198,11 +202,11 @@ func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat str
 		}
 
 		// Check if entry parameters are empty and if they aren't then set jobProperties to empty list
-		jobProperties := storeType.JobProperties
-		if len(genericEntryParameters) > 0 {
-			log.Println("[WARN] Entry parameters are not empty, setting jobProperties to empty list to prevent 'Only the job properties or entry parameters fields can be set, not both.'")
-			jobProperties = &[]string{}
-		}
+		//jobProperties := storeType.JobProperties
+		//if len(genericEntryParameters) > 0 {
+		//	log.Println("[WARN] Entry parameters are not empty, setting jobProperties to empty list to prevent 'Only the job properties or entry parameters fields can be set, not both.'")
+		//	jobProperties = &[]string{}
+		//}
 
 		genericStoreType := api.CertificateStoreTypeGeneric{
 			Name:                storeType.Name,
@@ -212,14 +216,14 @@ func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat str
 			Properties:          &genericProperties,
 			EntryParameters:     &genericEntryParameters,
 			PasswordOptions:     storeType.PasswordOptions,
-			StorePathType:       storeType.StorePathType,
-			StorePathValue:      storeType.StorePathValue,
-			PrivateKeyAllowed:   storeType.PrivateKeyAllowed,
-			JobProperties:       jobProperties,
-			ServerRequired:      storeType.ServerRequired,
-			PowerShell:          storeType.PowerShell,
-			BlueprintAllowed:    storeType.BlueprintAllowed,
-			CustomAliasAllowed:  storeType.CustomAliasAllowed,
+			//StorePathType:       storeType.StorePathType,
+			StorePathValue:    storeType.StorePathValue,
+			PrivateKeyAllowed: storeType.PrivateKeyAllowed,
+			//JobProperties:      jobProperties,
+			ServerRequired:     storeType.ServerRequired,
+			PowerShell:         storeType.PowerShell,
+			BlueprintAllowed:   storeType.BlueprintAllowed,
+			CustomAliasAllowed: storeType.CustomAliasAllowed,
 		}
 		sOut = genericStoreType
 	}
@@ -253,14 +257,23 @@ var storesTypeCreateCmd = &cobra.Command{
 		//configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
+		gitRef, _ := cmd.Flags().GetString("git-ref")
+		if gitRef == "" {
+			gitRef = "main"
+		}
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		//Check if store type is valid
-		validStoreTypes := getValidStoreTypes("")
+		validStoreTypes := getValidStoreTypes("", gitRef)
 		storeType, _ := cmd.Flags().GetString("name")
 		listTypes, _ := cmd.Flags().GetBool("list")
 		configFile, _ := cmd.Flags().GetString("from-file")
+
+		// if gitRef is null or empty, then set it to "master"
+		if gitRef == "" {
+			gitRef = "main"
+		}
 
 		kfClient, _ := initClient(configFile, profile, noPrompt)
 
@@ -313,61 +326,28 @@ var storesTypeCreateCmd = &cobra.Command{
 			log.Fatalf("Error: Invalid store type: %s", storeType)
 		} else {
 			kfClient, _ := initClient(configFile, profile, noPrompt)
-			storeTypeConfig, stErr := readStoreTypesConfig("")
+			storeTypeConfig, stErr := readStoreTypesConfig("", gitRef)
 			if stErr != nil {
 				fmt.Printf("Error: %s", stErr)
 				log.Fatalf("Error: %s", stErr)
 			}
 			log.Printf("[DEBUG] Store type config: %v", storeTypeConfig[storeType])
-			sConfig := storeTypeConfig[storeType].(map[string]interface{})
-			// Build properties if sConfig["Properties"] is not nil
-			var props []api.StoreTypePropertyDefinition
-			var pErr error
-			if sConfig["Properties"] != nil {
-				props, pErr = buildStoreTypePropertiesInterface(sConfig["Properties"].([]interface{}))
-			} else {
-				props = []api.StoreTypePropertyDefinition{}
+			storeTypeInterface := storeTypeConfig[storeType].(map[string]interface{})
+
+			//convert storeTypeInterface to json string
+			storeTypeJson, _ := json.Marshal(storeTypeInterface)
+
+			//convert storeTypeJson to api.StoreType
+			var storeTypeObj api.CertificateStoreType
+			convErr := json.Unmarshal(storeTypeJson, &storeTypeObj)
+			if convErr != nil {
+				fmt.Printf("Error: %s", convErr)
+				log.Printf("Error: %s", convErr)
+				return
 			}
 
-			if pErr != nil {
-				fmt.Printf("Error: %s", pErr)
-				log.Printf("Error: %s", pErr)
-			}
-			createReq := api.CertificateStoreType{
-				Name:       storeTypeConfig[storeType].(map[string]interface{})["Name"].(string),
-				ShortName:  storeTypeConfig[storeType].(map[string]interface{})["ShortName"].(string),
-				Capability: storeTypeConfig[storeType].(map[string]interface{})["Capability"].(string),
-				SupportedOperations: &api.StoreTypeSupportedOperations{
-					Add:        storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Add"].(bool),
-					Create:     storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Create"].(bool),
-					Discovery:  storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Discovery"].(bool),
-					Enrollment: storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Enrollment"].(bool),
-					Remove:     storeTypeConfig[storeType].(map[string]interface{})["SupportedOperations"].(map[string]interface{})["Remove"].(bool),
-				},
-				Properties:      &props,
-				EntryParameters: &[]api.EntryParameter{},
-				PasswordOptions: &api.StoreTypePasswordOptions{
-					EntrySupported: storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["EntrySupported"].(bool),
-					StoreRequired:  storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["StoreRequired"].(bool),
-					Style:          storeTypeConfig[storeType].(map[string]interface{})["PasswordOptions"].(map[string]interface{})["Style"].(string),
-				},
-				//StorePathType:      "",
-				//StorePathValue:     "",
-				PrivateKeyAllowed:  storeTypeConfig[storeType].(map[string]interface{})["PrivateKeyAllowed"].(string),
-				JobProperties:      nil,
-				ServerRequired:     storeTypeConfig[storeType].(map[string]interface{})["ServerRequired"].(bool),
-				PowerShell:         storeTypeConfig[storeType].(map[string]interface{})["PowerShell"].(bool),
-				BlueprintAllowed:   storeTypeConfig[storeType].(map[string]interface{})["BlueprintAllowed"].(bool),
-				CustomAliasAllowed: storeTypeConfig[storeType].(map[string]interface{})["CustomAliasAllowed"].(string),
-				//ServerRegistration: 0,
-				//InventoryEndpoint:  "",
-				//InventoryJobType:   "",
-				//ManagementJobType:  "",
-				//DiscoveryJobType:   "",
-				//EnrollmentJobType:  "",
-			}
-			log.Printf("[DEBUG] Create request: %v", createReq)
-			createResp, err := kfClient.CreateStoreType(&createReq)
+			log.Printf("[DEBUG] Create request: %v", storeTypeObj)
+			createResp, err := kfClient.CreateStoreType(&storeTypeObj)
 			if err != nil {
 				fmt.Printf("Error creating store type: %s", err)
 				log.Printf("[ERROR] creating store type : %s", err)
@@ -444,6 +424,10 @@ var storesTypeDeleteCmd = &cobra.Command{
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
 		storeType, _ := cmd.Flags().GetString("name")
+		gitRef, _ := cmd.Flags().GetString("git-ref")
+		if gitRef == "" {
+			gitRef = "main"
+		}
 		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -464,7 +448,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 			validStoreTypesResp, vstErr := kfClient.ListCertificateStoreTypes()
 			if vstErr != nil {
 				fmt.Println(vstErr)
-				validStoreTypes = getValidStoreTypes("")
+				validStoreTypes = getValidStoreTypes("", gitRef)
 			} else {
 				for _, v := range *validStoreTypesResp {
 					validStoreTypes = append(validStoreTypes, v.ShortName)
@@ -529,7 +513,11 @@ var fetchStoreTypes = &cobra.Command{
 	Short: "Fetches store type templates from Keyfactor's Github.",
 	Long:  `Fetches store type templates from Keyfactor's Github.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		templates, err := readStoreTypesConfig("")
+		gitRef, _ := cmd.Flags().GetString("git-ref")
+		if gitRef == "" {
+			gitRef = "main"
+		}
+		templates, err := readStoreTypesConfig("", gitRef)
 		if err != nil {
 			log.Printf("Error: %s", err)
 			fmt.Printf("Error: %s\n", err)
@@ -548,7 +536,11 @@ var generateStoreTypeTemplate = &cobra.Command{
 	Short: "Generates either a JSON or CSV template file for certificate store type bulk operations.",
 	Long:  `Generates either a JSON or CSV template file for certificate store type bulk operations.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		templates, err := readStoreTypesConfig("")
+		gitRef, _ := cmd.Flags().GetString("git-ref")
+		if gitRef == "" {
+			gitRef = "main"
+		}
+		templates, err := readStoreTypesConfig("", gitRef)
 		if err != nil {
 			log.Printf("Error: %s", err)
 			fmt.Printf("Error: %s\n", err)
@@ -562,10 +554,11 @@ var generateStoreTypeTemplate = &cobra.Command{
 	},
 }
 
-func getStoreTypesInternet() (map[string]interface{}, error) {
+func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfutil/main/store_types.json")
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfctl/master/storetypes/storetypes.json")
-	resp, rErr := http.Get("https://raw.githubusercontent.com/Keyfactor/kfutil/main/store_types.json")
+
+	resp, rErr := http.Get(fmt.Sprintf("https://raw.githubusercontent.com/Keyfactor/kfutil/%s/store_types.json", gitRef))
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -589,9 +582,9 @@ func getStoreTypesInternet() (map[string]interface{}, error) {
 	return result2, nil
 }
 
-func readStoreTypesConfig(fp string) (map[string]interface{}, error) {
+func readStoreTypesConfig(fp string, gitRef string) (map[string]interface{}, error) {
 
-	sTypes, stErr := getStoreTypesInternet()
+	sTypes, stErr := getStoreTypesInternet(gitRef)
 	if stErr != nil {
 		fmt.Printf("Error: %s\n", stErr)
 	}
@@ -624,8 +617,8 @@ func readStoreTypesConfig(fp string) (map[string]interface{}, error) {
 	return datas, nil
 }
 
-func getValidStoreTypes(fp string) []string {
-	validStoreTypes, rErr := readStoreTypesConfig(fp)
+func getValidStoreTypes(fp string, gitRef string) []string {
+	validStoreTypes, rErr := readStoreTypesConfig(fp, gitRef)
 	if rErr != nil {
 		log.Printf("Error: %s", rErr)
 		fmt.Printf("Error: %s\n", rErr)
@@ -642,7 +635,9 @@ func getValidStoreTypes(fp string) []string {
 
 func init() {
 
-	validTypesString := strings.Join(getValidStoreTypes(""), ", ")
+	defaultGitRef := "main"
+	var gitRef string
+	validTypesString := strings.Join(getValidStoreTypes("", defaultGitRef), ", ")
 	RootCmd.AddCommand(storeTypesCmd)
 
 	// GET store type templates
@@ -663,6 +658,7 @@ func init() {
 	storesTypeGetCmd.MarkFlagsMutuallyExclusive("id", "name")
 	storesTypeGetCmd.Flags().BoolVarP(&genericFormat, "generic", "g", false, "Output the store type in a generic format stripped of all fields specific to the Command instance.")
 	storesTypeGetCmd.Flags().StringVarP(&outputFormat, "format", "f", "json", "Output format. Valid choices are: 'json', 'yaml'. Default is 'json'.")
+	storesTypeGetCmd.Flags().StringVarP(&gitRef, "git-ref", "b", "main", "The git branch or tag to reference when pulling store-types from the internet.")
 
 	// CREATE command
 	var listValidStoreTypes bool
@@ -671,6 +667,7 @@ func init() {
 	storesTypeCreateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Short name of the certificate store type to get. Valid choices are: "+validTypesString)
 	storesTypeCreateCmd.Flags().BoolVarP(&listValidStoreTypes, "list", "l", false, "List valid store types.")
 	storesTypeCreateCmd.Flags().StringVarP(&filePath, "from-file", "f", "", "Path to a JSON file containing certificate store type data for a single store.")
+	storesTypeCreateCmd.Flags().StringVarP(&gitRef, "git-ref", "b", "main", "The git branch or tag to reference when pulling store-types from the internet.")
 	//storesTypeCreateCmd.MarkFlagRequired("name")
 
 	// UPDATE command
