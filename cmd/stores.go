@@ -44,7 +44,7 @@ var storesListCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(configFile, profile, noPrompt)
+		kfClient, _ := initClient(configFile, profile, noPrompt, false)
 		params := make(map[string]interface{})
 		stores, err := kfClient.ListCertificateStores(&params)
 
@@ -81,7 +81,7 @@ var storesGetCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		storeId, _ := cmd.Flags().GetString("id")
-		kfClient, _ := initClient(configFile, profile, noPrompt)
+		kfClient, _ := initClient(configFile, profile, noPrompt, false)
 		stores, err := kfClient.GetCertificateStoreByID(storeId)
 		if err != nil {
 			log.Printf("Error: %s", err)

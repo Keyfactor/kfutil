@@ -125,7 +125,7 @@ var exportCmd = &cobra.Command{
 		exportPath := cmd.Flag("file").Value.String()
 
 		kfClient := initGenClient(profile)
-		oldkfClient, _ := initClient(configFile, profile, noPrompt)
+		oldkfClient, _ := initClient(configFile, profile, noPrompt, false)
 		if cmd.Flag("all").Value.String() == "true" {
 			out.Collections = getCollections(kfClient)
 			out.MetadataFields = getMetadata(kfClient)

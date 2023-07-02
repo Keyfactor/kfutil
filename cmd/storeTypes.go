@@ -76,7 +76,7 @@ var storesTypesListCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(configFile, profile, noPrompt)
+		kfClient, _ := initClient(configFile, profile, noPrompt, false)
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
 		if err != nil {
 			log.Printf("Error: %s", err)
@@ -125,7 +125,7 @@ var storesTypeGetCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id, _ := cmd.Flags().GetInt("id")
 		name, _ := cmd.Flags().GetString("name")
-		kfClient, _ := initClient(configFile, profile, noPrompt)
+		kfClient, _ := initClient(configFile, profile, noPrompt, false)
 		var st interface{}
 		// Check inputs
 		if id < 0 && name == "" {
@@ -275,7 +275,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			gitRef = "main"
 		}
 
-		kfClient, _ := initClient(configFile, profile, noPrompt)
+		kfClient, _ := initClient(configFile, profile, noPrompt, false)
 
 		storeTypeIsValid := false
 
@@ -325,7 +325,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			}
 			log.Fatalf("Error: Invalid store type: %s", storeType)
 		} else {
-			kfClient, _ := initClient(configFile, profile, noPrompt)
+			kfClient, _ := initClient(configFile, profile, noPrompt, false)
 			storeTypeConfig, stErr := readStoreTypesConfig("", gitRef)
 			if stErr != nil {
 				fmt.Printf("Error: %s", stErr)
@@ -407,7 +407,7 @@ var storesTypeUpdateCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		fmt.Println("update called")
 
-		_, _ = initClient(configFile, profile, noPrompt)
+		_, _ = initClient(configFile, profile, noPrompt, false)
 
 	},
 }
@@ -440,7 +440,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id, _ := cmd.Flags().GetInt("id")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		kfClient, _ := initClient(configFile, profile, noPrompt)
+		kfClient, _ := initClient(configFile, profile, noPrompt, false)
 		var st interface{}
 
 		var validStoreTypes []string

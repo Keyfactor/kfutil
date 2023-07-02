@@ -44,7 +44,7 @@ var getOrchestratorCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, _ := initClient(configFile, profile, noPrompt)
+		kfClient, _ := initClient(configFile, profile, noPrompt, false)
 		agents, aErr := kfClient.GetAgent(client)
 		if aErr != nil {
 			fmt.Printf("Error, unable to get orchestrator %s. %s\n", client, aErr)
@@ -82,7 +82,7 @@ var approveOrchestratorCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient(configFile, profile, noPrompt)
+		kfClient, cErr := initClient(configFile, profile, noPrompt, false)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -125,7 +125,7 @@ var disapproveOrchestratorCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient(configFile, profile, noPrompt)
+		kfClient, cErr := initClient(configFile, profile, noPrompt, false)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -179,7 +179,7 @@ var getLogsOrchestratorCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient(configFile, profile, noPrompt)
+		kfClient, cErr := initClient(configFile, profile, noPrompt, false)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -221,7 +221,7 @@ var listOrchestratorsCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(configFile, profile, noPrompt)
+		kfClient, _ := initClient(configFile, profile, noPrompt, false)
 		agents, aErr := kfClient.GetAgentList()
 		if aErr != nil {
 			fmt.Printf("Error, unable to get orchestrators list. %s\n", aErr)

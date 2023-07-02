@@ -23,29 +23,34 @@ var colorWhite = "\033[37m"
 
 var xKeyfactorRequestedWith = "APIClient"
 var xKeyfactorApiVersion = "1"
+var defaultAPIPath = "KeyfactorAPI"
 
-func initClient(flagConfig string, flagProfile string, noPrompt bool) (*api.Client, error) {
+func initClient(flagConfig string, flagProfile string, noPrompt bool, saveConfig bool) (*api.Client, error) {
 	var clientAuth api.AuthConfig
 
-	//Check if env vars are set if they are then ignore config file
-	if os.Getenv("KEYFACTOR_HOSTNAME") != "" && os.Getenv("KEYFACTOR_USERNAME") != "" && os.Getenv("KEYFACTOR_PASSWORD") != "" {
-		if os.Getenv("KEYFACTOR_DOMAIN") != "" {
-			clientAuth.Domain = os.Getenv("KEYFACTOR_DOMAIN")
-		} else {
+	var commandConfig ConfigurationFile
 
-		}
-		clientAuth.Hostname = os.Getenv("KEYFACTOR_HOSTNAME")
-		clientAuth.Username = os.Getenv("KEYFACTOR_USERNAME")
-		clientAuth.Password = os.Getenv("KEYFACTOR_PASSWORD")
+	commandConfig, _ = authEnvVars(flagConfig, saveConfig)
+
+	if flagConfig != "" || !validConfigFileEntry(commandConfig, flagProfile) {
+		commandConfig, _ = authConfigFile(flagConfig, flagProfile, noPrompt, saveConfig)
 	}
-
-	//Else check if config file exists
-
-	commandConfig, _ := authConfigFile(flagConfig, noPrompt, flagProfile)
 
 	if flagProfile == "" {
 		flagProfile = "default"
 	}
+
+	if !validConfigFileEntry(commandConfig, flagProfile) {
+		if !noPrompt {
+			// Auth user interactively
+			authConfigEntry := commandConfig.Servers[flagProfile]
+			commandConfig, _ = authInteractive(authConfigEntry.Hostname, authConfigEntry.Username, authConfigEntry.Password, authConfigEntry.Domain, authConfigEntry.APIPath, flagProfile, false, false, flagConfig)
+		} else {
+			log.Fatalf("[ERROR] auth config profile: %s", flagProfile)
+			return nil, fmt.Errorf("auth config profile: %s", flagProfile)
+		}
+	}
+
 	clientAuth.Username = commandConfig.Servers[flagProfile].Username
 	clientAuth.Password = commandConfig.Servers[flagProfile].Password
 	clientAuth.Domain = commandConfig.Servers[flagProfile].Domain
@@ -63,10 +68,10 @@ func initClient(flagConfig string, flagProfile string, noPrompt bool) (*api.Clie
 }
 
 func initGenClient(profile string) *keyfactor.APIClient {
-	configs, authErr := authConfigFile("", true, profile)
 	if profile == "" {
 		profile = "default"
 	}
+	configs, authErr := authConfigFile("", profile, false, false)
 	cmdConfig := configs.Servers[profile]
 
 	if authErr != nil {
