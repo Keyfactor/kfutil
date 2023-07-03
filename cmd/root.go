@@ -30,7 +30,7 @@ func initClient(flagConfig string, flagProfile string, noPrompt bool, saveConfig
 
 	var commandConfig ConfigurationFile
 
-	commandConfig, _ = authEnvVars(flagConfig, saveConfig)
+	commandConfig, _ = authEnvVars(flagConfig, "", saveConfig)
 
 	if flagConfig != "" || !validConfigFileEntry(commandConfig, flagProfile) {
 		commandConfig, _ = authConfigFile(flagConfig, flagProfile, noPrompt, saveConfig)
