@@ -114,9 +114,9 @@ WARNING: The username and password will be stored in the config file in plain te
 			} else {
 				// Try user interactive login
 				authConfig, _ = authEnvVars(configFile, profile, false) // Silently load via env what you can
-				if !validConfigFileEntry(authConfig, profile) {
+				if !validConfigFileEntry(authConfig, profile) || !noPrompt {
 					existingAuth := authConfig.Servers[profile]
-					authConfig, authErr = authInteractive(existingAuth.Hostname, existingAuth.Username, existingAuth.Password, existingAuth.Domain, existingAuth.APIPath, profile, false, true, configFile)
+					authConfig, authErr = authInteractive(existingAuth.Hostname, existingAuth.Username, existingAuth.Password, existingAuth.Domain, existingAuth.APIPath, profile, !noPrompt, true, configFile)
 					if authErr != nil {
 						log.Fatal(authErr)
 						return
