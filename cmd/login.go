@@ -254,9 +254,14 @@ func promptForInteractivePassword(parameterName string, defaultValue string) str
 	if defaultValue != "" {
 		passwordFill = "********"
 	}
+	//log.Println("[DEBUG] password: " + defaultValue)
 
 	fmt.Printf("Enter %s [%s]: \n", parameterName, passwordFill)
 	bytePassword, _ := terminal.ReadPassword(int(syscall.Stdin))
+	// check if bytePassword is empty if so the return the default value
+	if len(bytePassword) == 0 {
+		return defaultValue
+	}
 	password := string(bytePassword)
 	fmt.Println("")
 	return password
