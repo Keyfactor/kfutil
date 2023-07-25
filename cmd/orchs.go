@@ -9,7 +9,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -28,9 +27,30 @@ var getOrchestratorCmd = &cobra.Command{
 	Short: "Get orchestrator by machine/client name.",
 	Long:  `Get orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 		agents, aErr := kfClient.GetAgent(client)
 		if aErr != nil {
 			fmt.Printf("Error, unable to get orchestrator %s. %s\n", client, aErr)
@@ -48,12 +68,33 @@ var getOrchestratorCmd = &cobra.Command{
 // listOrchestratorsCmd represents the list orchestrators command
 var approveOrchestratorCmd = &cobra.Command{
 	Use:   "approve",
-	Short: "Approve orchestrator by ID or machine/client name.",
-	Long:  `Approve orchestrator by ID or machine/client name.`,
+	Short: "Approve orchestrator by machine/client name.",
+	Long:  `Approve orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient()
+		kfClient, cErr := initClient(configFile, profile, noPrompt, authConfig, false)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -76,12 +117,33 @@ var approveOrchestratorCmd = &cobra.Command{
 // disapproveOrchestratorCmd represents the disapprove orchestrator command
 var disapproveOrchestratorCmd = &cobra.Command{
 	Use:   "disapprove",
-	Short: "Disapprove orchestrator by ID or machine/client name.",
-	Long:  `Disapprove orchestrator by ID or machine/client name.`,
+	Short: "Disapprove orchestrator by machine/client name.",
+	Long:  `Disapprove orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient()
+		kfClient, cErr := initClient(configFile, profile, noPrompt, authConfig, false)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -104,8 +166,8 @@ var disapproveOrchestratorCmd = &cobra.Command{
 // resetOrchestratorCmd represents the reset orchestrator command
 var resetOrchestratorCmd = &cobra.Command{
 	Use:   "reset",
-	Short: "Reset orchestrator by ID or machine/client name.",
-	Long:  `Reset orchestrator by ID or machine/client name.`,
+	Short: "Reset orchestrator by machine/client name.",
+	Long:  `Reset orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("orchestrator reset called")
 	},
@@ -114,12 +176,34 @@ var resetOrchestratorCmd = &cobra.Command{
 // getLogsOrchestratorCmd represents the get logs orchestrator command
 var getLogsOrchestratorCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "Get orchestrator logs by ID or machine/client name.",
-	Long:  `Get orchestrator logs by ID or machine/client name.`,
+	Short: "Get orchestrator logs by machine/client name.",
+	Long:  `Get orchestrator logs by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
+
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient()
+		kfClient, cErr := initClient(configFile, profile, noPrompt, authConfig, false)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -145,8 +229,29 @@ var listOrchestratorsCmd = &cobra.Command{
 	Short: "List orchestrators.",
 	Long:  `Returns a JSON list of Keyfactor orchestrators.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
-		kfClient, _ := initClient()
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 		agents, aErr := kfClient.GetAgentList()
 		if aErr != nil {
 			fmt.Printf("Error, unable to get orchestrators list. %s\n", aErr)

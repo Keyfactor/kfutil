@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
-	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/spf13/cobra"
 	"io"
 	"log"
@@ -29,6 +29,29 @@ var importCmd = &cobra.Command{
 	Short: "Keyfactor instance import utilities.",
 	Long:  `A collection of APIs and utilities for importing Keyfactor instance data.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
+
 		exportPath := cmd.Flag("file").Value.String()
 		jsonFile, oErr := os.Open(exportPath)
 		if oErr != nil {
@@ -43,8 +66,8 @@ var importCmd = &cobra.Command{
 			fmt.Printf("Error reading exported file: %s\n", jErr)
 			log.Fatalf("Error: %s", jErr)
 		}
-		kfClient := initGenClient()
-		oldKfClient, _ := initClient()
+		kfClient := initGenClient(profile)
+		oldkfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 		if cmd.Flag("all").Value.String() == "true" {
 			importCollections(out.Collections, kfClient)
 			importMetadataFields(out.MetadataFields, kfClient)
@@ -55,7 +78,7 @@ var importCmd = &cobra.Command{
 			importWorkflowDefinitions(out.WorkflowDefinitions, kfClient)
 			importBuiltInReports(out.BuiltInReports, kfClient)
 			importCustomReports(out.CustomReports, kfClient)
-			importSecurityRoles(out.SecurityRoles, oldKfClient)
+			importSecurityRoles(out.SecurityRoles, oldkfClient)
 		} else {
 			if len(out.Collections) != 0 && cmd.Flag("collections").Value.String() == "true" {
 				importCollections(out.Collections, kfClient)
@@ -85,7 +108,7 @@ var importCmd = &cobra.Command{
 				importCustomReports(out.CustomReports, kfClient)
 			}
 			if len(out.SecurityRoles) != 0 && cmd.Flag("security-roles").Value.String() == "true" {
-				importSecurityRoles(out.SecurityRoles, oldKfClient)
+				importSecurityRoles(out.SecurityRoles, oldkfClient)
 			}
 		}
 	},

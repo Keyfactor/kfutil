@@ -12,9 +12,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/spf13/cobra"
-	"io"
 	"log"
 	"os"
 	"strconv"
@@ -256,6 +255,10 @@ func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, report
 						CertificateStores: &stores,
 						InventorySchedule: schedule,
 					}
+					log.Printf("[DEBUG] Adding cert %s to store %s", thumbprint, a.StoreID)
+					log.Printf("[TRACE] Add request: %+v", addReq)
+					addReqJSON, _ := json.Marshal(addReq)
+					log.Printf("[TRACE] Add request JSON: %s", addReqJSON)
 					_, err := kfClient.AddCertificateToStores(&addReq)
 					if err != nil {
 						fmt.Printf("[ERROR] adding cert %s (%d) to store %s (%s): %s\n", a.Thumbprint, a.CertID, a.StoreID, a.StorePath, err)
@@ -383,8 +386,22 @@ kfutil stores rot reconcile --import-csv <audit-file>
 		PreRun:                 nil,
 		PreRunE:                nil,
 		Run: func(cmd *cobra.Command, args []string) {
+			// Global flags
+			debugFlag, _ := cmd.Flags().GetBool("debug")
+			configFile, _ := cmd.Flags().GetString("config")
+			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+			profile, _ := cmd.Flags().GetString("profile")
+			kfcHostName, _ := cmd.Flags().GetString("hostname")
+			kfcUsername, _ := cmd.Flags().GetString("username")
+			kfcPassword, _ := cmd.Flags().GetString("password")
+			kfcDomain, _ := cmd.Flags().GetString("domain")
+			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+
+			debugModeEnabled := checkDebug(debugFlag)
+			log.Println("Debug mode enabled: ", debugModeEnabled)
 			var lookupFailures []string
-			kfClient, _ := initClient()
+			kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 			storesFile, _ := cmd.Flags().GetString("stores")
 			addRootsFile, _ := cmd.Flags().GetString("add-certs")
 			removeRootsFile, _ := cmd.Flags().GetString("remove-certs")
@@ -534,8 +551,24 @@ the utility will first generate an audit report and then execute the add/remove 
 		PreRun:                 nil,
 		PreRunE:                nil,
 		Run: func(cmd *cobra.Command, args []string) {
+			// Global flags
+			debugFlag, _ := cmd.Flags().GetBool("debug")
+			configFile, _ := cmd.Flags().GetString("config")
+			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+			profile, _ := cmd.Flags().GetString("profile")
+			kfcHostName, _ := cmd.Flags().GetString("hostname")
+			kfcUsername, _ := cmd.Flags().GetString("username")
+			kfcPassword, _ := cmd.Flags().GetString("password")
+			kfcDomain, _ := cmd.Flags().GetString("domain")
+			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+
+			debugModeEnabled := checkDebug(debugFlag)
+
+			log.Println("Debug mode enabled: ", debugModeEnabled)
+
 			var lookupFailures []string
-			kfClient, _ := initClient()
+			kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 			storesFile, _ := cmd.Flags().GetString("stores")
 			addRootsFile, _ := cmd.Flags().GetString("add-certs")
 			isCSV, _ := cmd.Flags().GetBool("import-csv")
@@ -546,6 +579,8 @@ the utility will first generate an audit report and then execute the add/remove 
 			maxKeys, _ := cmd.Flags().GetInt("max-keys")
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 			outpath, _ := cmd.Flags().GetString("outpath")
+
+			log.Printf("[DEBUG] configFile: %s", configFile)
 			log.Printf("[DEBUG] storesFile: %s", storesFile)
 			log.Printf("[DEBUG] addRootsFile: %s", addRootsFile)
 			log.Printf("[DEBUG] removeRootsFile: %s", removeRootsFile)
@@ -685,7 +720,10 @@ the utility will first generate an audit report and then execute the add/remove 
 					log.Fatalf("[ERROR] reconciling roots: %s", rErr)
 				}
 				defer csvFile.Close()
-				fmt.Println("Reconciliation completed. Check orchestrator jobs for details.")
+
+				orchsURL := fmt.Sprintf("https://%s/Keyfactor/Portal/AgentJobStatus/Index", kfClient.Hostname)
+
+				fmt.Println(fmt.Sprintf("Reconciliation completed. Check orchestrator jobs for details. %s", orchsURL))
 			} else {
 				// Read in the stores CSV
 				csvFile, _ := os.Open(storesFile)
@@ -778,7 +816,9 @@ the utility will first generate an audit report and then execute the add/remove 
 				if lookupFailures != nil {
 					fmt.Printf("The following stores could not be found: %s", strings.Join(lookupFailures, ","))
 				}
-				fmt.Println("Reconciliation completed. Check orchestrator jobs for details.")
+				orchsURL := fmt.Sprintf("https://%s/Keyfactor/Portal/AgentJobStatus/Index", kfClient.Hostname)
+
+				fmt.Println(fmt.Sprintf("Reconciliation completed. Check orchestrator jobs for details. %s", orchsURL))
 			}
 
 		},
@@ -804,7 +844,7 @@ the utility will first generate an audit report and then execute the add/remove 
 		Aliases:                nil,
 		SuggestFor:             nil,
 		Short:                  "For generating Root Of Trust template(s)",
-		Long:                   `Root Of Trust: Will parse a CSV and attempt to enroll a cert or set of certs into a list of cert stores.`,
+		Long:                   `Root Of Trust: Will parse a CSV and attempt to deploy a cert or set of certs into a list of cert stores.`,
 		Example:                "",
 		ValidArgs:              nil,
 		ValidArgsFunction:      nil,
@@ -819,12 +859,26 @@ the utility will first generate an audit report and then execute the add/remove 
 		PreRun:                 nil,
 		PreRunE:                nil,
 		Run: func(cmd *cobra.Command, args []string) {
+			// Global flags
+			debugFlag, _ := cmd.Flags().GetBool("debug")
+			configFile, _ := cmd.Flags().GetString("config")
+			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+			profile, _ := cmd.Flags().GetString("profile")
+			kfcHostName, _ := cmd.Flags().GetString("hostname")
+			kfcUsername, _ := cmd.Flags().GetString("username")
+			kfcPassword, _ := cmd.Flags().GetString("password")
+			kfcDomain, _ := cmd.Flags().GetString("domain")
+			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+
+			debugModeEnabled := checkDebug(debugFlag)
+			log.Println("Debug mode enabled: ", debugModeEnabled)
 
 			templateType, _ := cmd.Flags().GetString("type")
 			format, _ := cmd.Flags().GetString("format")
 			outPath, _ := cmd.Flags().GetString("outpath")
 			storeType, _ := cmd.Flags().GetStringSlice("store-type")
-			containerType, _ := cmd.Flags().GetStringSlice("container-type")
+			containerName, _ := cmd.Flags().GetStringSlice("container-name")
 			collection, _ := cmd.Flags().GetStringSlice("collection")
 			subjectName, _ := cmd.Flags().GetStringSlice("cn")
 			stID := -1
@@ -832,11 +886,11 @@ the utility will first generate an audit report and then execute the add/remove 
 			var csvStoreData [][]string
 			var csvCertData [][]string
 			var rowLookup = make(map[string]bool)
+			kfClient, cErr := initClient(configFile, profile, noPrompt, authConfig, false)
 			if len(storeType) != 0 {
 				for _, s := range storeType {
-					kfClient, err := initClient()
-					if err != nil {
-						log.Fatalf("[ERROR] creating client: %s", err)
+					if cErr != nil {
+						log.Fatalf("[ERROR] creating client: %s", cErr)
 					}
 					var sType *api.CertificateStoreType
 					var stErr error
@@ -868,13 +922,18 @@ the utility will first generate an audit report and then execute the add/remove 
 							EnrollmentJobType:   "",
 						}
 					} else {
-						sType, stErr = kfClient.GetCertificateStoreTypeByName(s)
+						// check if s is an int
+						sInt, err := strconv.Atoi(s)
+						if err == nil {
+							sType, stErr = kfClient.GetCertificateStoreTypeById(sInt)
+						} else {
+							sType, stErr = kfClient.GetCertificateStoreTypeByName(s)
+						}
+						if stErr != nil {
+							fmt.Printf("[ERROR] getting store type '%s'. %s\n", s, stErr)
+							continue
+						}
 						stID = sType.StoreType // This is the template type ID
-					}
-
-					if stErr != nil {
-						fmt.Printf("[ERROR] getting store type: %s\n", stErr)
-						continue
 					}
 
 					if stID >= 0 || s == "all" {
@@ -902,11 +961,11 @@ the utility will first generate an audit report and then execute the add/remove 
 				}
 				fmt.Println("Done")
 			}
-			if len(containerType) != 0 {
-				for _, c := range containerType {
-					kfClient, err := initClient()
-					if err != nil {
-						log.Fatalf("[ERROR] creating client: %s", err)
+			if len(containerName) != 0 {
+				for _, c := range containerName {
+
+					if cErr != nil {
+						log.Fatalf("[ERROR] creating client: %s", cErr)
 					}
 					cStoresResp, scErr := kfClient.GetCertificateStoreByContainerID(c)
 					if scErr != nil {
@@ -935,10 +994,9 @@ the utility will first generate an audit report and then execute the add/remove 
 			}
 			if len(collection) != 0 {
 				for _, c := range collection {
-					kfClient, err := initClient()
-					if err != nil {
+					if cErr != nil {
 						fmt.Println("[ERROR] connecting to Keyfactor. Please check your configuration and try again.")
-						log.Fatalf("[ERROR] creating client: %s", err)
+						log.Fatalf("[ERROR] creating client: %s", cErr)
 					}
 					q := make(map[string]string)
 					q["collection"] = c
@@ -963,10 +1021,9 @@ the utility will first generate an audit report and then execute the add/remove 
 			}
 			if len(subjectName) != 0 {
 				for _, s := range subjectName {
-					kfClient, err := initClient()
-					if err != nil {
+					if cErr != nil {
 						fmt.Println("[ERROR] connecting to Keyfactor. Please check your configuration and try again.")
-						log.Fatalf("[ERROR] creating client: %s", err)
+						log.Fatalf("[ERROR] creating client: %s", cErr)
 					}
 					q := make(map[string]string)
 					q["subject"] = s
@@ -1062,7 +1119,6 @@ the utility will first generate an audit report and then execute the add/remove 
 func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.SetOutput(os.Stdout)
-	log.SetOutput(io.Discard)
 	var (
 		stores          string
 		addCerts        string
@@ -1075,7 +1131,7 @@ func init() {
 		outputFormat    string
 		inputFile       string
 		storeTypes      []string
-		containerTypes  []string
+		containerNames  []string
 		collections     []string
 		subjectNames    []string
 	)
@@ -1133,8 +1189,8 @@ func init() {
 	rotGenStoreTemplateCmd.Flags().Var(&tType, "type",
 		`The type of template to generate. Only "certs|stores|actions" are supported at this time.`)
 	rotGenStoreTemplateCmd.Flags().StringSliceVar(&storeTypes, "store-type", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified store types. If not specified, the template will be empty.")
-	rotGenStoreTemplateCmd.Flags().StringSliceVar(&containerTypes, "container-type", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified container types. If not specified, the template will be empty.")
-	rotGenStoreTemplateCmd.Flags().StringSliceVar(&subjectNames, "cn", []string{}, "Subject name(s) to pre-populate the stores template with. If not specified, the template will be empty. Does not work with SANs.")
+	rotGenStoreTemplateCmd.Flags().StringSliceVar(&containerNames, "container-name", []string{}, "Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified container types. If not specified, the template will be empty.")
+	rotGenStoreTemplateCmd.Flags().StringSliceVar(&subjectNames, "cn", []string{}, "Subject name(s) to pre-populate the 'certs' template with. If not specified, the template will be empty. Does not work with SANs.")
 	rotGenStoreTemplateCmd.Flags().StringSliceVar(&collections, "collection", []string{}, "Certificate collection name(s) to pre-populate the stores template with. If not specified, the template will be empty.")
 
 	rotGenStoreTemplateCmd.RegisterFlagCompletionFunc("type", templateTypeCompletion)

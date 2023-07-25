@@ -1,4 +1,4 @@
-// Package cmd Copyright 2022 Keyfactor
+// Package cmd Copyright 2023 Keyfactor
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 // Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
@@ -9,9 +9,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/spf13/cobra"
-	"io"
 	"log"
 )
 
@@ -26,9 +25,9 @@ var inventoryClearCmd = &cobra.Command{
 	Use:                    "clear",
 	Aliases:                nil,
 	SuggestFor:             nil,
-	Short:                  "Clears the certificate store store inventory of ALL certificates.",
+	Short:                  "Clears the certificate store inventory of ALL certificates.",
 	GroupID:                "",
-	Long:                   `Clears the certificate store store inventory of ALL certificates.`,
+	Long:                   `Clears the certificate store inventory of ALL certificates.`,
 	Example:                "",
 	ValidArgs:              nil,
 	ValidArgsFunction:      nil,
@@ -43,7 +42,28 @@ var inventoryClearCmd = &cobra.Command{
 	PreRun:                 nil,
 	PreRunE:                nil,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		force, _ := cmd.Flags().GetBool("force")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
@@ -53,7 +73,7 @@ var inventoryClearCmd = &cobra.Command{
 		containerType, _ := cmd.Flags().GetStringSlice("container")
 		allStores, _ := cmd.Flags().GetBool("all")
 
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 
 		if storeID == nil && machineName == nil && storeType == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -115,7 +135,7 @@ var inventoryClearCmd = &cobra.Command{
 			}
 
 			if !force {
-				fmt.Printf("This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you want to continue? (y/n) ", store.ClientMachine, store.StorePath)
+				fmt.Printf("This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you sure?! Press 'y' to continue? (y/n) ", store.ClientMachine, store.StorePath)
 				var answer string
 				fmt.Scanln(&answer)
 				if answer != "y" {
@@ -166,13 +186,13 @@ var inventoryClearCmd = &cobra.Command{
 	FParseErrWhitelist:         cobra.FParseErrWhitelist{},
 	CompletionOptions:          cobra.CompletionOptions{},
 	TraverseChildren:           false,
-	Hidden:                     false,
+	Hidden:                     true,
 	SilenceErrors:              false,
-	SilenceUsage:               false,
+	SilenceUsage:               true,
 	DisableFlagParsing:         false,
 	DisableAutoGenTag:          false,
 	DisableFlagsInUseLine:      false,
-	DisableSuggestions:         false,
+	DisableSuggestions:         true,
 	SuggestionsMinimumDistance: 0,
 }
 
@@ -185,7 +205,28 @@ specified by Keyfactor command store ID, client machine name, store type, or con
 and one or more certificates must be specified. If multiple stores and/or certificates are specified, the command will
 attempt to add all the certificate(s) meeting the specified criteria to all stores meeting the specified criteria.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		force, _ := cmd.Flags().GetBool("force")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
@@ -208,7 +249,7 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 			log.Fatalf("At least one certificate must be specified")
 		}
 
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 
 		if storeIDs == nil && machineNames == nil && storeTypes == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -311,7 +352,7 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 				}
 				if !dryRun {
 					if !force {
-						fmt.Printf("This will add the certificate %s(%d) to certificate store %s%s's inventory. Are you sure you want to continue? (y/n) ", cert.IssuedCN, cert.Id, store.ClientMachine, store.StorePath)
+						fmt.Printf("This will add the certificate %s(%d) to certificate store %s%s's inventory. Are you sure you shouldPass to continue? (y/n) ", cert.IssuedCN, cert.Id, store.ClientMachine, store.StorePath)
 						var answer string
 						fmt.Scanln(&answer)
 						if answer != "y" {
@@ -340,7 +381,28 @@ var inventoryRemoveCmd = &cobra.Command{
 	Short: "Removes a certificate from the certificate store inventory.",
 	Long:  `Removes a certificate from the certificate store inventory.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		force, _ := cmd.Flags().GetBool("force")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
@@ -363,7 +425,7 @@ var inventoryRemoveCmd = &cobra.Command{
 			log.Fatalf("At least one certificate must be specified")
 		}
 
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 
 		if storeIDs == nil && machineNames == nil && storeTypes == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -467,7 +529,7 @@ var inventoryRemoveCmd = &cobra.Command{
 				}
 				if !dryRun {
 					if !force {
-						fmt.Printf("This will remove the certificate %s from certificate store %s%s's inventory. Are you sure you want to continue? (y/n) ", certToString(&cert), store.ClientMachine, store.StorePath)
+						fmt.Printf("This will remove the certificate %s from certificate store %s%s's inventory. Are you sure you shouldPass to continue? (y/n) ", certToString(&cert), store.ClientMachine, store.StorePath)
 						var answer string
 						fmt.Scanln(&answer)
 						if answer != "y" {
@@ -512,13 +574,34 @@ var inventoryShowCmd = &cobra.Command{
 	PreRun:                 nil,
 	PreRunE:                nil,
 	Run: func(cmd *cobra.Command, args []string) {
-		log.SetOutput(io.Discard)
+		// Global flags
+		debugFlag, _ := cmd.Flags().GetBool("debug")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		profile, _ := cmd.Flags().GetString("profile")
+		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := true
+
+		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
 		storeIDs, _ := cmd.Flags().GetStringSlice("sid")
 		clientMachineNames, _ := cmd.Flags().GetStringSlice("client")
 		storeTypes, _ := cmd.Flags().GetStringSlice("store-type")
 		containers, _ := cmd.Flags().GetStringSlice("container")
 
-		kfClient, _ := initClient()
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 
 		if len(storeIDs) == 0 && len(clientMachineNames) == 0 && len(storeTypes) == 0 && len(containers) == 0 {
 			fmt.Println("No filters specified. Unable to show inventory. Please specify at least one filter: [--sid, --client, --store-type, --container]")
@@ -559,7 +642,7 @@ var inventoryShowCmd = &cobra.Command{
 		for _, cStore := range *stResp {
 			inv, err := kfClient.GetCertStoreInventory(cStore.Id)
 			if err != nil {
-				fmt.Printf("Error, unable to retrieve certificate store inventory from %s: %s\n", cStore, err)
+				fmt.Printf("Error, unable to retrieve certificate store inventory from %v: %s\n", cStore, err)
 				log.Printf("[ERROR]  %s", err)
 			}
 			invData := make(map[string]interface{})
@@ -620,7 +703,7 @@ func init() {
 	inventoryCmd.AddCommand(inventoryClearCmd)
 	inventoryClearCmd.Flags().StringSliceVar(&ids, "sid", []string{}, "The Keyfactor Command ID of the certificate store(s) remove all inventory from.")
 	inventoryClearCmd.Flags().StringSliceVar(&clients, "client", []string{}, "Remove all inventory from store(s) of specific client machine(s).")
-	inventoryClearCmd.Flags().StringSliceVar(&types, "store-ype", []string{}, "Remove all inventory from store(s) of specific store type(s).")
+	inventoryClearCmd.Flags().StringSliceVar(&types, "store-type", []string{}, "Remove all inventory from store(s) of specific store type(s).")
 	inventoryClearCmd.Flags().StringSliceVar(&containers, "container", []string{}, "Remove all inventory from store(s) of specific container type(s).")
 	inventoryClearCmd.Flags().BoolVar(&all, "all", false, "Remove all inventory from all certificate stores.")
 	inventoryClearCmd.Flags().BoolVar(&force, "force", false, "Force removal of inventory without prompting for confirmation.")
