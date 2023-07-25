@@ -2,11 +2,9 @@
 
 `kfutil` is a go-lang CLI wrapper for Keyfactor Command API. It also includes other utility/helper functions around automating common Keyfactor Command operations.
 
-#### Integration status: Pilot - Ready for use in test environments. Not for use in production.
+#### Integration status: Production - Ready for use in production environments.
 
-## About the Keyfactor API Client
 
-This API client allows for programmatic management of Keyfactor resources.
 
 
 
@@ -15,7 +13,6 @@ This API client allows for programmatic management of Keyfactor resources.
 Keyfactor Command Utility (kfutil) is open source and there is **no SLA** for this tool/library/client. Keyfactor will address issues as resources become available. Keyfactor customers may request escalation by opening up a support ticket through their Keyfactor representative.
 
 ###### To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
-___
 
 
 
@@ -37,22 +34,43 @@ bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/gh-dl-rel
 All the variables listed below need to be set in your environment. The `kfutil` command will look for these variables
 and use them if they are set. If they are not set, the utility will fail to connect to Keyfactor.
 
+| Variable Name      | Description                                                                              |
+|--------------------|------------------------------------------------------------------------------------------|
+| KEYFACTOR_HOSTNAME | The hostname of your Keyfactor instance. ex: `my.domain.com`                             |
+| KEYFACTOR_USERNAME | The username to use to connect to Keyfactor. Do not include the domain. ex: `myusername` |
+| KEYFACTOR_PASSWORD | The password to use to connect to Keyfactor. ex: `mypassword`                            |
+| KEYFACTOR_DOMAIN   | The domain to use to connect to Keyfactor. ex: `mydomain`                                |
+| KEYFACTOR_API_PATH | The path to the Keyfactor API. Defaults to `/KeyfactorAPI`.                              |
+| KFUTIL_EXP         | Set to `1` or `true` to enable experimental features.                                    |
+| KFUTIL_DEBUG       | Set to `1` or `true` to enable debug logging.                                            |
+
 Linux/MacOS:
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 export KEYFACTOR_USERNAME="<myusername>" # Do not include domain
 export KEYFACTOR_PASSWORD="<mypassword>"
 export KEYFACTOR_DOMAIN="<mykeyfactordomain>"
-export KEYFACTOR_API_PATH="KeyfactorAPI/" # Optional, defaults to KeyfactorAPI/ only use this if you have a custom API path
+```
+Additional variables:
+```bash
+export KEYFACTOR_API_PATH="/KeyfactorAPI" # Defaults to /KeyfactorAPI if not set ex. my.domain.com/KeyfactorAPI
+export KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
+export KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 ```
 
-Windows Powershell
+Windows Powershell:
 ```powershell
 $env:KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 $env:KEYFACTOR_USERNAME="<myusername>" # Do not include domain
 $env:KEYFACTOR_PASSWORD="<mypassword>"
 $env:KEYFACTOR_DOMAIN="<mykeyfactordomain>"
-$env:KEYFACTOR_API_PATH="KeyfactorAPI/" # Optional, defaults to KeyfactorAPI/ only use this if you have a custom API path
+```
+
+Additional variables:
+```bash
+$env:KEYFACTOR_API_PATH="/KeyfactorAPI" # Defaults to /KeyfactorAPI if not set ex. my.domain.com/KeyfactorAPI
+$env:KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
+$env:KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 ```
 
 ## Commands
@@ -66,40 +84,6 @@ shared machine. Instead of using the `login` command, you can set the environmen
 
 ```bash
 kfutil login
-```
-
-#### Example Config File v1
-```json
-{
-  "api_path": "KeyfactorAPI",
-  "domain": "command",
-  "host": "lab.mydomain.com",
-  "password": "dontusethispassword",
-  "username": "myusername"
-}
-```
-
-#### Example Config File v2
-**Must use kfutil version v1.0.0 or higher.**
-```json
-{
-  "servers": { 
-    "lab1" : {
-      "api_path": "KeyfactorAPI",
-      "domain": "command",
-      "host": "lab.mydomain.com",
-      "password": "dontusethispassword",
-      "username": "myusername"
-    },
-    "lab2" : {
-      "api_path": "KeyfactorAPI",
-      "domain": "command",
-      "host": "lab2.mydomain.com",
-      "password": "dontusethispassword",
-      "username": "myusername"
-    }
-  }
-}
 ```
 
 ### Logout
@@ -400,40 +384,6 @@ kfutil stores inventory remove \
   --cn <additional cert subject name>
 ```
 
-### Export Instance Data
-
-For full documentation, see [export](docs/kfutil_export.md).
-
-Export select instance data to JSON file:
-
-```bash
-# export only collections, metadata, and roles
-kfutil export --collections --metadata --roles --file <path to JSON file>
-```
-
-Export all exportable instance data to JSON file:
-
-```bash
-kfutil export --all --file <path to JSON file>
-```
-
-### Import Instance Data
-
-For full documentation, see [import](docs/kfutil_import.md).
-
-Import select instance data from exported JSON file:
-
-```bash
-# export only collections, metadata, and roles
-kfutil import --collections --metadata --roles --file <path to JSON file>
-```
-
-Import all importable instance data from exported JSON file:
-
-```bash
-kfutil import --all --file <path to JSON file>
-```
-
 ## Development
 
 This CLI developed using [cobra](https://umarcor.github.io/cobra/)
@@ -449,3 +399,4 @@ alternatively you can specify the parent command
 ```bash
 cobra-cli add <my-new-command> -p '<parent>Cmd'
 ```
+
