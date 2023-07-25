@@ -120,6 +120,11 @@ func init() {
 		noPrompt     bool
 		experimental bool
 		debug        bool
+		username     string
+		hostname     string
+		password     string
+		domain       string
+		apiPath      string
 	)
 
 	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "", "", fmt.Sprintf("Full path to config file in JSON format. (default is $HOME/.keyfactor/%s)", DefaultConfigFileName))
@@ -127,6 +132,12 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&experimental, "exp", false, "Enable experimental features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)")
 	RootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging. (USE AT YOUR OWN RISK, this may log sensitive information to the console.)")
 	RootCmd.PersistentFlags().StringVarP(&profile, "profile", "", "", "Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.")
+
+	RootCmd.PersistentFlags().StringVarP(&username, "username", "", "", "Username to use for authenticating to Keyfactor Command.")
+	RootCmd.PersistentFlags().StringVarP(&hostname, "hostname", "", "", "Hostname to use for authenticating to Keyfactor Command.")
+	RootCmd.PersistentFlags().StringVarP(&password, "password", "", "", "Password to use for authenticating to Keyfactor Command. WARNING: Remember to delete your console history if providing password here in plain text.")
+	RootCmd.PersistentFlags().StringVarP(&domain, "domain", "", "", "Domain to use for authenticating to Keyfactor Command.")
+	RootCmd.PersistentFlags().StringVarP(&apiPath, "apiPath", "", "KeyfactorAPI", "API Path to use for authenticating to Keyfactor Command. (default is KeyfactorAPI)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
