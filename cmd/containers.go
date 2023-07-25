@@ -55,6 +55,12 @@ var containersGetCmd = &cobra.Command{
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
 		isExperimental := true
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -65,7 +71,7 @@ var containersGetCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id := cmd.Flag("id").Value.String()
-		kfClient, _ := initClient(configFile, profile, noPrompt, false)
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 		agents, aErr := kfClient.GetStoreContainer(id)
 		if aErr != nil {
 			fmt.Printf("Error, unable to get container %s. %s\n", id, aErr)
@@ -135,6 +141,12 @@ var containersListCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -146,7 +158,7 @@ var containersListCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 
-		kfClient, _ := initClient(configFile, profile, noPrompt, false)
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 		agents, aErr := kfClient.GetStoreContainers()
 		if aErr != nil {
 			fmt.Printf("Error, unable to list store containers. %s\n", aErr)

@@ -25,7 +25,7 @@ var xKeyfactorRequestedWith = "APIClient"
 var xKeyfactorApiVersion = "1"
 var defaultAPIPath = "KeyfactorAPI"
 
-func initClient(flagConfig string, flagProfile string, noPrompt bool, saveConfig bool) (*api.Client, error) {
+func initClient(flagConfig string, flagProfile string, noPrompt bool, authConfig *api.AuthConfig, saveConfig bool) (*api.Client, error) {
 	var clientAuth api.AuthConfig
 
 	var commandConfig ConfigurationFile
@@ -38,6 +38,33 @@ func initClient(flagConfig string, flagProfile string, noPrompt bool, saveConfig
 
 	if flagProfile == "" {
 		flagProfile = "default"
+	}
+
+	//Params from authConfig take precedence over everything else
+	if authConfig != nil {
+		// replace commandConfig with authConfig params that aren't null or empty
+		configEntry := commandConfig.Servers[flagProfile]
+		if authConfig.Hostname != "" {
+			configEntry.Hostname = authConfig.Hostname
+		}
+		if authConfig.Username != "" {
+			configEntry.Username = authConfig.Username
+		}
+		if authConfig.Password != "" {
+			configEntry.Password = authConfig.Password
+		}
+		if authConfig.Domain != "" {
+			configEntry.Domain = authConfig.Domain
+		} else if authConfig.Username != "" {
+			tDomain := getDomainFromUsername(authConfig.Username)
+			if tDomain != "" {
+				configEntry.Domain = tDomain
+			}
+		}
+		if authConfig.APIPath != "" {
+			configEntry.APIPath = authConfig.APIPath
+		}
+		commandConfig.Servers[flagProfile] = configEntry
 	}
 
 	if !validConfigFileEntry(commandConfig, flagProfile) {
@@ -137,7 +164,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&hostname, "hostname", "", "", "Hostname to use for authenticating to Keyfactor Command.")
 	RootCmd.PersistentFlags().StringVarP(&password, "password", "", "", "Password to use for authenticating to Keyfactor Command. WARNING: Remember to delete your console history if providing password here in plain text.")
 	RootCmd.PersistentFlags().StringVarP(&domain, "domain", "", "", "Domain to use for authenticating to Keyfactor Command.")
-	RootCmd.PersistentFlags().StringVarP(&apiPath, "apiPath", "", "KeyfactorAPI", "API Path to use for authenticating to Keyfactor Command. (default is KeyfactorAPI)")
+	RootCmd.PersistentFlags().StringVarP(&apiPath, "api-path", "", "KeyfactorAPI", "API Path to use for authenticating to Keyfactor Command. (default is KeyfactorAPI)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

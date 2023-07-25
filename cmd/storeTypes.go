@@ -66,6 +66,12 @@ var storesTypesListCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -76,7 +82,7 @@ var storesTypesListCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(configFile, profile, noPrompt, false)
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
 		if err != nil {
 			log.Printf("Error: %s", err)
@@ -105,6 +111,12 @@ var storesTypeGetCmd = &cobra.Command{
 		genericFormat, _ := cmd.Flags().GetBool("generic")
 		outputFormat, _ := cmd.Flags().GetString("format")
 		gitRef, _ := cmd.Flags().GetString("git-ref")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		if gitRef == "" {
 			gitRef = "main"
 		}
@@ -125,7 +137,7 @@ var storesTypeGetCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id, _ := cmd.Flags().GetInt("id")
 		name, _ := cmd.Flags().GetString("name")
-		kfClient, _ := initClient(configFile, profile, noPrompt, false)
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 		var st interface{}
 		// Check inputs
 		if id < 0 && name == "" {
@@ -258,6 +270,12 @@ var storesTypeCreateCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		gitRef, _ := cmd.Flags().GetString("git-ref")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		if gitRef == "" {
 			gitRef = "main"
 		}
@@ -275,7 +293,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			gitRef = "main"
 		}
 
-		kfClient, _ := initClient(configFile, profile, noPrompt, false)
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 
 		storeTypeIsValid := false
 
@@ -325,7 +343,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			}
 			log.Fatalf("Error: Invalid store type: %s", storeType)
 		} else {
-			kfClient, _ := initClient(configFile, profile, noPrompt, false)
+			//kfClient, _ := initClient(configFile, profile, noPrompt, authConfig,false) //TODO: why is this here?
 			storeTypeConfig, stErr := readStoreTypesConfig("", gitRef)
 			if stErr != nil {
 				fmt.Printf("Error: %s", stErr)
@@ -391,9 +409,9 @@ var storesTypeUpdateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
+		//configFile, _ := cmd.Flags().GetString("config")
+		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		//profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
 		isExperimental := true
 
@@ -407,7 +425,7 @@ var storesTypeUpdateCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		fmt.Println("update called")
 
-		_, _ = initClient(configFile, profile, noPrompt, false)
+		//_, _ = initClient(configFile, profile, noPrompt, false)
 
 	},
 }
@@ -425,6 +443,12 @@ var storesTypeDeleteCmd = &cobra.Command{
 		expEnabled, _ := cmd.Flags().GetBool("exp")
 		storeType, _ := cmd.Flags().GetString("name")
 		gitRef, _ := cmd.Flags().GetString("git-ref")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		if gitRef == "" {
 			gitRef = "main"
 		}
@@ -440,7 +464,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id, _ := cmd.Flags().GetInt("id")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		kfClient, _ := initClient(configFile, profile, noPrompt, false)
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 		var st interface{}
 
 		var validStoreTypes []string
