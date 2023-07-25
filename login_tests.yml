@@ -1,0 +1,271 @@
+---
+- name: "Login via environmentals only."
+  description: >
+    This is a test to see if we can login via environmentals only. This should also create a config file in the
+    default location.
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt
+    - cat $HOME/.keyfactor/command_config.json
+  variables:
+    KEYFACTOR_USERNAME: "{{username}}"
+    KEYFACTOR_PASSWORD: "{{password}}"
+    KEYFACTOR_API_PATH: "{{api_path}}"
+    KEYFACTOR_HOSTNAME: "{{hostname}}"
+    KEYFACTOR_DOMAIN: "{{domain}}"
+- name: "Login via config file only."
+  description: >
+    This is a test to see if we can login via config file only with no environmental variables set.
+  expect:
+    - "Login successful!"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt
+  variables:
+    KFUTIL_CONFIG_FILE: "{{config_file}}"
+- name: "Login via invalid credentials in config file only."
+  description: >
+    This is a test to see if we fail to login via config file only. The config file should exist and be in
+    a valid format but the credentials should be invalid. We expect the login to fail.
+  expect:
+    - "Login failed. Please check your credentials and try again."
+  pass_if:
+    - "exit_code != 0"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt
+  variables:
+    KFUTIL_CONFIG_FILE: "{{invalid_creds_config_file}}"
+- name: "Login via valid v0 (singleton) config file format only. Config file ref in environmental variable."
+  description: >
+    This is a test to see if we fail to login via config file only. The config file should exist and be in
+    a valid v0(singleton) format, the credentials should be valid. We expect the login to succeed. The config
+    file reference is passed in via an environmental variable.
+  expect:
+    - "Login successful!"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt
+  variables:
+    KFUTIL_CONFIG_FILE: "{{v0_creds_config_file}}"
+- name: "Login via valid v0 (singleton) config file format only. Explicit config file ref."
+  description: >
+    This is a test to see if we login via valid config file passed explicitly to the --config-file flag.
+    The config file should exist and be in a valid v0(singleton) format, the credentials should be valid.
+    We expect the login to succeed.
+  expect:
+    - "Login successful!"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt --config-file "{{v0_creds_config_file}}"
+- name: "Login via invalid v0 (singleton) config file format only. Explicit config file ref."
+  description: >
+    This is a test to see if we login via valid config file passed explicitly to the --config-file flag.
+    The config file should exist and be in a valid v0(singleton) format, the credentials should be invalid.
+    We expect the login to fail.
+  expect:
+    - "Login failed. Please check your credentials and try again."
+  pass_if:
+    - "exit_code != 0"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt --config-file "{{v0_invalid_creds_config_file}}"
+- name: "Login where invalid environmental variables take precedence over valid config file."
+  expect:
+    - "Login failed. Please check your credentials and try again."
+  pass_if:
+    - "exit_code != 0"
+  description: >
+    This is a test to see if we fail to login with invalid environmental variables and a valid config file present.
+    In this case we expect the environmental variables to take precedence as we have not specified the --config-file
+    or --profile flags. The environmental variable for username is invalid and should not allow us to login.
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt
+  variables:
+    KFUTIL_CONFIG_FILE: "{{config_file}}"
+    KEYFACTOR_USERNAME: "{{invalid_username}}"
+    KEYFACTOR_PASSWORD: "{{password}}"
+    KEYFACTOR_API_PATH: "{{api_path}}"
+    KEYFACTOR_HOSTNAME: "{{hostname}}"
+    KEYFACTOR_DOMAIN: "{{domain}}"
+- name: "Login where environmental variables take precedence over invalid config file."
+  expect:
+    - "Login successful!"
+  description: >
+    This is a test to see if we can login via environmental variables with an invalid config present. In this case
+    we expect the environmental variables to take precedence as we have not specified the --config-file or
+    --profile flags. The environmental variables are valid and should allow us to login.
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt
+  variables:
+    KFUTIL_CONFIG_FILE: "{{invalid_config_file}}"
+    KEYFACTOR_USERNAME: "{{invalid_username}}"
+    KEYFACTOR_PASSWORD: "{{password}}"
+    KEYFACTOR_API_PATH: "{{api_path}}"
+    KEYFACTOR_HOSTNAME: "{{hostname}}"
+    KEYFACTOR_DOMAIN: "{{domain}}"
+- name: "Login without any configuration present."
+  description: >
+    This is a test to ensure login fails when no configuration is present. We expect the login to fail.
+  expect:
+    - "Login failed. Please check your credentials and try again."
+  pass_if:
+    - "exit_code != 0"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt
+
+- name: "Login with invalid JSON config implicit."
+  description: >
+    This is a test to ensure login fails when the config file is not valid JSON. We expect the login to fail.
+  expect:
+    - "Login failed. Config is not valid JSON."
+  pass_if:
+    - "exit_code != 0"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt
+- name: "Login with invalid JSON config explicit."
+  description: >
+    This is a test to ensure login fails when the config file is not valid JSON. We expect the login to fail.
+  expect:
+    - "Login failed. Config is not valid JSON."
+  pass_if:
+    - "exit_code != 0"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt --config-file "{{invalid_json_config_file}}"
+
+- name: "Login with invalid config path explicit."
+  description: >
+    This is a test to ensure login fails when the config file is not found. We expect the login to fail.
+  expect:
+    - "Login failed. Config file not found and no evironmental variables defined."
+  pass_if:
+    - "exit_code != 0"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt --config-file "{{invalid_config_file_path}}"
+
+- name: "Login with invalid config path implicit."
+  description: >
+    This is a test to ensure login fails when the config file is implicitly passed with an invalid path
+    via KFUTIL_CONFIG_FILE and is not found. We expect the login to fail.
+  expect:
+    - "Login failed. Config file not found."
+  pass_if:
+    - "exit_code != 0"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt
+  variables:
+    KFUTIL_CONFIG_FILE: "{{invalid_config_file_path}}"
+
+- name: "Login via valid v1 config file format only. Config file ref in environmental variable. Implicit profile (default)."
+  description: >
+    This is a test to see if we fail to login via config file only. The config file should exist and be in
+    a valid v1 format, the credential in 'default' should be present and valid. We expect the login to succeed.
+    The config file reference is passed in via an environmental variable.
+  expect:
+    - "Login successful!"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt
+  variables:
+    KFUTIL_CONFIG_FILE: "{{v1_creds_config_file}}"
+
+- name: "Login via valid v1 config file format only. Config file and profile refs in environmental variables."
+  description: >
+    This is a test to see if we fail to login via config file only. The config file should exist and be in
+    a valid v1 format, the credential in 'default' should be present and valid. We expect the login to succeed.
+    The config file reference and profile are passed in via an environmental variables KFUTIL_CONFIG_FILE and
+    KFUTIL_PROFILE respectively.
+  expect:
+    - "Login successful!"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt
+  variables:
+    KFUTIL_CONFIG_FILE: "{{v1_creds_config_file}}"
+    KFUTIL_PROFILE: "{{v1_creds_profile}}"
+- name: "Login via valid v1 config file format only. Config file and profile refs explicitly passed."
+  description: >
+    This is a test to see if we fail to login via config file only. The config file should exist and be in
+    a valid v1 format, the credential in 'default' should be present and valid. We expect the login to succeed.
+    The config file reference and profile are passed in via an environmental variables KFUTIL_CONFIG_FILE and
+    KFUTIL_PROFILE respectively.
+  expect:
+    - "Login successful!"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt --config-file "{{v1_creds_config_file}}" --profile "{{v1_creds_profile}}"
+
+- name: "Login via valid v1 config file format only. Config file ref in environmental variable. Explicit profile."
+   description: >
+      This is a test to see if we fail to login via config file only. The config file should exist and be in
+      a valid v1 format, the credential in 'default' should be present and valid. We expect the login to succeed.
+      The config file reference is passed in via an environmental variable.
+    expect:
+      - "Login successful!"
+    script:
+      - kfutil logout
+      - kfutil login --no-prompt --profile "{{v1_creds_profile}}"
+    variables:
+      KFUTIL_CONFIG_FILE: "{{v1_creds_config_file}}"
+
+- name: "Login via valid v1 config file format only. Config file ref in environmental variable. Invalid explicit profile."
+  description: >
+    This is a test to see if we fail to login via config file only. The config file should exist and be in
+    a valid v1 format, the credential in 'default' should be present and valid. We expect the login to fail.
+    The config file reference is passed in via an environmental variable and profile is passed in via the
+    --profile flag but is not present in the config file.
+  expect:
+    - "Login failed. Profile not found."
+  pass_if:
+    - "exit_code != 0"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt --profile "{{invalid_profile}}"
+  variables:
+    KFUTIL_CONFIG_FILE: "{{v1_creds_config_file}}"
+- name: "Login via valid environmental variables. Config file implicit. Invalid explicit profile."
+  description: >
+    This is a test to see if we can login via valid environmental variables with an invalid profile passed in
+    --profile. A valid config file should exist and be in a valid v1 format and be in the kfutil default config file,
+    path. The defined profile should not be present in the config. We expect the login to fail as --profile is passed
+    and should not use the environmental variables.
+  expect:
+    - "Login failed. Profile not found."
+  pass_if:
+    - "exit_code != 0"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt --profile "{{invalid_profile}}"
+  variables:
+    KEYFACTOR_USERNAME: "{{username}}"
+    KEYFACTOR_PASSWORD: "{{password}}"
+    KEYFACTOR_API_PATH: "{{api_path}}"
+    KEYFACTOR_HOSTNAME: "{{hostname}}"
+    KEYFACTOR_DOMAIN: "{{domain}}"
+- name: "Login via valid environmental variables. Config file implicit. Invalid implicit profile in KFUTIL_PROFILE."
+  description: >
+    This is a test to see if we can login via valid environmental variables with an invalid profile passed in
+    KFUTIL_PROFILE. A valid config file should exist and be in a valid v1 format and be in the kfutil default config file,
+    path. The defined profile should not be present in the config. We expect the login to fail as --profile is passed
+    and should not use the environmental variables.
+  expect:
+    - "Login failed. Profile not found."
+  pass_if:
+    - "exit_code != 0"
+  script:
+    - kfutil logout
+    - kfutil login --no-prompt --config-file "{{v1_creds_config_file}}"
+  variables:
+    KEYFACTOR_USERNAME: "{{username}}"
+    KEYFACTOR_PASSWORD: "{{password}}"
+    KEYFACTOR_API_PATH: "{{api_path}}"
+    KEYFACTOR_HOSTNAME: "{{hostname}}"
+    KEYFACTOR_DOMAIN: "{{domain}}"
+    KFUTIL_PROFILE: "{{invalid_profile}}"
