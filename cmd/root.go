@@ -23,15 +23,34 @@ var colorWhite = "\033[37m"
 
 var xKeyfactorRequestedWith = "APIClient"
 var xKeyfactorApiVersion = "1"
+var defaultAPIPath = "KeyfactorAPI"
 
-func initClient(flagConfig string, flagProfile string, noPrompt bool) (*api.Client, error) {
+func initClient(flagConfig string, flagProfile string, noPrompt bool, saveConfig bool) (*api.Client, error) {
 	var clientAuth api.AuthConfig
 
-	commandConfig, _ := authConfigFile(flagConfig, noPrompt, flagProfile)
+	var commandConfig ConfigurationFile
+
+	commandConfig, _ = authEnvVars(flagConfig, "", saveConfig)
+
+	if flagConfig != "" || !validConfigFileEntry(commandConfig, flagProfile) {
+		commandConfig, _ = authConfigFile(flagConfig, flagProfile, noPrompt, saveConfig)
+	}
 
 	if flagProfile == "" {
 		flagProfile = "default"
 	}
+
+	if !validConfigFileEntry(commandConfig, flagProfile) {
+		if !noPrompt {
+			// Auth user interactively
+			authConfigEntry := commandConfig.Servers[flagProfile]
+			commandConfig, _ = authInteractive(authConfigEntry.Hostname, authConfigEntry.Username, authConfigEntry.Password, authConfigEntry.Domain, authConfigEntry.APIPath, flagProfile, false, false, flagConfig)
+		} else {
+			log.Fatalf("[ERROR] auth config profile: %s", flagProfile)
+			return nil, fmt.Errorf("auth config profile: %s", flagProfile)
+		}
+	}
+
 	clientAuth.Username = commandConfig.Servers[flagProfile].Username
 	clientAuth.Password = commandConfig.Servers[flagProfile].Password
 	clientAuth.Domain = commandConfig.Servers[flagProfile].Domain
@@ -49,10 +68,10 @@ func initClient(flagConfig string, flagProfile string, noPrompt bool) (*api.Clie
 }
 
 func initGenClient(profile string) *keyfactor.APIClient {
-	configs, authErr := authConfigFile("", true, profile)
 	if profile == "" {
 		profile = "default"
 	}
+	configs, authErr := authConfigFile("", profile, false, false)
 	cmdConfig := configs.Servers[profile]
 
 	if authErr != nil {
@@ -101,6 +120,11 @@ func init() {
 		noPrompt     bool
 		experimental bool
 		debug        bool
+		username     string
+		hostname     string
+		password     string
+		domain       string
+		apiPath      string
 	)
 
 	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "", "", fmt.Sprintf("Full path to config file in JSON format. (default is $HOME/.keyfactor/%s)", DefaultConfigFileName))
@@ -108,6 +132,12 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&experimental, "exp", false, "Enable experimental features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)")
 	RootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging. (USE AT YOUR OWN RISK, this may log sensitive information to the console.)")
 	RootCmd.PersistentFlags().StringVarP(&profile, "profile", "", "", "Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.")
+
+	RootCmd.PersistentFlags().StringVarP(&username, "username", "", "", "Username to use for authenticating to Keyfactor Command.")
+	RootCmd.PersistentFlags().StringVarP(&hostname, "hostname", "", "", "Hostname to use for authenticating to Keyfactor Command.")
+	RootCmd.PersistentFlags().StringVarP(&password, "password", "", "", "Password to use for authenticating to Keyfactor Command. WARNING: Remember to delete your console history if providing password here in plain text.")
+	RootCmd.PersistentFlags().StringVarP(&domain, "domain", "", "", "Domain to use for authenticating to Keyfactor Command.")
+	RootCmd.PersistentFlags().StringVarP(&apiPath, "apiPath", "", "KeyfactorAPI", "API Path to use for authenticating to Keyfactor Command. (default is KeyfactorAPI)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
