@@ -9,7 +9,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/api"
+	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
@@ -608,4 +608,15 @@ func loadConfigurationFile(filePath string, silent bool) (ConfigurationFile, err
 	}
 
 	return data, nil
+}
+
+func createAuthConfigFromParams(hostname string, username string, password string, domain string, apiPath string) *api.AuthConfig {
+	output := api.AuthConfig{
+		Hostname: hostname,
+		Username: username,
+		Password: password,
+		Domain:   domain,
+		APIPath:  apiPath,
+	}
+	return &output
 }

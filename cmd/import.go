@@ -35,6 +35,12 @@ var importCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -61,7 +67,7 @@ var importCmd = &cobra.Command{
 			log.Fatalf("Error: %s", jErr)
 		}
 		kfClient := initGenClient(profile)
-		oldkfClient, _ := initClient(configFile, profile, noPrompt, false)
+		oldkfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 		if cmd.Flag("all").Value.String() == "true" {
 			importCollections(out.Collections, kfClient)
 			importMetadataFields(out.MetadataFields, kfClient)

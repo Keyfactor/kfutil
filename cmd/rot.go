@@ -391,11 +391,17 @@ kfutil stores rot reconcile --import-csv <audit-file>
 			configFile, _ := cmd.Flags().GetString("config")
 			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 			profile, _ := cmd.Flags().GetString("profile")
+			kfcHostName, _ := cmd.Flags().GetString("hostname")
+			kfcUsername, _ := cmd.Flags().GetString("username")
+			kfcPassword, _ := cmd.Flags().GetString("password")
+			kfcDomain, _ := cmd.Flags().GetString("domain")
+			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 
 			debugModeEnabled := checkDebug(debugFlag)
 			log.Println("Debug mode enabled: ", debugModeEnabled)
 			var lookupFailures []string
-			kfClient, _ := initClient(configFile, profile, noPrompt, false)
+			kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 			storesFile, _ := cmd.Flags().GetString("stores")
 			addRootsFile, _ := cmd.Flags().GetString("add-certs")
 			removeRootsFile, _ := cmd.Flags().GetString("remove-certs")
@@ -550,13 +556,19 @@ the utility will first generate an audit report and then execute the add/remove 
 			configFile, _ := cmd.Flags().GetString("config")
 			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 			profile, _ := cmd.Flags().GetString("profile")
+			kfcHostName, _ := cmd.Flags().GetString("hostname")
+			kfcUsername, _ := cmd.Flags().GetString("username")
+			kfcPassword, _ := cmd.Flags().GetString("password")
+			kfcDomain, _ := cmd.Flags().GetString("domain")
+			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 
 			debugModeEnabled := checkDebug(debugFlag)
 
 			log.Println("Debug mode enabled: ", debugModeEnabled)
 
 			var lookupFailures []string
-			kfClient, _ := initClient(configFile, profile, noPrompt, false)
+			kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 			storesFile, _ := cmd.Flags().GetString("stores")
 			addRootsFile, _ := cmd.Flags().GetString("add-certs")
 			isCSV, _ := cmd.Flags().GetBool("import-csv")
@@ -852,6 +864,12 @@ the utility will first generate an audit report and then execute the add/remove 
 			configFile, _ := cmd.Flags().GetString("config")
 			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 			profile, _ := cmd.Flags().GetString("profile")
+			kfcHostName, _ := cmd.Flags().GetString("hostname")
+			kfcUsername, _ := cmd.Flags().GetString("username")
+			kfcPassword, _ := cmd.Flags().GetString("password")
+			kfcDomain, _ := cmd.Flags().GetString("domain")
+			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 
 			debugModeEnabled := checkDebug(debugFlag)
 			log.Println("Debug mode enabled: ", debugModeEnabled)
@@ -868,7 +886,7 @@ the utility will first generate an audit report and then execute the add/remove 
 			var csvStoreData [][]string
 			var csvCertData [][]string
 			var rowLookup = make(map[string]bool)
-			kfClient, cErr := initClient(configFile, profile, noPrompt, false)
+			kfClient, cErr := initClient(configFile, profile, noPrompt, authConfig, false)
 			if len(storeType) != 0 {
 				for _, s := range storeType {
 					if cErr != nil {

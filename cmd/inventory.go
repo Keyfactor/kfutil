@@ -48,6 +48,12 @@ var inventoryClearCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -67,7 +73,7 @@ var inventoryClearCmd = &cobra.Command{
 		containerType, _ := cmd.Flags().GetStringSlice("container")
 		allStores, _ := cmd.Flags().GetBool("all")
 
-		kfClient, _ := initClient(configFile, profile, noPrompt, false)
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 
 		if storeID == nil && machineName == nil && storeType == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -205,6 +211,12 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -237,7 +249,7 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 			log.Fatalf("At least one certificate must be specified")
 		}
 
-		kfClient, _ := initClient(configFile, profile, noPrompt, false)
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 
 		if storeIDs == nil && machineNames == nil && storeTypes == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -375,6 +387,12 @@ var inventoryRemoveCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -407,7 +425,7 @@ var inventoryRemoveCmd = &cobra.Command{
 			log.Fatalf("At least one certificate must be specified")
 		}
 
-		kfClient, _ := initClient(configFile, profile, noPrompt, false)
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 
 		if storeIDs == nil && machineNames == nil && storeTypes == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -562,6 +580,12 @@ var inventoryShowCmd = &cobra.Command{
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -577,7 +601,7 @@ var inventoryShowCmd = &cobra.Command{
 		storeTypes, _ := cmd.Flags().GetStringSlice("store-type")
 		containers, _ := cmd.Flags().GetStringSlice("container")
 
-		kfClient, _ := initClient(configFile, profile, noPrompt, false)
+		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 
 		if len(storeIDs) == 0 && len(clientMachineNames) == 0 && len(storeTypes) == 0 && len(containers) == 0 {
 			fmt.Println("No filters specified. Unable to show inventory. Please specify at least one filter: [--sid, --client, --store-type, --container]")
