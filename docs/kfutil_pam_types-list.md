@@ -1,10 +1,10 @@
 ## kfutil pam types-list
 
-List defined PAM Provider types.
+Returns a list of all available PAM provider types.
 
 ### Synopsis
 
-List defined PAM Provider types.
+Returns a list of all available PAM provider types.
 
 ```
 kfutil pam types-list [flags]

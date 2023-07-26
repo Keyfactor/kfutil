@@ -1,10 +1,10 @@
 ## kfutil pam list
 
-List defined PAM Providers.
+Returns a list of all the configured PAM providers.
 
 ### Synopsis
 
-List defined PAM Providers.
+Returns a list of all the configured PAM providers.
 
 ```
 kfutil pam list [flags]

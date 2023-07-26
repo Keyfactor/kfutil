@@ -1,10 +1,10 @@
 ## kfutil pam update
 
-Update an existing PAM Provider, currently only supported from file.
+Updates an existing PAM Provider, currently only supported from file.
 
 ### Synopsis
 
-Update an existing PAM Provider, currently only supported from file.
+Updates an existing PAM Provider, currently only supported from file.
 
 ```
 kfutil pam update [flags]
