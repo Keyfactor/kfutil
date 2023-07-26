@@ -1,3 +1,8 @@
+# v1.1.0
+
+Additional Supported CLIs:
+- `pam`: [kfutil pam](docs/kfutil_pam.md)
+
 # v1.0.0
 
 ## Overview

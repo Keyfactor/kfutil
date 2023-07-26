@@ -7,18 +7,20 @@
 package main
 
 import (
+	"flag"
 	"github.com/spf13/cobra/doc"
 	"kfutil/cmd"
+	"os"
 )
 
 func main() {
-	//var docsFlag bool
-	//flag.BoolVar(&docsFlag, "makedocs", false, "Create markdown docs.")
-	//flag.Parse()
-	//if docsFlag {
-	//	docs()
-	//	os.Exit(0)
-	//}
+	var docsFlag bool
+	flag.BoolVar(&docsFlag, "makedocs", false, "Create markdown docs.")
+	flag.Parse()
+	if docsFlag {
+		docs()
+		os.Exit(0)
+	}
 	cmd.Execute()
 }
 

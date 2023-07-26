@@ -62,7 +62,9 @@ For full documentation on the `login` command, see the [login](docs/kfutil_login
 
 *WARNING* - The `login` command will store your Keyfactor credentials in a file on your local machine. This file is not
 encrypted and is not secure. It is recommended that you use the `login` command only on your local machine and not on a
-shared machine. Instead of using the `login` command, you can set the environmental variables listed above.
+shared machine. Instead of using the `login` command, you can set the environmental variables listed above. **You may also
+choose to use login and provide an empty password, in this mode you will be prompted for your password each time you run
+a command.**
 
 ```bash
 kfutil login

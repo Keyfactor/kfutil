@@ -27,21 +27,29 @@ type JsonImportableObject interface {
 var pamCmd = &cobra.Command{
 	Use:   "pam",
 	Short: "Keyfactor PAM Provider APIs.",
-	Long:  `A collections of APIs for interacting with Keyfactor PAM Providers and creating new PAM Provider types.`,
+	Long: `Privileged Access Management (PAM) functionality in Keyfactor Web APIs allows for configuration of third 
+party PAM providers to secure certificate stores. The PAM component of the Keyfactor API includes methods necessary to 
+programmatically create, delete, edit, and list PAM Providers.`,
 }
 
 var pamTypesListCmd = &cobra.Command{
 	Use:   "types-list",
-	Short: "List defined PAM Provider types.",
-	Long:  "List defined PAM Provider types.",
+	Short: "Returns a list of all available PAM provider types.",
+	Long:  "Returns a list of all available PAM provider types.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -52,7 +60,7 @@ var pamTypesListCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 
-		sdkClient := initGenClient(profile)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 		pamTypes, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderGetPamProviderTypes(context.Background()).
 			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
 			Execute()
@@ -71,16 +79,26 @@ var pamTypesListCmd = &cobra.Command{
 
 var pamTypesCreateCmd = &cobra.Command{
 	Use:   "types-create",
-	Short: "Create a new PAM Provider type, currently only supported from file.",
-	Long:  "Create a new PAM Provider type, currently only supported from file.",
+	Short: "Creates a new PAM provider type.",
+	Long: `Creates a new PAM Provider type, currently only supported from JSON file and from GitHub. To install from 
+Github. To install from GitHub, use the --repo flag to specify the GitHub repository and optionally the branch to use. 
+NOTE: the file from Github must be named integration-manifest.json and must use the same schema as 
+https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.json. To install from a local file, use
+--from-file to specify the path to the JSON file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -90,7 +108,7 @@ var pamTypesCreateCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		sdkClient := initGenClient(profile)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 		pamConfigFile, _ := cmd.Flags().GetString("from-file")
 		providerName, _ := cmd.Flags().GetString("name")
 		repoName, _ := cmd.Flags().GetString("repo")
@@ -138,16 +156,23 @@ var pamTypesCreateCmd = &cobra.Command{
 
 var pamProvidersListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List defined PAM Providers.",
-	Long:  "List defined PAM Providers.",
+	Short: "Returns a list of all the configured PAM providers.",
+	Long:  "Returns a list of all the configured PAM providers.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -157,7 +182,7 @@ var pamProvidersListCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		sdkClient := initGenClient(profile)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 		pamProviders, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderGetPamProviders(context.Background()).
 			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
 			Execute()
@@ -173,6 +198,7 @@ var pamProvidersListCmd = &cobra.Command{
 		fmt.Printf("%s", jsonString)
 	},
 }
+
 var pamProvidersGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get a specific defined PAM Provider by ID.",
@@ -180,11 +206,17 @@ var pamProvidersGetCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -194,7 +226,7 @@ var pamProvidersGetCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		sdkClient := initGenClient(profile)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 		pamProviderId, _ := cmd.Flags().GetInt32("id")
 		// pamProviderName := cmd.Flags().GetString("name")
 
@@ -221,11 +253,17 @@ var pamProvidersCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -235,7 +273,7 @@ var pamProvidersCreateCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		sdkClient := initGenClient(profile)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 		pamConfigFile, _ := cmd.Flags().GetString("from-file")
 
 		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
@@ -265,16 +303,22 @@ var pamProvidersCreateCmd = &cobra.Command{
 
 var pamProvidersUpdateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update an existing PAM Provider, currently only supported from file.",
-	Long:  "Update an existing PAM Provider, currently only supported from file.",
+	Short: "Updates an existing PAM Provider, currently only supported from file.",
+	Long:  "Updates an existing PAM Provider, currently only supported from file.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -284,7 +328,7 @@ var pamProvidersUpdateCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		sdkClient := initGenClient(profile)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 		pamConfigFile, _ := cmd.Flags().GetString("from-file")
 
 		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
@@ -319,11 +363,17 @@ var pamProvidersDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		configFile, _ := cmd.Flags().GetString("config")
+		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		isExperimental := true
+		kfcHostName, _ := cmd.Flags().GetString("hostname")
+		kfcUsername, _ := cmd.Flags().GetString("username")
+		kfcPassword, _ := cmd.Flags().GetString("password")
+		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -333,7 +383,7 @@ var pamProvidersDeleteCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		sdkClient := initGenClient(profile)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 		pamProviderId, _ := cmd.Flags().GetInt32("id")
 		// pamProviderName := cmd.Flags().GetString("name")
 
