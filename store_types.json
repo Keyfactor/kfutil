@@ -1,120 +1,5 @@
 [
   {
-    "Name": "A10vThunder",
-    "ShortName": "vThunderU",
-    "Capability": "vThunderU",
-    "SupportedOperations": {
-      "Add": true,
-      "Create": false,
-      "Discovery": false,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "Properties": [
-      {
-        "Name": "protocol",
-        "DisplayName": "Protocol",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
-      },
-      {
-        "Name": "allowInvalidCert",
-        "DisplayName": "Allow Invalid Cert",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "false",
-        "Required": true
-      }
-    ],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "",
-    "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": true,
-    "CustomAliasAllowed": "Required"
-  },
-  {
-    "Name": "Amazon Web Services",
-    "ShortName": "AWS",
-    "Capability": "AWS",
-    "SupportedOperations": {
-      "Add": true,
-      "Create": false,
-      "Discovery": false,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "Properties": [
-      {
-        "Name": "AccessKey",
-        "DisplayName": "Access Key",
-        "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
-      },
-      {
-        "Name": "SecretKey",
-        "DisplayName": "Secret Key",
-        "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
-      }
-    ],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "[\"AP Northeast 1\", \"AP Northeast 2\", \"AP South 1\", \"AP Southeast 1\", \"AP Southeast 2\", \"CA Central 1\", \"EU Central 1\", \"EU West 1\", \"EU West 2\", \"EU West 3\", \"SA East 1\", \"US East 1\", \"US East 2\", \"US West 1\", \"US West 2\"]",
-    "PrivateKeyAllowed": "Required",
-    "JobProperties": [],
-    "ServerRequired": false,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden"
-  },
-  {
-    "Name": "F5SSLProfiles",
-    "ShortName": "F5",
-    "Capability": "F5",
-    "SupportedOperations": {
-      "Add": true,
-      "Create": false,
-      "Discovery": false,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "Properties": [],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "",
-    "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Required"
-  },
-  {
     "Name": "F5WebServer",
     "ShortName": "F5",
     "Capability": "F5",
@@ -2065,5 +1950,250 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Required"
+  },
+  {
+    "Name": "RFJKS",
+    "ShortName": "RFJKS",
+    "Capability": "RFJKS",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
+  },
+  {
+    "Name": "RFPEM",
+    "ShortName": "RFPEM",
+    "Capability": "RFPEM",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "IsTrustStore",
+        "DisplayName": "Trust Store",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": false
+      },
+      {
+        "Name": "IncludesChain",
+        "DisplayName": "Store Includes Chain",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": false
+      },
+      {
+        "Name": "SeparatePrivateKeyFilePath",
+        "DisplayName": "Separate Private Key File Location",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "IsRSAPrivateKey",
+        "DisplayName": "Is RSA Private Key",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": false
+      }
+    ],
+    "EntryParameters": []
+  },
+  {
+    "Name": "RFPkcs12",
+    "ShortName": "RFPkcs12",
+    "Capability": "RFPkcs12",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
+  },
+  {
+    "Name": "RFDER",
+    "ShortName": "RFDER",
+    "Capability": "RFDER",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "SeparatePrivateKeyFilePath",
+        "DisplayName": "Separate Private Key File Location",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
+  },
+  {
+    "Name": "RFKDB",
+    "ShortName": "RFKDB",
+    "Capability": "RFKDB",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
   }
 ]
