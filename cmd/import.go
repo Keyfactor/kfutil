@@ -66,7 +66,7 @@ var importCmd = &cobra.Command{
 			fmt.Printf("Error reading exported file: %s\n", jErr)
 			log.Fatalf("Error: %s", jErr)
 		}
-		kfClient := initGenClient(profile)
+		kfClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 		oldkfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
 		if cmd.Flag("all").Value.String() == "true" {
 			importCollections(out.Collections, kfClient)
