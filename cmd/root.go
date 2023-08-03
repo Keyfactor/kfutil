@@ -94,27 +94,66 @@ func initClient(flagConfig string, flagProfile string, noPrompt bool, authConfig
 	return c, nil
 }
 
-func initGenClient(profile string) *keyfactor.APIClient {
-	if profile == "" {
-		profile = "default"
-	}
-	configs, authErr := authConfigFile("", profile, false, false)
-	cmdConfig := configs.Servers[profile]
+func initGenClient(flagConfig string, flagProfile string, noPrompt bool, authConfig *api.AuthConfig, saveConfig bool) (*keyfactor.APIClient, error) {
+	var commandConfig ConfigurationFile
 
-	if authErr != nil {
-		fmt.Printf("Error reading config file: %s\n", authErr)
-		log.Fatalf("[ERROR] reading config file: %s", authErr)
+	commandConfig, _ = authEnvVars(flagConfig, "", saveConfig)
+
+	if flagConfig != "" || !validConfigFileEntry(commandConfig, flagProfile) {
+		commandConfig, _ = authConfigFile(flagConfig, flagProfile, noPrompt, saveConfig)
+	}
+
+	if flagProfile == "" {
+		flagProfile = "default"
+	}
+
+	//Params from authConfig take precedence over everything else
+	if authConfig != nil {
+		// replace commandConfig with authConfig params that aren't null or empty
+		configEntry := commandConfig.Servers[flagProfile]
+		if authConfig.Hostname != "" {
+			configEntry.Hostname = authConfig.Hostname
+		}
+		if authConfig.Username != "" {
+			configEntry.Username = authConfig.Username
+		}
+		if authConfig.Password != "" {
+			configEntry.Password = authConfig.Password
+		}
+		if authConfig.Domain != "" {
+			configEntry.Domain = authConfig.Domain
+		} else if authConfig.Username != "" {
+			tDomain := getDomainFromUsername(authConfig.Username)
+			if tDomain != "" {
+				configEntry.Domain = tDomain
+			}
+		}
+		if authConfig.APIPath != "" {
+			configEntry.APIPath = authConfig.APIPath
+		}
+		commandConfig.Servers[flagProfile] = configEntry
+	}
+
+	if !validConfigFileEntry(commandConfig, flagProfile) {
+		if !noPrompt {
+			// Auth user interactively
+			authConfigEntry := commandConfig.Servers[flagProfile]
+			commandConfig, _ = authInteractive(authConfigEntry.Hostname, authConfigEntry.Username, authConfigEntry.Password, authConfigEntry.Domain, authConfigEntry.APIPath, flagProfile, false, false, flagConfig)
+		} else {
+			log.Fatalf("[ERROR] auth config profile: %s", flagProfile)
+			return nil, fmt.Errorf("auth config profile: %s", flagProfile)
+		}
 	}
 
 	sdkClientConfig := make(map[string]string)
-	sdkClientConfig["host"] = cmdConfig.Hostname
-	sdkClientConfig["username"] = cmdConfig.Username
-	sdkClientConfig["password"] = cmdConfig.Password
-	sdkClientConfig["domain"] = cmdConfig.Domain
+	sdkClientConfig["host"] = commandConfig.Servers[flagProfile].Hostname
+	sdkClientConfig["username"] = commandConfig.Servers[flagProfile].Username
+	sdkClientConfig["password"] = commandConfig.Servers[flagProfile].Password
+	sdkClientConfig["domain"] = commandConfig.Servers[flagProfile].Domain
 
 	configuration := keyfactor.NewConfiguration(sdkClientConfig)
 	c := keyfactor.NewAPIClient(configuration)
-	return c
+	return c, nil
 }
 
 // RootCmd represents the base command when called without any subcommands
