@@ -1,304 +1,5 @@
 [
   {
-    "Name": "GCPApigee",
-    "ShortName": "GcpApigee",
-    "Capability": "GcpApigee",
-    "SupportedOperations": {
-      "Add": true,
-      "Create": true,
-      "Discovery": false,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "Properties": [
-      {
-        "Name": "isTrustStore",
-        "DisplayName": "Is Trust Store?",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "false",
-        "Required": true
-      },
-      {
-        "Name": "jsonKey",
-        "DisplayName": "Google Json Key File",
-        "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": "",
-        "Required": true
-      }
-    ],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "",
-    "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
-    "ServerRequired": false,
-    "PowerShell": false,
-    "BlueprintAllowed": true,
-    "CustomAliasAllowed": "Required",
-    "ServerRegistration": 0
-  },
-  {
-    "Name": "IISRoots",
-    "ShortName": "IIS",
-    "Capability": "IIS",
-    "SupportedOperations": {
-      "Add": true,
-      "Create": false,
-      "Discovery": false,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "Properties": [
-      {
-        "Name": "UseSSL",
-        "DisplayName": "UseSSL",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "false",
-        "Required": true
-      }
-    ],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "IIS Trusted Roots",
-    "PrivateKeyAllowed": "Forbidden",
-    "JobProperties": [],
-    "ServerRequired": false,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden",
-    "ServerRegistration": 0
-  },
-  {
-    "Name": "IISPersonal",
-    "ShortName": "IIS",
-    "Capability": "IIS",
-    "SupportedOperations": {
-      "Add": true,
-      "Create": false,
-      "Discovery": false,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "Properties": [
-      {
-        "Name": "UseSSL",
-        "DisplayName": "UseSSL",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "false",
-        "Required": true
-      }
-    ],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "IIS Personal",
-    "PrivateKeyAllowed": "Required",
-    "JobProperties": [],
-    "ServerRequired": false,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Optional",
-    "ServerRegistration": 0
-  },
-  {
-    "Name": "IISRevoked",
-    "ShortName": "IIS",
-    "Capability": "IIS",
-    "SupportedOperations": {
-      "Add": true,
-      "Create": false,
-      "Discovery": false,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "Properties": [
-      {
-        "Name": "UseSSL",
-        "DisplayName": "UseSSL",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "false",
-        "Required": true
-      }
-    ],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "IIS Revoked",
-    "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
-    "ServerRequired": false,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden"
-  },
-  {
-    "Name": "IISWithBindings",
-    "ShortName": "IISWBin",
-    "Capability": "IISBindings",
-    "SupportedOperations": {
-      "Add": true,
-      "Create": false,
-      "Discovery": false,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "Properties": [
-      {
-        "Name": "spnwithport",
-        "DisplayName": "SPN With Port?",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "false",
-        "Required": false
-      },
-      {
-        "Name": "WinRm Protocol",
-        "DisplayName": "WinRm Protocol",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "http",
-        "Required": true
-      },
-      {
-        "Name": "WinRm Port",
-        "DisplayName": "WinRm Port",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": "5985",
-        "Required": true
-      }
-    ],
-    "EntryParameters": [
-      {
-        "Name": "Site Name",
-        "DisplayName": "Site Name",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": true,
-          "OnRemove": true,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "Default Web Site",
-        "Options": ""
-      },
-      {
-        "Name": "Port",
-        "DisplayName": "Port",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": true,
-          "OnRemove": true,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "443",
-        "Options": ""
-      },
-      {
-        "Name": "IP Address",
-        "DisplayName": "IP Address",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": true,
-          "OnRemove": true,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "*",
-        "Options": ""
-      },
-      {
-        "Name": "Host Name",
-        "DisplayName": "Host Name",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "",
-        "Options": ""
-      },
-      {
-        "Name": "Sni Flag",
-        "DisplayName": "Sni Flag",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "0 - No SNI",
-        "Options": ""
-      },
-      {
-        "Name": "Protocol",
-        "DisplayName": "Protocol",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": true,
-          "OnRemove": true,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "https",
-        "Options": ""
-      }
-    ],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "[\"My\",\"WebHosting\"]",
-    "PrivateKeyAllowed": "Required",
-    "JobProperties": [
-      "Site Name",
-      "Port",
-      "IP Address",
-      "Host Name",
-      "Sni Flag",
-      "Protocol"
-    ],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden"
-  },
-  {
     "Name": "JavaKeystore",
     "ShortName": "JKS",
     "Capability": "JKS",
@@ -2466,5 +2167,299 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Optional"
+  },
+  {
+    "Name": "RFJKS",
+    "ShortName": "RFJKS",
+    "Capability": "RFJKS",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
+  },
+  {
+    "Name": "RFPEM",
+    "ShortName": "RFPEM",
+    "Capability": "RFPEM",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "IsTrustStore",
+        "DisplayName": "Trust Store",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": false
+      },
+      {
+        "Name": "IncludesChain",
+        "DisplayName": "Store Includes Chain",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": false
+      },
+      {
+        "Name": "SeparatePrivateKeyFilePath",
+        "DisplayName": "Separate Private Key File Location",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "IsRSAPrivateKey",
+        "DisplayName": "Is RSA Private Key",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": false
+      }
+    ],
+    "EntryParameters": []
+  },
+  {
+    "Name": "RFPkcs12",
+    "ShortName": "RFPkcs12",
+    "Capability": "RFPkcs12",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
+  },
+  {
+    "Name": "RFDER",
+    "ShortName": "RFDER",
+    "Capability": "RFDER",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "SeparatePrivateKeyFilePath",
+        "DisplayName": "Separate Private Key File Location",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
+  },
+  {
+    "Name": "RFKDB",
+    "ShortName": "RFKDB",
+    "Capability": "RFKDB",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
+  },
+  {
+    "Name": "RFORA",
+    "ShortName": "RFORA",
+    "Capability": "RFORA",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [
+      {
+        "Name": "LinuxFilePermissionsOnStoreCreation",
+        "DisplayName": "Linux File Permissions on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "LinuxFileOwnerOnStoreCreation",
+        "DisplayName": "Linux File Owner on Store Creation",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      },
+      {
+        "Name": "WorkFolder",
+        "DisplayName": "Location to use for creation/removal of work files",
+        "Required": true,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": ""
+      }
+    ],
+    "EntryParameters": []
   }
 ]
