@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Keyfactor/keyfactor-go-client-sdk v1.0.1
-	github.com/Keyfactor/keyfactor-go-client/v2 v2.0.2-rc.4
+	github.com/Keyfactor/keyfactor-go-client/v2 v2.1.2
 	github.com/google/go-cmp v0.5.9
 	github.com/spf13/cobra v1.7.0
 	golang.org/x/crypto v0.11.0
@@ -21,7 +21,7 @@ require (
 	github.com/mattn/go-isatty v0.0.8 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/spbsoluble/go-pkcs12 v0.3.1 // indirect
+	github.com/spbsoluble/go-pkcs12 v0.3.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.mozilla.org/pkcs7 v0.0.0-20210826202110-33d05740a352 // indirect
 	golang.org/x/sys v0.10.0 // indirect
