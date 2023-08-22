@@ -71,7 +71,7 @@ var containersGetCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id := cmd.Flag("id").Value.String()
-		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 		agents, aErr := kfClient.GetStoreContainer(id)
 		if aErr != nil {
 			fmt.Printf("Error, unable to get container %s. %s\n", id, aErr)
@@ -158,7 +158,7 @@ var containersListCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 
-		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 		agents, aErr := kfClient.GetStoreContainers()
 		if aErr != nil {
 			fmt.Printf("Error, unable to list store containers. %s\n", aErr)

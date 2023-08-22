@@ -27,14 +27,29 @@ type ConfigurationFile struct {
 }
 
 type ConfigurationFileEntry struct {
-	Hostname string `json:"host"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Domain   string `json:"domain"`
-	APIPath  string `json:"api_path"`
+	Hostname     string       `json:"host"`
+	Username     string       `json:"username"`
+	Password     string       `json:"password"`
+	Domain       string       `json:"domain"`
+	APIPath      string       `json:"api_path"`
+	AuthProvider AuthProvider `json:"auth_provider"`
 }
 
-// loginCmd represents the login command
+type AuthProvider struct {
+	Type       string      `json:"type"`
+	Profile    string      `json:"profile"`
+	Parameters interface{} `json:"parameters"`
+}
+
+type AuthProviderAzureIdParams struct {
+	SecretName     string `json:"secret_name"`
+	AzureVaultName string `json:"vault_name"`
+	TenantId       string `json:"tenant_id;omitempty"`
+	SubscriptionId string `json:"subscription_id;omitempty"`
+	ResourceGroup  string `json:"resource_group;omitempty"`
+}
+
+var validAuthProviders = []string{"azure-id", "azure-cli", "azid", "azcli"}
 var loginCmd = &cobra.Command{
 	Use:        "login",
 	Aliases:    nil,
@@ -98,7 +113,7 @@ WARNING: The username and password will be stored in the config file in plain te
 				if !validConfigFileEntry(authConfig, profile) {
 					// Attempt to auth with config file
 					log.Println("[DEBUG] Attempting to authenticate via config 'default' profile.")
-					authConfig, authEnvErr = authConfigFile(configFile, profile, noPrompt, true) // always save config file is login is called
+					authConfig, authEnvErr = authConfigFile(configFile, profile, "", noPrompt, true) // always save config file is login is called
 					if authEnvErr != nil {
 						// Print out the error messages
 						for _, err := range authEnvErr {
@@ -127,7 +142,7 @@ WARNING: The username and password will be stored in the config file in plain te
 			fmt.Println(fmt.Sprintf("Login successful!"))
 		} else if configFile != "" || profile != "" {
 			// Attempt to auth with config file
-			authConfig, authConfigFileErrs = authConfigFile(configFile, profile, noPrompt, true) // always save config file is login is called
+			authConfig, authConfigFileErrs = authConfigFile(configFile, profile, "", noPrompt, true) // always save config file is login is called
 			if authConfigFileErrs != nil {
 				// Print out the error messages
 				for _, err := range authConfigFileErrs {
@@ -374,6 +389,29 @@ func loadConfigFileData(profileName string, configPath string, noPrompt bool, co
 		password := configProfile.Password
 		domain := configProfile.Domain
 		apiPath := configProfile.APIPath
+		authProvider := configProfile.AuthProvider
+
+		if authProvider.Type != "" && authProvider.Parameters != nil {
+			// cALL authViaProviderParams
+			authConfig, authErr := authViaProviderParams(&authProvider)
+			if authErr != nil {
+				log.Println("[ERROR] Unable to authenticate via provider: ", authErr)
+				return "", "", "", "", ""
+			}
+
+			// Check if authProvider profile is set
+			if authProvider.Profile == "" {
+				authProvider.Profile = "default"
+			}
+
+			hostName = authConfig.Servers[authProvider.Profile].Hostname
+			userName = authConfig.Servers[authProvider.Profile].Username
+			password = authConfig.Servers[authProvider.Profile].Password
+			domain = authConfig.Servers[authProvider.Profile].Domain
+			apiPath = authConfig.Servers[authProvider.Profile].APIPath
+
+			return hostName, userName, password, domain, apiPath
+		}
 
 		if hostName == "" && envConfig.Servers[profileName].Hostname != "" {
 			hostName = envConfig.Servers[profileName].Hostname
@@ -396,7 +434,61 @@ func loadConfigFileData(profileName string, configPath string, noPrompt bool, co
 	return "", "", "", "", ""
 }
 
-func authConfigFile(configPath string, profileName string, noPrompt bool, saveConfig bool) (ConfigurationFile, []error) {
+func authViaProviderParams(providerConfig *AuthProvider) (ConfigurationFile, error) {
+
+	providerType := providerConfig.Type
+	// First check if provider type and provider config are not empty
+	if providerType == "" || providerConfig == nil {
+		return ConfigurationFile{}, fmt.Errorf("provider type and provider config cannot be empty")
+	}
+
+	// Check if auth provider is valid
+	if !validAuthProvider(providerType) {
+		return ConfigurationFile{}, fmt.Errorf("invalid auth provider type '%s'. Valid auth providers are: %v", providerType, validAuthProviders)
+	}
+
+	// Check if provider type matches requested provider type
+	switch providerType {
+	case "azure-id", "azid", "az-id", "azureid":
+		//load provider config params into AuthProviderAzureIdParams struct
+		log.Println("[DEBUG] authenticating via azure-id provider")
+		var providerParams AuthProviderAzureIdParams
+		paramsJson, _ := json.Marshal(providerConfig.Parameters)
+		jsonErr := json.Unmarshal(paramsJson, &providerParams)
+		if jsonErr != nil {
+			log.Println("[ERROR] unable to unmarshal providerParams: ", jsonErr)
+			return ConfigurationFile{}, jsonErr
+		}
+
+		// Check if required params are set
+		if providerParams.SecretName == "" || providerParams.AzureVaultName == "" {
+			return ConfigurationFile{}, fmt.Errorf("provider params secret_name and vault_name are required")
+		}
+		log.Println("[DEBUG] providerParams: ", providerParams)
+		return providerParams.authenticate()
+	case "az-cli", "azcli", "azure-cli", "azurecli":
+		log.Println("[DEBUG] authenticating via azure-cli provider")
+		break
+	default:
+		log.Println("[ERROR] invalid auth provider type")
+		break
+	}
+	return ConfigurationFile{}, fmt.Errorf("invalid auth provider type '%s'. Valid auth providers are: %v", providerType, validAuthProviders)
+}
+
+func validAuthProvider(providerType string) bool {
+	if providerType == "" {
+		return true // default to username/password
+	}
+	for _, validProvider := range validAuthProviders {
+		if validProvider == providerType {
+			return true
+		}
+	}
+	return false
+}
+
+func authConfigFile(configPath string, profileName string, authProviderProfile string, noPrompt bool, saveConfig bool) (ConfigurationFile, []error) {
 	var configurationFile ConfigurationFile
 	var (
 		hostName string
@@ -443,6 +535,116 @@ func authConfigFile(configPath string, profileName string, noPrompt bool, saveCo
 	return configurationFile, nil
 }
 
+func authEnvProvider(authProvider *AuthProvider, configProfile string) (ConfigurationFile, []error) {
+	log.Println(fmt.Sprintf("[INFO] authenticating with auth provider '%s' params from environment variables", authProvider.Type))
+
+	if configProfile == "" {
+		configProfile = "default"
+	}
+	// attempt to cast authProvider.Parameters to string
+	authProviderParams, ok := authProvider.Parameters.(string)
+	if !ok {
+		log.Println("[ERROR] unable to cast authProvider.Parameters to string")
+		return ConfigurationFile{}, []error{fmt.Errorf("invalid configuration, unable to cast authProvider.Parameters to string")}
+	}
+
+	if strings.HasPrefix(authProviderParams, "{") && strings.HasSuffix(authProviderParams, "}") {
+		// authProviderParams is a json string
+		log.Println("[DEBUG] authProviderParams is a json string")
+		var providerParams interface{}
+		log.Println("[DEBUG] converting authProviderParams to unescaped json")
+		jsonErr := json.Unmarshal([]byte(authProviderParams), &providerParams)
+		if jsonErr != nil {
+			log.Println("[ERROR] unable to unmarshal authProviderParams: ", jsonErr)
+			return ConfigurationFile{}, []error{jsonErr}
+		}
+		authProvider.Parameters = providerParams
+	} else {
+		// attempt to read as json file path
+		log.Println("[DEBUG] authProviderParams is a json file path")
+		var providerParams interface{}
+		var providerConfigFile ConfigurationFile
+		var authProviderConfig AuthProvider
+		log.Println("[DEBUG] opening authProviderParams file ", authProviderParams)
+
+		jsonFile, jsonFileErr := os.Open(authProviderParams)
+		if jsonFileErr != nil {
+			log.Println("[ERROR] unable to open authProviderParams file: ", jsonFileErr)
+			return ConfigurationFile{}, []error{jsonFileErr}
+		}
+		defer jsonFile.Close()
+		log.Println(fmt.Sprintf("[DEBUG] reading authProviderParams file %s as bytes", authProviderParams))
+		jsonBytes, jsonBytesErr := os.ReadFile(authProviderParams)
+		if jsonBytesErr != nil {
+			log.Println("[ERROR] unable to read authProviderParams file: ", jsonBytesErr)
+			return ConfigurationFile{}, []error{jsonBytesErr}
+		}
+		log.Println("[DEBUG] converting authProviderParams to unescaped json")
+		jsonErr := json.Unmarshal(jsonBytes, &providerParams)
+		if jsonErr != nil {
+			log.Println("[ERROR] unable to unmarshal authProviderParams: ", jsonErr)
+			return ConfigurationFile{}, []error{jsonErr}
+		}
+
+		//Check if provider params is a configuration file
+		log.Println("[DEBUG] checking if authProviderParams is a configuration file")
+		jsonErr = json.Unmarshal(jsonBytes, &providerConfigFile)
+		if jsonErr == nil && providerConfigFile.Servers != nil {
+			// lookup params based on configProfile
+			log.Println("[DEBUG] authProviderParams is a configuration file")
+			// check to see if profile exists in config file
+			if _, isConfigFile := providerConfigFile.Servers[configProfile]; isConfigFile {
+				log.Println(fmt.Sprintf("[DEBUG] profile '%s' found in authProviderParams file", configProfile))
+				providerParams = providerConfigFile.Servers[configProfile]
+				// check if providerParams is a ConfigurationFileEntry
+				if _, isConfigFileEntry := providerParams.(ConfigurationFileEntry); !isConfigFileEntry {
+					log.Println("[ERROR] unable to cast providerParams to ConfigurationFileEntry")
+					return ConfigurationFile{}, []error{fmt.Errorf("invalid configuration, unable to cast providerParams to ConfigurationFileEntry")}
+				}
+				// set providerParams to ConfigurationFileEntry.AuthProvider.Parameters
+				providerParams = providerConfigFile.Servers[configProfile].AuthProvider.Parameters
+			} else {
+				log.Println(fmt.Sprintf("[DEBUG] profile '%s' not found in authProviderParams file", configProfile))
+				return ConfigurationFile{}, []error{fmt.Errorf("profile '%s' not found in authProviderParams file", configProfile)}
+			}
+		} else {
+			//check if provider params is an AuthProvider
+			log.Println("[DEBUG] checking if authProviderParams is an AuthProvider")
+			//conver providerParams to unescaped json
+			log.Println("[DEBUG] converting authProviderParams to unescaped json")
+
+			//check if providerParams is a map[string]interface{}
+			if _, isMap := providerParams.(map[string]interface{}); isMap {
+				//check if 'auth_provider' key exists and if it does convert to json bytes
+				if _, isAuthProvider := providerParams.(map[string]interface{})["auth_provider"]; isAuthProvider {
+					log.Println("[DEBUG] authProviderParams is a map[string]interface{}")
+					log.Println("[DEBUG] converting authProviderParams to unescaped json")
+					jsonBytes, jsonBytesErr = json.Marshal(providerParams.(map[string]interface{})["auth_provider"])
+					if jsonBytesErr != nil {
+						log.Println("[ERROR] unable to marshal authProviderParams: ", jsonBytesErr)
+						return ConfigurationFile{}, []error{jsonBytesErr}
+					}
+				}
+			}
+
+			jsonErr = json.Unmarshal(jsonBytes, &authProviderConfig)
+			if jsonErr == nil && authProviderConfig.Type != "" && authProviderConfig.Parameters != nil {
+				log.Println("[DEBUG] authProviderParams is an AuthProvider")
+				providerParams = authProviderConfig.Parameters
+			}
+		}
+		authProvider.Parameters = providerParams
+	}
+	log.Println("[INFO] Attempting to fetch kfutil creds from auth provider ", authProvider)
+	configFile, authErr := authViaProviderParams(authProvider)
+	if authErr != nil {
+		log.Println("[ERROR] Unable to authenticate via provider: ", authErr)
+		return ConfigurationFile{}, []error{authErr}
+	}
+	log.Println("[INFO] Successfully retrieved kfutil creds via auth provider")
+	return configFile, nil
+}
+
 func authEnvVars(configPath string, profileName string, saveConfig bool) (ConfigurationFile, []error) {
 	hostname, hostSet := os.LookupEnv("KEYFACTOR_HOSTNAME")
 	username, userSet := os.LookupEnv("KEYFACTOR_USERNAME")
@@ -450,9 +652,24 @@ func authEnvVars(configPath string, profileName string, saveConfig bool) (Config
 	domain, domainSet := os.LookupEnv("KEYFACTOR_DOMAIN")
 	apiPath, apiPathSet := os.LookupEnv("KEYFACTOR_API_PATH")
 	envProfileName, _ := os.LookupEnv("KFUTIL_PROFILE")
-	if !apiPathSet {
-		apiPath = defaultAPIPath
-		apiPathSet = true
+	authProviderType, _ := os.LookupEnv("KFUTIL_AUTH_PROVIDER_TYPE")
+	authProviderProfile, _ := os.LookupEnv("KUTIL_AUTH_PROVIDER_PROFILE")
+	authProviderParams, _ := os.LookupEnv("KFUTIL_AUTH_PROVIDER_PARAMS") // this is a json string or a json file path
+
+	if authProviderType != "" || authProviderParams != "" {
+		if authProviderParams == "" {
+			authProviderParams = fmt.Sprintf("%s/.keyfactor/%s", os.Getenv("HOME"), DefaultConfigFileName)
+		}
+		if authProviderProfile == "" {
+			authProviderProfile = "default"
+		}
+		authProvider := AuthProvider{
+			Type:       authProviderType,
+			Profile:    authProviderProfile,
+			Parameters: authProviderParams,
+		}
+		//check if authProviderParams is a json string or a json file path
+		return authEnvProvider(&authProvider, profileName)
 	}
 
 	if profileName == "" && envProfileName != "" {
@@ -471,19 +688,24 @@ func authEnvVars(configPath string, profileName string, saveConfig bool) (Config
 
 	var outputErr []error
 	if !hostSet {
-		_ = append(outputErr, fmt.Errorf("KEYFACTOR_HOSTNAME environment variable not set. Please set the KEYFACTOR_HOSTNAME environment variable"))
+		outputErr = append(outputErr, fmt.Errorf("KEYFACTOR_HOSTNAME environment variable not set. Please set the KEYFACTOR_HOSTNAME environment variable"))
 	}
 	if !userSet {
-		_ = append(outputErr, fmt.Errorf("KEYFACTOR_USERNAME environment variable not set. Please set the KEYFACTOR_USERNAME environment variable"))
+		outputErr = append(outputErr, fmt.Errorf("KEYFACTOR_USERNAME environment variable not set. Please set the KEYFACTOR_USERNAME environment variable"))
 	}
 	if !passSet {
-		_ = append(outputErr, fmt.Errorf("KEYFACTOR_PASSWORD environment variable not set. Please set the KEYFACTOR_PASSWORD environment variable"))
+		outputErr = append(outputErr, fmt.Errorf("KEYFACTOR_PASSWORD environment variable not set. Please set the KEYFACTOR_PASSWORD environment variable"))
 	}
 	if !domainSet {
-		_ = append(outputErr, fmt.Errorf("KEYFACTOR_DOMAIN environment variable not set. Please set the KEYFACTOR_DOMAIN environment variable"))
+		outputErr = append(outputErr, fmt.Errorf("KEYFACTOR_DOMAIN environment variable not set. Please set the KEYFACTOR_DOMAIN environment variable"))
 	}
 	if !apiPathSet {
 		apiPath = defaultAPIPath
+		apiPathSet = true
+	}
+
+	if !hostSet && !userSet && !passSet && !domainSet {
+		return ConfigurationFile{}, outputErr
 	}
 
 	confFile := createConfigFile(hostname, username, password, domain, apiPath, profileName)
@@ -578,6 +800,25 @@ func loadConfigurationFile(filePath string, silent bool) (ConfigurationFile, err
 		defaultDir, _ := os.UserHomeDir()
 		filePath = path.Join(defaultDir, ".keyfactor", DefaultConfigFileName)
 	}
+
+	// attempt to make the directory if it doesn't exist
+	dirPath := path.Dir(filePath)
+	if _, dirErr := os.Stat(dirPath); os.IsNotExist(dirErr) {
+		log.Println("[DEBUG] config directory does not exist, creating: ", dirPath)
+		err := os.MkdirAll(dirPath, 0700)
+		if err != nil {
+			log.Println("[ERROR] creating config directory: ", err)
+			return data, err
+		}
+		return data, nil // return empty data since the directory didn't exist the file won't exist
+	}
+
+	// check if file exists
+	if _, fileErr := os.Stat(filePath); os.IsNotExist(fileErr) {
+		log.Println("[DEBUG] config file does not exist: ", filePath)
+		return data, nil // return empty data since the file doesn't exist
+	}
+
 	f, rFErr := os.ReadFile(filePath)
 	if rFErr != nil {
 		if !silent {

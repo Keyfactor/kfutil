@@ -25,15 +25,25 @@ var xKeyfactorRequestedWith = "APIClient"
 var xKeyfactorApiVersion = "1"
 var defaultAPIPath = "KeyfactorAPI"
 
-func initClient(flagConfig string, flagProfile string, noPrompt bool, authConfig *api.AuthConfig, saveConfig bool) (*api.Client, error) {
+func initClient(flagConfig string, flagProfile string, flagAuthProviderType string, flagAuthProviderProfile string, noPrompt bool, authConfig *api.AuthConfig, saveConfig bool) (*api.Client, error) {
 	var clientAuth api.AuthConfig
 
 	var commandConfig ConfigurationFile
 
-	commandConfig, _ = authEnvVars(flagConfig, "", saveConfig)
+	commandConfig, _ = authEnvVars(flagConfig, flagProfile, saveConfig)
 
-	if flagConfig != "" || !validConfigFileEntry(commandConfig, flagProfile) {
-		commandConfig, _ = authConfigFile(flagConfig, flagProfile, noPrompt, saveConfig)
+	// check if commandConfig is empty
+	if commandConfig.Servers == nil || len(commandConfig.Servers) == 0 {
+		if flagConfig != "" || !validConfigFileEntry(commandConfig, flagProfile) {
+			commandConfig, _ = authConfigFile(flagConfig, flagProfile, "", noPrompt, saveConfig)
+		}
+	} else {
+		authProviderProfile, _ := os.LookupEnv("KUTIL_AUTH_PROVIDER_PROFILE")
+		if authProviderProfile != "" {
+			flagProfile = authProviderProfile
+		} else if flagAuthProviderProfile != "" {
+			flagProfile = flagAuthProviderProfile
+		}
 	}
 
 	if flagProfile == "" {
@@ -100,7 +110,7 @@ func initGenClient(flagConfig string, flagProfile string, noPrompt bool, authCon
 	commandConfig, _ = authEnvVars(flagConfig, "", saveConfig)
 
 	if flagConfig != "" || !validConfigFileEntry(commandConfig, flagProfile) {
-		commandConfig, _ = authConfigFile(flagConfig, flagProfile, noPrompt, saveConfig)
+		commandConfig, _ = authConfigFile(flagConfig, flagProfile, "", noPrompt, saveConfig)
 	}
 
 	if flagProfile == "" {
@@ -175,29 +185,45 @@ func Execute() {
 	}
 }
 
+var providerTypeChoices = []string{
+	"azid",
+	"azcli",
+}
+
 func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
 	var (
-		configFile   string
-		profile      string
-		noPrompt     bool
-		experimental bool
-		debug        bool
-		username     string
-		hostname     string
-		password     string
-		domain       string
-		apiPath      string
+		configFile      string
+		profile         string
+		providerType    string
+		providerProfile string
+		providerConfig  string
+		noPrompt        bool
+		experimental    bool
+		debug           bool
+		username        string
+		hostname        string
+		password        string
+		domain          string
+		apiPath         string
 	)
+
+	defaultConfigPath := fmt.Sprintf("$HOME/.keyfactor/%s", DefaultConfigFileName)
 
 	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "", "", fmt.Sprintf("Full path to config file in JSON format. (default is $HOME/.keyfactor/%s)", DefaultConfigFileName))
 	RootCmd.PersistentFlags().BoolVar(&noPrompt, "no-prompt", false, "Do not prompt for any user input and assume defaults or environmental variables are set.")
 	RootCmd.PersistentFlags().BoolVar(&experimental, "exp", false, "Enable experimental features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)")
 	RootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging. (USE AT YOUR OWN RISK, this may log sensitive information to the console.)")
 	RootCmd.PersistentFlags().StringVarP(&profile, "profile", "", "", "Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.")
+
+	RootCmd.PersistentFlags().StringVar(&providerType, "auth-provider-type", "", "Provider type choices: (azid/azcli)")
+	// Validating the provider-type flag against the predefined choices
+	RootCmd.PersistentFlags().SetAnnotation("auth-provider-type", cobra.BashCompCustom, providerTypeChoices)
+	RootCmd.PersistentFlags().StringVarP(&providerProfile, "auth-provider-profile", "", "default", "Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.")
+	RootCmd.PersistentFlags().StringVarP(&providerConfig, "auth-provider-config", "", defaultConfigPath, fmt.Sprintf("Full path to config file in JSON format. (default is $HOME/.keyfactor/%s)", DefaultConfigFileName))
 
 	RootCmd.PersistentFlags().StringVarP(&username, "username", "", "", "Username to use for authenticating to Keyfactor Command.")
 	RootCmd.PersistentFlags().StringVarP(&hostname, "hostname", "", "", "Hostname to use for authenticating to Keyfactor Command.")

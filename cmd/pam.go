@@ -126,6 +126,8 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 			pamProviderType, errors = GetTypeFromInternet(providerName, repoName, branchName, pamProviderType)
 			if errors != nil {
 				log.Printf("%sError reading from GitHub %s/%s: %s", colorRed, repoName, branchName, errors)
+				fmt.Println("Please check the repository name and branch name and try again.")
+				fmt.Println(errors)
 				return
 			}
 		} else {
@@ -407,11 +409,19 @@ func GetPamTypeInternet(providerName string, repo string, branch string) (interf
 	if errors != nil {
 		return nil, errors
 	}
+
+	//check response status code is 200
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("error: %s", response.Status)
+	}
+
 	defer response.Body.Close()
+
 	manifest, errors := io.ReadAll(response.Body)
 	if errors != nil {
 		return nil, errors
 	}
+
 	var manifestJson map[string]interface{}
 	errors = json.Unmarshal(manifest, &manifestJson)
 	if errors != nil {

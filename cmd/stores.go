@@ -33,12 +33,16 @@ var storesListCmd = &cobra.Command{
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
+		authProviderType, _ := cmd.Flags().GetString("auth-provider")
+		authProviderProfile, _ := cmd.Flags().GetString("auth-provider-profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
 		kfcHostName, _ := cmd.Flags().GetString("hostname")
 		kfcUsername, _ := cmd.Flags().GetString("username")
 		kfcPassword, _ := cmd.Flags().GetString("password")
 		kfcDomain, _ := cmd.Flags().GetString("domain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+		//authProvider, _ := cmd.Flags().GetString("auth-provider")
+
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
@@ -50,7 +54,7 @@ var storesListCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(configFile, profile, authProviderType, authProviderProfile, noPrompt, authConfig, false)
 		params := make(map[string]interface{})
 		stores, err := kfClient.ListCertificateStores(&params)
 
@@ -93,7 +97,7 @@ var storesGetCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		storeId, _ := cmd.Flags().GetString("id")
-		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 		stores, err := kfClient.GetCertificateStoreByID(storeId)
 		if err != nil {
 			log.Printf("Error: %s", err)

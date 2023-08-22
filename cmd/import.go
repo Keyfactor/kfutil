@@ -67,7 +67,7 @@ var importCmd = &cobra.Command{
 			log.Fatalf("Error: %s", jErr)
 		}
 		kfClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
-		oldkfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+		oldkfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 		if cmd.Flag("all").Value.String() == "true" {
 			importCollections(out.Collections, kfClient)
 			importMetadataFields(out.MetadataFields, kfClient)

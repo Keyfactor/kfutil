@@ -82,7 +82,7 @@ var storesTypesListCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
 		if err != nil {
 			log.Printf("Error: %s", err)
@@ -137,7 +137,7 @@ var storesTypeGetCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id, _ := cmd.Flags().GetInt("id")
 		name, _ := cmd.Flags().GetString("name")
-		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 		var st interface{}
 		// Check inputs
 		if id < 0 && name == "" {
@@ -293,7 +293,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			gitRef = "main"
 		}
 
-		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 
 		storeTypeIsValid := false
 
@@ -464,7 +464,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		id, _ := cmd.Flags().GetInt("id")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
-		kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 		var st interface{}
 
 		var validStoreTypes []string
