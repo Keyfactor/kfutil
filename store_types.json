@@ -1,62 +1,5 @@
 [
   {
-    "Name": "RFpem",
-    "ShortName": "RFPEM",
-    "Capability": "RFPEM",
-    "ServerRequired": true,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden",
-    "PowerShell": false,
-    "PrivateKeyAllowed": "Optional",
-    "SupportedOperations": {
-      "Add": true,
-      "Create": true,
-      "Discovery": true,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "PasswordOptions": {
-      "Style": "Default",
-      "EntrySupported": false,
-      "StoreRequired": true
-    },
-    "Properties": [
-      {
-        "Name": "LinuxFilePermissionsOnStoreCreation",
-        "DisplayName": "Linux File Permissions on Store Creation",
-        "Required": false,
-        "DependsOn": "",
-        "Type": "String",
-        "DefaultValue": ""
-      },
-      {
-        "Name": "IsTrustStore",
-        "DisplayName": "Trust Store",
-        "Required": false,
-        "DependsOn": "",
-        "Type": "Bool",
-        "DefaultValue": false
-      },
-      {
-        "Name": "IncludesChain",
-        "DisplayName": "Store Includes Chain",
-        "Required": false,
-        "DependsOn": "",
-        "Type": "Bool",
-        "DefaultValue": false
-      },
-      {
-        "Name": "SeparatePrivateKeyFilePath",
-        "DisplayName": "Separate Private Key File Location",
-        "Required": false,
-        "DependsOn": "",
-        "Type": "String",
-        "DefaultValue": ""
-      }
-    ],
-    "EntryParameters": []
-  },
-  {
     "Name": "RFPkcs12",
     "ShortName": "RFPkcs12",
     "Capability": "RFPkcs12",
@@ -2764,6 +2707,70 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Optional"
+  },
+  {
+    "Name": "Azure Application Gateway",
+    "ShortName": "AzureAppGW",
+    "Capability": "AzureAppGW",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "true",
+        "Required": false
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "HTTPListenerName",
+        "DisplayName": "HTTP Listener Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Required",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "ServerRegistration": 13,
+    "InventoryEndpoint": "/AnyInventory/Update"
   },
   {
     "Name": "Azure Application Gateway",
