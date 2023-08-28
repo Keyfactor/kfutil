@@ -1,0 +1,103 @@
+{
+  "Name": "Delinea-SecretServer-test",
+  "ProviderType": {
+    "Name": "Delinea-SecretServer",
+    "Id": "caebfca4-99b6-4973-ba9e-e98cb1446c7e",
+    "ProviderTypeParams": [
+      {
+        "Name": "Host",
+        "DisplayName": "Secret Server URL",
+        "DataType": 1,
+        "InstanceLevel": false,
+        "ProviderType": {}
+      },
+      {
+        "Name": "Username",
+        "DisplayName": "Secret Server Username",
+        "DataType": 2,
+        "InstanceLevel": false,
+        "ProviderType": {}
+      },
+      {
+        "Name": "Password",
+        "DisplayName": "Secret Server Password",
+        "DataType": 2,
+        "InstanceLevel": false,
+        "ProviderType": {}
+      },
+      {
+        "Name": "SecretId",
+        "DisplayName": "Secret ID",
+        "DataType": 1,
+        "InstanceLevel": true,
+        "ProviderType": {}
+      },
+      {
+        "Name": "SecretFieldName",
+        "DisplayName": "Secret Field Name",
+        "DataType": 1,
+        "InstanceLevel": true,
+        "ProviderType": {}
+      }
+    ]
+  },
+  "ProviderTypeParamValues": [
+    {
+      "Value": "https://secretserver.delinea.com",
+      "Name" : "Host",
+      "InstanceGuid": "caebfca4-99b6-4973-ba9e-e98cb1446c7e",
+      "Provider": {
+        "Name": "Delinea-SecretServer"
+      },
+      "ProviderTypeParam": {
+        "Name": "host",
+        "DisplayName": "Secret Server URL",
+        "DataType": 1,
+        "InstanceLevel": false,
+        "ProviderType" : {
+          "Name": "Delinea-SecretServer",
+          "Id": "caebfca4-99b6-4973-ba9e-e98cb1446c7e",
+          "ProviderTypeParams": [{}]
+        }
+      }
+    },
+    {
+      "Name" : "Username",
+      "Value": "myusername",
+      "InstanceGuid": "caebfca4-99b6-4973-ba9e-e98cb1446c7e",
+      "Provider": {
+        "Name": "Delinea-SecretServer"
+      },
+      "ProviderTypeParam": {
+        "Name": "Username",
+        "DisplayName": "Secret Server Username",
+        "DataType": 1,
+        "InstanceLevel": false,
+        "ProviderType" : {
+          "Name": "Delinea-SecretServer",
+          "Id": "caebfca4-99b6-4973-ba9e-e98cb1446c7e",
+          "ProviderTypeParams": [{}]
+        }
+      }
+    },
+    {
+      "Name" : "Password",
+      "Value": "mypasswd",
+      "InstanceGuid": "caebfca4-99b6-4973-ba9e-e98cb1446c7e",
+      "Provider": {
+        "Name": "Delinea-SecretServer"
+      },
+      "ProviderTypeParam": {
+        "Name": "Password",
+        "DisplayName": "Secret Server Password",
+        "DataType": 1,
+        "InstanceLevel": false,
+        "ProviderType" : {
+          "Name": "Delinea-SecretServer",
+          "Id": "caebfca4-99b6-4973-ba9e-e98cb1446c7e",
+          "ProviderTypeParams": [{}]
+        }
+      }
+    }
+  ]
+}

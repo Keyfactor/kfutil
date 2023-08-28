@@ -1,30 +1,61 @@
+- [Keyfactor Command Utility (kfutil)](#keyfactor-command-utility--kfutil-)
+  - [Integration status: Production - Ready for use in production environments.](#integration-status--production---ready-for-use-in-production-environments)
+  * [Support for Keyfactor Command Utility (kfutil)](#support-for-keyfactor-command-utility--kfutil-)
+  * [Quickstart](#quickstart)
+    + [Prerequisites:](#prerequisites-)
+    + [Installation:](#installation-)
+    + [Environmental Variables](#environmental-variables)
+  * [Authentication Providers](#authentication-providers)
+  * [Commands](#commands)
+    + [Login](#login)
+    + [Logout](#logout)
+  * [Commands](#commands-1)
+    + [Bulk operations](#bulk-operations)
+      - [Bulk create cert stores](#bulk-create-cert-stores)
+      - [Bulk create cert store types](#bulk-create-cert-store-types)
+    + [Root of Trust](#root-of-trust)
+    + [Root of Trust Quickstart](#root-of-trust-quickstart)
+      - [Generate Certificate List Template](#generate-certificate-list-template)
+      - [Generate Certificate Store List Template](#generate-certificate-store-list-template)
+      - [Run Root of Trust Audit](#run-root-of-trust-audit)
+      - [Run Root of Trust Reconcile](#run-root-of-trust-reconcile)
+    + [Certificate Store Inventory](#certificate-store-inventory)
+      - [Show the inventory of a certificate store](#show-the-inventory-of-a-certificate-store)
+      - [Add certificates to certificate stores](#add-certificates-to-certificate-stores)
+      - [Remove certificates from certificate stores](#remove-certificates-from-certificate-stores)
+  * [Development](#development)
+    + [Adding a new command](#adding-a-new-command)
+
+
 # Keyfactor Command Utility (kfutil)
 
-`kfutil` is a go-lang CLI wrapper for Keyfactor Command API. It also includes other utility/helper functions around automating common Keyfactor Command operations.
+`kfutil` is a go-lang CLI wrapper for Keyfactor Command API. It also includes other utility/helper functions around
+automating common Keyfactor Command operations.
 
 #### Integration status: Production - Ready for use in production environments.
 
-
-
-
-
 ## Support for Keyfactor Command Utility (kfutil)
 
-Keyfactor Command Utility (kfutil) is open source and there is **no SLA** for this tool/library/client. Keyfactor will address issues as resources become available. Keyfactor customers may request escalation by opening up a support ticket through their Keyfactor representative.
+Keyfactor Command Utility (kfutil) is open source and there is **no SLA** for this tool/library/client. Keyfactor will
+address issues as resources become available. Keyfactor customers may request escalation by opening up a support ticket
+through their Keyfactor representative.
 
-###### To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
+###### To report a problem or suggest a new feature, use the **[Issues](../../issues)
 
-
-
+** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)
+** tab.
 
 ## Quickstart
 
 ### Prerequisites:
+
 - [Github CLI](https://cli.github.com/)
-- [zip](https://linuxize.com/post/how-to-unzip-files-in-linux/#installing-unzip) CLI tool, used to unzip the release files. 
+- [zip](https://linuxize.com/post/how-to-unzip-files-in-linux/#installing-unzip) CLI tool, used to unzip the release
+  files.
 - `$HOME/.local/bin` in your `$PATH` and exists.
 
 ### Installation:
+
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/gh-dl-release.sh)
 ````
@@ -45,13 +76,16 @@ and use them if they are set. If they are not set, the utility will fail to conn
 | KFUTIL_DEBUG       | Set to `1` or `true` to enable debug logging.                                            |
 
 Linux/MacOS:
+
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 export KEYFACTOR_USERNAME="<myusername>" # Do not include domain
 export KEYFACTOR_PASSWORD="<mypassword>"
 export KEYFACTOR_DOMAIN="<mykeyfactordomain>"
 ```
+
 Additional variables:
+
 ```bash
 export KEYFACTOR_API_PATH="/KeyfactorAPI" # Defaults to /KeyfactorAPI if not set ex. my.domain.com/KeyfactorAPI
 export KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
@@ -59,28 +93,43 @@ export KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 ```
 
 Windows Powershell:
+
 ```powershell
-$env:KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
-$env:KEYFACTOR_USERNAME="<myusername>" # Do not include domain
-$env:KEYFACTOR_PASSWORD="<mypassword>"
-$env:KEYFACTOR_DOMAIN="<mykeyfactordomain>"
+$env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"
+$env:KEYFACTOR_USERNAME = "<myusername>" # Do not include domain
+$env:KEYFACTOR_PASSWORD = "<mypassword>"
+$env:KEYFACTOR_DOMAIN = "<mykeyfactordomain>"
 ```
 
 Additional variables:
+
 ```bash
 $env:KEYFACTOR_API_PATH="/KeyfactorAPI" # Defaults to /KeyfactorAPI if not set ex. my.domain.com/KeyfactorAPI
 $env:KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
 $env:KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 ```
 
+## Authentication Providers
+
+`kfutil` supports the following authentication providers in order of precedence:
+
+| Provider Type                | Description                                                                                                                                                          |
+|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Azure Key Vault via Azure ID | This provider will read the Keyfactor Command credentials from Azure Key Vault. For more info review the [auth providers](docs/auth_providers#azure-key-vault) docs. |
+| Environment                  | This provider will read the Keyfactor Command credentials from the environment variables listed above.                                                               |
+| File                         | This is the default provider. It will read the credentials from a file on disk at `$HOME/.keyfactor/command_config.json`                                             |
+| User Interactive             | This provider will prompt the user for their credentials.                                                                                                            |
+
 ## Commands
 
 ### Login
+
 For full documentation on the `login` command, see the [login](docs/kfutil_login.md) documentation.
 
 *WARNING* - The `login` command will store your Keyfactor credentials in a file on your local machine. This file is not
 encrypted and is not secure. It is recommended that you use the `login` command only on your local machine and not on a
-shared machine. Instead of using the `login` command, you can set the environmental variables listed above. **You may also
+shared machine. Instead of using the `login` command, you can set the environmental variables listed above. **You may
+also
 choose to use login and provide an empty password, in this mode you will be prompted for your password each time you run
 a command.**
 
@@ -89,6 +138,7 @@ kfutil login
 ```
 
 ### Logout
+
 For full documentation on the `logout` command, see the [logout](docs/kfutil_logout.md) documentation.
 
 *WARNING* - This will delete the file containing your Keyfactor credentials at `$HOME/.keyfactor/command_config.json`.

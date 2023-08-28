@@ -1,3 +1,17 @@
+// Copyright 2023 Keyfactor
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cmd
 
 import (
@@ -6,18 +20,19 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/rs/zerolog/log"
 	"io"
-	"log"
 	"net/http"
 )
 
-func (r AuthProviderAzureIdParams) authAzureIdentity() (azcore.AccessToken, error) {
+func (apaz AuthProviderAzureIDParams) authAzureIdentity() (azcore.AccessToken, error) {
+	log.Debug().Msg("enter: AuthProviderAzureIDParams.authAzureIdentity()")
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
-		log.Fatalf("failed to obtain a credential: %v", err)
+		log.Error().Err(err).Msg("unable to authenticate with Azure Identity")
 		return azcore.AccessToken{}, err
 	}
-
+	log.Debug().Msg("return: AuthProviderAzureIDParams.authAzureIdentity()")
 	return cred.GetToken(
 		nil,
 		policy.TokenRequestOptions{
@@ -26,105 +41,125 @@ func (r AuthProviderAzureIdParams) authAzureIdentity() (azcore.AccessToken, erro
 	)
 }
 
-func (r AuthProviderAzureIdParams) authenticate() (ConfigurationFile, error) {
+func (apaz AuthProviderAzureIDParams) authenticate() (ConfigurationFile, error) {
+	log.Info().Msg("Authenticating with Azure Identity")
+	log.Debug().Msg("enter: AuthProviderAzureIDParams.authenticate()")
 	metadataURL := "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net"
+	log.Debug().Str("metadataURL", metadataURL).Msg("fetching metadata")
 
 	client := &http.Client{}
 	config := ConfigurationFile{}
-	log.Println("Creating request to:", metadataURL)
+	//log.Println("Creating request to:", metadataURL)
+	log.Debug().Msg("Creating HTTP request to Azure Metadata Service")
 	req, respBodyErr := http.NewRequest("GET", metadataURL, nil)
+
 	if respBodyErr != nil {
-		log.Println("Error creating request:", respBodyErr)
+		log.Error().Err(respBodyErr).Msg("Error creating request")
 		return config, respBodyErr
 	} else if req == nil {
-		log.Println("Error, request is nil")
-		return config, fmt.Errorf("error, request is nil when requesting %s", metadataURL)
+		rErr := fmt.Errorf("error, request is nil when requesting %s", metadataURL)
+		log.Error().Err(rErr)
+		return config, rErr
 	}
 
 	req.Header.Set("Metadata", "true")
-	log.Println("Sending request to: ", metadataURL)
+
+	log.Debug().Msg("Sending HTTP request to Azure Metadata Service")
 	resp, metaRespErr := client.Do(req)
+	log.Trace().Interface("resp", resp).Msg("response from Azure Metadata Service")
 	if metaRespErr != nil {
-		fmt.Println("Error making request:", metaRespErr)
-		return config, metaRespErr
+		log.Error().Err(metaRespErr).Msg("failed to auth with Azure Identity")
+		return config, returnHttpErr(resp, metaRespErr)
 	}
+	log.Debug().Str("responseStatusCode", resp.Status).Send()
 
 	defer resp.Body.Close()
 
 	body, respBodyErr := io.ReadAll(resp.Body)
 	if respBodyErr != nil {
-		log.Println("Error reading response:", respBodyErr)
+		log.Error().Err(respBodyErr).Msg("invalid response from Azure")
 		return config, respBodyErr
 	}
 
-	log.Println("Response code:", resp.Status)
 	if resp.StatusCode != 200 {
-		log.Println("Response Body:", string(body))
-		return config, fmt.Errorf("error, response code is %d", resp.StatusCode)
+		log.Trace().Str("responseBody", string(body)).Msg("response body from Azure")
+		return config, fmt.Errorf("invalid response code '%d'", resp.StatusCode)
 	}
-	//log.Println("Response Body:", string(body))
 
 	// Parse the access token from the response JSON
-	accessToken, tokenErr := r.parseAccessToken(body)
+	log.Debug().Msg("call: parseAccessToken()")
+	accessToken, tokenErr := apaz.parseAccessToken(body)
+	log.Debug().Msg("returned: parseAccessToken()")
 
 	if tokenErr != nil {
-		log.Println("Error parsing access token:", tokenErr)
+		log.Error().Err(tokenErr).Msg("unable to parse access token from Azure response")
 		return config, tokenErr
 	}
 
 	if accessToken != "" {
-		log.Println("Access Token:", accessToken)
+		log.Debug().Str("accessToken", hashSecretValue(accessToken)).Msg("access token from Azure response")
 	}
 
-	secretURL := fmt.Sprintf("https://%s.vault.azure.net/secrets/%s?api-version=7.0", r.AzureVaultName, r.SecretName)
-
-	return r.getCommandCredsFromAzureKeyVault(secretURL, accessToken)
+	secretURL := fmt.Sprintf("https://%s.vault.azure.net/secrets/%s?api-version=7.0", apaz.AzureVaultName, apaz.SecretName)
+	log.Debug().Str("secretURL", secretURL).Msg("returning secret URL for Azure Key Vault secret")
+	log.Debug().Msg("return: AuthProviderAzureIDParams.authenticate()")
+	return apaz.getCommandCredsFromAzureKeyVault(secretURL, accessToken)
 }
 
-func (r AuthProviderAzureIdParams) getCommandCredsFromAzureKeyVault(secretURL string, accessToken string) (ConfigurationFile, error) {
-	// Create a new secret in Azure Key Vault
+func (apaz AuthProviderAzureIDParams) getCommandCredsFromAzureKeyVault(secretURL string, accessToken string) (ConfigurationFile, error) {
+	log.Debug().Str("secretURL", secretURL).
+		Str("accessToken", hashSecretValue(accessToken)).
+		Msg("enter: AuthProviderAzureIDParams.getCommandCredsFromAzureKeyVault()")
 	client := &http.Client{}
 	config := ConfigurationFile{}
-	log.Println("Creating request to:", secretURL)
+	log.Info().Str("secretURL", secretURL).Msg("fetching secret from Azure Key Vault")
+	log.Debug().Msg("Creating HTTP request to Azure Key Vault")
 	req, jsonErr := http.NewRequest("GET", secretURL, nil)
 	if jsonErr != nil {
-		log.Println("Error creating request:", jsonErr)
+		log.Error().Err(jsonErr).Msg("unable to create request")
 		return config, jsonErr
 	} else if req == nil {
-		log.Println("Error, request is nil")
-		return config, fmt.Errorf("error, request is nil when requesting %s", secretURL)
+		rErr := fmt.Errorf("error, request is nil when requesting %s", secretURL)
+		log.Error().Err(rErr).Msg("unable to create request")
+		return config, rErr
 	} else if accessToken == "" {
-		log.Println("Error, access token is empty")
-		return config, fmt.Errorf("error, access token is empty when requesting %s", secretURL)
+		aErr := fmt.Errorf("error, access token is empty when requesting %s", secretURL)
+		log.Error().Err(aErr).Msg("access token is empty unable to fetch from Azure Key Vault")
+		return config, aErr
 	}
 
+	log.Debug().Msg("Setting request headers")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Content-Type", "application/json")
 
+	log.Debug().Msg("Sending HTTP request to Azure Key Vault")
 	resp, respErr := client.Do(req)
+	log.Debug().Msg("returned from HTTP request to Azure Key Vault")
+	log.Trace().Interface("resp", resp).Msg("response from Azure Key Vault")
 	if respErr != nil {
-		log.Println("Error making request:", jsonErr)
-		return config, respErr
+		log.Error().Err(respErr).Msg("unable to fetch secret from Azure Key Vault")
+		return config, returnHttpErr(resp, respErr)
 	}
 	defer resp.Body.Close()
 
+	log.Debug().Msg("Reading response body")
 	body, respBodyErr := io.ReadAll(resp.Body)
 	if respBodyErr != nil {
-		fmt.Println("Error reading response:", jsonErr)
+		log.Error().Err(respBodyErr).Msg("unable to read response body")
 		return config, respBodyErr
 	}
 	// Check the response code
-	log.Println("Response code:", resp.Status)
+	log.Debug().Str("responseStatusCode", resp.Status).Msg("response status code from Azure Key Vault")
 	if resp.StatusCode != 200 {
-		log.Println("Response Body:", string(body))
-		return config, fmt.Errorf("error, response code is %d", resp.StatusCode)
+		log.Error().Int("responseStatusCode", resp.StatusCode).Msg("invalid response code")
+		return config, fmt.Errorf("invalid status code '%d'", resp.StatusCode)
 	}
 	// Convert response body to json
 	var f interface{}
-	log.Println("Unmarshalling response body to JSON")
+	log.Debug().Msg("Converting response body to JSON")
 	jsonErr = json.Unmarshal(body, &f)
 	if jsonErr != nil {
-		fmt.Println("Error unmarshalling JSON:", jsonErr)
+		log.Error().Err(jsonErr).Msg("invalid response from Azure Key Vault")
 		return config, jsonErr
 	}
 
@@ -132,32 +167,39 @@ func (r AuthProviderAzureIdParams) getCommandCredsFromAzureKeyVault(secretURL st
 	m := f.(map[string]interface{})
 
 	// Pretty print the json
+	log.Debug().Msg("Formatting JSON response")
 	j, _ := json.MarshalIndent(m["value"], "", "  ")
-	log.Println("Secret value:", string(j))
+	log.Trace().Str("json", string(j)).Msg("json response from Azure Key Vault")
 
 	// try to convert value to ConfigurationFile
 	//read escaped json string into ConfigurationFile
+	log.Debug().Msg("Converting JSON response to ConfigurationFile")
 	jsonErr = json.Unmarshal(j, &config)
 
 	if jsonErr != nil {
+		log.Error().Err(jsonErr).Msg("unable to unmarshal JSON response")
 		var configInt interface{}
+		log.Debug().Msg("Converting JSON response to interface{}")
 		jsonErr = json.Unmarshal(j, &configInt)
 		switch configInt.(type) {
 		case string:
 			// convert configInt to ConfigurationFile
+			log.Debug().Msg("Converting interface{} to ConfigurationFile")
 			jsonErr = json.Unmarshal([]byte(configInt.(string)), &config)
 			if jsonErr == nil {
+				log.Error().Err(jsonErr).Msg("unable to convert Azure Key Vault secret to kfutil config")
 				return config, jsonErr
 			}
 		}
 		// Check if it's an instance of ConfigurationFileEntry
+		log.Debug().Msg("Converting JSON response to ConfigurationFileEntry")
 		var configEntry ConfigurationFileEntry
 		jsonErr2 := json.Unmarshal(j, &configEntry)
 		if jsonErr2 != nil {
-			log.Println("Error unmarshalling JSON:", jsonErr2)
+			log.Error().Err(jsonErr2).Msg("unable to convert Azure Key Vault secret to kfutil config")
 			return config, jsonErr2
 		}
-		log.Println("Secret value: ", configEntry)
+		log.Trace().Interface("configEntry", configEntry).Msg("configEntry")
 
 		// Convert to ConfigurationFile
 		config = ConfigurationFile{
@@ -166,17 +208,24 @@ func (r AuthProviderAzureIdParams) getCommandCredsFromAzureKeyVault(secretURL st
 			},
 		}
 	}
+	log.Debug().Msg("return: AuthProviderAzureIDParams.getCommandCredsFromAzureKeyVault()")
+	log.Info().Msg("successfully fetched secret from Azure Key Vault")
 	return config, nil
 }
 
-func (r AuthProviderAzureIdParams) parseAccessToken(body []byte) (string, error) {
+func (apaz AuthProviderAzureIDParams) parseAccessToken(body []byte) (string, error) {
+	log.Debug().Msg("enter: AuthProviderAzureIDParams.parseAccessToken()")
 	var f interface{}
+	log.Debug().Msg("Converting response body to JSON")
 	err := json.Unmarshal(body, &f)
 	if err != nil {
-		fmt.Println("Error unmarshalling JSON:", err)
+		log.Error().Err(err).Msg("unable to parse access token from Azure response")
 		return "", err
 	}
 
 	m := f.(map[string]interface{})
-	return m["access_token"].(string), nil
+	aToken := m["access_token"].(string)
+	log.Debug().Str("accessToken", hashSecretValue(aToken)).Msg("access token from Azure response")
+	log.Debug().Msg("return: AuthProviderAzureIDParams.parseAccessToken()")
+	return aToken, nil
 }
