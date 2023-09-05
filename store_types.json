@@ -1,38 +1,5 @@
 [
   {
-    "Name": "RFPkcs12",
-    "ShortName": "RFPkcs12",
-    "Capability": "RFPkcs12",
-    "ServerRequired": true,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Required",
-    "PowerShell": false,
-    "PrivateKeyAllowed": "Optional",
-    "SupportedOperations": {
-      "Add": true,
-      "Create": true,
-      "Discovery": true,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "PasswordOptions": {
-      "Style": "Default",
-      "EntrySupported": false,
-      "StoreRequired": true
-    },
-    "Properties": [
-      {
-        "Name": "LinuxFilePermissionsOnStoreCreation",
-        "DisplayName": "Linux File Permissions on Store Creation",
-        "Required": false,
-        "DependsOn": "",
-        "Type": "String",
-        "DefaultValue": ""
-      }
-    ],
-    "EntryParameters": []
-  },
-  {
     "Name": "SampleStoreType",
     "ShortName": "SAMPLETYPE",
     "Capability": "SAMPLETYPE",
@@ -2835,5 +2802,82 @@
     "CustomAliasAllowed": "Required",
     "ServerRegistration": 13,
     "InventoryEndpoint": "/AnyInventory/Update"
+  },
+  {
+    "Name": "Azure Keyvault",
+    "ShortName": "AKV",
+    "Capability": "AKV",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "VaultName",
+        "DisplayName": "VaultName",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ResourceGroupName",
+        "DisplayName": "ResourceGroupName",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "SkuType",
+        "DisplayName": "SKU Type",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "standard,premium",
+        "Required": false
+      },
+      {
+        "Name": "VaultRegion",
+        "DisplayName": "Vault Region",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "eastus,eastus2,southcentralus,westus2,westus3,australiaeast,northeurope,swedencentral,uksouth,westeurope,centralus,southafricanorth,centralindia,eastasia,japaneast,koreacentral,canadacentral,francecentral,germanywestcentral,norwayeast,switzerlandnorth,uaenorth,brazilsouth,centraluseuap,eastus2euap,qatarcentral,centralusstage,eastusstage,eastus2stage,northcentralusstage,westusstage,asia,asiapacific,australia,brazil,canada,europe,france,germany,global,india,japan,korea,norway,singapore,southafrica,switzerland,uae,uk,unitedstates,unitedstatesuap,eastasiastage,southeastasiastage,brazilus,eastusstg,northcentralus,westus,jioindiawest,devfabric,westcentralus,southafricawest,australiacentral,australiacentral2,australiasoutheast,japanwest,jioindiacentral,koreasouth,southindia,westindia,canadaeast,francesouth,germanynorth,norwaywest,switzerlandwest,ukwest,uaecentral,brazilsoutheast",
+        "Required": false
+      },
+      {
+        "Name": "AzureCloud",
+        "DisplayName": "Azure Cloud",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "public,china,germany,government",
+        "Required": false
+      },
+      {
+        "Name": "PrivateEndpoint",
+        "DisplayName": "Private KeyVault Endpoint",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      }
+    ],
+    "EntryParameters": null,
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Optional"
   }
 ]
