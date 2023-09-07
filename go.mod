@@ -8,7 +8,7 @@ require (
 	github.com/Keyfactor/keyfactor-go-client/v2 v2.0.2-rc.4
 	github.com/google/go-cmp v0.5.9
 	github.com/spf13/cobra v1.7.0
-	golang.org/x/crypto v0.11.0
+	golang.org/x/crypto v0.13.0
 	gopkg.in/yaml.v3 v3.0.1
 //github.com/google/go-cmp/cmp v0.5.9
 )
@@ -24,7 +24,7 @@ require (
 	github.com/spbsoluble/go-pkcs12 v0.3.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.mozilla.org/pkcs7 v0.0.0-20210826202110-33d05740a352 // indirect
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/term v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/term v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 )
