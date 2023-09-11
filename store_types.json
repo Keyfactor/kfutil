@@ -394,16 +394,6 @@
         },
         "StorePathValue": "[\"My\",\"WebHosting\"]",
         "PrivateKeyAllowed": "Required",
-        "JobProperties": [
-            "IPAddress",
-            "Port",
-            "HostName",
-            "SiteName",
-            "SniFlag",
-            "Protocol",
-            "ProviderName",
-            "SAN"
-        ],
         "ServerRequired": true,
         "PowerShell": false,
         "BlueprintAllowed": false,
