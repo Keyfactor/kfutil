@@ -266,7 +266,7 @@ var storesTypeCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
 		debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
+		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		gitRef, _ := cmd.Flags().GetString("git-ref")
@@ -286,7 +286,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		validStoreTypes := getValidStoreTypes("", gitRef)
 		storeType, _ := cmd.Flags().GetString("name")
 		listTypes, _ := cmd.Flags().GetBool("list")
-		configFile, _ := cmd.Flags().GetString("from-file")
+		storeTypeConfigFile, _ := cmd.Flags().GetString("from-file")
 
 		// if gitRef is null or empty, then set it to "master"
 		if gitRef == "" {
@@ -306,8 +306,8 @@ var storesTypeCreateCmd = &cobra.Command{
 			return
 		}
 
-		if configFile != "" {
-			createdStore, err := createStoreFromFile(configFile, kfClient)
+		if storeTypeConfigFile != "" {
+			createdStore, err := createStoreFromFile(storeTypeConfigFile, kfClient)
 			if err != nil {
 				fmt.Printf("Failed to create store type from file \"%s\"", err)
 				return
@@ -343,7 +343,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			}
 			log.Fatalf("Error: Invalid store type: %s", storeType)
 		} else {
-			//kfClient, _ := initClient(configFile, profile, noPrompt, authConfig,false) //TODO: why is this here?
+			//kfClient, _ := initClient(storeTypeConfigFile, profile, noPrompt, authConfig,false) //TODO: why is this here?
 			storeTypeConfig, stErr := readStoreTypesConfig("", gitRef)
 			if stErr != nil {
 				fmt.Printf("Error: %s", stErr)
