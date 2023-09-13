@@ -20,8 +20,6 @@ jobs:
       - name: Install dependencies
         run: go mod download && go mod tidy
 
-      - name: Install azure CLI
-        uses: azure/setup-azure-cli@v1
 
   test-store-types:
     runs-on: ubuntu-latest
@@ -30,18 +28,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Authenticate to Azure
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+#      - name: Authenticate to Azure
+#        uses: azure/login@v1
+#        with:
+#          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Get secret from Azure Key Vault
-        run: |
-          az keyvault secret show \
-            --vault-name integrations \
-            --name command_config \
-            --query "value" \
-            --output tsv > ~/.keyfactor/command_config.json
+      - name: Azure CLI script
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az keyvault secret show \
+              --vault-name integrations \
+              --name command_config \
+              --query "value" \
+              --output tsv > ~/.keyfactor/command_config.json
 
       - name: Run tests
         run: go test ./cmd/storeTypes_test.go
