@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"encoding/json"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -8,15 +10,20 @@ func Test_LoginHelpCmd(t *testing.T) {
 	// Test root help
 	testCmd := RootCmd
 	testCmd.SetArgs([]string{"login", "--help"})
-	testCmd.Execute()
+	err := testCmd.Execute()
+
+	assert.NoError(t, err)
 
 	// test root halp
 	testCmd.SetArgs([]string{"login", "-h"})
-	testCmd.Execute()
+	err = testCmd.Execute()
+	assert.NoError(t, err)
 
 	// test root halp
 	testCmd.SetArgs([]string{"login", "--halp"})
-	//testCmd.Execute()
+	err = testCmd.Execute()
+
+	assert.Error(t, err)
 	// check if error was returned
 	if err := testCmd.Execute(); err == nil {
 		t.Errorf("RootCmd() = %v, shouldNotPass %v", err, true)
@@ -33,4 +40,21 @@ func Test_LoginCmdNoPrompt(t *testing.T) {
 		t.Errorf("RootCmd() = %v, shouldNotPass %v", noPromptErr, true)
 	}
 
+}
+
+func Test_LoginCmdConfigParams(t *testing.T) {
+	testCmd := RootCmd
+	// test
+	testCmd.SetArgs([]string{"stores", "list", "--exp", "--config", "/Users/sbailey/.keyfactor/extra_config.json"})
+	output := captureOutput(func() {
+		err := testCmd.Execute()
+		assert.NoError(t, err)
+	})
+	var stores []string
+	if err := json.Unmarshal([]byte(output), &stores); err != nil {
+		t.Fatalf("Error unmarshalling JSON: %v", err)
+	}
+
+	// Verify that the length of the response is greater than 0
+	assert.True(t, len(stores) >= 0, "Expected non-empty list of stores")
 }
