@@ -40,11 +40,14 @@ jobs:
 
       - name: Get secret from Azure Key Vault
         run: |
+          set -e -o pipefail # fail on any error and show what failed
+          mkdir -p ~/.keyfactor
           az keyvault secret show \
             --vault-name integrations \
             --name command_config \
             --query "value" \
             --output tsv > ~/.keyfactor/command_config.json
+          cat ~/.keyfactor/command_config.json
 
       - name: Run tests
         run: go test ./cmd/storeTypes_test.go
