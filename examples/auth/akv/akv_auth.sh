@@ -29,6 +29,6 @@ echo "Secret URL: $SECRET_URL"
 echo "Querying Azure Key Vault for secret value..."
 SECRET_VALUE=$(curl -H "Authorization: Bearer ${ACCESS_TOKEN}" "$SECRET_URL" | jq -r .value)
 
-echo "Secret Value: $SECRET_VALUE"
+#echo "Secret Value: $SECRET_VALUE"
 mkdir -p ~/.keyfactor
 echo $SECRET_VALUE | jq -r . > ~/.keyfactor/command_config.json
