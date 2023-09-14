@@ -33,17 +33,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Get Azure Key Vault Access Token
-        id: get-token
-        run: |
-          access_token=$(curl -s -H "Metadata: true" "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net" | jq -r .access_token)
-          echo "::set-env name=AZURE_ACCESS_TOKEN::$access_token"
-
       - name: Get secret from Azure Key Vault
         run: |
           set -e -o pipefail # fail on any error and show what failed
+          access_token=$(curl -s -H "Metadata: true" "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net" | jq -r .access_token)
           mkdir -p ~/.keyfactor
-          secret_value=$(az keyvault secret show --vault-name kfutil --name command_config --query "value" --output tsv --auth-type oauth2 --token $AZURE_ACCESS_TOKEN)
+          secret_value=$(az keyvault secret show --vault-name kfutil --name command_config --query "value" --output tsv --auth-type oauth2 --token $access_token)
           echo "$secret_value" > ~/.keyfactor/command_config.json
           cat ~/.keyfactor/command_config.json
 
