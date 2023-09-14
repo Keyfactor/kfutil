@@ -33,23 +33,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Authenticate to Azure
-        uses: azure/login@v1
-
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Get Azure Key Vault Access Token
+        id: get-token
+        run: |
+          access_token=$(curl -s -H "Metadata: true" "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net" | jq -r .access_token)
+          echo "::set-env name=AZURE_ACCESS_TOKEN::$access_token"
 
       - name: Get secret from Azure Key Vault
         run: |
           set -e -o pipefail # fail on any error and show what failed
           mkdir -p ~/.keyfactor
-          az keyvault secret show \
-            --vault-name integrations \
-            --name command_config \
-            --query "value" \
-            --output tsv > ~/.keyfactor/command_config.json
+          secret_value=$(az keyvault secret show --vault-name kfutil --name command_config --query "value" --output tsv --auth-type oauth2 --token $AZURE_ACCESS_TOKEN)
+          echo "$secret_value" > ~/.keyfactor/command_config.json
           cat ~/.keyfactor/command_config.json
 
       - name: Run tests

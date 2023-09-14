@@ -2,7 +2,7 @@
 set -e -o pipefail
 
 export VAULT_NAME="kfutil"
-export SECRET_NAME="104lab"
+export SECRET_NAME="integration-labs"
 
 export METADATA_URL="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net"
 echo "Metadata URL: $METADATA_URL"
@@ -22,11 +22,13 @@ export SECRET_URL="https://${VAULT_NAME}.vault.azure.net/secrets/${SECRET_NAME}?
 echo "Secret URL: $SECRET_URL"
 
 # Create a new secret in Azure Key Vault
-SECRET_VALUE="meow"
-curl -X PUT -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Content-Type: application/json" -d "{\"value\": \"${SECRET_VALUE}\"}" "$SECRET_URL"
+#SECRET_VALUE="meow"
+#curl -X PUT -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Content-Type: application/json" -d "{\"value\": \"${SECRET_VALUE}\"}" "$SECRET_URL"
 
 # Get the secret value from Azure Key Vault
 echo "Querying Azure Key Vault for secret value..."
 SECRET_VALUE=$(curl -H "Authorization: Bearer ${ACCESS_TOKEN}" "$SECRET_URL" | jq -r .value)
 
 echo "Secret Value: $SECRET_VALUE"
+mkdir -p ~/.keyfactor
+echo $SECRET_VALUE | jq -r . > ~/.keyfactor/command_config.json
