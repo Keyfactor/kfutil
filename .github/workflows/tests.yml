@@ -46,7 +46,7 @@ jobs:
 
       - name: Run tests
 #        run: go test -v ./cmd -run "^Test_StoreType*"
-        run: ls -la && source .env && go test -v ./cmd -run "^Test_StoreType*"
+        run: ls -la && source .env && printenv | grep -i keyfactor && go test -v ./cmd -run "^Test_StoreType*"
 
   Test_StoreTypes_KFC_10_4_0:
     runs-on: self-hosted
@@ -62,8 +62,8 @@ jobs:
         run: ls -la
 
       - name: Get secret from Azure Key Vault
-#        run: go test -v ./cmd -run "^Test_StoreType*"
-        run: source .env && go test -v ./cmd -run "^Test_StoreType*"
+        run: |
+          . ./examples/auth/akv/akv_auth.sh
 
       - name: Run tests
         run: go test -v ./cmd -run "^Test_StoreType*"
