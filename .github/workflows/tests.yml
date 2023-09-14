@@ -24,11 +24,68 @@ jobs:
         run: |
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
           az --version
-
-
-  test-store-types:
+  Test_StoreTypes_KFC_11_0_0:
     runs-on: self-hosted
     needs: build
+    env:
+      SECRET_NAME: "command-config-1100"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: list dir
+        run: ls -la
+
+      - name: Get secret from Azure Key Vault
+        run: |
+          . ./examples/auth/akv/akv_auth.sh
+
+      - name: Run tests
+        run: go test -v ./cmd -run "^Test_StoreType*"
+
+  Test_StoreTypes_KFC_10_4_0:
+    runs-on: self-hosted
+    needs: build
+    env:
+      SECRET_NAME: "command-config-1040"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: list dir
+        run: ls -la
+
+      - name: Get secret from Azure Key Vault
+        run: |
+          . ./examples/auth/akv/akv_auth.sh
+
+      - name: Run tests
+        run: go test -v ./cmd -run "^Test_StoreType*"
+
+  Test_StoreTypes_KFC_10_2_1:
+    runs-on: self-hosted
+    needs: build
+    env:
+      SECRET_NAME: "command-config-1021"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: list dir
+        run: ls -la
+
+      - name: Get secret from Azure Key Vault
+        run: |
+          . ./examples/auth/akv/akv_auth.sh
+
+      - name: Run tests
+        run:  go test -v ./cmd -run "^Test_StoreType*"
+
+  Test_StoreTypes_KFC_9_10_1:
+    runs-on: self-hosted
+    needs: build
+    env:
+      SECRET_NAME: "command-config-9101"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
