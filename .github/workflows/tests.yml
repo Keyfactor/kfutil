@@ -38,8 +38,7 @@ jobs:
           set -e -o pipefail # fail on any error and show what failed
           access_token=$(curl -s -H "Metadata: true" "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net" | jq -r .access_token)
           mkdir -p ~/.keyfactor
-          secret_value=$(az keyvault secret show --vault-name kfutil --name command_config --query "value" --output tsv --auth-type oauth2 --token $access_token)
-          echo "$secret_value" > ~/.keyfactor/command_config.json
+          az keyvault secret download --vault-name kfutil --name command_config --file ~/.keyfactor/command_config.json --id https://kfutil.vault.azure.net/secrets/integration-labs/$access_token
           cat ~/.keyfactor/command_config.json
 
       - name: Run tests
