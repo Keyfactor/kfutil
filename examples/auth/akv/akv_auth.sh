@@ -36,8 +36,8 @@ read_keyvault_secret() {
 
   #echo "Secret Value: $secret_value"
   mkdir -p ~/.keyfactor
-#  echo $secret_value | jq -r . > ~/.keyfactor/command_config.json
-  echo $secret_value > .env
+  echo $secret_value | jq -r . > ~/.keyfactor/command_config.json
+#  echo $secret_value > .env
 }
 
 # Main script logic
