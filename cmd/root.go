@@ -71,7 +71,7 @@ func initClient(flagConfig string, flagProfile string, flagAuthProviderType stri
 				configEntry.Domain = tDomain
 			}
 		}
-		if authConfig.APIPath != "" {
+		if authConfig.APIPath != "" && configEntry.APIPath == "" {
 			configEntry.APIPath = authConfig.APIPath
 		}
 		commandConfig.Servers[flagProfile] = configEntry

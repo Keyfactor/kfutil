@@ -104,7 +104,7 @@ func Test_StoreTypesFetchTemplatesCmd(t *testing.T) {
 func Test_StoreTypesGetCmd(t *testing.T) {
 	testCmd := RootCmd
 	// Attempt to get the AWS store type because it comes with the product
-	testCmd.SetArgs([]string{"store-types", "get", "--name", "AWS"})
+	testCmd.SetArgs([]string{"store-types", "get", "--name", "IIS"})
 	output := captureOutput(func() {
 		err := testCmd.Execute()
 		assert.NoError(t, err)
@@ -133,7 +133,7 @@ func Test_StoreTypesGetCmd(t *testing.T) {
 	_, ok = storeType["Name"].(string)
 	assert.True(t, ok, "Expected name to be a string")
 	// check that shortname == AWS
-	assert.Equal(t, storeType["ShortName"], "AWS", "Expected short name to be AWS")
+	assert.Equal(t, storeType["ShortName"], "IIS", "Expected short name to be IIS")
 }
 
 func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
@@ -169,6 +169,43 @@ func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 		shortName := storeType["ShortName"].(string)
 		createStoreTypeTest(t, shortName)
 	}
+
+	createAllStoreTypes(t, storeTypes)
+}
+
+func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
+	t.Run(fmt.Sprintf("Create ALL StoreTypes"), func(t *testing.T) {
+		testCmd := RootCmd
+		// Attempt to get the AWS store type because it comes with the product
+		testCmd.SetArgs([]string{"store-types", "create", "--all"})
+		output := captureOutput(func() {
+			err := testCmd.Execute()
+			assert.NoError(t, err)
+		})
+		assert.NotNil(t, output, "No output returned from create all command")
+
+		// iterate over the store types and verify that each has a name shortname and storetype
+		for sType := range storeTypes {
+			storeType := storeTypes[sType].(map[string]interface{})
+			assert.NotNil(t, storeType["Name"], "Expected store type to have a name")
+			assert.NotNil(t, storeType["ShortName"], "Expected store type to have short name")
+
+			// verify short name is a string
+			_, ok := storeType["ShortName"].(string)
+			assert.True(t, ok, "Expected short name to be a string")
+			// verify name is a string
+			_, ok = storeType["Name"].(string)
+			assert.True(t, ok, "Expected name to be a string")
+
+			// Attempt to create the store type
+			shortName := storeType["ShortName"].(string)
+
+			assert.Contains(t, output, fmt.Sprintf("Certificate store type %s created with ID", shortName), "Expected output to contain store type created message")
+
+			// Delete again after create
+			deleteStoreTypeTest(t, shortName, true)
+		}
+	})
 }
 
 func deleteStoreTypeTest(t *testing.T, shortName string, allowFail bool) {
@@ -197,7 +234,7 @@ func deleteStoreTypeTest(t *testing.T, shortName string, allowFail bool) {
 }
 
 func createStoreTypeTest(t *testing.T, shortName string) {
-	t.Run(fmt.Sprintf("CreateStore for %s", shortName), func(t *testing.T) {
+	t.Run(fmt.Sprintf("CreateStore %s", shortName), func(t *testing.T) {
 		testCmd := RootCmd
 		deleteStoreTypeTest(t, shortName, true)
 		testCmd.SetArgs([]string{"store-types", "create", "--name", shortName})

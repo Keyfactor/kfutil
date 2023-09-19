@@ -283,6 +283,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		//Check if store type is valid
+		creatAll, _ := cmd.Flags().GetBool("all")
 		validStoreTypes := getValidStoreTypes("", gitRef)
 		storeType, _ := cmd.Flags().GetString("name")
 		listTypes, _ := cmd.Flags().GetBool("list")
@@ -317,7 +318,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			return
 		}
 
-		if storeType == "" {
+		if storeType == "" && !creatAll {
 			prompt := &survey.Select{
 				Message: "Choose an option:",
 				Options: validStoreTypes,
@@ -330,7 +331,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			storeType = selected
 		}
 		for _, v := range validStoreTypes {
-			if strings.EqualFold(v, strings.ToUpper(storeType)) {
+			if strings.EqualFold(v, strings.ToUpper(storeType)) || creatAll {
 				log.Printf("[DEBUG] Valid store type: %s", storeType)
 				storeTypeIsValid = true
 				break
@@ -342,22 +343,25 @@ var storesTypeCreateCmd = &cobra.Command{
 				fmt.Println(fmt.Sprintf("\t%s", st))
 			}
 			log.Fatalf("Error: Invalid store type: %s", storeType)
+		}
+		var typesToCreate []string
+		if !creatAll {
+			typesToCreate = []string{storeType}
 		} else {
-			//kfClient, _ := initClient(storeTypeConfigFile, profile, noPrompt, authConfig,false) //TODO: why is this here?
-			storeTypeConfig, stErr := readStoreTypesConfig("", gitRef)
-			if stErr != nil {
-				fmt.Printf("Error: %s", stErr)
-				log.Fatalf("Error: %s", stErr)
-			}
-			log.Printf("[DEBUG] Store type config: %v", storeTypeConfig[storeType])
-			storeTypeInterface := storeTypeConfig[storeType].(map[string]interface{})
+			typesToCreate = validStoreTypes
+		}
+		storeTypeConfig, stErr := readStoreTypesConfig("", gitRef)
+		if stErr != nil {
+			fmt.Printf("Error: %s", stErr)
+			log.Fatalf("Error: %s", stErr)
+		}
+		for _, st := range typesToCreate {
+			log.Printf("[DEBUG] Store type config: %v", storeTypeConfig[st])
+			storeTypeInterface := storeTypeConfig[st].(map[string]interface{})
+			storeTypeJSON, _ := json.Marshal(storeTypeInterface)
 
-			//convert storeTypeInterface to json string
-			storeTypeJson, _ := json.Marshal(storeTypeInterface)
-
-			//convert storeTypeJson to api.StoreType
 			var storeTypeObj api.CertificateStoreType
-			convErr := json.Unmarshal(storeTypeJson, &storeTypeObj)
+			convErr := json.Unmarshal(storeTypeJSON, &storeTypeObj)
 			if convErr != nil {
 				fmt.Printf("Error: %s", convErr)
 				log.Printf("Error: %s", convErr)
@@ -372,8 +376,9 @@ var storesTypeCreateCmd = &cobra.Command{
 				return
 			}
 			log.Printf("[DEBUG] Create response: %v", createResp)
-			fmt.Printf("Certificate store type %s created with ID: %d", storeType, createResp.StoreType)
+			fmt.Println(fmt.Sprintf("Certificate store type %s created with ID: %d", st, createResp.StoreType))
 		}
+
 	},
 }
 
@@ -687,11 +692,13 @@ func init() {
 	// CREATE command
 	var listValidStoreTypes bool
 	var filePath string
+	var createAll bool
 	storeTypesCmd.AddCommand(storesTypeCreateCmd)
 	storesTypeCreateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Short name of the certificate store type to get. Valid choices are: "+validTypesString)
 	storesTypeCreateCmd.Flags().BoolVarP(&listValidStoreTypes, "list", "l", false, "List valid store types.")
 	storesTypeCreateCmd.Flags().StringVarP(&filePath, "from-file", "f", "", "Path to a JSON file containing certificate store type data for a single store.")
 	storesTypeCreateCmd.Flags().StringVarP(&gitRef, "git-ref", "b", "main", "The git branch or tag to reference when pulling store-types from the internet.")
+	storesTypeCreateCmd.Flags().BoolVarP(&createAll, "all", "a", false, "Create all store types.")
 	//storesTypeCreateCmd.MarkFlagRequired("name")
 
 	// UPDATE command
