@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -13,7 +14,8 @@ func (b *UniversalOrchestratorHelmValueBuilder) selectExtensionsHandler() error 
 	ghTool := NewGithubReleaseFetcher(b.token)
 	extensions, err := ghTool.GetExtensionList()
 	if err != nil {
-		return err
+		fmt.Printf("\033[31m%s\u001B[0m\n", err)
+		return b.MainMenu()
 	}
 
 	// Get a list of currently installed extensions
@@ -54,6 +56,7 @@ func (b *UniversalOrchestratorHelmValueBuilder) selectExtensionsHandler() error 
 		return ""
 	}
 
+	// TODO make selection process declarative - i.e. extensions not in the extensionsToInstall slice are not installed
 	var extensionsToInstall []string
 	prompt := &survey.MultiSelect{
 		Message:     "Select the extensions to install - the most recent versions are displayed",
@@ -141,18 +144,14 @@ func NewGithubReleaseFetcher(token string) *GithubReleaseFetcher {
 
 func (g *GithubReleaseFetcher) getOrchestratorNames() ([]string, error) {
 	orchestratorList := make([]string, 0)
-	page := 1
 
-	for {
-		// Prevent rate limiting
-		if page > 10 {
-			break
-		}
+	for page := 1; page < 100; page++ {
+		// Prevent rate limiting by setting upper bound to 100
 
 		// Ask https://api.github.com/orgs/keyfactor/repos for the list of repos
 		// Unmarshal the body into a slice of gitHubRepo structs
 		var repos []gitHubRepo
-		err := g.Get(fmt.Sprintf("https://api.github.com/orgs/keyfactor/repos?page=%d&per_page=100", page), &repos)
+		err := g.Get(fmt.Sprintf("https://api.github.com/orgs/keyfactor/repos?type=public&page=%d&per_page=100", page), &repos)
 		if err != nil {
 			return nil, err
 		}
@@ -164,12 +163,11 @@ func (g *GithubReleaseFetcher) getOrchestratorNames() ([]string, error) {
 
 		// Loop through the repos and add them to the orchestratorList slice
 		for _, repo := range repos {
-			if strings.Contains(repo.Name, "-orchestrator") {
+			// If the repo ends with "-orchestrator" or "-pam, add it to the list
+			if strings.HasSuffix(repo.Name, "-orchestrator") || strings.HasSuffix(repo.Name, "-pam") {
 				orchestratorList = append(orchestratorList, repo.Name)
 			}
 		}
-
-		page++
 	}
 
 	return orchestratorList, nil
@@ -178,7 +176,7 @@ func (g *GithubReleaseFetcher) getOrchestratorNames() ([]string, error) {
 func (g *GithubReleaseFetcher) GetExtensionList() (Extensions, error) {
 	extensionNameList, err := g.getOrchestratorNames()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get list of extensions: %s", err)
 	}
 
 	extensions := make(Extensions)
@@ -232,10 +230,16 @@ func (g *GithubReleaseFetcher) Get(url string, v any) error {
 	}
 
 	// Unmarshal the body
-	// TODO this could panic if the body is not valid JSON
 	err = json.Unmarshal(body, v)
 	if err != nil {
-		return err
+		message := GithubMessage{}
+		err = json.Unmarshal(body, &message)
+		if err != nil {
+			log.Printf("Failed to unmarshal JSON: %s", err)
+			return err
+		}
+
+		return fmt.Errorf("failed to get %s: %s (%s)", url, message.Message, message.DocumentationUrl)
 	}
 
 	return nil

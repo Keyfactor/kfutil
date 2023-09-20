@@ -40,9 +40,9 @@ func UoValueBuilder(cmd *cobra.Command, args []string) {
 	if outputFile != "" {
 		uo.SetOverrideFile(outputFile)
 	}
-	if commandConfig.Servers["profile"].Hostname != "" {
+	if commandConfig.Servers["default"].Hostname != "" {
 		// TODO this could panic if authConfigFile fails
-		uo.SetHostname(commandConfig.Servers["profile"].Hostname)
+		uo.SetHostname(commandConfig.Servers["default"].Hostname)
 	}
 
 	uo.Build()

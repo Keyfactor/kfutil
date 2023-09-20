@@ -36,9 +36,10 @@ type ConfigMapItem struct {
 }
 
 type UniversalOrchestratorHelmValues struct {
-	Name     string `yaml:"name"`
-	Fullname string `yaml:"fullname"`
-	Image    struct {
+	BaseOrchestratorName string `yaml:"baseOrchestratorName"`
+	CompleteName         string `yaml:"completeName"`
+	ReplicaCount         int    `yaml:"replicaCount"`
+	Image                struct {
 		Repository string `yaml:"repository"`
 		PullPolicy string `yaml:"pullPolicy"`
 		Tag        string `yaml:"tag"`
@@ -151,4 +152,9 @@ type gitHubRelease struct {
 	TarballURL string `json:"tarball_url"`
 	ZipballURL string `json:"zipball_url"`
 	Body       string `json:"body"`
+}
+
+type GithubMessage struct {
+	Message          string `json:"message"`
+	DocumentationUrl string `json:"documentation_url"`
 }
