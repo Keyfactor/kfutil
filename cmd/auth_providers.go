@@ -11,7 +11,7 @@ import (
 	"net/http"
 )
 
-func (r AuthProviderAzureIdParams) authAzureIdentity() (azcore.AccessToken, error) {
+func (apaz AuthProviderAzureIDParams) authAzureIdentity() (azcore.AccessToken, error) {
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		log.Fatalf("failed to obtain a credential: %v", err)
@@ -26,7 +26,7 @@ func (r AuthProviderAzureIdParams) authAzureIdentity() (azcore.AccessToken, erro
 	)
 }
 
-func (r AuthProviderAzureIdParams) authenticate() (ConfigurationFile, error) {
+func (apaz AuthProviderAzureIDParams) authenticate() (ConfigurationFile, error) {
 	metadataURL := "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net"
 
 	client := &http.Client{}
@@ -65,7 +65,7 @@ func (r AuthProviderAzureIdParams) authenticate() (ConfigurationFile, error) {
 	//log.Println("Response Body:", string(body))
 
 	// Parse the access token from the response JSON
-	accessToken, tokenErr := r.parseAccessToken(body)
+	accessToken, tokenErr := apaz.parseAccessToken(body)
 
 	if tokenErr != nil {
 		log.Println("Error parsing access token:", tokenErr)
@@ -76,12 +76,12 @@ func (r AuthProviderAzureIdParams) authenticate() (ConfigurationFile, error) {
 		log.Println("Access Token:", accessToken)
 	}
 
-	secretURL := fmt.Sprintf("https://%s.vault.azure.net/secrets/%s?api-version=7.0", r.AzureVaultName, r.SecretName)
+	secretURL := fmt.Sprintf("https://%s.vault.azure.net/secrets/%s?api-version=7.0", apaz.AzureVaultName, apaz.SecretName)
 
-	return r.getCommandCredsFromAzureKeyVault(secretURL, accessToken)
+	return apaz.getCommandCredsFromAzureKeyVault(secretURL, accessToken)
 }
 
-func (r AuthProviderAzureIdParams) getCommandCredsFromAzureKeyVault(secretURL string, accessToken string) (ConfigurationFile, error) {
+func (apaz AuthProviderAzureIDParams) getCommandCredsFromAzureKeyVault(secretURL string, accessToken string) (ConfigurationFile, error) {
 	// Create a new secret in Azure Key Vault
 	client := &http.Client{}
 	config := ConfigurationFile{}
@@ -169,7 +169,7 @@ func (r AuthProviderAzureIdParams) getCommandCredsFromAzureKeyVault(secretURL st
 	return config, nil
 }
 
-func (r AuthProviderAzureIdParams) parseAccessToken(body []byte) (string, error) {
+func (apaz AuthProviderAzureIDParams) parseAccessToken(body []byte) (string, error) {
 	var f interface{}
 	err := json.Unmarshal(body, &f)
 	if err != nil {

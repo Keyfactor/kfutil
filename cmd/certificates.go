@@ -20,17 +20,12 @@ var certificatesCmd = &cobra.Command{
 	Short: "Keyfactor Command certificate APIs and utilities.",
 	Long:  `A collections of APIs and utilities for interacting with Keyfactor certificates.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		//debugFlag, _ := cmd.Flags().GetBool("debug")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		//profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 		fmt.Println("NOT IMPLEMENTED: certificates called")

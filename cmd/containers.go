@@ -27,7 +27,7 @@ var containersCreateCmd = &cobra.Command{
 	Long:  `Create certificate store container.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		//debugFlag, _ := cmd.Flags().GetBool("debug")
+		//debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		//profile, _ := cmd.Flags().GetString("profile")
@@ -36,7 +36,7 @@ var containersCreateCmd = &cobra.Command{
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 		fmt.Println("Create store containers not implemented.")
@@ -49,22 +49,22 @@ var containersGetCmd = &cobra.Command{
 	Long:  `Get certificate store container by ID or name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
 		isExperimental := true
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -92,7 +92,7 @@ var containersUpdateCmd = &cobra.Command{
 	Long:  `Update certificate store container by ID or name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		//debugFlag, _ := cmd.Flags().GetBool("debug")
+		//debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		//profile, _ := cmd.Flags().GetString("profile")
@@ -101,7 +101,7 @@ var containersUpdateCmd = &cobra.Command{
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 		fmt.Println("Update store containers not implemented.")
@@ -114,7 +114,7 @@ var containersDeleteCmd = &cobra.Command{
 	Long:  `Delete certificate store container by ID or name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		//debugFlag, _ := cmd.Flags().GetBool("debug")
+		//debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		//profile, _ := cmd.Flags().GetString("profile")
@@ -123,7 +123,7 @@ var containersDeleteCmd = &cobra.Command{
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 		fmt.Println("Delete store containers not implemented.")
@@ -136,22 +136,22 @@ var containersListCmd = &cobra.Command{
 	Long:  `List certificate store containers.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 

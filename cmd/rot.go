@@ -388,14 +388,14 @@ package cmd
 //		PreRunE:                nil,
 //		Run: func(cmd *cobra.Command, args []string) {
 //			// Global flags
-//			debugFlag, _ := cmd.Flags().GetBool("debug")
+//			debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 //			configFile, _ := cmd.Flags().GetString("config")
 //			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 //			profile, _ := cmd.Flags().GetString("profile")
-//			kfcHostName, _ := cmd.Flags().GetString("hostname")
-//			kfcUsername, _ := cmd.Flags().GetString("username")
-//			kfcPassword, _ := cmd.Flags().GetString("password")
-//			kfcDomain, _ := cmd.Flags().GetString("domain")
+//			kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+//			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+//			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+//			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 //			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 //			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 //
@@ -553,14 +553,14 @@ package cmd
 //		PreRunE:                nil,
 //		Run: func(cmd *cobra.Command, args []string) {
 //			// Global flags
-//			debugFlag, _ := cmd.Flags().GetBool("debug")
+//			debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 //			configFile, _ := cmd.Flags().GetString("config")
 //			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 //			profile, _ := cmd.Flags().GetString("profile")
-//			kfcHostName, _ := cmd.Flags().GetString("hostname")
-//			kfcUsername, _ := cmd.Flags().GetString("username")
-//			kfcPassword, _ := cmd.Flags().GetString("password")
-//			kfcDomain, _ := cmd.Flags().GetString("domain")
+//			kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+//			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+//			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+//			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 //			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 //			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 //
@@ -861,14 +861,14 @@ package cmd
 //		PreRunE:                nil,
 //		Run: func(cmd *cobra.Command, args []string) {
 //			// Global flags
-//			debugFlag, _ := cmd.Flags().GetBool("debug")
+//			debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 //			configFile, _ := cmd.Flags().GetString("config")
 //			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 //			profile, _ := cmd.Flags().GetString("profile")
-//			kfcHostName, _ := cmd.Flags().GetString("hostname")
-//			kfcUsername, _ := cmd.Flags().GetString("username")
-//			kfcPassword, _ := cmd.Flags().GetString("password")
-//			kfcDomain, _ := cmd.Flags().GetString("domain")
+//			kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+//			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+//			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+//			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 //			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 //			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 //

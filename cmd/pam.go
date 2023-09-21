@@ -38,22 +38,22 @@ var pamTypesListCmd = &cobra.Command{
 	Long:  "Returns a list of all available PAM provider types.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -62,7 +62,7 @@ var pamTypesListCmd = &cobra.Command{
 
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 		pamTypes, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderGetPamProviderTypes(context.Background()).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Execute()
 		if errors != nil {
 			WriteApiError("Get PAM Types", httpResponse, errors)
@@ -71,7 +71,7 @@ var pamTypesListCmd = &cobra.Command{
 
 		jsonString, marshallError := json.Marshal(pamTypes)
 		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+			log.Printf("%sError: %s", ColorRed, marshallError)
 		}
 		fmt.Printf("%s", jsonString)
 	},
@@ -87,22 +87,22 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 --from-file to specify the path to the JSON file.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -115,7 +115,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 		branchName, _ := cmd.Flags().GetString("branch")
 
 		if pamConfigFile == "" && repoName == "" {
-			log.Printf("%sError - must supply either a config file or GitHub repository to get file from.", colorRed)
+			log.Printf("%sError - must supply either a config file or GitHub repository to get file from.", ColorRed)
 			return
 		}
 
@@ -125,7 +125,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 			// get JSON config from integration-manifest on GitHub
 			pamProviderType, errors = GetTypeFromInternet(providerName, repoName, branchName, pamProviderType)
 			if errors != nil {
-				log.Printf("%sError reading from GitHub %s/%s: %s", colorRed, repoName, branchName, errors)
+				log.Printf("%sError reading from GitHub %s/%s: %s", ColorRed, repoName, branchName, errors)
 				fmt.Println("Please check the repository name and branch name and try again.")
 				fmt.Println(errors)
 				return
@@ -133,14 +133,14 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 		} else {
 			pamProviderType, errors = GetTypeFromConfigFile(pamConfigFile, pamProviderType)
 			if errors != nil {
-				log.Printf("%sError reading from file %s: %s", colorRed, pamConfigFile, errors)
+				log.Printf("%sError reading from file %s: %s", ColorRed, pamConfigFile, errors)
 				return
 			}
 		}
 
 		// pamType, errors :=
 		createdPamProviderType, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderCreatePamProviderType(context.Background()).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Type_(*pamProviderType).
 			Execute()
 		if errors != nil {
@@ -150,7 +150,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 
 		jsonString, marshallError := json.Marshal(createdPamProviderType)
 		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+			log.Printf("%sError: %s", ColorRed, marshallError)
 		}
 		fmt.Printf("%s", jsonString)
 	},
@@ -162,15 +162,15 @@ var pamProvidersListCmd = &cobra.Command{
 	Long:  "Returns a list of all the configured PAM providers.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 
@@ -178,7 +178,7 @@ var pamProvidersListCmd = &cobra.Command{
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -186,7 +186,7 @@ var pamProvidersListCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 		pamProviders, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderGetPamProviders(context.Background()).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Execute()
 		if errors != nil {
 			WriteApiError("Get PAM Providers", httpResponse, errors)
@@ -195,7 +195,7 @@ var pamProvidersListCmd = &cobra.Command{
 
 		jsonString, marshallError := json.Marshal(pamProviders)
 		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+			log.Printf("%sError: %s", ColorRed, marshallError)
 		}
 		fmt.Printf("%s", jsonString)
 	},
@@ -207,22 +207,22 @@ var pamProvidersGetCmd = &cobra.Command{
 	Long:  "Get a specific defined PAM Provider by ID.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -233,7 +233,7 @@ var pamProvidersGetCmd = &cobra.Command{
 		// pamProviderName := cmd.Flags().GetString("name")
 
 		pamProvider, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderGetPamProvider(context.Background(), pamProviderId).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Execute()
 		if errors != nil {
 			WriteApiError("Get PAM Provider", httpResponse, errors)
@@ -242,7 +242,7 @@ var pamProvidersGetCmd = &cobra.Command{
 
 		jsonString, marshallError := json.Marshal(pamProvider)
 		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+			log.Printf("%sError: %s", ColorRed, marshallError)
 		}
 		fmt.Printf("%s", jsonString)
 	},
@@ -254,22 +254,22 @@ var pamProvidersCreateCmd = &cobra.Command{
 	Long:  "Create a new PAM Provider, currently only supported from file.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -281,13 +281,13 @@ var pamProvidersCreateCmd = &cobra.Command{
 		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
 		pamProvider, errors := GetTypeFromConfigFile(pamConfigFile, pamProvider)
 		if errors != nil {
-			log.Printf("%sError reading from file %s: %s", colorRed, pamConfigFile, errors)
+			log.Printf("%sError reading from file %s: %s", ColorRed, pamConfigFile, errors)
 			return
 		}
 
 		// pamType, errors :=
 		createdPamProvider, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderCreatePamProvider(context.Background()).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Provider(*pamProvider).
 			Execute()
 		if errors != nil {
@@ -297,7 +297,7 @@ var pamProvidersCreateCmd = &cobra.Command{
 
 		jsonString, marshallError := json.Marshal(createdPamProvider)
 		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+			log.Printf("%sError: %s", ColorRed, marshallError)
 		}
 		fmt.Printf("%s", jsonString)
 	},
@@ -309,22 +309,22 @@ var pamProvidersUpdateCmd = &cobra.Command{
 	Long:  "Updates an existing PAM Provider, currently only supported from file.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -336,13 +336,13 @@ var pamProvidersUpdateCmd = &cobra.Command{
 		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
 		pamProvider, errors := GetTypeFromConfigFile(pamConfigFile, pamProvider)
 		if errors != nil {
-			log.Printf("%sError reading from file %s: %s", colorRed, pamConfigFile, errors)
+			log.Printf("%sError reading from file %s: %s", ColorRed, pamConfigFile, errors)
 			return
 		}
 
 		// pamType, errors :=
 		createdPamProvider, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderUpdatePamProvider(context.Background()).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Provider(*pamProvider).
 			Execute()
 		if errors != nil {
@@ -352,7 +352,7 @@ var pamProvidersUpdateCmd = &cobra.Command{
 
 		jsonString, marshallError := json.Marshal(createdPamProvider)
 		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+			log.Printf("%sError: %s", ColorRed, marshallError)
 		}
 		fmt.Printf("%s", jsonString)
 	},
@@ -364,22 +364,22 @@ var pamProvidersDeleteCmd = &cobra.Command{
 	Long:  "Delete a defined PAM Provider by ID.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := false
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -390,7 +390,7 @@ var pamProvidersDeleteCmd = &cobra.Command{
 		// pamProviderName := cmd.Flags().GetString("name")
 
 		httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderDeletePamProvider(context.Background(), pamProviderId).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Execute()
 		if errors != nil {
 			WriteApiError("Delete PAM Provider", httpResponse, errors)
@@ -425,7 +425,7 @@ func GetPamTypeInternet(providerName string, repo string, branch string) (interf
 	var manifestJson map[string]interface{}
 	errors = json.Unmarshal(manifest, &manifestJson)
 	if errors != nil {
-		log.Printf("%sError during Unmarshal() of PAM integration-manifest", colorRed)
+		log.Printf("%sError during Unmarshal() of PAM integration-manifest", ColorRed)
 		return nil, errors
 	}
 	pamTypeJson := manifestJson["about"].(map[string]interface{})["pam"].(map[string]interface{})["pam_types"].(map[string]interface{})[providerName]
@@ -434,7 +434,7 @@ func GetPamTypeInternet(providerName string, repo string, branch string) (interf
 }
 
 func WriteApiError(process string, httpResponse *http.Response, errors error) {
-	fmt.Printf("%s Error processing request for %s - %s - %s", colorRed, process, errors, parseError(httpResponse.Body))
+	fmt.Printf("%s Error processing request for %s - %s - %s", ColorRed, process, errors, parseError(httpResponse.Body))
 }
 
 func GetTypeFromInternet[T JsonImportableObject](providerName string, repo string, branch string, returnType *T) (*T, error) {

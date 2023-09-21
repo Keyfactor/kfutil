@@ -19,7 +19,7 @@ var statusCmd = &cobra.Command{
 	Long:  `Returns a list of all API endpoints.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		//debugFlag, _ := cmd.Flags().GetBool("debug")
+		//debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		//profile, _ := cmd.Flags().GetString("profile")
@@ -28,7 +28,7 @@ var statusCmd = &cobra.Command{
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 

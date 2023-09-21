@@ -21,7 +21,7 @@ var logoutCmd = &cobra.Command{
 	Long:  `Removes the credentials file '$HOME/.keyfactor/command_config.json'.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		//configFile, _ := cmd.Flags().GetString("config")
 		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		//profile, _ := cmd.Flags().GetString("profile")
@@ -30,8 +30,13 @@ var logoutCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		err := os.Remove(fmt.Sprintf("%s/.keyfactor/%s", os.Getenv("HOME"), DefaultConfigFileName))
 		if err != nil {
+			if os.IsNotExist(err) {
+				fmt.Println("Config file does not exist.")
+				fmt.Println("Logged out successfully!")
+				return
+			}
 			fmt.Println("Error removing config file: ", err)
-			log.Fatal("[ERROR] removing config file: ", err)
+			//log.Fatal("[ERROR] removing config file: ", err)
 		}
 		fmt.Println("Logged out successfully!")
 	},

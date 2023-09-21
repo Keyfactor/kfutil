@@ -28,22 +28,22 @@ var getOrchestratorCmd = &cobra.Command{
 	Long:  `Get orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -72,22 +72,22 @@ var approveOrchestratorCmd = &cobra.Command{
 	Long:  `Approve orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -121,22 +121,22 @@ var disapproveOrchestratorCmd = &cobra.Command{
 	Long:  `Disapprove orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -180,22 +180,22 @@ var getLogsOrchestratorCmd = &cobra.Command{
 	Long:  `Get orchestrator logs by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -230,22 +230,22 @@ var listOrchestratorsCmd = &cobra.Command{
 	Long:  `Returns a JSON list of Keyfactor orchestrators.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
+		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 		configFile, _ := cmd.Flags().GetString("config")
 		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 		profile, _ := cmd.Flags().GetString("profile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
+		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
