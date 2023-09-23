@@ -1,0 +1,102 @@
+baseOrchestratorName: containerized-universal-orchestrator
+completeName: ""
+replicaCount: 1
+image:
+    repository: keyfactor.jfrog.io/artifactory/con-develop-us-engineering/command/universal-orchestrator
+    pullPolicy: IfNotPresent
+    tag: 11.0.0.23
+commandAgentUrl: https://hroszellcommand1.kfdelivery.com/KeyfactorAgents
+auth:
+    secretName: uo-credentials
+    useOauthAuthentication: false
+logLevel: Debug
+imagePullSecrets: []
+initContainers:
+    - name: azure-appgateway-orchestrator-installer
+      image: m8rmclarenkf/uo_extension_installer:1.0.5
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: EXTENSION_NAME
+          value: azure-appgateway-orchestrator
+        - name: EXTENSION_VERSION
+          value: 1.1.0
+        - name: INSTALL_PATH
+          value: /app/extensions/azure-appgateway-orchestrator
+      volumeMounts:
+        - name: command-pv-claim
+          mountPath: /app/extensions
+          subPath: ""
+          readOnly: false
+    - name: azurekeyvault-orchestrator-installer
+      image: m8rmclarenkf/uo_extension_installer:1.0.5
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: EXTENSION_NAME
+          value: azurekeyvault-orchestrator
+        - name: EXTENSION_VERSION
+          value: 2.0.1
+        - name: INSTALL_PATH
+          value: /app/extensions/azurekeyvault-orchestrator
+      volumeMounts:
+        - name: command-pv-claim
+          mountPath: /app/extensions
+          subPath: ""
+          readOnly: false
+    - name: f5-rest-orchestrator-installer
+      image: m8rmclarenkf/uo_extension_installer:1.0.5
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: EXTENSION_NAME
+          value: f5-rest-orchestrator
+        - name: EXTENSION_VERSION
+          value: 1.4.5
+        - name: INSTALL_PATH
+          value: /app/extensions/f5-rest-orchestrator
+      volumeMounts:
+        - name: command-pv-claim
+          mountPath: /app/extensions
+          subPath: ""
+          readOnly: false
+    - name: gcp-loadbalancer-orchestrator-installer
+      image: m8rmclarenkf/uo_extension_installer:1.0.5
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: EXTENSION_NAME
+          value: gcp-loadbalancer-orchestrator
+        - name: EXTENSION_VERSION
+          value: 2.1.1
+        - name: INSTALL_PATH
+          value: /app/extensions/gcp-loadbalancer-orchestrator
+      volumeMounts:
+        - name: command-pv-claim
+          mountPath: /app/extensions
+          subPath: ""
+          readOnly: false
+serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+extensionStorage:
+    name: command-pv-claim
+    storageClass: ""
+    size: 10Gi
+    accessMode: ReadWriteOnce
+    annotations: {}
+volumes:
+    - configMap:
+        items:
+            - key: ca-certificates.crt
+              path: ca-certificates.crt
+        name: ca-roots
+      name: root-ca
+volumeMounts:
+    - name: command-pv-claim
+      mountPath: /app/extensions
+      subPath: ""
+      readOnly: false
+    - name: root-ca
+      mountPath: /etc/ssl/certs/ca-certificates.crt
+      subPath: ca-certificates.crt
+      readOnly: false
+extraContainers: null
+postStart: []

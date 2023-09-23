@@ -13,8 +13,8 @@ const (
 	defaultFileName      = "ca-certificates.crt"
 )
 
-func (b *UniversalOrchestratorHelmValueBuilder) caChainConfiguration() error {
-	// First, determine if the values.yaml already configured the CA chain
+func (b *InteractiveUOValueBuilder) caChainConfiguration() error {
+	// First, determine if the newValues.yaml already configured the CA chain
 	// If one is installed, there will be a volume called root-ca and a volume mount called root-ca
 
 	configuredConfigMapName := ""
@@ -23,7 +23,7 @@ func (b *UniversalOrchestratorHelmValueBuilder) caChainConfiguration() error {
 
 	volumeExists := false
 	configMapConfigured := false
-	for _, volume := range b.values.Volumes {
+	for _, volume := range b.newValues.Volumes {
 		if volume.Name == caVolumeName {
 			configuredConfigMapName = volume.ConfigMap.Name
 			for _, item := range volume.ConfigMap.Items {
@@ -35,7 +35,7 @@ func (b *UniversalOrchestratorHelmValueBuilder) caChainConfiguration() error {
 	}
 
 	volumeMountExists := false
-	for _, mount := range b.values.VolumeMounts {
+	for _, mount := range b.newValues.VolumeMounts {
 		if mount.Name == caVolumeName {
 			mountPath = mount.MountPath
 			volumeMountExists = true
@@ -117,15 +117,15 @@ func (b *UniversalOrchestratorHelmValueBuilder) caChainConfiguration() error {
 	return b.MainMenu()
 }
 
-func (b *UniversalOrchestratorHelmValueBuilder) syncVolumeConfiguration(configMapName, mountPath, fileName string) {
+func (b *InteractiveUOValueBuilder) syncVolumeConfiguration(configMapName, mountPath, fileName string) {
 	// First handle the volume/configmap
 	volumeExists := false
-	for i, volume := range b.values.Volumes {
+	for i, volume := range b.newValues.Volumes {
 		if volume.Name == caVolumeName {
 			volumeExists = true
-			b.values.Volumes[i].ConfigMap.Name = configMapName
-			b.values.Volumes[i].ConfigMap.Items = make([]ConfigMapItem, 0)
-			b.values.Volumes[i].ConfigMap.Items = append(b.values.Volumes[i].ConfigMap.Items, ConfigMapItem{Key: fileName, Path: fileName})
+			b.newValues.Volumes[i].ConfigMap.Name = configMapName
+			b.newValues.Volumes[i].ConfigMap.Items = make([]ConfigMapItem, 0)
+			b.newValues.Volumes[i].ConfigMap.Items = append(b.newValues.Volumes[i].ConfigMap.Items, ConfigMapItem{Key: fileName, Path: fileName})
 		}
 	}
 
@@ -135,16 +135,16 @@ func (b *UniversalOrchestratorHelmValueBuilder) syncVolumeConfiguration(configMa
 		newVolume.Name = caVolumeName
 		newVolume.ConfigMap.Name = configMapName
 		newVolume.ConfigMap.Items = append(make([]ConfigMapItem, 0), ConfigMapItem{Key: fileName, Path: fileName})
-		b.values.Volumes = append(b.values.Volumes, newVolume)
+		b.newValues.Volumes = append(b.newValues.Volumes, newVolume)
 	}
 
 	// Next, handle the volume mount
 	volumeMountExists := false
-	for i, mount := range b.values.VolumeMounts {
+	for i, mount := range b.newValues.VolumeMounts {
 		if mount.Name == caVolumeName {
 			volumeMountExists = true
-			b.values.VolumeMounts[i].MountPath = mountPath
-			b.values.VolumeMounts[i].SubPath = fileName
+			b.newValues.VolumeMounts[i].MountPath = mountPath
+			b.newValues.VolumeMounts[i].SubPath = fileName
 		}
 	}
 
@@ -154,7 +154,7 @@ func (b *UniversalOrchestratorHelmValueBuilder) syncVolumeConfiguration(configMa
 		newVolumeMount.Name = caVolumeName
 		newVolumeMount.MountPath = fmt.Sprintf("%s/%s", mountPath, fileName)
 		newVolumeMount.SubPath = fileName
-		b.values.VolumeMounts = append(b.values.VolumeMounts, newVolumeMount)
+		b.newValues.VolumeMounts = append(b.newValues.VolumeMounts, newVolumeMount)
 	}
 }
 

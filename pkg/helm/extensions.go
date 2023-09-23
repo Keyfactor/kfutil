@@ -4,23 +4,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
-	"io"
+	"kfutil/pkg/cmdutil"
 	"log"
-	"net/http"
 	"strings"
 )
 
-func (b *UniversalOrchestratorHelmValueBuilder) selectExtensionsHandler() error {
+func (b *InteractiveUOValueBuilder) selectExtensionsHandler() error {
 	ghTool := NewGithubReleaseFetcher(b.token)
 	extensions, err := ghTool.GetExtensionList()
 	if err != nil {
-		fmt.Printf("\033[31m%s\u001B[0m\n", err)
+		cmdutil.PrintError(err)
 		return b.MainMenu()
 	}
 
 	// Get a list of currently installed extensions
 	installedExtensions := make(Extensions)
-	for _, container := range b.values.InitContainers {
+	for _, container := range b.newValues.InitContainers {
 		extensionName := ""
 		extensionVersion := ""
 		for _, env := range container.Env {
@@ -79,13 +78,13 @@ func (b *UniversalOrchestratorHelmValueBuilder) selectExtensionsHandler() error 
 		extensionAlreadyInstalled := false
 
 		// If the extension is already covered in the Init Containers, upgrade it
-		for i, container := range b.values.InitContainers {
+		for i, container := range b.newValues.InitContainers {
 			if container.Name == initContainerName {
 				extensionAlreadyInstalled = true
 				for j, env := range container.Env {
 					if env.Name == "EXTENSION_VERSION" && env.Value != latestVersion {
 						fmt.Printf("Upgrading %s from %s to %s\n", extension, env.Value, latestVersion)
-						b.values.InitContainers[i].Env[j].Value = latestVersion
+						b.newValues.InitContainers[i].Env[j].Value = latestVersion
 						break
 					} else if env.Name == "EXTENSION_VERSION" && env.Value == latestVersion {
 						fmt.Printf("Extension %s is already configured for version %s\n", extension, latestVersion)
@@ -99,7 +98,7 @@ func (b *UniversalOrchestratorHelmValueBuilder) selectExtensionsHandler() error 
 			continue
 		}
 
-		b.values.InitContainers = append(b.values.InitContainers, InitContainer{
+		b.newValues.InitContainers = append(b.newValues.InitContainers, InitContainer{
 			Name:            initContainerName,
 			Image:           installerImage,
 			ImagePullPolicy: installerImagePullPolicy,
@@ -119,7 +118,7 @@ func (b *UniversalOrchestratorHelmValueBuilder) selectExtensionsHandler() error 
 			},
 			VolumeMounts: []VolumeMount{
 				{
-					Name:      b.values.ExtensionStorage.Name,
+					Name:      b.newValues.ExtensionStorage.Name,
 					MountPath: "/app/extensions",
 				},
 			},
@@ -206,25 +205,7 @@ func (g *GithubReleaseFetcher) GetExtensionList() (Extensions, error) {
 }
 
 func (g *GithubReleaseFetcher) Get(url string, v any) error {
-	client := http.DefaultClient
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-
-	// Add Authorization header
-	if g.token != "" {
-		req.Header.Set("Authorization", "Bearer "+g.token)
-	}
-
-	get, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-
-	// Read the body of the response
-	body, err := io.ReadAll(get.Body)
+	body, err := cmdutil.NewSimpleRestClient().Get(url)
 	if err != nil {
 		return err
 	}

@@ -12,17 +12,15 @@ import (
 )
 
 const (
-	defaultOverrideFile      = "override.yaml"
 	installerImage           = "m8rmclarenkf/uo_extension_installer:1.0.5"
 	installerImagePullPolicy = "IfNotPresent"
 )
 
-type UniversalOrchestratorHelmValueBuilder struct {
-	commandHostname string
-	valuesFile      string
-	overrideFile    string
-	token           string
-	values          UniversalOrchestratorHelmValues
+type InteractiveUOValueBuilder struct {
+	overrideFile  string
+	token         string
+	defaultValues UniversalOrchestratorHelmValues
+	newValues     UniversalOrchestratorHelmValues
 }
 
 type menuOption struct {
@@ -32,64 +30,35 @@ type menuOption struct {
 	handlerFunc  func() error
 }
 
-func NewUniversalOrchestratorHelmValueBuilder(filePath string) *UniversalOrchestratorHelmValueBuilder {
-	return &UniversalOrchestratorHelmValueBuilder{
-		valuesFile:   filePath,
-		overrideFile: defaultOverrideFile,
+func NewUniversalOrchestratorHelmValueBuilder(toolBuilder *ToolBuilder) *InteractiveUOValueBuilder {
+	interactiveBuilder := &InteractiveUOValueBuilder{
+		overrideFile:  toolBuilder.overrideFile,
+		token:         toolBuilder.token,
+		defaultValues: toolBuilder.values,
+		newValues:     toolBuilder.values,
 	}
+
+	if interactiveBuilder.newValues.CommandAgentURL == "" {
+		interactiveBuilder.newValues.CommandAgentURL = fmt.Sprintf("https://%s/KeyfactorAgents", toolBuilder.commandHostname)
+	}
+
+	return interactiveBuilder
 }
 
-func (b *UniversalOrchestratorHelmValueBuilder) SetGithubToken(token string) {
-	b.token = token
-}
-
-func (b *UniversalOrchestratorHelmValueBuilder) SetOverrideFile(filePath string) {
-	b.overrideFile = filePath
-}
-
-func (b *UniversalOrchestratorHelmValueBuilder) SetHostname(hostname string) {
-	b.commandHostname = hostname
-}
-
-func (b *UniversalOrchestratorHelmValueBuilder) load() error {
-	// Read in the values file and marshal it into the values struct
-	buf, err := os.ReadFile(b.valuesFile)
+func (b *InteractiveUOValueBuilder) Build() error {
+	err := b.MainMenu()
 	if err != nil {
 		return err
-	}
-
-	err = yaml.Unmarshal(buf, &b.values)
-	if err != nil {
-		return err
-	}
-
-	// Set the Command Agent URL to the hostname of the currently logged-in user if it is not already set
-	if b.values.CommandAgentURL == "" {
-		b.values.CommandAgentURL = fmt.Sprintf("https://%s/KeyfactorAgents", b.commandHostname)
 	}
 
 	return nil
-}
-
-func (b *UniversalOrchestratorHelmValueBuilder) Build() {
-	err := b.load()
-	if err != nil {
-		fmt.Printf("Failed to load values file: %v\n", err)
-		return
-	}
-
-	err = b.MainMenu()
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
-	}
 }
 
 // GetIsPositiveNumberValidator validates if an input is a number.
 func GetIsPositiveNumberValidator() survey.Validator {
 	return func(val interface{}) error {
 		var theNumber int
-		// the reflect value of the result
+		// The reflected value of the result
 		value := reflect.ValueOf(val)
 
 		switch value.Kind() {
@@ -113,7 +82,7 @@ func GetIsPositiveNumberValidator() survey.Validator {
 	}
 }
 
-func (b *UniversalOrchestratorHelmValueBuilder) MainMenu() error {
+func (b *InteractiveUOValueBuilder) MainMenu() error {
 	mainMenuOptions := []menuOption{
 		{
 			optionName:   "Configure UO Name",
@@ -124,14 +93,14 @@ func (b *UniversalOrchestratorHelmValueBuilder) MainMenu() error {
 		{
 			optionName:   "Change Command Agent URL",
 			optionDesc:   "Change the base URL to the Command Agents API",
-			currentValue: b.values.CommandAgentURL,
+			currentValue: b.newValues.CommandAgentURL,
 			handlerFunc: func() error {
 				prompt := survey.Input{
 					Renderer: survey.Renderer{},
 					Message:  "Enter the base URL to the Command Agents API",
-					Default:  b.values.CommandAgentURL,
+					Default:  b.newValues.CommandAgentURL,
 				}
-				err := survey.AskOne(&prompt, &b.values.CommandAgentURL, survey.WithValidator(survey.Required))
+				err := survey.AskOne(&prompt, &b.newValues.CommandAgentURL, survey.WithValidator(survey.Required))
 				if err != nil {
 					return err
 				}
@@ -143,9 +112,9 @@ func (b *UniversalOrchestratorHelmValueBuilder) MainMenu() error {
 		{
 			optionName:   "Change Replica Count",
 			optionDesc:   "Change the number of Orchestrator replicas to create.",
-			currentValue: b.values.ReplicaCount,
+			currentValue: b.newValues.ReplicaCount,
 			handlerFunc: func() error {
-				replicasString := strconv.Itoa(b.values.ReplicaCount)
+				replicasString := strconv.Itoa(b.newValues.ReplicaCount)
 
 				prompt := survey.Input{
 					Renderer: survey.Renderer{},
@@ -157,7 +126,7 @@ func (b *UniversalOrchestratorHelmValueBuilder) MainMenu() error {
 					return err
 				}
 
-				b.values.ReplicaCount, err = strconv.Atoi(replicasString)
+				b.newValues.ReplicaCount, err = strconv.Atoi(replicasString)
 				if err != nil {
 					return err
 				}
@@ -169,14 +138,14 @@ func (b *UniversalOrchestratorHelmValueBuilder) MainMenu() error {
 		{
 			optionName:   "Change Log Level",
 			optionDesc:   "Change the log level of the Universal Orchestrator container",
-			currentValue: b.values.LogLevel,
+			currentValue: b.newValues.LogLevel,
 			handlerFunc: func() error {
 				prompt := survey.Select{
 					Message: "Select the log level of the Universal Orchestrator container",
 					Options: []string{"Trace", "Debug", "Info", "Warn", "Error"},
-					Default: b.values.LogLevel,
+					Default: b.newValues.LogLevel,
 				}
-				err := survey.AskOne(&prompt, &b.values.LogLevel, survey.WithValidator(survey.Required))
+				err := survey.AskOne(&prompt, &b.newValues.LogLevel, survey.WithValidator(survey.Required))
 				if err != nil {
 					return err
 				}
@@ -204,45 +173,50 @@ func (b *UniversalOrchestratorHelmValueBuilder) MainMenu() error {
 		{
 			optionName:   "Configure Orchestrator Extensions",
 			optionDesc:   "Set the orchestrator extensions to install with the chart",
-			currentValue: fmt.Sprintf("%d extensions", len(b.values.InitContainers)),
+			currentValue: fmt.Sprintf("%d extensions", len(b.newValues.InitContainers)),
 			handlerFunc:  b.selectExtensionsHandler,
 		},
 		{
 			optionName:   "Save and Exit",
-			optionDesc:   "Exit the program and write the new values to override.yaml",
+			optionDesc:   "Exit the program and write the new newValues to override.yaml",
 			currentValue: "",
-			handlerFunc: func() error {
-				// Marshal the values struct into a yaml string
-				buf, err := yaml.Marshal(b.values)
-				if err != nil {
-					return err
-				}
-
-				// Write the yaml string locally to an override file
-				err = os.WriteFile(b.overrideFile, buf, 0644)
-
-				// TODO print Helm command to install the chart
-				return nil
-			},
+			handlerFunc:  b.SaveAndExit,
 		},
 	}
 
 	return b.handleOptions(mainMenuOptions, "Main Menu")
 }
 
-func (b *UniversalOrchestratorHelmValueBuilder) nameHandler() error {
+func (b *InteractiveUOValueBuilder) SaveAndExit() error {
+	// Marshal the newValues struct into a yaml string
+	buf, err := yaml.Marshal(b.newValues)
+	if err != nil {
+		return err
+	}
+
+	if b.overrideFile == "" {
+		// Write the yaml string locally to an override file
+		err = os.WriteFile(b.overrideFile, buf, 0644)
+	}
+
+	// Print the yaml string to stdout
+	fmt.Println(string(buf))
+	return nil
+}
+
+func (b *InteractiveUOValueBuilder) nameHandler() error {
 	nameOptions := []menuOption{
 		{
 			optionName:   "Change Base Orchestrator Name",
 			optionDesc:   "Change the base orchestrator name",
-			currentValue: b.values.BaseOrchestratorName,
+			currentValue: b.newValues.BaseOrchestratorName,
 			handlerFunc: func() error {
 				prompt := survey.Input{
 					Renderer: survey.Renderer{},
 					Message:  "Enter the name of the chart",
-					Default:  b.values.BaseOrchestratorName,
+					Default:  b.newValues.BaseOrchestratorName,
 				}
-				err := survey.AskOne(&prompt, &b.values.BaseOrchestratorName, survey.WithValidator(survey.Required))
+				err := survey.AskOne(&prompt, &b.newValues.BaseOrchestratorName, survey.WithValidator(survey.Required))
 				if err != nil {
 					return err
 				}
@@ -254,14 +228,14 @@ func (b *UniversalOrchestratorHelmValueBuilder) nameHandler() error {
 		{
 			optionName:   "Change Complete Orchestrator Name",
 			optionDesc:   "Change the complete orchestrator name and override any computed name",
-			currentValue: b.values.CompleteName,
+			currentValue: b.newValues.CompleteName,
 			handlerFunc: func() error {
 				prompt := survey.Input{
 					Renderer: survey.Renderer{},
 					Message:  "Enter the name of the chart",
-					Default:  b.values.CompleteName,
+					Default:  b.newValues.CompleteName,
 				}
-				err := survey.AskOne(&prompt, &b.values.CompleteName, survey.WithValidator(survey.Required))
+				err := survey.AskOne(&prompt, &b.newValues.CompleteName, survey.WithValidator(survey.Required))
 				if err != nil {
 					return err
 				}
@@ -284,18 +258,18 @@ func (b *UniversalOrchestratorHelmValueBuilder) nameHandler() error {
 	return b.handleOptions(nameOptions, "Image Menu")
 }
 
-func (b *UniversalOrchestratorHelmValueBuilder) imageHandler() error {
+func (b *InteractiveUOValueBuilder) imageHandler() error {
 	imageOptions := []menuOption{
 		{
 			optionName:   "Change Image Repository",
 			optionDesc:   "Change the repository of the Universal Orchestrator container image",
-			currentValue: b.values.Image.Repository,
+			currentValue: b.newValues.Image.Repository,
 			handlerFunc: func() error {
 				prompt := survey.Input{
 					Message: "Enter the repository of the Universal Orchestrator container image",
-					Default: b.values.Image.Repository,
+					Default: b.newValues.Image.Repository,
 				}
-				err := survey.AskOne(&prompt, &b.values.Image.Repository, survey.WithValidator(survey.Required))
+				err := survey.AskOne(&prompt, &b.newValues.Image.Repository, survey.WithValidator(survey.Required))
 				if err != nil {
 					return err
 				}
@@ -307,13 +281,13 @@ func (b *UniversalOrchestratorHelmValueBuilder) imageHandler() error {
 		{
 			optionName:   "Change Image Tag",
 			optionDesc:   "Change the tag of the Universal Orchestrator container image",
-			currentValue: b.values.Image.Tag,
+			currentValue: b.newValues.Image.Tag,
 			handlerFunc: func() error {
 				prompt := survey.Input{
 					Message: "Enter the tag of the Universal Orchestrator container image",
-					Default: b.values.Image.Tag,
+					Default: b.newValues.Image.Tag,
 				}
-				err := survey.AskOne(&prompt, &b.values.Image.Tag, survey.WithValidator(survey.Required))
+				err := survey.AskOne(&prompt, &b.newValues.Image.Tag, survey.WithValidator(survey.Required))
 				if err != nil {
 					return err
 				}
@@ -325,13 +299,13 @@ func (b *UniversalOrchestratorHelmValueBuilder) imageHandler() error {
 		{
 			optionName:   "Change Image Pull Policy",
 			optionDesc:   "Change the pull policy of the Universal Orchestrator container image",
-			currentValue: b.values.Image.PullPolicy,
+			currentValue: b.newValues.Image.PullPolicy,
 			handlerFunc: func() error {
 				prompt := survey.Input{
 					Message: "Enter the pull policy to use when pulling the Universal Orchestrator container image",
-					Default: b.values.Image.PullPolicy,
+					Default: b.newValues.Image.PullPolicy,
 				}
-				err := survey.AskOne(&prompt, &b.values.Image.PullPolicy, survey.WithValidator(survey.Required))
+				err := survey.AskOne(&prompt, &b.newValues.Image.PullPolicy, survey.WithValidator(survey.Required))
 				if err != nil {
 					return err
 				}
@@ -354,36 +328,36 @@ func (b *UniversalOrchestratorHelmValueBuilder) imageHandler() error {
 	return b.handleOptions(imageOptions, "Image Menu")
 }
 
-func (b *UniversalOrchestratorHelmValueBuilder) authMenuHandler() error {
+func (b *InteractiveUOValueBuilder) authMenuHandler() error {
 	imageOptions := []menuOption{
 		{
 			optionName:   "Change Authentication Secret Name",
 			optionDesc:   "Change the configured name of the K8s secret containing credentials for Command",
-			currentValue: b.values.Auth.SecretName,
+			currentValue: b.newValues.Auth.SecretName,
 			handlerFunc: func() error {
 				prompt := survey.Input{
 					Message: "Enter the name of the K8s secret containing credentials for Command",
-					Default: b.values.Auth.SecretName,
+					Default: b.newValues.Auth.SecretName,
 				}
-				err := survey.AskOne(&prompt, &b.values.Auth.SecretName, survey.WithValidator(survey.Required))
+				err := survey.AskOne(&prompt, &b.newValues.Auth.SecretName, survey.WithValidator(survey.Required))
 				if err != nil {
 					return err
 				}
 
 				// Return to the main menu
-				return b.imageHandler()
+				return b.authMenuHandler()
 			},
 		},
 		{
 			optionName:   "Use OAuth/IDP for Authentication to Command",
 			optionDesc:   "Use or don't use OAuth/IDP for Authentication to Command",
-			currentValue: b.values.Auth.UseOauthAuthentication,
+			currentValue: b.newValues.Auth.UseOauthAuthentication,
 			handlerFunc: func() error {
 				prompt := survey.Confirm{
 					Message: "Use OAuth/IDP for Authentication to Command?",
-					Default: b.values.Auth.UseOauthAuthentication,
+					Default: b.newValues.Auth.UseOauthAuthentication,
 				}
-				err := survey.AskOne(&prompt, &b.values.Auth.UseOauthAuthentication, survey.WithValidator(survey.Required))
+				err := survey.AskOne(&prompt, &b.newValues.Auth.UseOauthAuthentication, survey.WithValidator(survey.Required))
 				if err != nil {
 					return err
 				}
@@ -406,7 +380,7 @@ func (b *UniversalOrchestratorHelmValueBuilder) authMenuHandler() error {
 	return b.handleOptions(imageOptions, "Auth Menu")
 }
 
-func (b *UniversalOrchestratorHelmValueBuilder) handleOptions(options []menuOption, help string) error {
+func (b *InteractiveUOValueBuilder) handleOptions(options []menuOption, help string) error {
 	// Build list of options
 	optionStrings := make([]string, 0)
 	for _, option := range options {
