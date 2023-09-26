@@ -1,82 +1,5 @@
 [
   {
-    "Name": "Azure Keyvault",
-    "ShortName": "AKV",
-    "Capability": "AKV",
-    "LocalStore": false,
-    "SupportedOperations": {
-      "Add": true,
-      "Create": true,
-      "Discovery": true,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "Properties": [
-      {
-        "Name": "VaultName",
-        "DisplayName": "VaultName",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
-      },
-      {
-        "Name": "ResourceGroupName",
-        "DisplayName": "ResourceGroupName",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
-      },
-      {
-        "Name": "SkuType",
-        "DisplayName": "SKU Type",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "standard,premium",
-        "Required": false
-      },
-      {
-        "Name": "VaultRegion",
-        "DisplayName": "Vault Region",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "eastus,eastus2,southcentralus,westus2,westus3,australiaeast,northeurope,swedencentral,uksouth",
-        "Required": false
-      },
-      {
-        "Name": "AzureCloud",
-        "DisplayName": "Azure Cloud",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "public,china,germany,government",
-        "Required": false
-      },
-      {
-        "Name": "PrivateEndpoint",
-        "DisplayName": "Private KeyVault Endpoint",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
-      }
-    ],
-    "EntryParameters": null,
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "",
-    "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Optional"
-  },
-  {
     "Name": "Azure Application Gateway",
     "ShortName": "AzureAppGW",
     "Capability": "AzureAppGW",
@@ -1689,5 +1612,82 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden"
+  },
+  {
+    "Name": "Azure Keyvault",
+    "ShortName": "AKV",
+    "Capability": "AKV",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "VaultName",
+        "DisplayName": "VaultName",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ResourceGroupName",
+        "DisplayName": "ResourceGroupName",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "SkuType",
+        "DisplayName": "SKU Type",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "standard,premium",
+        "Required": false
+      },
+      {
+        "Name": "VaultRegion",
+        "DisplayName": "Vault Region",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "eastus,eastus2,southcentralus,westus2,westus3,australiaeast,northeurope,swedencentral,uksouth,westeurope,centralus,southafricanorth,centralindia,eastasia,japaneast,koreacentral,canadacentral,francecentral,germanywestcentral,norwayeast,switzerlandnorth,uaenorth,brazilsouth,centraluseuap,eastus2euap,qatarcentral,centralusstage,eastusstage,eastus2stage,northcentralusstage,westusstage,asia,asiapacific,australia,brazil,canada,europe,france,germany,global,india,japan,korea,norway,singapore,southafrica,switzerland,uae,uk,unitedstates,unitedstatesuap,eastasiastage,southeastasiastage,brazilus,eastusstg,northcentralus,westus,jioindiawest,devfabric,westcentralus,southafricawest,australiacentral,australiacentral2,australiasoutheast,japanwest,jioindiacentral,koreasouth,southindia,westindia,canadaeast,francesouth,germanynorth,norwaywest,switzerlandwest,ukwest,uaecentral,brazilsoutheast",
+        "Required": false
+      },
+      {
+        "Name": "AzureCloud",
+        "DisplayName": "Azure Cloud",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "public,china,germany,government",
+        "Required": false
+      },
+      {
+        "Name": "PrivateEndpoint",
+        "DisplayName": "Private KeyVault Endpoint",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      }
+    ],
+    "EntryParameters": null,
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Optional"
   }
 ]
