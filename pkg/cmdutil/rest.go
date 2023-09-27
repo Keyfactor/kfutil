@@ -1,6 +1,7 @@
 package cmdutil
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -36,6 +37,10 @@ func (c *SimpleRestClient) Get(url string) ([]byte, error) {
 	get, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
+	}
+
+	if get.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", get.StatusCode)
 	}
 
 	// Read the body of the response

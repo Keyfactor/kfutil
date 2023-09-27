@@ -50,10 +50,6 @@ type FilenameOptions struct {
 func (f *FilenameFlags) ToOptions() FilenameOptions {
 	options := FilenameOptions{}
 
-	if f == nil {
-		return options
-	}
-
 	if f.Filenames != nil {
 		options.Filenames = *f.Filenames
 	}

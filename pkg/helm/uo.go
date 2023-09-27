@@ -17,10 +17,12 @@ const (
 )
 
 type InteractiveUOValueBuilder struct {
-	overrideFile  string
-	token         string
-	defaultValues UniversalOrchestratorHelmValues
-	newValues     UniversalOrchestratorHelmValues
+	overrideFile    string
+	token           string
+	defaultValues   UniversalOrchestratorHelmValues
+	newValues       UniversalOrchestratorHelmValues
+	newValuesString string
+	exitAfterPrompt bool
 }
 
 type menuOption struct {
@@ -32,10 +34,11 @@ type menuOption struct {
 
 func NewUniversalOrchestratorHelmValueBuilder(toolBuilder *ToolBuilder) *InteractiveUOValueBuilder {
 	interactiveBuilder := &InteractiveUOValueBuilder{
-		overrideFile:  toolBuilder.overrideFile,
-		token:         toolBuilder.token,
-		defaultValues: toolBuilder.values,
-		newValues:     toolBuilder.values,
+		overrideFile:    toolBuilder.overrideFile,
+		token:           toolBuilder.token,
+		defaultValues:   toolBuilder.values,
+		newValues:       toolBuilder.values,
+		exitAfterPrompt: false,
 	}
 
 	if interactiveBuilder.newValues.CommandAgentURL == "" {
@@ -45,13 +48,13 @@ func NewUniversalOrchestratorHelmValueBuilder(toolBuilder *ToolBuilder) *Interac
 	return interactiveBuilder
 }
 
-func (b *InteractiveUOValueBuilder) Build() error {
+func (b *InteractiveUOValueBuilder) Build() (string, error) {
 	err := b.MainMenu()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return b.newValuesString, nil
 }
 
 // GetIsPositiveNumberValidator validates if an input is a number.
@@ -102,10 +105,14 @@ func (b *InteractiveUOValueBuilder) MainMenu() error {
 				}
 				err := survey.AskOne(&prompt, &b.newValues.CommandAgentURL, survey.WithValidator(survey.Required))
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get Command Agent URL: %w", err)
 				}
 
 				// Return to the main menu
+				if b.exitAfterPrompt {
+					return nil
+				}
+
 				return b.MainMenu()
 			},
 		},
@@ -123,15 +130,19 @@ func (b *InteractiveUOValueBuilder) MainMenu() error {
 				}
 				err := survey.AskOne(&prompt, &replicasString, survey.WithValidator(GetIsPositiveNumberValidator()))
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get replica count: %w", err)
 				}
 
 				b.newValues.ReplicaCount, err = strconv.Atoi(replicasString)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to convert replica count to int: %w", err)
 				}
 
 				// Return to the main menu
+				if b.exitAfterPrompt {
+					return nil
+				}
+
 				return b.MainMenu()
 			},
 		},
@@ -147,10 +158,14 @@ func (b *InteractiveUOValueBuilder) MainMenu() error {
 				}
 				err := survey.AskOne(&prompt, &b.newValues.LogLevel, survey.WithValidator(survey.Required))
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get log level: %w", err)
 				}
 
 				// Return to the main menu
+				if b.exitAfterPrompt {
+					return nil
+				}
+
 				return b.MainMenu()
 			},
 		},
@@ -191,7 +206,7 @@ func (b *InteractiveUOValueBuilder) SaveAndExit() error {
 	// Marshal the newValues struct into a yaml string
 	buf, err := yaml.Marshal(b.newValues)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal newValues struct into yaml: %w", err)
 	}
 
 	if b.overrideFile == "" {
@@ -199,8 +214,8 @@ func (b *InteractiveUOValueBuilder) SaveAndExit() error {
 		err = os.WriteFile(b.overrideFile, buf, 0644)
 	}
 
-	// Print the yaml string to stdout
-	fmt.Println(string(buf))
+	// Set the newValuesString field
+	b.newValuesString = string(buf)
 	return nil
 }
 
@@ -218,10 +233,14 @@ func (b *InteractiveUOValueBuilder) nameHandler() error {
 				}
 				err := survey.AskOne(&prompt, &b.newValues.BaseOrchestratorName, survey.WithValidator(survey.Required))
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get base orchestrator name: %w", err)
 				}
 
-				// Return to the main menu
+				// Return to the name menu
+				if b.exitAfterPrompt {
+					return nil
+				}
+
 				return b.nameHandler()
 			},
 		},
@@ -237,10 +256,14 @@ func (b *InteractiveUOValueBuilder) nameHandler() error {
 				}
 				err := survey.AskOne(&prompt, &b.newValues.CompleteName, survey.WithValidator(survey.Required))
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get complete orchestrator name: %w", err)
 				}
 
-				// Return to the main menu
+				// Return to the name menu
+				if b.exitAfterPrompt {
+					return nil
+				}
+
 				return b.nameHandler()
 			},
 		},
@@ -249,7 +272,6 @@ func (b *InteractiveUOValueBuilder) nameHandler() error {
 			optionDesc:   "Return to the main menu",
 			currentValue: "",
 			handlerFunc: func() error {
-				// Return to the main menu
 				return b.MainMenu()
 			},
 		},
@@ -271,10 +293,14 @@ func (b *InteractiveUOValueBuilder) imageHandler() error {
 				}
 				err := survey.AskOne(&prompt, &b.newValues.Image.Repository, survey.WithValidator(survey.Required))
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get image repository: %w", err)
 				}
 
-				// Return to the main menu
+				// Return to the image menu
+				if b.exitAfterPrompt {
+					return nil
+				}
+
 				return b.imageHandler()
 			},
 		},
@@ -289,10 +315,14 @@ func (b *InteractiveUOValueBuilder) imageHandler() error {
 				}
 				err := survey.AskOne(&prompt, &b.newValues.Image.Tag, survey.WithValidator(survey.Required))
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get image tag: %w", err)
 				}
 
-				// Return to the main menu
+				// Return to the image menu
+				if b.exitAfterPrompt {
+					return nil
+				}
+
 				return b.imageHandler()
 			},
 		},
@@ -307,10 +337,14 @@ func (b *InteractiveUOValueBuilder) imageHandler() error {
 				}
 				err := survey.AskOne(&prompt, &b.newValues.Image.PullPolicy, survey.WithValidator(survey.Required))
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get image pull policy: %w", err)
 				}
 
-				// Return to the main menu
+				// Return to the image menu
+				if b.exitAfterPrompt {
+					return nil
+				}
+
 				return b.imageHandler()
 			},
 		},
@@ -341,10 +375,14 @@ func (b *InteractiveUOValueBuilder) authMenuHandler() error {
 				}
 				err := survey.AskOne(&prompt, &b.newValues.Auth.SecretName, survey.WithValidator(survey.Required))
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get authentication secret name: %w", err)
 				}
 
-				// Return to the main menu
+				// Return to the auth menu
+				if b.exitAfterPrompt {
+					return nil
+				}
+
 				return b.authMenuHandler()
 			},
 		},
@@ -359,10 +397,14 @@ func (b *InteractiveUOValueBuilder) authMenuHandler() error {
 				}
 				err := survey.AskOne(&prompt, &b.newValues.Auth.UseOauthAuthentication, survey.WithValidator(survey.Required))
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to get authentication secret name: %w", err)
 				}
 
-				// Return to the main menu
+				// Return to the auth menu
+				if b.exitAfterPrompt {
+					return nil
+				}
+
 				return b.authMenuHandler()
 			},
 		},
@@ -422,9 +464,17 @@ func (b *InteractiveUOValueBuilder) handleOptions(options []menuOption, help str
 		}
 	}
 
-	// If we get here, the option was not found
+	// We should never get here
+
+	// If we do get here, the option was not found
 	errorMessage := fmt.Sprintf("error: Option %s not found\n", selected)
 	fmt.Printf(errorMessage)
+
+	// Return to the main menu
+	if b.exitAfterPrompt {
+		return nil
+	}
+
 	return b.MainMenu()
 }
 

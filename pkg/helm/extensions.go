@@ -14,6 +14,11 @@ func (b *InteractiveUOValueBuilder) selectExtensionsHandler() error {
 	extensions, err := ghTool.GetExtensionList()
 	if err != nil {
 		cmdutil.PrintError(err)
+		// Return to the auth menu
+		if b.exitAfterPrompt {
+			return err
+		}
+
 		return b.MainMenu()
 	}
 
@@ -125,7 +130,11 @@ func (b *InteractiveUOValueBuilder) selectExtensionsHandler() error {
 		})
 	}
 
-	// Return to the main menu
+	// Return to the auth menu
+	if b.exitAfterPrompt {
+		return nil
+	}
+
 	return b.MainMenu()
 }
 
@@ -205,7 +214,9 @@ func (g *GithubReleaseFetcher) GetExtensionList() (Extensions, error) {
 }
 
 func (g *GithubReleaseFetcher) Get(url string, v any) error {
-	body, err := cmdutil.NewSimpleRestClient().Get(url)
+	rest := cmdutil.NewSimpleRestClient()
+	rest.SetBearerToken(g.token)
+	body, err := rest.Get(url)
 	if err != nil {
 		return err
 	}

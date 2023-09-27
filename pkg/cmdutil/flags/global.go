@@ -22,15 +22,12 @@ func GetDebugFlag(cmd *cobra.Command) bool {
 	case (envValue && !debugFlag) || (envValue && debugFlag):
 		log.SetOutput(os.Stdout)
 		debugModeEnabled = true
-		break
 	case debugFlag:
 		log.SetOutput(os.Stdout)
 		debugModeEnabled = true
-		break
 	default:
 		log.SetOutput(io.Discard)
 		debugModeEnabled = false
-		break
 	}
 
 	log.Println("Debug mode enabled: ", debugModeEnabled)

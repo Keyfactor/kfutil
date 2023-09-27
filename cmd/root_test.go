@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"bytes"
+	"github.com/spf13/cobra"
+	"strings"
 	"testing"
 )
 
@@ -21,4 +24,14 @@ func Test_RootCmd(t *testing.T) {
 	if err := testCmd.Execute(); err == nil {
 		t.Errorf("RootCmd() = %v, shouldNotPass %v", err, true)
 	}
+}
+
+func testExecuteCommand(t *testing.T, cmd *cobra.Command, args ...string) (output []byte, err error) {
+	t.Logf("Run \"%s %s\"", cmd.Use, strings.Join(args, " "))
+
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetArgs(args)
+	err = cmd.Execute()
+	return buf.Bytes(), err
 }

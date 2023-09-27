@@ -114,6 +114,11 @@ func (b *InteractiveUOValueBuilder) caChainConfiguration() error {
 		b.syncVolumeConfiguration(newConfigMapName, newMountPath, newFileName)
 	}
 
+	// Return to the auth menu
+	if b.exitAfterPrompt {
+		return nil
+	}
+
 	return b.MainMenu()
 }
 

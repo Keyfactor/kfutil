@@ -55,18 +55,29 @@ func NewCmdHelmUo() *cobra.Command {
 		Use:   "uo",
 		Short: "Keyfactor Helm Chart Utilities for the Containerized Universal Orchestrator",
 		Long:  `Keyfactor Helm Chart Utilities used to configure charts and assist in the deployment of the Keyfactor Command Universal Orchestrator.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			options, err := helmUoFlags.ToOptions(cmd, args)
 			if err != nil {
 				cmdutil.PrintError(err)
 				log.Fatalf("[ERROR] Exiting: %s", err)
+				return err
 			}
 
-			err = options.Run()
+			// Run the tool
+			newValues, err := options.Run()
 			if err != nil {
 				cmdutil.PrintError(err)
 				log.Fatalf("[ERROR] Exiting: %s", err)
+				return err
 			}
+
+			// Write the new values to stdout
+			_, err = cmd.OutOrStdout().Write([]byte(newValues))
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 
@@ -96,6 +107,7 @@ func (f *HelmUoFlags) ToOptions(cmd *cobra.Command, args []string) (*HelmUoOptio
 	noPrompt := flags.GetNoPromptFlag(cmd)
 	profile := flags.GetProfileFlag(cmd)
 	configFile := flags.GetConfigFlag(cmd)
+
 	commandConfig, _ := authConfigFile(configFile, profile, noPrompt, false)
 
 	// Get the hostname from the command config
@@ -110,8 +122,9 @@ func (f *HelmUoFlags) ToOptions(cmd *cobra.Command, args []string) (*HelmUoOptio
 	if f.FilenameFlags != nil {
 		filenameOptions := f.FilenameFlags.ToOptions()
 
-		if filenameOptions.IsEmpty() {
+		if filenameOptions.IsEmpty() && DefaultValuesLocation != "" {
 			// If no filenames were provided, use the default values.yaml location
+			log.Printf("[DEBUG] No filenames provided, using default values.yaml location: %q", DefaultValuesLocation)
 			filenameOptions.Merge(&flags.FilenameOptions{Filenames: []string{DefaultValuesLocation}})
 		}
 
@@ -133,7 +146,7 @@ func (f *HelmUoFlags) ToOptions(cmd *cobra.Command, args []string) (*HelmUoOptio
 	return options, nil
 }
 
-func (o *HelmUoOptions) Run() error {
+func (o *HelmUoOptions) Run() (string, error) {
 	tool := helm.NewToolBuilder().
 		// Set up the builder
 		CommandHostname(o.CommandHostname).

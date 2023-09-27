@@ -67,12 +67,12 @@ func (b *ToolBuilder) PreFlight() *ToolBuilder {
 	return b
 }
 
-func (b *ToolBuilder) BuildUniversalOrchestratorHelmValueTool() func() error {
-	return func() error {
-		err := NewUniversalOrchestratorHelmValueBuilder(b).Build()
+func (b *ToolBuilder) BuildUniversalOrchestratorHelmValueTool() func() (string, error) {
+	return func() (string, error) {
+		newValues, err := NewUniversalOrchestratorHelmValueBuilder(b).Build()
 		if err != nil {
-			return fmt.Errorf("interactive value builder tool exited: %s", err)
+			return "", fmt.Errorf("interactive value builder tool exited: %s", err)
 		}
-		return nil
+		return newValues, nil
 	}
 }

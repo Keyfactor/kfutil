@@ -23,6 +23,11 @@ func NewReaderBuilder() *ReaderBuilder {
 	return &ReaderBuilder{}
 }
 
+// ClearReaders removes all readers from the builder.
+func (b *ReaderBuilder) ClearReaders() {
+	b.readers = nil
+}
+
 // Read fetches data from all added readers and combines it.
 func (b *ReaderBuilder) Read() ([]byte, error) {
 	var readBytes []byte
