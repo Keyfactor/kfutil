@@ -1,58 +1,15 @@
 package helm
 
 import (
-	"fmt"
-	"github.com/AlecAivazis/survey/v2/terminal"
-	"kfutil/pkg/cmdtest"
 	"os"
 	"testing"
 )
-
-func TestInteractiveUOValueBuilder_selectExtensionsHandler(t *testing.T) {
-	t.Skip()
-	interactiveBuilder := NewTestBuilder()
-
-	tests := []cmdtest.PromptTest{
-		{
-			Name: "Select an extension",
-			Procedure: func(console *cmdtest.Console) {
-				console.ExpectString("Select the extensions to install - the most recent versions are displayed  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]")
-				console.Send(string(terminal.KeyArrowDown))
-				console.SendLine(" ")
-				console.ExpectEOF()
-			},
-			CheckProcedure: func() error {
-				if len(interactiveBuilder.newValues.InitContainers) != 1 {
-					return fmt.Errorf("expected 1 init container, got %d", len(interactiveBuilder.newValues.InitContainers))
-				}
-				return nil
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
-			interactiveBuilder.ClearValues()
-			cmdtest.RunTest(t, test.Procedure, func() error {
-				return interactiveBuilder.selectExtensionsHandler()
-			})
-
-			if test.CheckProcedure != nil {
-				err := test.CheckProcedure()
-				if err != nil {
-					t.Error(err)
-				}
-			}
-		})
-	}
-}
 
 func GetGithubToken() string {
 	return os.Getenv("GITHUB_TOKEN")
 }
 
 func TestNewGithubReleaseFetcher(t *testing.T) {
-	t.Skip()
 	fetcher := NewGithubReleaseFetcher(GetGithubToken())
 
 	list, err := fetcher.GetExtensionList()

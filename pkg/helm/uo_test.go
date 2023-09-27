@@ -3,6 +3,7 @@ package helm
 import (
 	"fmt"
 	"github.com/AlecAivazis/survey/v2/core"
+	"github.com/AlecAivazis/survey/v2/terminal"
 	"kfutil/pkg/cmdtest"
 	"testing"
 )
@@ -144,6 +145,98 @@ func TestInteractiveUOValueBuilder(t *testing.T) {
 			CheckProcedure: func() error {
 				if interactiveBuilder.newValues.Image.PullPolicy != "test" {
 					return fmt.Errorf("expected image pull policy to be test, got %s", interactiveBuilder.newValues.Image.PullPolicy)
+				}
+				return nil
+			},
+		},
+		{
+			Name: "ChangeAuthSecretName",
+			Procedure: func(console *cmdtest.Console) {
+				ExpectSelectOption(console)
+				console.SendLine("Change Auth Settings")
+				ExpectSelectOption(console)
+				console.SendLine("Change Authentication Secret Name")
+				console.ExpectString("Enter the name of the K8s secret containing credentials for Command ")
+				console.SendLine("test")
+				console.ExpectEOF()
+			},
+			CheckProcedure: func() error {
+				if interactiveBuilder.newValues.Auth.SecretName != "test" {
+					return fmt.Errorf("expected auth secret name to be test, got %s", interactiveBuilder.newValues.Auth.SecretName)
+				}
+				return nil
+			},
+		},
+		{
+			Name: "UseOauthIDP",
+			Procedure: func(console *cmdtest.Console) {
+				ExpectSelectOption(console)
+				console.SendLine("Change Auth Settings")
+				ExpectSelectOption(console)
+				console.SendLine("Use OAuth/IDP for Authentication to Command")
+				console.ExpectString("Use OAuth/IDP for Authentication to Command? (y/N) ")
+				console.SendLine("y")
+				console.ExpectEOF()
+			},
+			CheckProcedure: func() error {
+				if !interactiveBuilder.newValues.Auth.UseOauthAuthentication {
+					return fmt.Errorf("expected auth use oauth authentication to be true, got false")
+				}
+				return nil
+			},
+		},
+		{
+			Name: "ContainerRootCACertificateConfiguration",
+			Procedure: func(console *cmdtest.Console) {
+				ExpectSelectOption(console)
+				console.SendLine("Container Root CA Certificate Configuration")
+				console.ExpectString("Enter the name of the configmap containing the CA chain (ca-roots) ")
+				console.SendLine("root-ca-configmap")
+				console.ExpectString("Enter the file name of the certificate inside the configmap. In most cases this should be ca-certificates.crt (ca-certificates.crt) ")
+				console.SendLine("cert.pem")
+				console.ExpectString("Enter the mount path where the certificate inside the configmap will be mounted (/etc/ssl/certs) ")
+				console.SendLine("/etc/user/certs")
+				console.ExpectString("Save changes? (Y/n) ")
+				console.SendLine("Y")
+				console.ExpectEOF()
+			},
+			CheckProcedure: func() error {
+				if len(interactiveBuilder.newValues.Volumes) != 1 {
+					return fmt.Errorf("expected 1 volume, got %d", len(interactiveBuilder.newValues.Volumes))
+				}
+
+				if interactiveBuilder.newValues.Volumes[0].ConfigMap.Name != "root-ca-configmap" {
+					return fmt.Errorf("expected volume name to be root-ca-configmap, got %s", interactiveBuilder.newValues.Volumes[0].Name)
+				}
+
+				if interactiveBuilder.newValues.Volumes[0].ConfigMap.Items[0].Key != "cert.pem" {
+					return fmt.Errorf("expected volume key to be cert.pem, got %s", interactiveBuilder.newValues.Volumes[0].ConfigMap.Items[0].Key)
+				}
+
+				if interactiveBuilder.newValues.Volumes[0].ConfigMap.Items[0].Path != "cert.pem" {
+					return fmt.Errorf("expected volume path to be cert.pem, got %s", interactiveBuilder.newValues.Volumes[0].ConfigMap.Items[0].Path)
+				}
+
+				if interactiveBuilder.newValues.VolumeMounts[0].SubPath != "cert.pem" {
+					return fmt.Errorf("expected volume mount name to be cert.pem, got %s", interactiveBuilder.newValues.VolumeMounts[0].SubPath)
+				}
+
+				return nil
+			},
+		},
+		{
+			Name: "Select an extension",
+			Procedure: func(console *cmdtest.Console) {
+				ExpectSelectOption(console)
+				console.SendLine("Configure Orchestrator Extensions")
+				console.ExpectString("Select the extensions to install - the most recent versions are displayed  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]")
+				console.Send(string(terminal.KeyArrowDown))
+				console.SendLine(" ")
+				console.ExpectEOF()
+			},
+			CheckProcedure: func() error {
+				if len(interactiveBuilder.newValues.InitContainers) != 1 {
+					return fmt.Errorf("expected 1 init container, got %d", len(interactiveBuilder.newValues.InitContainers))
 				}
 				return nil
 			},
