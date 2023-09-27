@@ -67,7 +67,7 @@ jobs:
           sparse-checkout: |
             .github
           path: './merge-folder/'
-          token: ${{ secrets.MY_PAT }}
+          token: ${{ secrets.SDK_SYNC_PAT }}
           ref: '${{env.TARGET_REPO_BRANCH}}' 
 
 # If the branch does not exist, first check out the main branch from kfutil. 
