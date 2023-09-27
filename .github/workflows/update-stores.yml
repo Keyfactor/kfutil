@@ -18,7 +18,7 @@ jobs:
         id: set-local-env-vars
         run: |
           echo "TARGET_REPO_BRANCH=${{ inputs.targetRepo }}" | tee -a $GITHUB_ENV
-          echo "KFUTIL_ARG=all" | tee -a $GITHUB_ENV
+          echo "KFUTIL_ARG=${{ inputs.targetRepo }}" | tee -a $GITHUB_ENV
       - name: Set TARGET_REPO_BRANCH from repository_dispatch input
         if: github.event_name == 'repository_dispatch'
         id: set-env-vars-from-payload
