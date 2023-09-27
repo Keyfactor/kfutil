@@ -124,6 +124,12 @@ jobs:
           name: logs 
           path: ./tools/store-type-merge/log 
 
+# Copy the result to the pr commit folder
+      - name: Copy store-type-merge results
+        run: |
+          echo "Saving original store_types.json as store_types.sav.json"
+          cp -f ./tools/store-type-merge/store_types.json  ./merge-folder/store_types.json
+
 # Diff the new json against the saved copy and set an UPDATE_FILE variable
       - name: Diff the results
         run: |
