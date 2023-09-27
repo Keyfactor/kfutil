@@ -108,7 +108,9 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: store-types  
-          path: ./tools/store-type-merge/store_types.*.json 
+          path: |
+              ./tools/store-type-merge/store_types.json 
+              ./merge-folder/store_types.sav.json
 
       - name: Save Invalid Store Types JSON Artifact
         if: success()
