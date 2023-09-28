@@ -7,13 +7,13 @@ on:
     inputs:
       targetRepo:
         description: 'Target repository for workflow_dispatch'
-        default: 'kfutil-all'
+        default: 'all'
 
 jobs:
   create_pull_request:
     runs-on: ubuntu-latest
     steps:
-      - name: Set TARGET_REPO_BRANCH from workflow_dipatch input
+      - name: Set TARGET_REPO_BRANCH from workflow_dispatch input
         if: github.event_name == 'workflow_dispatch'
         id: set-local-env-vars
         run: |
