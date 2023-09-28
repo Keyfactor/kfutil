@@ -131,6 +131,70 @@
     "CustomAliasAllowed": "Required"
   },
   {
+    "Name": "Azure Application Gateway",
+    "ShortName": "AzureAppGW",
+    "Capability": "AzureAppGW",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "true",
+        "Required": false
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "HTTPListenerName",
+        "DisplayName": "HTTP Listener Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Required",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "ServerRegistration": 13,
+    "InventoryEndpoint": "/AnyInventory/Update"
+  },
+  {
     "Name": "Azure Service Principal (SSO/SAML)",
     "ShortName": "AzureSP",
     "Capability": "AzureSP",
@@ -183,6 +247,30 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Required"
+  },
+  {
+    "Name": "Fortigate",
+    "ShortName": "Fortigate",
+    "Capability": "Fortigate",
+    "ServerRequired": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Required",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true
+    },
+    "Properties": [],
+    "EntryParameters": []
   },
   {
     "Name": "Hashicorp Vault Key-Value",
@@ -307,7 +395,7 @@
     "CustomAliasAllowed": "Optional"
   },
   {
-    "Name": "IISU",
+    "Name": "IIS Bound Certificate",
     "ShortName": "IISU",
     "Capability": "IISU",
     "LocalStore": false,
@@ -321,18 +409,18 @@
     "Properties": [
       {
         "Name": "spnwithport",
-        "DisplayName": "SPN With Port?",
+        "DisplayName": "SPN With Port",
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
         "Required": false
       },
       {
-        "Name": "WinRM Protocol",
+        "Name": "WinRm Protocol",
         "DisplayName": "WinRm Protocol",
         "Type": "MultipleChoice",
         "DependsOn": "",
-        "DefaultValue": "http,https",
+        "DefaultValue": "https,http",
         "Required": true
       },
       {
@@ -340,7 +428,7 @@
         "DisplayName": "WinRm Port",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": "5985",
+        "DefaultValue": "5986",
         "Required": true
       },
       {
@@ -361,7 +449,7 @@
       },
       {
         "Name": "ServerUseSsl",
-        "DisplayName": "Use SSL?",
+        "DisplayName": "Use SSL",
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "true",
@@ -369,6 +457,20 @@
       }
     ],
     "EntryParameters": [
+      {
+        "Name": "Port",
+        "DisplayName": "Port",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "443",
+        "Options": ""
+      },
       {
         "Name": "IPAddress",
         "DisplayName": "IP Address",
@@ -379,19 +481,9 @@
           "OnRemove": true,
           "OnReenrollment": true
         },
-        "DefaultValue": "*"
-      },
-      {
-        "Name": "Port",
-        "DisplayName": "Port",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": true,
-          "OnRemove": true,
-          "OnReenrollment": true
-        },
-        "DefaultValue": "443"
+        "DependsOn": "",
+        "DefaultValue": "*",
+        "Options": ""
       },
       {
         "Name": "HostName",
@@ -402,11 +494,14 @@
           "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": false
-        }
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
       },
       {
         "Name": "SiteName",
-        "DisplayName": "Site Name",
+        "DisplayName": "IIS Site Name",
         "Type": "String",
         "RequiredWhen": {
           "HasPrivateKey": false,
@@ -414,19 +509,23 @@
           "OnRemove": true,
           "OnReenrollment": true
         },
-        "DefaultValue": "Default Web Site"
+        "DependsOn": "",
+        "DefaultValue": "Default Web Site",
+        "Options": ""
       },
       {
         "Name": "SniFlag",
-        "DisplayName": "SNI Flag",
-        "Type": "String",
+        "DisplayName": "SNI Support",
+        "Type": "MultipleChoice",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": false
         },
-        "DefaultValue": "0 - No SNI"
+        "DependsOn": "",
+        "DefaultValue": "0 - No SNI",
+        "Options": "0 - No SNI,1 - SNI Enabled,2 - Non SNI Binding,3 - SNI Binding"
       },
       {
         "Name": "Protocol",
@@ -438,19 +537,23 @@
           "OnRemove": true,
           "OnReenrollment": true
         },
+        "DependsOn": "",
         "DefaultValue": "https",
-        "Options": "http, https"
+        "Options": "https,http"
       },
       {
         "Name": "ProviderName",
-        "DisplayName": "Provider Name",
+        "DisplayName": "Crypto Provider Name",
         "Type": "String",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": false
-        }
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
       },
       {
         "Name": "SAN",
@@ -460,8 +563,11 @@
           "HasPrivateKey": false,
           "OnAdd": false,
           "OnRemove": false,
-          "OnReenrollment": true
-        }
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
       }
     ],
     "PasswordOptions": {
@@ -471,21 +577,10 @@
     },
     "StorePathValue": "[\"My\",\"WebHosting\"]",
     "PrivateKeyAllowed": "Required",
-    "JobProperties": [
-      "IPAddress",
-      "Port",
-      "HostName",
-      "SiteName",
-      "SniFlag",
-      "Protocol",
-      "ProviderName",
-      "SAN"
-    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden",
-    "InventoryEndpoint": "/AnyInventory/Update"
+    "CustomAliasAllowed": "Forbidden"
   },
   {
     "Name": "K8SCert",
@@ -1497,7 +1592,7 @@
     "CustomAliasAllowed": "Forbidden"
   },
   {
-    "Name": "WinCert",
+    "Name": "Windows Certificate",
     "ShortName": "WinCert",
     "Capability": "WinCert",
     "LocalStore": false,
@@ -1519,18 +1614,18 @@
       },
       {
         "Name": "WinRM Protocol",
-        "DisplayName": "WinRm Protocol",
+        "DisplayName": "WinRM Protocol",
         "Type": "MultipleChoice",
         "DependsOn": "",
-        "DefaultValue": "http, https",
+        "DefaultValue": "https,http",
         "Required": true
       },
       {
-        "Name": "WinRm Port",
-        "DisplayName": "WinRm Port",
+        "Name": "WinRM Port",
+        "DisplayName": "WinRM Port",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": "5985",
+        "DefaultValue": "5986",
         "Required": true
       },
       {
@@ -1561,14 +1656,17 @@
     "EntryParameters": [
       {
         "Name": "ProviderName",
-        "DisplayName": "Provider Name",
+        "DisplayName": "Crypto Provider Name",
         "Type": "String",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": false
-        }
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
       },
       {
         "Name": "SAN",
@@ -1579,7 +1677,10 @@
           "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": true
-        }
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": ""
       }
     ],
     "PasswordOptions": {
@@ -1587,16 +1688,11 @@
       "StoreRequired": false,
       "Style": "Default"
     },
+    "StorePathValue": "",
     "PrivateKeyAllowed": "Required",
-    "JobProperties": [
-      "ProviderName",
-      "SAN"
-    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden",
-    "ServerRegistration": 7,
-    "InventoryEndpoint": "/AnyInventory/Update"
+    "CustomAliasAllowed": "Forbidden"
   }
 ]
