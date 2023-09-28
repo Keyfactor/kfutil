@@ -26,7 +26,7 @@ jobs:
         if: github.event_name == 'repository_dispatch'
         id: set-env-vars-from-payload
         run: |
-          echo "TARGET_REPO_BRANCH=${{ github.event.client_payload.targetRepo }}" | tee -a $GITHUB_ENV
+          echo "TARGET_REPO_BRANCH=${{ github.event.client_payload.targetRef }}" | tee -a $GITHUB_ENV
           echo "KFUTIL_ARG=${{ github.event.client_payload.targetRepo }}" | tee -a $GITHUB_ENV
       - name: Check Open PRs for Existing Branch
         id: check-branch
@@ -41,8 +41,8 @@ jobs:
               repo,
               state: "open"
             });
-            // Filter out ones matching the TARGET_REPO_BRANCH from payload (repository_dispatch) or input (workflow_dispatch)
-            const filteredData = pulls.data.filter(item => item.head.ref === '${{ env.TARGET_REPO_BRANCH }}');
+            // Filter out ones matching the KFUTIL_ARG from payload (repository_dispatch) or input (workflow_dispatch)
+            const filteredData = pulls.data.filter(item => item.head.ref === '${{ env.KFUTIL_ARG }}'); // Look for an existing branch with the orchestrator repo name
             const isBranch = (filteredData.length > 0)
             if (isBranch) {
               const {
@@ -56,7 +56,7 @@ jobs:
             }
             console.log(`Branch exists?`)
             console.log(filteredData.length > 0)
-            console.log(`targetRepo: ${{env.TARGET_REPO_BRANCH}}`)
+            console.log(`targetRepo: ${{env.KFUTIL_ARG}}`)
       - name: set env.PR_BRANCH value for jobs
         run: |
           echo "PR_BRANCH=${{steps.check-branch.outputs.PR_BRANCH}}" | tee -a $GITHUB_ENV
@@ -71,7 +71,7 @@ jobs:
             .github
           path: './merge-folder/'
           token: ${{ secrets.SDK_SYNC_PAT }}
-          ref: '${{env.TARGET_REPO_BRANCH}}' 
+          ref: '${{env.KFUTIL_ARG}}' 
 
 # If the branch does not exist, first check out the main branch from kfutil. 
       - name: Check out main
@@ -155,11 +155,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           add: store_types.json --force
-          message: Update store_types.json for ${{env.TARGET_REPO_BRANCH}}
+          message: Update store_types.json for ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}}
           author_name: Keyfactor
           author_email: keyfactor@keyfactor.github.io
           cwd: './merge-folder/'
-          new_branch: ${{env.TARGET_REPO_BRANCH}}
+          new_branch: ${{env.KFUTIL_ARG}}
 
       - name: Add and Commit to existing branch
         if: ${{ env.UPDATE_FILE == 'T' && env.PR_BRANCH == 'commit' }}
@@ -168,7 +168,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           add: store_types.json --force
-          message: Update store_types.json for ${{env.TARGET_REPO_BRANCH}}
+          message: Update store_types.json for ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}}
           author_name: Keyfactor
           author_email: keyfactor@keyfactor.github.io
           cwd: './merge-folder/'
@@ -178,20 +178,20 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            console.log(`Created ${{env.TARGET_REPO_BRANCH}} `)
-            console.log("Commit to ${{env.TARGET_REPO_BRANCH}} for PR")
+            console.log(`Created ${{env.KFUTIL_ARG}} `)
+            console.log("Commit to ${{env.KFUTIL_ARG}} for PR")
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const baseBranch = 'main'; 
-            const newBranch = '${{env.TARGET_REPO_BRANCH}}'; 
+            const newBranch = '${{env.KFUTIL_ARG}}'; 
             const response = await github.rest.pulls.create({
               owner,
               repo,
-              title: 'New Pull Request - ${{env.TARGET_REPO_BRANCH}}',
+              title: 'New Pull Request - ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}}',
               head: newBranch,
               base: baseBranch,
-              body: 'The cert store update from ${{env.TARGET_REPO_BRANCH}} needs to be verified and merged if correct.',
+              body: 'The cert store update from ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}} needs to be verified and merged if correct.',
             });
-            console.log(`Pull request created: ${{env.TARGET_REPO_BRANCH}} : ${response.data.html_url}`);
+            console.log(`Pull request created: ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}} : ${response.data.html_url}`);
         env:
           GITHUB_TOKEN: ${{ secrets.SDK_SYNC_PAT }}
