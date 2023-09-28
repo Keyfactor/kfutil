@@ -144,6 +144,7 @@ jobs:
             then echo "UPDATE_FILE=F" | tee -a $GITHUB_ENV; 
             else echo "UPDATE_FILE=T" | tee -a $GITHUB_ENV; 
           fi
+          diff ./merge-folder/store_types.json ./merge-folder/store_types.sav.json || true
 
 #  There are two different steps with a condition to check the PR_BRANCH env var
 #  Both steps will contain a check for the UPDATE_FILE variable before running
