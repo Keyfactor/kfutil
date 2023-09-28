@@ -1,4 +1,4 @@
-name: Create Pull Request
+name: Create Cert Store Update Pull Request
 
 on:
   repository_dispatch:
@@ -169,7 +169,6 @@ jobs:
           author_email: keyfactor@keyfactor.github.io
           cwd: './merge-folder/'
 
-
       - name: Create new PR for the newly created branch
         if: env.UPDATE_FILE == 'T' && env.PR_BRANCH == 'create'
         uses: actions/github-script@v6
@@ -179,7 +178,7 @@ jobs:
             console.log("Commit to ${{env.TARGET_REPO_BRANCH}} for PR")
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const baseBranch = 'main';  // Change this to your target branch
+            const baseBranch = 'main'; 
             const newBranch = '${{env.TARGET_REPO_BRANCH}}'; 
             const response = await github.rest.pulls.create({
               owner,
