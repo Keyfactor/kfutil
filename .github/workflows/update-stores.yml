@@ -8,6 +8,9 @@ on:
       targetRepo:
         description: 'Target repository for workflow_dispatch'
         default: 'all'
+      targetRef:
+        description: 'Target ref for workflow_dispatch'
+        default: 'latest'
 
 jobs:
   create_pull_request:
@@ -17,7 +20,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         id: set-local-env-vars
         run: |
-          echo "TARGET_REPO_BRANCH=${{ inputs.targetRepo }}" | tee -a $GITHUB_ENV
+          echo "TARGET_REPO_BRANCH=${{ inputs.targetRef }}" | tee -a $GITHUB_ENV
           echo "KFUTIL_ARG=${{ inputs.targetRepo }}" | tee -a $GITHUB_ENV
       - name: Set TARGET_REPO_BRANCH from repository_dispatch input
         if: github.event_name == 'repository_dispatch'
@@ -98,7 +101,7 @@ jobs:
       - name: Run Python Script
         working-directory: ./tools/store-type-merge
         run: |
-          python main.py --repo-name ${{ env.KFUTIL_ARG }}
+          python main.py --repo-name ${{ env.KFUTIL_ARG }} --ref ${{ env.TARGET_REPO_BRANCH }}
           cat store_types.json
         env:
           GITHUB_TOKEN: ${{ secrets.SDK_SYNC_PAT }}
