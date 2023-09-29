@@ -234,6 +234,16 @@ func TestExtensionInstaller_PreFlight(t *testing.T) {
 		}
 	})
 
+	t.Run("InvalidDelimeter", func(t *testing.T) {
+		builder := NewExtensionInstallerBuilder().ExtensionDir("").
+			Extensions([]string{"test-extension:1.0.0"})
+
+		err := builder.PreFlight()
+		if err == nil {
+			t.Errorf("Expected error, got none")
+		}
+	})
+
 	t.Run("NoErrors", func(t *testing.T) {
 		builder := NewExtensionInstallerBuilder().ExtensionDir("")
 

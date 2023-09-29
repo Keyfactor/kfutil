@@ -55,24 +55,21 @@ func (b *ToolBuilder) Values(file flags.FilenameOptions) *ToolBuilder {
 	return b
 }
 
-func (b *ToolBuilder) PreFlight() *ToolBuilder {
+func (b *ToolBuilder) PreFlight() error {
 	// Print any errors and exit if there are any
 	if len(b.errs) > 0 {
 		for _, err := range b.errs {
 			cmdutil.PrintError(err)
 		}
-		log.Fatal("[ERROR] Exiting due to errors")
+		return fmt.Errorf("exiting due to errors")
 	}
-
-	return b
+	return nil
 }
 
-func (b *ToolBuilder) BuildUniversalOrchestratorHelmValueTool() func() (string, error) {
-	return func() (string, error) {
-		newValues, err := NewUniversalOrchestratorHelmValueBuilder(b).Build()
-		if err != nil {
-			return "", fmt.Errorf("interactive value builder tool exited: %s", err)
-		}
-		return newValues, nil
+func (b *ToolBuilder) RunInteractiveUniversalOrchestratorHelmValueTool() (string, error) {
+	newValues, err := NewUniversalOrchestratorHelmValueBuilder(b).Build()
+	if err != nil {
+		return "", fmt.Errorf("interactive value builder tool exited: %s", err)
 	}
+	return newValues, nil
 }

@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"kfutil/pkg/cmdutil"
 	"kfutil/pkg/cmdutil/extensions"
 	"kfutil/pkg/cmdutil/flags"
-	"log"
 )
 
 const defaultExtensionOutDir = "./extensions"
@@ -41,12 +39,12 @@ func NewOrchsExtFlags() *OrchsExtFlags {
 
 	githubToken := ""
 	outPath := ""
-	var extensions []string
+	var extensionsFlag []string
 	var autoConfirm bool
 
 	return &OrchsExtFlags{
 		ExtensionConfigFilename: flags.NewFilenameFlags(filenameFlagName, filenameFlagShorthand, filenameUsage, filenames),
-		Extensions:              &extensions,
+		Extensions:              &extensionsFlag,
 		GithubToken:             &githubToken,
 		OutDir:                  &outPath,
 		AutoConfirm:             &autoConfirm,
@@ -96,8 +94,10 @@ func NewCmdOrchsExt() *cobra.Command {
 
 			err = installer.Run()
 			if err != nil {
-				cmdutil.PrintError(err)
-				log.Fatalf("[ERROR] Exiting: %s", err)
+				_, err = cmd.OutOrStderr().Write([]byte(err.Error()))
+				if err != nil {
+					return err
+				}
 			}
 
 			return nil

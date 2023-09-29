@@ -166,6 +166,16 @@ func (b *ExtensionInstaller) Token(token string) *ExtensionInstaller {
 }
 
 func (b *ExtensionInstaller) PreFlight() error {
+	// Print any errors and exit if there are any
+	for _, err := range b.errs {
+		cmdutil.PrintError(err)
+	}
+
+	if len(b.errs) > 0 {
+		// Return the first error; the rest have already been printed
+		return b.errs[0]
+	}
+
 	for extensionName, extensionVersions := range b.extensionsToInstall {
 		// Ensure that at least one version was provided
 		if len(extensionVersions) == 0 {
@@ -177,7 +187,7 @@ func (b *ExtensionInstaller) PreFlight() error {
 			// Get the list of versions from Github
 			versions, err := NewGithubReleaseFetcher(b.githubToken).GetExtensionVersions(extensionName)
 			if err != nil {
-				b.errs = append(b.errs, err)
+				return fmt.Errorf("failed to get list of versions for extension %s. Does it exist?: %s", extensionName, err)
 			}
 
 			// Set the version to the latest version
@@ -193,16 +203,6 @@ func (b *ExtensionInstaller) PreFlight() error {
 		} else if !exists {
 			return fmt.Errorf("extension %s:%s does not exist", extensionName, extensionVersions[0])
 		}
-	}
-
-	// Print any errors and exit if there are any
-	for _, err := range b.errs {
-		cmdutil.PrintError(err)
-	}
-
-	if len(b.errs) > 0 {
-		// Return the first error; the rest have already been printed
-		return b.errs[0]
 	}
 
 	// Set default extension dir name if it is empty
@@ -238,7 +238,7 @@ func (b *ExtensionInstaller) Run() error {
 
 		extensionZipBytes, err := NewGithubReleaseFetcher(b.githubToken).DownloadExtension(name, version[0])
 		if err != nil {
-			return fmt.Errorf("failed to download extension %s:%s: %s", name, version[0], err)
+			return fmt.Errorf("failed to download extension %s:%s (release must contain contain \"%s_%s.zip\"): %s", name, version[0], name, version[0], err)
 		}
 
 		// Write the extension zip file to disk

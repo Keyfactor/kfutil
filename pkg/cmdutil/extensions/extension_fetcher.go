@@ -27,6 +27,46 @@ func NewGithubReleaseFetcher(token string) *GithubReleaseFetcher {
 	}
 }
 
+var firstExtensionCache ExtensionName
+
+func (g *GithubReleaseFetcher) GetFirstExtension() (ExtensionName, error) {
+	if firstExtensionCache != "" {
+		return firstExtensionCache, nil
+	}
+
+	var name ExtensionName
+
+	// Ask https://api.github.com/orgs/keyfactor/repos for the list of repos
+	// Unmarshal the body into a slice of GithubRepo structs
+	var repos []GithubRepo
+	err := g.Get("https://api.github.com/orgs/keyfactor/repos?type=public&page=1&per_page=100", &repos)
+	if err != nil {
+		return "", err
+	}
+
+	// Loop through the repos and add them to the orchestratorList slice
+	for _, repo := range repos {
+		// If the repo doesn't end with "-orchestrator" or "-pam, skip it
+		if !strings.HasSuffix(repo.Name, "-orchestrator") && !strings.HasSuffix(repo.Name, "-pam") {
+			continue
+		}
+
+		versions, err := g.GetExtensionVersions(ExtensionName(repo.Name))
+		if err != nil {
+			return "", err
+		}
+
+		if len(versions) > 0 {
+			name = ExtensionName(repo.Name)
+			break
+		}
+	}
+
+	firstExtensionCache = name
+
+	return name, nil
+}
+
 func (g *GithubReleaseFetcher) GetExtensionNames() ([]ExtensionName, error) {
 	orchestratorList := make([]ExtensionName, 0)
 

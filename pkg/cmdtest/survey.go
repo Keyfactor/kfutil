@@ -1,13 +1,23 @@
 package cmdtest
 
 import (
+	"bytes"
 	"github.com/Netflix/go-expect"
 	"github.com/creack/pty"
 	"github.com/hinshun/vt10x"
+	"github.com/spf13/cobra"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
+
+type CommandTest struct {
+	PromptTest
+	CommandArguments []string
+	CheckProcedure   func([]byte) error
+	Config           func() error
+}
 
 type PromptTest struct {
 	Name           string
@@ -101,4 +111,15 @@ func RunTest(t *testing.T, procedure func(*Console), test func() error) {
 	os.Stderr = originalStderr
 
 	<-donec
+}
+
+func TestExecuteCommand(t *testing.T, cmd *cobra.Command, args ...string) (output []byte, err error) {
+	t.Helper()
+	t.Logf("Run \"%s %s\"", cmd.Use, strings.Join(args, " "))
+
+	buf := new(bytes.Buffer)
+	//cmd.SetOut(buf)
+	cmd.SetArgs(args)
+	err = cmd.Execute()
+	return buf.Bytes(), err
 }

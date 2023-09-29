@@ -28,8 +28,11 @@ func NewHelmUoFlags() *HelmUoFlags {
 	filenameUsage := "Filename, directory, or URL to a default values.yaml file to use for the chart"
 	var filenames []string
 
+	// General configuration
 	githubToken := ""
 	outPath := ""
+
+	// Non-interactive configuration
 
 	return &HelmUoFlags{
 		FilenameFlags: flags.NewFilenameFlags(filenameFlagName, filenameFlagShorthand, filenameUsage, filenames),
@@ -65,18 +68,21 @@ func NewCmdHelmUo() *cobra.Command {
 			}
 
 			// Build the tool
-			tool := helm.NewToolBuilder().
+			builder := helm.NewToolBuilder().
 				// Set up the builder
 				CommandHostname(options.CommandHostname).
 				OverrideFile(options.OutPath).
 				Token(options.GithubToken).
-				Values(options.FilenameOptions).
-				// Pre flight
-				PreFlight().
-				// Run the interactive tool
-				BuildUniversalOrchestratorHelmValueTool()
+				Values(options.FilenameOptions)
 
-			newValues, err := tool()
+			// Pre flight
+			err = builder.PreFlight()
+			if err != nil {
+				return err
+			}
+
+			// Run the interactive tool
+			newValues, err := builder.RunInteractiveUniversalOrchestratorHelmValueTool()
 			if err != nil {
 				cmdutil.PrintError(err)
 				log.Fatalf("[ERROR] Exiting: %s", err)

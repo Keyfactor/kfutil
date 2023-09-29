@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"kfutil/pkg/cmdtest"
 	"strings"
 	"testing"
 )
@@ -12,12 +13,12 @@ func TestHelm(t *testing.T) {
 
 		t.Logf("Testing %q", cmd.Use)
 
-		helmNoFlag, err := testExecuteCommand(t, cmd, "")
+		helmNoFlag, err := cmdtest.TestExecuteCommand(t, cmd, "")
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
 
-		helmHelp, err := testExecuteCommand(t, cmd, "-h")
+		helmHelp, err := cmdtest.TestExecuteCommand(t, cmd, "-h")
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
