@@ -7,7 +7,6 @@ import (
 	"gopkg.in/yaml.v3"
 	"os"
 	"reflect"
-	"sort"
 	"strconv"
 )
 
@@ -501,15 +500,4 @@ func anyToString(v any) string {
 		// or handle more types as needed.
 		return fmt.Sprintf("Unsupported type: %s", rv.Type())
 	}
-}
-
-func alphabetize(list []string) []string {
-	// Make a copy of the original list
-	sortedList := make([]string, len(list))
-	copy(sortedList, list)
-
-	// Sort the copied list alphabetically
-	sort.Strings(sortedList)
-
-	return sortedList
 }

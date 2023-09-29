@@ -12,6 +12,7 @@ import (
 func TestFilenameFlags(t *testing.T) {
 	// Create a new FilenameFlags interface
 	name := "testfile"
+	shorthand := "f"
 	usage := "test usage"
 	var filenames []string
 
@@ -45,7 +46,7 @@ func TestFilenameFlags(t *testing.T) {
 		}()
 
 		// Next, set up a new command and add the flags
-		f := NewFilenameFlags(name, usage, filenames)
+		f := NewFilenameFlags(name, shorthand, usage, filenames)
 
 		cmd := NewCommand(func(cmd *cobra.Command, args []string) error {
 			// Function that is run when the command is executed
@@ -95,7 +96,7 @@ func TestFilenameFlags(t *testing.T) {
 		}
 
 		// Next, set up a new command and add the flags
-		f := NewFilenameFlags(name, usage, filenames)
+		f := NewFilenameFlags(name, shorthand, usage, filenames)
 
 		cmd := NewCommand(func(cmd *cobra.Command, args []string) error {
 			// Function that is run when the command is executed
@@ -144,7 +145,7 @@ func TestFilenameFlags(t *testing.T) {
 		}
 
 		// Next, set up a new command and add the flags
-		f := NewFilenameFlags(name, usage, filenames)
+		f := NewFilenameFlags(name, shorthand, usage, filenames)
 
 		cmd := NewCommand(func(cmd *cobra.Command, args []string) error {
 			// Function that is run when the command is executed

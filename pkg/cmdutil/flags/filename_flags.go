@@ -11,19 +11,22 @@ import (
 
 // Ensure that FilenameFlags implements Flags
 var _ Flags = &FilenameFlags{}
+var _ Options = &FilenameOptions{}
 
 var SupportedExtensions = []string{".json", ".yaml", ".yml"}
 
 type FilenameFlags struct {
-	Name  string
-	Usage string
+	Name      string
+	Usage     string
+	Shorthand string
 
 	Filenames *[]string
 }
 
-func NewFilenameFlags(name string, usage string, filenames []string) *FilenameFlags {
+func NewFilenameFlags(name string, shorthand string, usage string, filenames []string) *FilenameFlags {
 	return &FilenameFlags{
 		Name:      name,
+		Shorthand: shorthand,
 		Usage:     usage,
 		Filenames: &filenames,
 	}
@@ -31,7 +34,7 @@ func NewFilenameFlags(name string, usage string, filenames []string) *FilenameFl
 
 func (f *FilenameFlags) AddFlags(flags *pflag.FlagSet) {
 	if f.Filenames != nil {
-		flags.StringSliceVarP(f.Filenames, f.Name, "f", *f.Filenames, f.Usage)
+		flags.StringSliceVarP(f.Filenames, f.Name, f.Shorthand, *f.Filenames, f.Usage)
 		annotations := make([]string, 0, len(SupportedExtensions))
 		for _, ext := range SupportedExtensions {
 			annotations = append(annotations, strings.TrimLeft(ext, "."))

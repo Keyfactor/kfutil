@@ -271,6 +271,9 @@ func init() {
 
 	RootCmd.AddCommand(orchsCmd)
 
+	// EXT orchestrators command
+	orchsCmd.AddCommand(NewCmdOrchsExt())
+
 	// LIST orchestrators command
 	orchsCmd.AddCommand(listOrchestratorsCmd)
 	// GET orchestrator command

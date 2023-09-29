@@ -1,6 +1,8 @@
 package flags
 
-import "github.com/spf13/pflag"
+import (
+	"github.com/spf13/pflag"
+)
 
 // Flags represents an instance of a flag set that can be added to a command.
 // This is the core interface that all flags must implement.
@@ -11,4 +13,8 @@ import "github.com/spf13/pflag"
 type Flags interface {
 	// AddFlags is called when the flag set must be added to a command.
 	AddFlags(flags *pflag.FlagSet)
+}
+
+type Options interface {
+	Validate() error
 }

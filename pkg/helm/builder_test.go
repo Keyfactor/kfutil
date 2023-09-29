@@ -8,6 +8,10 @@ import (
 	"testing"
 )
 
+func GetGithubToken() string {
+	return os.Getenv("GITHUB_TOKEN")
+}
+
 func TestNewToolBuilder(t *testing.T) {
 
 	t.Run("NewToolBuilder", func(t *testing.T) {

@@ -24,6 +24,7 @@ type HelmUoFlags struct {
 
 func NewHelmUoFlags() *HelmUoFlags {
 	filenameFlagName := "values"
+	filenameFlagShorthand := "f"
 	filenameUsage := "Filename, directory, or URL to a default values.yaml file to use for the chart"
 	var filenames []string
 
@@ -31,7 +32,7 @@ func NewHelmUoFlags() *HelmUoFlags {
 	outPath := ""
 
 	return &HelmUoFlags{
-		FilenameFlags: flags.NewFilenameFlags(filenameFlagName, filenameUsage, filenames),
+		FilenameFlags: flags.NewFilenameFlags(filenameFlagName, filenameFlagShorthand, filenameUsage, filenames),
 		GithubToken:   &githubToken,
 		OutPath:       &outPath,
 	}
@@ -63,12 +64,22 @@ func NewCmdHelmUo() *cobra.Command {
 				return err
 			}
 
-			// Run the tool
-			newValues, err := options.Run()
+			// Build the tool
+			tool := helm.NewToolBuilder().
+				// Set up the builder
+				CommandHostname(options.CommandHostname).
+				OverrideFile(options.OutPath).
+				Token(options.GithubToken).
+				Values(options.FilenameOptions).
+				// Pre flight
+				PreFlight().
+				// Run the interactive tool
+				BuildUniversalOrchestratorHelmValueTool()
+
+			newValues, err := tool()
 			if err != nil {
 				cmdutil.PrintError(err)
 				log.Fatalf("[ERROR] Exiting: %s", err)
-				return err
 			}
 
 			// Write the new values to stdout
@@ -122,7 +133,7 @@ func (f *HelmUoFlags) ToOptions(cmd *cobra.Command, args []string) (*HelmUoOptio
 	if f.FilenameFlags != nil {
 		filenameOptions := f.FilenameFlags.ToOptions()
 
-		if filenameOptions.IsEmpty() && DefaultValuesLocation != "" {
+		if filenameOptions.IsEmpty() {
 			// If no filenames were provided, use the default values.yaml location
 			log.Printf("[DEBUG] No filenames provided, using default values.yaml location: %q", DefaultValuesLocation)
 			filenameOptions.Merge(&flags.FilenameOptions{Filenames: []string{DefaultValuesLocation}})
@@ -144,20 +155,4 @@ func (f *HelmUoFlags) ToOptions(cmd *cobra.Command, args []string) (*HelmUoOptio
 	}
 
 	return options, nil
-}
-
-func (o *HelmUoOptions) Run() (string, error) {
-	tool := helm.NewToolBuilder().
-		// Set up the builder
-		CommandHostname(o.CommandHostname).
-		OverrideFile(o.OutPath).
-		Token(o.GithubToken).
-		Values(o.FilenameOptions).
-		// Pre flight
-		PreFlight().
-		// Run the interactive tool
-		BuildUniversalOrchestratorHelmValueTool()
-
-	// Run the interactive tool
-	return tool()
 }

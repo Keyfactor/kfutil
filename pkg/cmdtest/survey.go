@@ -6,6 +6,7 @@ import (
 	"github.com/hinshun/vt10x"
 	"os"
 	"testing"
+	"time"
 )
 
 type PromptTest struct {
@@ -56,7 +57,7 @@ func RunTest(t *testing.T, procedure func(*Console), test func() error) {
 	}
 
 	term := vt10x.New(vt10x.WithWriter(tty))
-	c, err := expect.NewConsole(expect.WithStdin(pty), expect.WithStdout(term), expect.WithCloser(pty, tty))
+	c, err := expect.NewConsole(expect.WithStdin(pty), expect.WithStdout(term), expect.WithCloser(pty, tty), expect.WithDefaultTimeout(time.Duration(30)*time.Second))
 	if err != nil {
 		t.Fatalf("failed to create console: %v", err)
 	}

@@ -225,7 +225,7 @@ func TestInteractiveUOValueBuilder(t *testing.T) {
 			},
 		},
 		{
-			Name: "Select an extension",
+			Name: "ConfigureOrchestratorExtensions",
 			Procedure: func(console *cmdtest.Console) {
 				ExpectSelectOption(console)
 				console.SendLine("Configure Orchestrator Extensions")
