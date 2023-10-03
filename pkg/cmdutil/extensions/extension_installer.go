@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 )
@@ -29,9 +30,9 @@ type ExtensionInstaller struct {
 	extensionDirName     string
 	requiresConfirmation bool
 	errs                 []error
-	confirmPromptStrings []string
 	upgrade              bool
 	prune                bool
+	writer               io.Writer
 }
 
 func NewExtensionInstallerBuilder() *ExtensionInstaller {
@@ -43,6 +44,12 @@ func NewExtensionInstallerBuilder() *ExtensionInstaller {
 
 func (b *ExtensionInstaller) InteractiveMode(interactiveMode bool) *ExtensionInstaller {
 	b.interactiveMode = interactiveMode
+
+	return b
+}
+
+func (b *ExtensionInstaller) Writer(writer io.Writer) *ExtensionInstaller {
+	b.writer = writer
 
 	return b
 }
@@ -172,23 +179,36 @@ func (b *ExtensionInstaller) cacheExtensionsDir() error {
 
 func (b *ExtensionInstaller) Confirm() bool {
 	// Render the list of extensions to install
-	extensionListString := "Installing extensions could overwrite existing extensions and configurations. The following changes will be made:\n"
+	confirmPromptString := "Installing extensions could overwrite existing extensions and configurations. The following changes will be made:\n"
 	for extensionName, extensionVersion := range b.extensionsToInstall {
 		var versionString string
-		if currentVersion, ok := b.currentlyInstalled[extensionName]; ok {
+		if currentVersion, ok := b.currentlyInstalled[extensionName]; ok && currentVersion != extensionVersion {
 			versionString = fmt.Sprintf("%s -> %s", currentVersion, extensionVersion)
+		} else if ok && currentVersion == extensionVersion {
+			confirmPromptString += fmt.Sprintf("%s @ %s is already installed.\n", extensionName, extensionVersion)
+			continue
 		} else {
 			versionString = string(extensionVersion)
 		}
 
-		extensionListString += fmt.Sprintf("Install %s: %s\n", extensionName, versionString)
+		confirmPromptString += fmt.Sprintf("Install %s: %s\n", extensionName, versionString)
 	}
+
+	if b.prune {
+		for extensionName, extensionVersion := range b.currentlyInstalled {
+			if _, ok := b.extensionsToInstall[extensionName]; !ok {
+				confirmPromptString += fmt.Sprintf("Remove %s: %s\n", extensionName, extensionVersion)
+			}
+		}
+	}
+
+	b.AddRuntimeLog(confirmPromptString)
 
 	// Confirm that the user wants to install the extensions
 	confirm := false
 	confirmPrompt := &survey.Confirm{
 		Message: "Install extensions?",
-		Help:    extensionListString,
+		Help:    confirmPromptString,
 		Default: false,
 	}
 	err := survey.AskOne(confirmPrompt, &confirm)
@@ -309,6 +329,8 @@ func (b *ExtensionInstaller) cleanExtensionDirectory() error {
 		// directory containing the currently installed extension
 		if currentlyInstalledVersion, ok := b.currentlyInstalled[extensionName]; ok && currentlyInstalledVersion != extensionVersion {
 			extensionDir := filepath.Join(b.extensionDirName, fmt.Sprintf("%s_%s", extensionName, currentlyInstalledVersion))
+			b.AddRuntimeLog("Removing %s_%s", extensionName, currentlyInstalledVersion)
+
 			err := os.RemoveAll(extensionDir)
 			if err != nil {
 				return fmt.Errorf("failed to remove extension directory %s: %s", extensionDir, err)
@@ -355,6 +377,8 @@ func (b *ExtensionInstaller) cleanExtensionDirectory() error {
 				if err != nil {
 					return fmt.Errorf("failed to remove extension directory %s: %s", entry.Name(), err)
 				}
+
+				b.AddRuntimeLog("Removed %q", entry.Name())
 			}
 		}
 	}
@@ -362,7 +386,24 @@ func (b *ExtensionInstaller) cleanExtensionDirectory() error {
 	return nil
 }
 
+func (b *ExtensionInstaller) AddRuntimeLog(format string, a ...any) {
+	if b.writer != nil {
+		_, err := fmt.Fprintf(b.writer, format+"\n", a...)
+		if err != nil {
+			log.Println(err)
+		}
+	}
+}
+
 func (b *ExtensionInstaller) Run() error {
+	// Create the extensions directory if it doesn't exist
+	if _, err := os.Stat(b.extensionDirName); os.IsNotExist(err) {
+		err = os.MkdirAll(b.extensionDirName, directoryPermissions)
+		if err != nil {
+			return fmt.Errorf("failed to create extensions directory: %s", err)
+		}
+	}
+
 	// Cache the extensions in the extension directory to the currentlyInstalled map.
 	// Useful for determining which extensions to uninstall if the user is upgrading
 	err := b.cacheExtensionsDir()
@@ -389,6 +430,7 @@ func (b *ExtensionInstaller) Run() error {
 	// Confirm that the user wants to install the extensions or otherwise make changes to the extension directory
 	if b.requiresConfirmation && !b.Confirm() {
 		log.Println("Action cancelled by user")
+		b.AddRuntimeLog("Action cancelled by user")
 		return nil
 	}
 
@@ -397,16 +439,16 @@ func (b *ExtensionInstaller) Run() error {
 		return fmt.Errorf("failed to clean extension directory: %s", err)
 	}
 
-	// Create the extensions directory if it doesn't exist
-	if _, err = os.Stat(b.extensionDirName); os.IsNotExist(err) {
-		err = os.MkdirAll(b.extensionDirName, directoryPermissions)
-		if err != nil {
-			return fmt.Errorf("failed to create extensions directory: %s", err)
-		}
-	}
-
 	for name, version := range b.extensionsToInstall {
+		if _, ok := b.currentlyInstalled[name]; ok && version == b.currentlyInstalled[name] {
+			log.Printf("extension %s:%s is already installed - do nothing.", name, version)
+			b.AddRuntimeLog("Extension %s:%s is already installed", name, version)
+			continue
+		}
+
 		zipFilePath := filepath.Join(b.extensionDirName, fmt.Sprintf("%s_%s.zip", name, version))
+
+		b.AddRuntimeLog("Downloading %s", zipFilePath)
 
 		extensionZipBytes, err := NewGithubReleaseFetcher(b.githubOrg, b.githubToken).DownloadExtension(name, version)
 		if err != nil {
@@ -437,7 +479,9 @@ func (b *ExtensionInstaller) Run() error {
 	return nil
 }
 
-func (b *ExtensionInstaller) unzip(zipFilePath string, destinationDirectory string) error {
+func (b *ExtensionInstaller) unzip(zipFilePath, destinationDirectory string) error {
+	b.AddRuntimeLog("Unzipping %s to %s", zipFilePath, destinationDirectory)
+
 	archive, err := zip.OpenReader(zipFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to open zip file at %q: %s", zipFilePath, err)
@@ -463,6 +507,10 @@ func (b *ExtensionInstaller) unzip(zipFilePath string, destinationDirectory stri
 				return err
 			}
 			continue
+		}
+
+		if strings.Contains(filePath, "\\") && runtime.GOOS != "windows" {
+			return fmt.Errorf("illegal file path: %s", filePath)
 		}
 
 		if err = os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {

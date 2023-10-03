@@ -105,7 +105,8 @@ func NewCmdOrchsExt() *cobra.Command {
 				// use for the extension
 				ExtensionConfig(options.ExtensionConfigOptions).
 				// AutoConfirm configures the command to not prompt for confirmation before downloading extensions
-				AutoConfirm(options.AutoConfirm)
+				AutoConfirm(options.AutoConfirm).
+				Writer(cmd.OutOrStdout())
 
 			if options.Upgrade {
 				installer.Upgrade()

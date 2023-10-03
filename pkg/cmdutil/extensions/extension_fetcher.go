@@ -155,7 +155,7 @@ func (g *GithubReleaseFetcher) GetExtensionList() (Extensions, error) {
 func (g *GithubReleaseFetcher) ExtensionExists(name ExtensionName, version Version) (bool, error) {
 	versions, err := g.GetExtensionVersions(name)
 	if err != nil {
-		return false, fmt.Errorf("failed to get list of versions for extension %s: %s", name, err)
+		return false, fmt.Errorf("failed to get list of versions for extension %q: %s", name, err)
 	}
 
 	for _, v := range versions {
