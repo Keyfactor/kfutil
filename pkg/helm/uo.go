@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
 	"gopkg.in/yaml.v3"
+	"kfutil/pkg/cmdutil"
+	"kfutil/pkg/cmdutil/extensions"
+	"kfutil/pkg/cmdutil/flags"
+	"log"
 	"os"
 	"reflect"
 	"strconv"
@@ -16,12 +20,15 @@ const (
 )
 
 type InteractiveUOValueBuilder struct {
+	errs            []error
+	commandHostname string
 	overrideFile    string
 	token           string
-	defaultValues   UniversalOrchestratorHelmValues
+	extensions      extensions.Extensions
 	newValues       UniversalOrchestratorHelmValues
 	newValuesString string
 	exitAfterPrompt bool
+	interactiveMode bool
 }
 
 type menuOption struct {
@@ -31,26 +38,126 @@ type menuOption struct {
 	handlerFunc  func() error
 }
 
-func NewUniversalOrchestratorHelmValueBuilder(toolBuilder *ToolBuilder) *InteractiveUOValueBuilder {
-	interactiveBuilder := &InteractiveUOValueBuilder{
-		overrideFile:    toolBuilder.overrideFile,
-		token:           toolBuilder.token,
-		defaultValues:   toolBuilder.values,
-		newValues:       toolBuilder.values,
-		exitAfterPrompt: false,
+func NewUniversalOrchestratorHelmValueBuilder() *InteractiveUOValueBuilder {
+	return &InteractiveUOValueBuilder{}
+}
+
+func (b *InteractiveUOValueBuilder) CommandHostname(hostname string) *InteractiveUOValueBuilder {
+	b.commandHostname = hostname
+
+	return b
+}
+
+func (b *InteractiveUOValueBuilder) InteractiveMode(interactiveMode bool) *InteractiveUOValueBuilder {
+	b.interactiveMode = interactiveMode
+
+	return b
+}
+
+func (b *InteractiveUOValueBuilder) Extensions(extensionsString []string) *InteractiveUOValueBuilder {
+	if b.extensions == nil {
+		b.extensions = make(extensions.Extensions)
 	}
 
-	if interactiveBuilder.newValues.CommandAgentURL == "" {
-		interactiveBuilder.newValues.CommandAgentURL = fmt.Sprintf("https://%s/KeyfactorAgents", toolBuilder.commandHostname)
+	// Serialize extensionsString into a map of extensions to install and the version
+	for _, extensionString := range extensionsString {
+		extension, err := extensions.ParseExtensionString(extensionString)
+		if err != nil {
+			cmdutil.PrintError(err)
+			b.errs = append(b.errs, err)
+		}
+
+		b.extensions[extension.Name] = extension.Version
 	}
 
-	return interactiveBuilder
+	return b
+}
+
+func (b *InteractiveUOValueBuilder) OverrideFile(filename string) *InteractiveUOValueBuilder {
+	b.overrideFile = filename
+
+	return b
+}
+
+func (b *InteractiveUOValueBuilder) Token(token string) *InteractiveUOValueBuilder {
+	b.token = token
+
+	return b
+}
+
+func (b *InteractiveUOValueBuilder) Values(file flags.FilenameOptions) *InteractiveUOValueBuilder {
+	// Read the file into a UniversalOrchestratorHelmValues struct
+	bytes, err := file.Read()
+	if err != nil {
+		log.Printf("[ERROR] Error reading file: %s", err)
+		b.errs = append(b.errs, fmt.Errorf("error reading file: %s", err))
+	}
+
+	// Serialize the bytes into a UniversalOrchestratorHelmValues struct
+	err = yaml.Unmarshal(bytes, &b.newValues)
+	if err != nil {
+		b.errs = append(b.errs, fmt.Errorf("error unmarshalling values: %s", err))
+	}
+
+	return b
+}
+
+func (b *InteractiveUOValueBuilder) PreFlight() error {
+	if b.newValues.CommandAgentURL == "" {
+		b.newValues.CommandAgentURL = fmt.Sprintf("https://%s/KeyfactorAgents", b.commandHostname)
+	}
+
+	// Print any errors and exit if there are any
+	if len(b.errs) > 0 {
+		for _, err := range b.errs {
+			cmdutil.PrintError(err)
+		}
+		return fmt.Errorf("exiting due to errors")
+	}
+	return nil
+}
+
+func (b *InteractiveUOValueBuilder) staticBuild() error {
+	if b.extensions == nil {
+		return errors.New("extensions cannot be nil")
+	}
+
+	// Clear the init containers
+	b.newValues.InitContainers = make([]InitContainer, 0)
+
+	// Set the init containers for the extension installer
+	b.setExtensionInstallerInitContainers(b.extensions)
+
+	// Marshal the newValues struct into a yaml string
+	buf, err := yaml.Marshal(b.newValues)
+	if err != nil {
+		return fmt.Errorf("failed to marshal newValues struct into yaml: %w", err)
+	}
+
+	// Set the newValuesString field
+	b.newValuesString = string(buf)
+	return nil
+}
+
+func (b *InteractiveUOValueBuilder) interactiveBuild() error {
+	return b.MainMenu()
 }
 
 func (b *InteractiveUOValueBuilder) Build() (string, error) {
-	err := b.MainMenu()
-	if err != nil {
-		return "", err
+	var err error
+
+	// If b.extensions is not nil, we are in non-interactive mode
+	if b.extensions != nil {
+		err = b.staticBuild()
+		if err != nil {
+			return "", err
+		}
+	} else {
+		// We are in interactive mode
+		err = b.interactiveBuild()
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return b.newValuesString, nil

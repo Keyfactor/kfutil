@@ -25,8 +25,8 @@ func NewCmdHelm() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "helm",
-		Short:   "Keyfactor Helm Chart Utilities",
-		Long:    `Keyfactor Helm Chart Utilities used to configure charts and assist in the deployment of Keyfactor products.`,
+		Short:   helmShortDescription,
+		Long:    helmLongDescription,
 		Example: "kubectl helm uo | helm install -f - keyfactor-universal-orchestrator keyfactor/keyfactor-universal-orchestrator",
 	}
 
@@ -46,3 +46,8 @@ func init() {
 	helmCmd := NewCmdHelm()
 	RootCmd.AddCommand(helmCmd)
 }
+
+const (
+	helmShortDescription = `Helm utilities for configuring Keyfactor Helm charts`
+	helmLongDescription  = helmShortDescription
+)

@@ -5,11 +5,7 @@ import (
 	"kfutil/pkg/cmdutil/extensions"
 )
 
-func (b *InteractiveUOValueBuilder) selectExtensionsHandler() error {
-	// Create an extension installer tool
-	installerTool := extensions.NewExtensionInstallerBuilder().Token(b.token)
-
-	// Get a list of currently installed extensions
+func (b *InteractiveUOValueBuilder) cacheCurrentlyInstalledExtensions() extensions.Extensions {
 	installedExtensions := make(extensions.Extensions)
 	for _, container := range b.newValues.InitContainers {
 		var extensionName extensions.ExtensionName
@@ -23,25 +19,15 @@ func (b *InteractiveUOValueBuilder) selectExtensionsHandler() error {
 			}
 		}
 		if extensionName != "" {
-			installedExtensions[extensionName] = append(installedExtensions[extensionName], extensionVersion)
+			installedExtensions[extensionName] = extensionVersion
 		}
 	}
 
-	// Set up the installer tool
-	installerTool.SetExtensionsToInstall(installedExtensions)
+	return installedExtensions
+}
 
-	// Prompt the user to select which extensions to install
-	err := installerTool.PromptForExtensions()
-	if err != nil {
-		return fmt.Errorf("failed to prompt for extensions: %s", err)
-	}
-
-	// Get the list of extensions to install
-	extensionsToInstall := installerTool.GetExtensionsToInstall()
-
-	for extension, versions := range extensionsToInstall {
-		latestVersion := versions[0]
-
+func (b *InteractiveUOValueBuilder) setExtensionInstallerInitContainers(extensionsToInstall extensions.Extensions) {
+	for extension, latestVersion := range extensionsToInstall {
 		initContainerName := fmt.Sprintf("%s-installer", extension)
 		extensionAlreadyInstalled := false
 
@@ -92,6 +78,29 @@ func (b *InteractiveUOValueBuilder) selectExtensionsHandler() error {
 			},
 		})
 	}
+}
+
+func (b *InteractiveUOValueBuilder) selectExtensionsHandler() error {
+	// Create an extension installer tool
+	installerTool := extensions.NewExtensionInstallerBuilder().Token(b.token)
+
+	// Get a list of currently installed extensions
+	installedExtensions := b.cacheCurrentlyInstalledExtensions()
+
+	// Set up the installer tool
+	installerTool.SetExtensionsToInstall(installedExtensions)
+
+	// Prompt the user to select which extensions to install
+	err := installerTool.PromptForExtensions()
+	if err != nil {
+		return fmt.Errorf("failed to prompt for extensions: %s", err)
+	}
+
+	// Get the list of extensions to install
+	extensionsToInstall := installerTool.GetExtensionsToInstall()
+
+	// Set the init containers for the extension installer
+	b.setExtensionInstallerInitContainers(extensionsToInstall)
 
 	// Return to the auth menu
 	if b.exitAfterPrompt {

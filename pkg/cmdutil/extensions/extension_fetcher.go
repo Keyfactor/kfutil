@@ -9,9 +9,11 @@ import (
 	"time"
 )
 
+const defaultGithubOrg = "keyfactor"
+
 type Version string
 type ExtensionName string
-type Extensions map[ExtensionName][]Version
+type Extensions map[ExtensionName]Version
 type Extension struct {
 	Name    ExtensionName
 	Version Version
@@ -19,10 +21,16 @@ type Extension struct {
 
 type GithubReleaseFetcher struct {
 	token string
+	org   string
 }
 
-func NewGithubReleaseFetcher(token string) *GithubReleaseFetcher {
+func NewGithubReleaseFetcher(org, token string) *GithubReleaseFetcher {
+	if org == "" {
+		org = defaultGithubOrg
+	}
+
 	return &GithubReleaseFetcher{
+		org:   org,
 		token: token,
 	}
 }
@@ -39,7 +47,8 @@ func (g *GithubReleaseFetcher) GetFirstExtension() (ExtensionName, error) {
 	// Ask https://api.github.com/orgs/keyfactor/repos for the list of repos
 	// Unmarshal the body into a slice of GithubRepo structs
 	var repos []GithubRepo
-	err := g.Get("https://api.github.com/orgs/keyfactor/repos?type=public&page=1&per_page=100", &repos)
+	url := fmt.Sprintf("https://api.github.com/orgs/%s/repos?type=public&page=1&per_page=100", g.org)
+	err := g.Get(url, &repos)
 	if err != nil {
 		return "", err
 	}
@@ -76,7 +85,8 @@ func (g *GithubReleaseFetcher) GetExtensionNames() ([]ExtensionName, error) {
 		// Ask https://api.github.com/orgs/keyfactor/repos for the list of repos
 		// Unmarshal the body into a slice of GithubRepo structs
 		var repos []GithubRepo
-		err := g.Get(fmt.Sprintf("https://api.github.com/orgs/keyfactor/repos?type=public&page=%d&per_page=100", page), &repos)
+		url := fmt.Sprintf("https://api.github.com/orgs/%s/repos?type=public&page=%d&per_page=100", g.org, page)
+		err := g.Get(url, &repos)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +112,8 @@ func (g *GithubReleaseFetcher) GetExtensionVersions(extension ExtensionName) ([]
 	// Ask https://api.github.com/repos/keyfactor/{name}/releases for the list of releases
 	// Unmarshal the body into a slice of GithubRelease structs
 	var releases []GithubRelease
-	err := g.Get(fmt.Sprintf("https://api.github.com/repos/keyfactor/%s/releases", extension), &releases)
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", g.org, extension)
+	err := g.Get(url, &releases)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get list of releases: %s", err)
 	}
@@ -134,7 +145,7 @@ func (g *GithubReleaseFetcher) GetExtensionList() (Extensions, error) {
 		}
 
 		if len(versions) > 0 {
-			extensions[extensionName] = versions
+			extensions[extensionName] = versions[0]
 		}
 	}
 
@@ -158,7 +169,7 @@ func (g *GithubReleaseFetcher) ExtensionExists(name ExtensionName, version Versi
 
 func (g *GithubReleaseFetcher) DownloadExtension(name ExtensionName, version Version) (*[]byte, error) {
 	// Construct URL
-	url := fmt.Sprintf("https://github.com/keyfactor/%s/releases/download/%s/%s_%s.zip", name, version, name, version)
+	url := fmt.Sprintf("https://github.com/%s/%s/releases/download/%s/%s_%s.zip", g.org, name, version, name, version)
 
 	// Download the zip file
 	rest := cmdutil.NewSimpleRestClient()

@@ -22,15 +22,23 @@ const filePermissions = 0644
 
 type ExtensionInstaller struct {
 	githubToken          string
+	githubOrg            string
 	extensionsToInstall  Extensions
+	currentlyInstalled   Extensions
 	interactiveMode      bool
 	extensionDirName     string
 	requiresConfirmation bool
 	errs                 []error
+	confirmPromptStrings []string
+	upgrade              bool
+	prune                bool
 }
 
 func NewExtensionInstallerBuilder() *ExtensionInstaller {
-	return &ExtensionInstaller{}
+	return &ExtensionInstaller{
+		extensionsToInstall: make(Extensions),
+		currentlyInstalled:  make(Extensions),
+	}
 }
 
 func (b *ExtensionInstaller) InteractiveMode(interactiveMode bool) *ExtensionInstaller {
@@ -40,10 +48,6 @@ func (b *ExtensionInstaller) InteractiveMode(interactiveMode bool) *ExtensionIns
 }
 
 func (b *ExtensionInstaller) Extensions(extensionsString []string) *ExtensionInstaller {
-	if b.extensionsToInstall == nil {
-		b.extensionsToInstall = make(Extensions)
-	}
-
 	// Serialize extensionsString into a map of extensions to install and the version
 	for _, extensionString := range extensionsString {
 		extension, err := ParseExtensionString(extensionString)
@@ -52,7 +56,7 @@ func (b *ExtensionInstaller) Extensions(extensionsString []string) *ExtensionIns
 			b.errs = append(b.errs, err)
 		}
 
-		b.extensionsToInstall[extension.Name] = append(make([]Version, 0), extension.Version)
+		b.extensionsToInstall[extension.Name] = extension.Version
 	}
 
 	return b
@@ -101,13 +105,9 @@ func (b *ExtensionInstaller) ExtensionConfig(extensionConfigOptions flags.Filena
 		b.errs = append(b.errs, fmt.Errorf("error unmarshalling extension config file: %s", err))
 	}
 
-	if b.extensionsToInstall == nil {
-		b.extensionsToInstall = make(Extensions)
-	}
-
 	// Convert the map of extensions to install and the version into a map of extensions to install and a slice of versions
 	for extensionName, extensionVersion := range extensionsToInstallMap {
-		b.extensionsToInstall[ExtensionName(extensionName)] = append(make([]Version, 0), Version(extensionVersion))
+		b.extensionsToInstall[ExtensionName(extensionName)] = Version(extensionVersion)
 	}
 
 	return b
@@ -118,24 +118,70 @@ func (b *ExtensionInstaller) ExtensionDir(dir string) *ExtensionInstaller {
 		dir = defaultExtensionOutDir
 	}
 
-	// If the directory doesn't exist, create it
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err = os.MkdirAll(dir, directoryPermissions)
-		if err != nil {
-			b.errs = append(b.errs, err)
-		}
-	}
+	// Don't make any changes to the extension directory unless user confirms actions
+	// This happens in the Run() method
 
 	b.extensionDirName = dir
 
 	return b
 }
 
+func (b *ExtensionInstaller) Prune() *ExtensionInstaller {
+	b.prune = true
+
+	return b
+}
+
+func (b *ExtensionInstaller) cacheExtensionsDir() error {
+	// Return if the extension directory doesn't exist or is empty
+	if _, err := os.Stat(b.extensionDirName); os.IsNotExist(err) {
+		return nil
+	}
+
+	// Read entries in the extensions directory
+	extensionEntries, err := os.ReadDir(b.extensionDirName)
+	if err != nil {
+		return err
+	}
+
+	// Create a slice of the entries in the extensions directory
+	var currentlyInstalledExtensions []string
+	for _, entry := range extensionEntries {
+		if entry.IsDir() {
+			currentlyInstalledExtensions = append(currentlyInstalledExtensions, entry.Name())
+		}
+	}
+
+	if b.currentlyInstalled == nil {
+		b.currentlyInstalled = make(Extensions)
+	}
+
+	// If the name in each entry of the slice conforms to the format <extension name>_<version>, add it to the extensionsToInstall map
+	for _, extension := range currentlyInstalledExtensions {
+		extensionParts := strings.Split(extension, "_")
+		if len(extensionParts) == 2 {
+			extensionName := extensionParts[0]
+			extensionVersion := extensionParts[1]
+
+			b.currentlyInstalled[ExtensionName(extensionName)] = Version(extensionVersion)
+		}
+	}
+
+	return nil
+}
+
 func (b *ExtensionInstaller) Confirm() bool {
 	// Render the list of extensions to install
-	extensionListString := ""
-	for extensionName, extensionVersions := range b.extensionsToInstall {
-		extensionListString += fmt.Sprintf("%s: %s\n", extensionName, extensionVersions)
+	extensionListString := "Installing extensions could overwrite existing extensions and configurations. The following changes will be made:\n"
+	for extensionName, extensionVersion := range b.extensionsToInstall {
+		var versionString string
+		if currentVersion, ok := b.currentlyInstalled[extensionName]; ok {
+			versionString = fmt.Sprintf("%s -> %s", currentVersion, extensionVersion)
+		} else {
+			versionString = string(extensionVersion)
+		}
+
+		extensionListString += fmt.Sprintf("Install %s: %s\n", extensionName, versionString)
 	}
 
 	// Confirm that the user wants to install the extensions
@@ -165,6 +211,51 @@ func (b *ExtensionInstaller) Token(token string) *ExtensionInstaller {
 	return b
 }
 
+func (b *ExtensionInstaller) Org(org string) *ExtensionInstaller {
+	b.githubOrg = org
+
+	return b
+}
+
+func (b *ExtensionInstaller) Upgrade() *ExtensionInstaller {
+	b.upgrade = true
+
+	return b
+}
+
+func (b *ExtensionInstaller) ValidateExtensionsToInstall() error {
+	for extensionName, extensionVersion := range b.extensionsToInstall {
+		// Ensure that at least one version was provided
+		if extensionVersion == "" {
+			return fmt.Errorf("no version provided for extension %s", extensionName)
+		}
+
+		// If the version is "latest", get the latest version from Github
+		if extensionVersion == "latest" {
+			// Get the list of versions from Github
+			versions, err := NewGithubReleaseFetcher(b.githubOrg, b.githubToken).GetExtensionVersions(extensionName)
+			if err != nil {
+				return fmt.Errorf("failed to get list of versions for extension %s. Does it exist?: %s", extensionName, err)
+			}
+
+			// Set the version to the latest version
+			b.extensionsToInstall[extensionName] = versions[0]
+
+			// We know that the version is valid, so we can skip the rest of the checks
+			continue
+		}
+
+		// Validate that the extension exists
+		if exists, err := NewGithubReleaseFetcher(b.githubOrg, b.githubToken).ExtensionExists(extensionName, extensionVersion); err != nil {
+			return fmt.Errorf("failed to determine if extension exists %s:%s: %s", extensionName, extensionVersion, err)
+		} else if !exists {
+			return fmt.Errorf("extension %s:%s does not exist", extensionName, extensionVersion)
+		}
+	}
+
+	return nil
+}
+
 func (b *ExtensionInstaller) PreFlight() error {
 	// Print any errors and exit if there are any
 	for _, err := range b.errs {
@@ -176,33 +267,8 @@ func (b *ExtensionInstaller) PreFlight() error {
 		return b.errs[0]
 	}
 
-	for extensionName, extensionVersions := range b.extensionsToInstall {
-		// Ensure that at least one version was provided
-		if len(extensionVersions) == 0 {
-			return fmt.Errorf("no version provided for extension %s", extensionName)
-		}
-
-		// If the version is "latest", get the latest version from Github
-		if len(extensionVersions) == 1 && extensionVersions[0] == "latest" {
-			// Get the list of versions from Github
-			versions, err := NewGithubReleaseFetcher(b.githubToken).GetExtensionVersions(extensionName)
-			if err != nil {
-				return fmt.Errorf("failed to get list of versions for extension %s. Does it exist?: %s", extensionName, err)
-			}
-
-			// Set the version to the latest version
-			b.extensionsToInstall[extensionName] = versions
-
-			// We know that the version is valid, so we can skip the rest of the checks
-			continue
-		}
-
-		// Validate that the extension exists
-		if exists, err := NewGithubReleaseFetcher(b.githubToken).ExtensionExists(extensionName, extensionVersions[0]); err != nil {
-			return fmt.Errorf("failed to determine if extension exists %s:%s: %s", extensionName, extensionVersions[0], err)
-		} else if !exists {
-			return fmt.Errorf("extension %s:%s does not exist", extensionName, extensionVersions[0])
-		}
+	if err := b.ValidateExtensionsToInstall(); err != nil {
+		return fmt.Errorf("failed to validate extensions: %s", err)
 	}
 
 	// Set default extension dir name if it is empty
@@ -210,35 +276,141 @@ func (b *ExtensionInstaller) PreFlight() error {
 		b.extensionDirName = defaultExtensionOutDir
 	}
 
-	// Create the extension directory if it doesn't exist
+	return nil
+}
+
+func (b *ExtensionInstaller) applyUpdatesToExtensionsToInstall() error {
+	for extensionName := range b.currentlyInstalled {
+		// Get the latest version of the extension
+		latestExtensionVersions, err := NewGithubReleaseFetcher(b.githubOrg, b.githubToken).GetExtensionVersions(extensionName)
+		if err != nil {
+			return fmt.Errorf("failed to get latest version for extension %s: %s", extensionName, err)
+		}
+
+		if len(latestExtensionVersions) == 0 {
+			return fmt.Errorf("failed to get latest version for %q: no versions found", extensionName)
+		}
+
+		// Set or overwrite the version in the extensionsToInstall map
+		b.extensionsToInstall[extensionName] = latestExtensionVersions[0]
+	}
+
+	return nil
+}
+
+func (b *ExtensionInstaller) cleanExtensionDirectory() error {
+	// Return if the extension directory doesn't exist or is empty
 	if _, err := os.Stat(b.extensionDirName); os.IsNotExist(err) {
-		return fmt.Errorf("extension directory %s does not exist", b.extensionDirName)
+		return nil
+	}
+
+	for extensionName, extensionVersion := range b.extensionsToInstall {
+		// If the extension is currently installed and the version is different than the version to install, delete the
+		// directory containing the currently installed extension
+		if currentlyInstalledVersion, ok := b.currentlyInstalled[extensionName]; ok && currentlyInstalledVersion != extensionVersion {
+			extensionDir := filepath.Join(b.extensionDirName, fmt.Sprintf("%s_%s", extensionName, currentlyInstalledVersion))
+			err := os.RemoveAll(extensionDir)
+			if err != nil {
+				return fmt.Errorf("failed to remove extension directory %s: %s", extensionDir, err)
+			}
+		}
+	}
+
+	// If the prune flag was set, remove any extensions that are currently installed but not in the extensionsToInstall map
+	if b.prune {
+		// Read entries in the extensions directory
+		extensionEntries, err := os.ReadDir(b.extensionDirName)
+		if err != nil {
+			return fmt.Errorf("failed to read entries in extension directory: %s", err)
+		}
+
+		for _, entry := range extensionEntries {
+			deletionRequired := false
+
+			if !entry.IsDir() {
+				deletionRequired = true
+			}
+
+			entryComponents := strings.Split(entry.Name(), "_")
+			if len(entryComponents) != 2 {
+				deletionRequired = true
+			}
+
+			if len(entryComponents) == 2 {
+				extensionName := ExtensionName(entryComponents[0])
+				extensionVersion := Version(entryComponents[1])
+
+				// Determine if the extension is in the extensionsToInstall map
+				if version, ok := b.extensionsToInstall[extensionName]; ok {
+					if extensionVersion != version {
+						deletionRequired = true
+					}
+				} else {
+					deletionRequired = true
+				}
+			}
+
+			if deletionRequired {
+				err = os.RemoveAll(filepath.Join(b.extensionDirName, entry.Name()))
+				if err != nil {
+					return fmt.Errorf("failed to remove extension directory %s: %s", entry.Name(), err)
+				}
+			}
+		}
 	}
 
 	return nil
 }
 
 func (b *ExtensionInstaller) Run() error {
+	// Cache the extensions in the extension directory to the currentlyInstalled map.
+	// Useful for determining which extensions to uninstall if the user is upgrading
+	err := b.cacheExtensionsDir()
+	if err != nil {
+		return fmt.Errorf("failed to cache extensions in extension directory: %s", err)
+	}
+
 	// If interactive mode is enabled, prompt the user to confirm the extensions to install
-	if b.interactiveMode {
-		err := b.PromptForExtensions()
+	if b.interactiveMode && !b.upgrade {
+		err = b.PromptForExtensions()
 		if err != nil {
 			return fmt.Errorf("failed to prompt for extensions: %s", err)
 		}
 	}
 
-	// Confirm that the user wants to install the extensions
+	// If the update flag is set, remove any extensions that are currently installed but not in the extensionsToInstall map
+	if b.upgrade {
+		err = b.applyUpdatesToExtensionsToInstall()
+		if err != nil {
+			return fmt.Errorf("failed to apply upgrades to currently installed extensions: %s", err)
+		}
+	}
+
+	// Confirm that the user wants to install the extensions or otherwise make changes to the extension directory
 	if b.requiresConfirmation && !b.Confirm() {
 		log.Println("Action cancelled by user")
 		return nil
 	}
 
-	for name, version := range b.extensionsToInstall {
-		zipFilePath := filepath.Join(b.extensionDirName, fmt.Sprintf("%s_%s.zip", name, version[0]))
+	err = b.cleanExtensionDirectory()
+	if err != nil {
+		return fmt.Errorf("failed to clean extension directory: %s", err)
+	}
 
-		extensionZipBytes, err := NewGithubReleaseFetcher(b.githubToken).DownloadExtension(name, version[0])
+	// Create the extensions directory if it doesn't exist
+	if _, err = os.Stat(b.extensionDirName); os.IsNotExist(err) {
+		err = os.MkdirAll(b.extensionDirName, directoryPermissions)
 		if err != nil {
-			return fmt.Errorf("failed to download extension %s:%s (release must contain contain \"%s_%s.zip\"): %s", name, version[0], name, version[0], err)
+			return fmt.Errorf("failed to create extensions directory: %s", err)
+		}
+	}
+
+	for name, version := range b.extensionsToInstall {
+		zipFilePath := filepath.Join(b.extensionDirName, fmt.Sprintf("%s_%s.zip", name, version))
+
+		extensionZipBytes, err := NewGithubReleaseFetcher(b.githubOrg, b.githubToken).DownloadExtension(name, version)
+		if err != nil {
+			return fmt.Errorf("failed to download extension %s:%s (release must contain contain \"%s_%s.zip\"): %s", name, version, name, version, err)
 		}
 
 		// Write the extension zip file to disk
@@ -247,7 +419,7 @@ func (b *ExtensionInstaller) Run() error {
 			return fmt.Errorf("failed to write extension zip file to disk: %s", err)
 		}
 
-		destDir := filepath.Join(b.extensionDirName, fmt.Sprintf("%s_%s", name, version[0]))
+		destDir := filepath.Join(b.extensionDirName, fmt.Sprintf("%s_%s", name, version))
 
 		// Unzip the extension
 		err = b.unzip(zipFilePath, destDir)
@@ -325,27 +497,23 @@ func (b *ExtensionInstaller) unzip(zipFilePath string, destinationDirectory stri
 }
 
 func (b *ExtensionInstaller) PromptForExtensions() error {
-	if b.extensionsToInstall == nil {
-		b.extensionsToInstall = make(Extensions)
-	}
-
-	extensionList, err := NewGithubReleaseFetcher(b.githubToken).GetExtensionList()
+	extensionList, err := NewGithubReleaseFetcher(b.githubOrg, b.githubToken).GetExtensionList()
 	if err != nil {
 		return fmt.Errorf("failed to get list of extensions: %s", err)
 	}
 
 	extensionNameList := make([]string, 0)
-	for extensionName, _ := range extensionList {
+	for extensionName := range extensionList {
 		extensionNameList = append(extensionNameList, string(extensionName))
 	}
 
 	descriptionFunc := func(value string, index int) string {
-		for extensionName, versions := range extensionList {
+		for extensionName, version := range extensionList {
 			if string(extensionName) == value {
-				description := fmt.Sprintf("%s", versions[0])
+				description := fmt.Sprintf("%s", version)
 
-				if installed, ok := b.extensionsToInstall[extensionName]; ok {
-					description = fmt.Sprintf("%s (currently %s)", description, installed[0])
+				if installed, ok := b.currentlyInstalled[extensionName]; ok {
+					description = fmt.Sprintf("%s (currently %s)", description, installed)
 				}
 
 				return description
@@ -354,7 +522,6 @@ func (b *ExtensionInstaller) PromptForExtensions() error {
 		return ""
 	}
 
-	// TODO make selection process declarative - i.e. extensionList not in the extensionsToInstall slice are not installed
 	var extensionsToInstall []string
 	prompt := &survey.MultiSelect{
 		Message:     "Select the extensions to install - the most recent versions are displayed",
@@ -369,12 +536,9 @@ func (b *ExtensionInstaller) PromptForExtensions() error {
 	for _, extension := range extensionsToInstall {
 		// extensionsToInstall is a subset of extensionList since user was prompted to select from extensionList
 		// So we can safely assume that extension is in extensionList
-		versions := extensionList[ExtensionName(extension)]
-		// Also, extensionList is only populated if there are releases for the extension
-		latestVersion := versions[0]
 
 		// Add the extension to the list of extensions to install
-		b.extensionsToInstall[ExtensionName(extension)] = append(make([]Version, 0), latestVersion)
+		b.extensionsToInstall[ExtensionName(extension)] = extensionList[ExtensionName(extension)]
 	}
 
 	return nil

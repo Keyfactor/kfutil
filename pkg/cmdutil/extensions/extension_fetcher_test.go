@@ -10,7 +10,7 @@ func GetGithubToken() string {
 }
 
 func TestNewGithubReleaseFetcher(t *testing.T) {
-	fetcher := NewGithubReleaseFetcher(GetGithubToken())
+	fetcher := NewGithubReleaseFetcher("", GetGithubToken())
 
 	list, err := fetcher.GetExtensionList()
 	if err != nil {
@@ -23,7 +23,7 @@ func TestNewGithubReleaseFetcher(t *testing.T) {
 }
 
 func TestGithubReleaseFetcher_ExtensionExists(t *testing.T) {
-	fetcher := NewGithubReleaseFetcher(GetGithubToken())
+	fetcher := NewGithubReleaseFetcher("", GetGithubToken())
 
 	extension, err := fetcher.GetFirstExtension()
 	if err != nil {
@@ -68,7 +68,7 @@ func TestGithubReleaseFetcher_Get(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			f := NewGithubReleaseFetcher(GetGithubToken())
+			f := NewGithubReleaseFetcher("", GetGithubToken())
 
 			err := f.Get(test.url, &test.object)
 			if err != nil && !test.errorExpected {

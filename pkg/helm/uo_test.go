@@ -5,12 +5,21 @@ import (
 	"github.com/AlecAivazis/survey/v2/core"
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"kfutil/pkg/cmdtest"
+	"kfutil/pkg/cmdutil/extensions"
+	"kfutil/pkg/cmdutil/flags"
+	"os"
+	"reflect"
+	"strings"
 	"testing"
 )
 
 func init() {
 	// disable color output for all prompts to simplify testing
 	core.DisableColor = true
+}
+
+func GetGithubToken() string {
+	return os.Getenv("GITHUB_TOKEN")
 }
 
 func (b *InteractiveUOValueBuilder) ClearValues() {
@@ -20,6 +29,146 @@ func (b *InteractiveUOValueBuilder) ClearValues() {
 
 func ExpectSelectOption(console *cmdtest.Console) {
 	console.ExpectString("Select an option:  [Use arrows to move, type to filter, ? for more help]")
+}
+
+func TestNewUniversalOrchestratorHelmValueBuilder(t *testing.T) {
+	t.Run("NewToolBuilder", func(t *testing.T) {
+		builder := NewUniversalOrchestratorHelmValueBuilder()
+
+		if !reflect.DeepEqual(builder, &InteractiveUOValueBuilder{}) {
+			t.Error("NewToolBuilder() did not return a ToolBuilder")
+		}
+	})
+
+	t.Run("CommandHostname", func(t *testing.T) {
+		builder := NewUniversalOrchestratorHelmValueBuilder().CommandHostname("test")
+
+		if !reflect.DeepEqual(builder.commandHostname, "test") {
+			t.Error("CommandHostname() did not set commandHostname")
+		}
+	})
+
+	t.Run("OverrideFile", func(t *testing.T) {
+		builder := NewUniversalOrchestratorHelmValueBuilder().OverrideFile("test")
+
+		if !reflect.DeepEqual(builder.overrideFile, "test") {
+			t.Error("OverrideFile() did not set overrideFile")
+		}
+	})
+
+	t.Run("Token", func(t *testing.T) {
+		builder := NewUniversalOrchestratorHelmValueBuilder().Token("test")
+
+		if !reflect.DeepEqual(builder.token, "test") {
+			t.Error("Token() did not set token")
+		}
+	})
+
+	t.Run("Extensions", func(t *testing.T) {
+		t.Run("ValidExtensions", func(t *testing.T) {
+			builder := NewUniversalOrchestratorHelmValueBuilder().Extensions([]string{"test-extension@1.0.0"})
+
+			testExtensions := make(extensions.Extensions)
+			testExtensions["test-extension"] = "1.0.0"
+
+			if !reflect.DeepEqual(builder.extensions, testExtensions) {
+				t.Errorf("Expected extensionsToInstall to be %v, got %v", testExtensions, builder.extensions)
+			}
+		})
+
+		t.Run("InvalidExtensions", func(t *testing.T) {
+			builder := NewUniversalOrchestratorHelmValueBuilder().Extensions([]string{"test-extension@1.0.0@1.0.0"})
+
+			if len(builder.errs) == 0 {
+				t.Error("Expected error, got none")
+			}
+		})
+
+		t.Run("NilExtensions", func(t *testing.T) {
+			builder := NewUniversalOrchestratorHelmValueBuilder().Extensions(nil)
+
+			if len(builder.extensions) != 0 {
+				t.Errorf("Expected extensionsToInstall to be nil, got %v", builder.extensions)
+			}
+		})
+	})
+
+	t.Run("Values", func(t *testing.T) {
+		t.Run("ReadError", func(t *testing.T) {
+			fileFlags := flags.FilenameOptions{
+				Filenames: []string{"test"},
+			}
+
+			builder := NewUniversalOrchestratorHelmValueBuilder().Values(fileFlags)
+
+			if len(builder.errs) == 0 {
+				t.Error("Values() did not set errs")
+			}
+		})
+
+		t.Run("UnmarshalError", func(t *testing.T) {
+			fileFlags := flags.FilenameOptions{
+				Filenames: []string{"https://raw.githubusercontent.com/Keyfactor/kfutil/main/README.md"},
+			}
+
+			builder := NewUniversalOrchestratorHelmValueBuilder().Values(fileFlags)
+
+			if !strings.Contains(builder.errs[0].Error(), "error unmarshalling values") {
+				t.Error("Values() did not set errs despite unmarshal error")
+			}
+		})
+
+		t.Run("Success", func(t *testing.T) {
+			testFile := "./testFile.yaml"
+
+			// Create blank file to read from
+			_, err := os.Create(testFile)
+			if err != nil {
+				t.Error(err)
+			}
+
+			fileFlags := flags.FilenameOptions{
+				Filenames: []string{testFile},
+			}
+
+			// A blank file is valid YAML, so this should not set errs
+			builder := NewUniversalOrchestratorHelmValueBuilder().Values(fileFlags)
+
+			// Delete the test file
+			err = os.Remove(testFile)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if len(builder.errs) > 0 {
+				t.Error("Values() set errs despite success")
+			}
+		})
+	})
+}
+
+func TestInteractiveUOValueBuilder_staticBuild(t *testing.T) {
+	t.Run("NilExtensions", func(t *testing.T) {
+		builder := NewTestBuilder()
+
+		err := builder.staticBuild()
+		if err == nil {
+			t.Error("expected error, got nil")
+		}
+	})
+
+	t.Run("EmptyExtensions", func(t *testing.T) {
+		builder := NewTestBuilder()
+
+		err := builder.staticBuild()
+		if err == nil {
+			t.Error("expected error, got nil")
+		}
+	})
+
+	t.Run("InvalidExtensions", func(t *testing.T) {
+
+	})
 }
 
 func TestInteractiveUOValueBuilder(t *testing.T) {
@@ -259,4 +408,15 @@ func TestInteractiveUOValueBuilder(t *testing.T) {
 			}
 		})
 	}
+}
+
+func NewTestBuilder() *InteractiveUOValueBuilder {
+	toolBuilder := NewUniversalOrchestratorHelmValueBuilder().
+		CommandHostname("test").
+		OverrideFile("test").
+		Token(GetGithubToken())
+
+	toolBuilder.exitAfterPrompt = true
+
+	return toolBuilder
 }

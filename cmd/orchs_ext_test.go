@@ -6,6 +6,7 @@ import (
 	"kfutil/pkg/cmdtest"
 	"kfutil/pkg/cmdutil/extensions"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -58,7 +59,7 @@ func TestOrchsExt(t *testing.T) {
 		extCmd.Flags().BoolVarP(&debug, "debug", "b", false, "debug")
 
 		// Get an orchestrator name
-		extension, err := extensions.NewGithubReleaseFetcher(GetGithubToken()).GetFirstExtension()
+		extension, err := extensions.NewGithubReleaseFetcher("", GetGithubToken()).GetFirstExtension()
 		if err != nil {
 			t.Error(err)
 		}
@@ -89,7 +90,7 @@ func TestOrchsExt(t *testing.T) {
 		extCmd.Flags().BoolVarP(&debug, "debug", "b", false, "debug")
 
 		// Get an orchestrator name
-		extension, err := extensions.NewGithubReleaseFetcher(GetGithubToken()).GetFirstExtension()
+		extension, err := extensions.NewGithubReleaseFetcher("", GetGithubToken()).GetFirstExtension()
 		if err != nil {
 			t.Error(err)
 		}
@@ -150,6 +151,64 @@ func TestOrchsExt(t *testing.T) {
 		}
 	})
 
+	t.Run("TestOrchsExt_Upgrades", func(t *testing.T) {
+		extCmd := NewCmdOrchsExt()
+		var debug bool
+		extCmd.Flags().BoolVarP(&debug, "debug", "b", false, "debug")
+
+		// Get an orchestrator name
+		extension, err := extensions.NewGithubReleaseFetcher("", GetGithubToken()).GetFirstExtension()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Set up extension directory
+		dirName := "testExtDir"
+		err = setupExtensionDirectory(t, dirName)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Create a directory for the extension with a version that is not probable to be the latest
+		extensionDir := fmt.Sprintf("%s/%s_%s", dirName, extension, "v0.48.289")
+		err = os.MkdirAll(extensionDir, 0755)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Setup the command
+		args := []string{"-t", GetGithubToken(), "-o", dirName, "-y", "-u"}
+		_, err = cmdtest.TestExecuteCommand(t, extCmd, args...)
+		if err != nil {
+			t.Error(err)
+		}
+
+		// Verify that extensionDir does not exist, but a new directory with the latest version does
+		if _, err = os.Stat(extensionDir); !os.IsNotExist(err) {
+			t.Error(fmt.Sprintf("Extension directory %s was not removed", extensionDir))
+		}
+
+		entries, err := os.ReadDir(dirName)
+		if err != nil {
+			t.Error(err)
+		}
+
+		// Verify that the new directory exists
+		newVersionPresent := false
+		for _, entry := range entries {
+			if entry.IsDir() && strings.Contains(entry.Name(), string(extension)) && !strings.Contains(entry.Name(), "v0.48.289") {
+				newVersionPresent = true
+			}
+		}
+
+		if !newVersionPresent {
+			t.Error("New version of extension was not installed")
+		}
+
+		// Remove extension directory
+		err = os.RemoveAll(dirName)
+	})
+
 	tests := []cmdtest.CommandTest{
 		{
 			PromptTest: cmdtest.PromptTest{
@@ -158,9 +217,7 @@ func TestOrchsExt(t *testing.T) {
 					//console.ExpectString("Select the extensions to install - the most recent versions are displayed  [Use arrows to move, space to select, <right> to all, <left> to none, type to filter]")
 					console.Send(string(terminal.KeyArrowDown))
 					console.SendLine(" ")
-					//console.ExpectString("Install extensions? [? for help] (y/N) ")
 					console.SendLine("y")
-					//console.ExpectEOF()
 				},
 			},
 			CommandArguments: []string{"-t", GetGithubToken(), "-o", "testExtDir"},

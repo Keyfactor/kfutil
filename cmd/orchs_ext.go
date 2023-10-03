@@ -25,10 +25,16 @@ type OrchsExtFlags struct {
 	Extensions *[]string
 	// GithubToken is the token used for related authentication - required for private repositories
 	GithubToken *string
+	// GithubOrg is the Github organization to download extensions from. Default is keyfactor.
+	GithubOrg *string
 	// OutDir is the path to the extensions directory to download extensions into. Default is ./extensions
 	OutDir *string
 	// AutoConfirm configures the command to not prompt for confirmation before downloading extensions
 	AutoConfirm *bool
+	// Upgrade looks in the extensions directory for existing extensions and upgrades them if they are out of date
+	Upgrade *bool
+	// Prune removes extensions from the extensions directory that are not in the extension configuration file or specified on the command line
+	Prune *bool
 }
 
 func NewOrchsExtFlags() *OrchsExtFlags {
@@ -38,16 +44,22 @@ func NewOrchsExtFlags() *OrchsExtFlags {
 	var filenames []string
 
 	githubToken := ""
+	githubOrg := ""
 	outPath := ""
 	var extensionsFlag []string
 	var autoConfirm bool
+	var upgrade bool
+	var prune bool
 
 	return &OrchsExtFlags{
 		ExtensionConfigFilename: flags.NewFilenameFlags(filenameFlagName, filenameFlagShorthand, filenameUsage, filenames),
 		Extensions:              &extensionsFlag,
 		GithubToken:             &githubToken,
+		GithubOrg:               &githubOrg,
 		OutDir:                  &outPath,
 		AutoConfirm:             &autoConfirm,
+		Upgrade:                 &upgrade,
+		Prune:                   &prune,
 	}
 }
 
@@ -59,18 +71,23 @@ func (f *OrchsExtFlags) AddFlags(flags *pflag.FlagSet) {
 
 	// Add custom flags
 	flags.StringVarP(f.GithubToken, "token", "t", *f.GithubToken, "Token used for related authentication - required for private repositories")
+	flags.StringVarP(f.GithubOrg, "org", "", *f.GithubOrg, "Github organization to download extensions from. Default is keyfactor.")
 	flags.StringVarP(f.OutDir, "out", "o", *f.OutDir, "Path to the extensions directory to download extensions into. Default is ./extensions")
 	flags.StringSliceVarP(f.Extensions, "extensions", "e", *f.Extensions, "List of extensions to download. Should be in the format <extension name>:<version>. If no version is specified, the latest official version will be downloaded.")
 	flags.BoolVarP(f.AutoConfirm, "confirm", "y", *f.AutoConfirm, "Automatically confirm the download of extensions")
+	flags.BoolVarP(f.Upgrade, "update", "u", *f.Upgrade, "Update existing extensions if they are out of date.")
+	flags.BoolVarP(f.Prune, "prune", "P", *f.Prune, "Remove extensions from the extensions directory that are not in the extension configuration file or specified on the command line")
 }
 
 func NewCmdOrchsExt() *cobra.Command {
 	orchsExtFlags := NewOrchsExtFlags()
 
 	cmd := &cobra.Command{
-		Use:   "ext",
-		Short: "Keyfactor Command Universal Orchestrator utility for downloading and configuring extensions",
-		Long:  CmdOrchsExtLongDescription,
+		Use:     OrchsExtUsage,
+		Aliases: OrchsExtAliases,
+		Short:   OrchsExtShortDescription,
+		Long:    OrchsExtLongDescription,
+		Example: OrchsExtExample,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			options, err := orchsExtFlags.ToOptions(cmd, args)
 			if err != nil {
@@ -81,12 +98,22 @@ func NewCmdOrchsExt() *cobra.Command {
 				ExtensionDir(options.OutPath).
 				InteractiveMode(options.InteractiveMode).
 				Token(options.GithubToken).
+				Org(options.GithubOrg).
 				// Extensions is a slice of strings in the format <extension name>@<version>
 				Extensions(options.Extensions).
-				// ExtensionConfigFilename is the filename, directory, or URL to an extension configuration file to use for the extension
+				// ExtensionConfigFilename is the filename, directory, or URL to an extension configuration file to
+				// use for the extension
 				ExtensionConfig(options.ExtensionConfigOptions).
 				// AutoConfirm configures the command to not prompt for confirmation before downloading extensions
 				AutoConfirm(options.AutoConfirm)
+
+			if options.Upgrade {
+				installer.Upgrade()
+			}
+
+			if options.Prune {
+				installer.Prune()
+			}
 
 			if err = installer.PreFlight(); err != nil {
 				return fmt.Errorf("extension installer preflight failed: %s", err)
@@ -113,10 +140,13 @@ func NewCmdOrchsExt() *cobra.Command {
 type OrchsExtOptions struct {
 	// Runtime options
 	GithubToken            string
+	GithubOrg              string
 	OutPath                string
 	ExtensionConfigOptions flags.FilenameOptions
 	Extensions             []string
 	AutoConfirm            bool
+	Upgrade                bool
+	Prune                  bool
 
 	// Interpreted options
 	InteractiveMode bool
@@ -147,6 +177,10 @@ func (f *OrchsExtFlags) ToOptions(cmd *cobra.Command, args []string) (*OrchsExtO
 		options.GithubToken = *f.GithubToken
 	}
 
+	if f.GithubOrg != nil {
+		options.GithubOrg = *f.GithubOrg
+	}
+
 	if f.OutDir != nil {
 		options.OutPath = *f.OutDir
 	}
@@ -157,6 +191,14 @@ func (f *OrchsExtFlags) ToOptions(cmd *cobra.Command, args []string) (*OrchsExtO
 
 	if f.AutoConfirm != nil {
 		options.AutoConfirm = *f.AutoConfirm
+	}
+
+	if f.Upgrade != nil {
+		options.Upgrade = *f.Upgrade
+	}
+
+	if f.Prune != nil {
+		options.Prune = *f.Prune
 	}
 
 	// Set the default out path if it is empty
@@ -182,8 +224,17 @@ func (f *OrchsExtOptions) Validate() error {
 	return nil
 }
 
-const CmdOrchsExtLongDescription = `
+const (
+	OrchsExtShortDescription = `Download and configure extensions for Keyfactor Command Universal Orchestrator`
+	OrchsExtLongDescription  = `
 Keyfactor Command Universal Orchestrator utility for downloading and configuring extensions.
 
 This command will download extensions for Keyfactor Command Universal Orchestrator. Extensions can be downloaded from a configuration file or by specifying the extension name and version.
 `
+	OrchsExtUsage   = `ext [-t <token>] [--org <Github org>] [-o <out path>] [-c <config file> | -e <extension name>@<version>] [-y] [-u] [-P]`
+	OrchsExtExample = `ext -t <token> -e <extension>@<version>,<extension>@<version> -o ./app/extensions --confirm, --update, --prune`
+)
+
+var (
+	OrchsExtAliases = []string{"extensions"}
+)
