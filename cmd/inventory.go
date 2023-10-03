@@ -42,21 +42,11 @@ var inventoryClearCmd = &cobra.Command{
 	PreRun:                 nil,
 	PreRunE:                nil,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
-		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
-		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
-		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
 			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
@@ -205,21 +195,11 @@ specified by Keyfactor command store ID, client machine name, store type, or con
 and one or more certificates must be specified. If multiple stores and/or certificates are specified, the command will
 attempt to add all the certificate(s) meeting the specified criteria to all stores meeting the specified criteria.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
-		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
-		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
-		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
 			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
@@ -381,21 +361,11 @@ var inventoryRemoveCmd = &cobra.Command{
 	Short: "Removes a certificate from the certificate store inventory.",
 	Long:  `Removes a certificate from the certificate store inventory.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
-		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
-		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
-		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
 			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
@@ -574,21 +544,11 @@ var inventoryShowCmd = &cobra.Command{
 	PreRun:                 nil,
 	PreRunE:                nil,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
-		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
-		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
-		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
 			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)

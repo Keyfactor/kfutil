@@ -65,7 +65,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		}
 
 		// expEnabled checks
-		isExperimental := true
+		isExperimental := false
 		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
 		if debugErr != nil {
 			return debugErr
@@ -114,6 +114,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		// read file
 		log.Info().Msgf("Reading file '%s' as CSV", filePath)
 		inFile, cErr := csv.NewReader(csvFile).ReadAll()
+		inputMap, _ := csvToMap(filePath)
 		if cErr != nil {
 			log.Error().Err(cErr).
 				Str("filePath", filePath).
@@ -125,7 +126,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 
 		// check for minimum necessary required fields for creating certificate stores
 		log.Info().Msgf("Checking for minimum required fields for creating certificate stores")
-		intId, reqPropertiesForStoreType := getRequiredProperties(st, *kfClient)
+		intID, reqPropertiesForStoreType := getRequiredProperties(st, *kfClient)
 
 		// if not present in header, throw error.
 		headerRow := inFile[0]
@@ -160,14 +161,17 @@ var storesCreateFromCSVCmd = &cobra.Command{
 
 		//foreach row attempt to create the store
 		//track errors
-		resultsMap := make(map[int]string)
-		originalMap := make(map[int][]string)
+		var (
+			resultsMap  [][]string
+			originalMap [][]string
+		)
+
 		errorCount := 0
 
 		log.Info().Msgf("Processing CSV rows from file '%s'", filePath)
 		for idx, row := range inFile {
 			log.Debug().Msgf("Processing row '%d'", idx)
-			originalMap[idx] = row
+			originalMap = append(originalMap, row)
 
 			if idx == 0 {
 				// skip header row
@@ -175,7 +179,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 				continue
 			}
 			reqJson := getJsonForRequest(headerRow, row)
-			reqJson.Set(intId, "CertStoreType")
+			reqJson.Set(intID, "CertStoreType")
 
 			// cannot send in 0 as ContainerId, need to omit
 			containerId, _ := strconv.Atoi(reqJson.S("ContainerId").String())
@@ -189,12 +193,11 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			var createStoreReqParameters api.CreateStoreFctArgs
 			props := unmarshalPropertiesString(reqJson.S("Properties").String())
 			reqJson.Delete("Properties") // todo: why is this deleting the properties from the request json?
-			mJson := reqJson.String()
-			conversionError := json.Unmarshal([]byte(mJson), &createStoreReqParameters)
+			mJSON := reqJson.String()
+			conversionError := json.Unmarshal([]byte(mJSON), &createStoreReqParameters)
 
 			if conversionError != nil {
 				//outputError(conversionError, true, outputFormat)
-				cmd.SilenceUsage = true
 				log.Error().Err(conversionError).Msgf("Unable to convert the json into the request parameters object.  %s", conversionError.Error())
 				return conversionError
 			}
@@ -202,23 +205,31 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			createStoreReqParameters.Properties = props
 			log.Debug().Msgf("Request parameters: %v", createStoreReqParameters)
 
-			//make request.
+			// make request.
 			log.Info().Msgf("Calling Command to create store from row '%d'", idx)
 			res, err := kfClient.CreateStore(&createStoreReqParameters)
 
 			if err != nil {
 				log.Error().Err(err).Msgf("Error creating store from row '%d'", idx)
-				resultsMap[idx] = err.Error()
+				resultsMap = append(resultsMap, []string{err.Error()})
+				inputMap[idx-1]["Errors"] = err.Error()
+				inputMap[idx-1]["Id"] = "error"
 				errorCount++
 			} else {
 				log.Info().Msgf("Successfully created store from row '%d' as '%s'", idx, res.Id)
-				resultsMap[idx] = fmt.Sprintf("Success.  CertStoreId = %s", res.Id)
+				resultsMap = append(resultsMap, []string{fmt.Sprintf("%s", res.Id)})
+				inputMap[idx-1]["Id"] = res.Id
 			}
 		}
 
 		log.Debug().Msg("Appending results to original CSV")
 		for oIdx, oRow := range originalMap {
-			extendedRow := append(oRow, resultsMap[oIdx])
+			if oIdx == 0 {
+				// skip header row
+				continue
+			}
+			// combine slices
+			extendedRow := append(oRow, resultsMap[oIdx-1]...)
 			originalMap[oIdx] = extendedRow
 		}
 		totalRows := len(resultsMap)
@@ -227,7 +238,8 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			Int("totalSuccess", totalSuccess).Send()
 
 		log.Info().Msgf("Writing results to file '%s'", outPath)
-		writeCsvFile(outPath, originalMap)
+		//writeCsvFile(outPath, originalMap)
+		mapToCSV(inputMap, outPath)
 		log.Info().Int("totalRows", totalRows).
 			Int("totalSuccesses", totalSuccess).
 			Int("errorCount", errorCount).
@@ -309,7 +321,7 @@ Store type IDs can be found by running the "store-types" command.`,
 		}
 		log.Debug().Str("filePath", filePath).Msg("Writing template file")
 
-		csvContent := make(map[int][]string)
+		var csvContent [][]string
 		row := make([]string, len(csvHeaders))
 
 		log.Debug().Msg("Writing header row")
@@ -317,9 +329,9 @@ Store type IDs can be found by running the "store-types" command.`,
 			log.Trace().Int("index", k).
 				Str("header", v).
 				Send()
-			row[k] = v
+			row = append(row, v)
 		}
-		csvContent[0] = row
+		csvContent = append(csvContent, row)
 
 		log.Info().Str("filePath", filePath).Msg("Writing template file")
 		csvWriteErr := writeCsvFile(filePath, csvContent)
@@ -495,20 +507,21 @@ var storesExportCmd = &cobra.Command{
 		}
 		log.Debug().Str("filePath", filePath).Msg("Writing export file")
 
-		csvContent := make(map[int][]string)
-		row := make([]string, len(csvHeaders))
+		var csvContent [][]string
+		headerRow := make([]string, len(csvHeaders))
 
 		log.Debug().Msg("Writing header row")
 		for k, v := range csvHeaders {
-			row[k] = v
+			headerRow[k] = v
 		}
-		log.Trace().Interface("row", row).Send()
-		csvContent[0] = row
-		index := 2
+		log.Trace().Interface("row", headerRow).Send()
+		csvContent = append(csvContent, headerRow)
+		index := 1
 
 		log.Debug().Msg("Writing data rows")
 		for _, data := range csvData {
-			row = make([]string, len(csvHeaders)) // reset row
+			log.Debug().Int("index", index).Msg("processing data row")
+			row := make([]string, len(csvHeaders)) // reset row
 			for i, header := range csvHeaders {
 				log.Trace().Int("index", i).
 					Str("header", header).
@@ -530,7 +543,7 @@ var storesExportCmd = &cobra.Command{
 				}
 			}
 			log.Debug().Msg("appending row to csvContent")
-			csvContent[index] = row
+			csvContent = append(csvContent, row)
 			index++
 			log.Debug().Msg("row appended to csvContent")
 		}
@@ -707,7 +720,7 @@ func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 	return reqJson
 }
 
-func writeCsvFile(outpath string, rows map[int][]string) error {
+func writeCsvFile(outpath string, rows [][]string) error {
 	log.Debug().Msgf("Writing CSV file '%s'", outpath)
 	csvFile, err := os.Create(outpath)
 	if err != nil {

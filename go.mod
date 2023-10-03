@@ -7,7 +7,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.1
 	github.com/Jeffail/gabs v1.4.0
-	github.com/Keyfactor/keyfactor-go-client-sdk v1.0.1
+	github.com/Keyfactor/keyfactor-go-client-sdk v1.0.2
 	github.com/Keyfactor/keyfactor-go-client/v2 v2.1.3-rc.1
 	github.com/google/go-cmp v0.5.9
 	github.com/joho/godotenv v1.5.1

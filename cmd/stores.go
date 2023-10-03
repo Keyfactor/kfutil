@@ -7,15 +7,10 @@
 package cmd
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"os"
-	"strconv"
-	"strings"
 )
 
 // storesCmd represents the stores command
@@ -36,7 +31,7 @@ var storesListCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 
 		// Debug + expEnabled checks
-		isExperimental := false
+		isExperimental := true
 		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
 		if debugErr != nil {
 			return debugErr
@@ -110,6 +105,7 @@ var storesDeleteCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 		// Specific flags
 		storeID, _ := cmd.Flags().GetString("id")
+		deleteAll, _ := cmd.Flags().GetBool("all")
 
 		// Debug + expEnabled checks
 		isExperimental := false
@@ -126,229 +122,61 @@ var storesDeleteCmd = &cobra.Command{
 		// CLI Logic
 		log.Info().Str("storeID", storeID).Msg("Deleting certificate store")
 		log.Debug().Str("storeID", storeID).Msg("Checking that store exists")
-		_, err := kfClient.GetCertificateStoreByID(storeID)
-		if err != nil {
-			log.Error().Err(err).Send()
-			return err
+		var (
+			stores []string
+		)
+		if deleteAll {
+			isExperimental := true
+			debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+			if debugErr != nil {
+				return debugErr
+			}
+			storesResp, err := kfClient.ListCertificateStores(nil)
+			if err != nil {
+				log.Error().Err(err).Send()
+				return err
+			}
+			for _, s := range *storesResp {
+				stores = append(stores, s.Id)
+			}
+		} else {
+			stores = append(stores, storeID)
 		}
 
-		dErr := kfClient.DeleteCertificateStore(storeID)
-		if dErr != nil {
-			log.Error().Err(dErr).Send()
-			return dErr
+		for _, st := range stores {
+			_, err := kfClient.GetCertificateStoreByID(st)
+			if err != nil {
+				log.Error().Err(err).Send()
+				return err
+			}
+
+			dErr := kfClient.DeleteCertificateStore(st)
+			if dErr != nil {
+				log.Error().Err(dErr).Send()
+				return dErr
+			}
+			outputResult(fmt.Sprintf("successfully deleted store %s", st), outputFormat)
 		}
-		outputResult(fmt.Sprintf("successfully deleted store %s", storeID), outputFormat)
 		return nil
 	},
 }
 
-var storesImportCmd = &cobra.Command{
-	Use:   "import --file <file name to import> --store-type-id <store type id> --store-type-name <store type name> --results-path <filepath for results> --dry-run <check fields only>",
-	Short: "Create certificate stores from CSV file.",
-	Long: `Certificate stores: Will parse a CSV and attempt to create a certificate store for each row with the provided parameters.
-'store-type-name' OR 'store-type-id' are required.
-'file' is the path to the file to be imported.
-'resultspath' is where the import results will be written to.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		log.Info().Msg("Importing certificate stores")
-
-		// Specific flags
-		storeTypeName, _ := cmd.Flags().GetString("store-type-name")
-		storeTypeID, _ := cmd.Flags().GetInt("store-type-id")
-		filePath, _ := cmd.Flags().GetString("file")
-		outPath, _ := cmd.Flags().GetString("results-path")
-		dryRun, _ := cmd.Flags().GetBool("dry-run")
-
-		log.Debug().Str("storeTypeName", storeTypeName).
-			Int("storeTypeId", storeTypeID).
-			Str("filePath", filePath).
-			Str("outPath", outPath).
-			Bool("dryRun", dryRun).Msg("Specific flags")
-
-		// expEnabled checks
-		isExperimental := true
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
-		if debugErr != nil {
-			return debugErr
-		}
-
-		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
-
-		// CLI Logic
-
-		// Check inputs
-		st, stErr := validateStoreTypeInputs(storeTypeID, storeTypeName, outputFormat)
-		if stErr != nil {
-			log.Error().Err(stErr).Msg("Error validating store type inputs")
-			return stErr
-		}
-
-		if outPath == "" {
-			outPath = strings.Split(filePath, ".")[0] + "_results.csv" // todo: make this configurable
-		}
-
-		log.Debug().Str("filePath", filePath).
-			Str("outPath", outPath).
-			Bool("dryRun", dryRun).
-			Int("storeTypeId", storeTypeID).Send()
-
-		// get file headers
-		log.Info().Str("filePath", filePath).
-			Msg("Opening file")
-		csvFile, err := os.Open(filePath)
-		if err != nil {
-			log.Error().Err(err).Msgf("unable to open file: '%s'", filePath)
-			//outputError(err, true, outputFormat)
-			cmd.SilenceUsage = true
-			return err
-		}
-
-		// read file
-		log.Info().Msgf("Reading file '%s' as CSV", filePath)
-		inFile, cErr := csv.NewReader(csvFile).ReadAll()
-		if cErr != nil {
-			log.Error().Err(cErr).
-				Str("filePath", filePath).
-				Msg("unable to read file")
-			//outputError(cErr, true, outputFormat)
-			cmd.SilenceUsage = true
-			return cErr
-		}
-
-		// check for minimum necessary required fields for creating certificate stores
-		log.Info().Msgf("Checking for minimum required fields for creating certificate stores")
-		intId, reqPropertiesForStoreType := getRequiredProperties(st, *kfClient)
-
-		// if not present in header, throw error.
-		headerRow := inFile[0]
-		log.Debug().Msgf("Header row: %v", headerRow)
-		missingFields := make([]string, 0)
-
-		//check fields
-		for _, reqField := range reqPropertiesForStoreType {
-			exists := false
-			for _, headerField := range headerRow {
-				log.Debug().Msgf("Checking for required field %s in header '%s'", reqField, headerField)
-				if strings.EqualFold(headerField, "Properties."+reqField) {
-					log.Debug().Msgf("Found required field %s in header '%s'", reqField, headerField)
-					exists = true
-					continue
-				}
-			}
-			if !exists {
-				log.Debug().Msgf("Missing required field '%s'", reqField)
-				missingFields = append(missingFields, reqField)
-			}
-		}
-
-		if len(missingFields) > 0 {
-			missingFieldsError := fmt.Errorf("missing required fields in headers: '%v'", missingFields)
-			//fmt.Printf("Missing Required Fields in headers: %v", missingFields)
-			log.Error().Err(missingFieldsError).Send()
-			//outputError(missingFieldsError, true, outputFormat)
-			cmd.SilenceUsage = true
-			return missingFieldsError
-		}
-
-		//foreach row attempt to create the store
-		//track errors
-		resultsMap := make(map[int]string)
-		originalMap := make(map[int][]string)
-		errorCount := 0
-
-		log.Info().Msgf("Processing CSV rows from file '%s'", filePath)
-		for idx, row := range inFile {
-			log.Debug().Msgf("Processing row '%d'", idx)
-			originalMap[idx] = row
-
-			if idx == 0 {
-				// skip header row
-				log.Debug().Msgf("Skipping header row")
-				continue
-			}
-			reqJson := getJsonForRequest(headerRow, row)
-			reqJson.Set(intId, "CertStoreType")
-
-			// cannot send in 0 as ContainerId, need to omit
-			containerId, _ := strconv.Atoi(reqJson.S("ContainerId").String())
-			if containerId == 0 {
-				log.Debug().Msgf("ContainerId is 0, omitting from request")
-				reqJson.Set(nil, "ContainerId")
-			}
-			log.Debug().Msgf("Request JSON: %s", reqJson.String())
-
-			// parse properties
-			var createStoreReqParameters api.CreateStoreFctArgs
-			props := unmarshalPropertiesString(reqJson.S("Properties").String())
-			reqJson.Delete("Properties") // todo: why is this deleting the properties from the request json?
-			mJson := reqJson.String()
-			conversionError := json.Unmarshal([]byte(mJson), &createStoreReqParameters)
-
-			if conversionError != nil {
-				//outputError(conversionError, true, outputFormat)
-				cmd.SilenceUsage = true
-				log.Error().Err(conversionError).Msgf("Unable to convert the json into the request parameters object.  %s", conversionError.Error())
-				return conversionError
-			}
-
-			createStoreReqParameters.Properties = props
-			log.Debug().Msgf("Request parameters: %v", createStoreReqParameters)
-
-			//make request.
-			log.Info().Msgf("Calling Command to create store from row '%d'", idx)
-			res, err := kfClient.CreateStore(&createStoreReqParameters)
-
-			if err != nil {
-				log.Error().Err(err).Msgf("Error creating store from row '%d'", idx)
-				resultsMap[idx] = err.Error()
-				errorCount++
-			} else {
-				log.Info().Msgf("Successfully created store from row '%d' as '%s'", idx, res.Id)
-				resultsMap[idx] = fmt.Sprintf("Success.  CertStoreId = %s", res.Id)
-			}
-		}
-
-		log.Debug().Msg("Appending results to original CSV")
-		for oIdx, oRow := range originalMap {
-			extendedRow := append(oRow, resultsMap[oIdx])
-			originalMap[oIdx] = extendedRow
-		}
-		totalRows := len(resultsMap)
-		totalSuccess := totalRows - errorCount
-		log.Debug().Int("totalRows", totalRows).
-			Int("totalSuccess", totalSuccess).Send()
-
-		log.Info().Msgf("Writing results to file '%s'", outPath)
-		writeCsvFile(outPath, originalMap)
-		log.Info().Int("totalRows", totalRows).
-			Int("totalSuccesses", totalSuccess).
-			Int("errorCount", errorCount).
-			Msgf("Wrote results to file '%s'", outPath)
-		outputResult(fmt.Sprintf("%d records processed.", totalRows), outputFormat)
-		if totalSuccess > 0 {
-			//fmt.Printf("\n%d certificate stores successfully created.", totalSuccess)
-			outputResult(fmt.Sprintf("%d certificate stores successfully created.", totalSuccess), outputFormat)
-		}
-		if errorCount > 0 {
-			//fmt.Printf("\n%d rows had errors.", errorCount)
-			outputResult(fmt.Sprintf("%d rows had errors.", errorCount), outputFormat)
-		}
-		//fmt.Printf("\nImport results written to %s\n\n", outPath)
-		outputResult(fmt.Sprintf("Import results written to %s", outPath), outputFormat)
-		return nil
-	}}
-
 func init() {
 	var (
-		storeID string
+		storeID   string
+		deleteAll bool
 	)
 	RootCmd.AddCommand(storesCmd)
 	storesCmd.AddCommand(storesListCmd)
 	storesCmd.AddCommand(storesGetCmd)
+	storesCmd.AddCommand(storesDeleteCmd)
 
 	// get cmd
 	storesGetCmd.Flags().StringVarP(&storeID, "id", "i", "", "ID of the certificate store to get.")
+
+	// delete cmd
+	storesDeleteCmd.Flags().StringVarP(&storeID, "id", "i", "", "ID of the certificate store to delete.")
+	storesDeleteCmd.Flags().BoolVarP(&deleteAll, "all", "a", false, "Attempt to delete ALL stores.")
+	storesDeleteCmd.MarkFlagsMutuallyExclusive("id", "all")
 
 }

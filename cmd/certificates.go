@@ -23,7 +23,7 @@ var certificatesCmd = &cobra.Command{
 		expEnabled, _ := cmd.Flags().GetBool("exp")
 		isExperimental := true
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
 			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)

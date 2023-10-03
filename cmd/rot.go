@@ -135,7 +135,7 @@ package cmd
 //		for _, store := range stores {
 //			if _, ok := store.Thumbprints[cert]; ok {
 //				// Cert is already in the store do nothing
-//				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true", GetCurrentTime()}
+//				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true", getCurrentTime()}
 //				data = append(data, row)
 //				wErr := csvWriter.Write(row)
 //				if wErr != nil {
@@ -144,7 +144,7 @@ package cmd
 //				}
 //			} else {
 //				// Cert is not deployed to this store and will need to be added
-//				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false", GetCurrentTime()}
+//				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false", getCurrentTime()}
 //				data = append(data, row)
 //				wErr := csvWriter.Write(row)
 //				if wErr != nil {
@@ -181,7 +181,7 @@ package cmd
 //		for _, store := range stores {
 //			if _, ok := store.Thumbprints[cert]; ok {
 //				// Cert is deployed to this store and will need to be removed
-//				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "true", "true", GetCurrentTime()}
+//				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "true", "true", getCurrentTime()}
 //				data = append(data, row)
 //				wErr := csvWriter.Write(row)
 //				if wErr != nil {
@@ -199,7 +199,7 @@ package cmd
 //				})
 //			} else {
 //				// Cert is not deployed to this store do nothing
-//				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "false", GetCurrentTime()}
+//				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "false", getCurrentTime()}
 //				data = append(data, row)
 //				wErr := csvWriter.Write(row)
 //				if wErr != nil {
@@ -392,11 +392,11 @@ package cmd
 //			configFile, _ := cmd.Flags().GetString("config")
 //			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 //			profile, _ := cmd.Flags().GetString("profile")
-//			kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+//
 //			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
 //			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
 //			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
-//			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+//
 //			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 //
 //			debugModeEnabled := checkDebug(debugFlag)
@@ -557,11 +557,11 @@ package cmd
 //			configFile, _ := cmd.Flags().GetString("config")
 //			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 //			profile, _ := cmd.Flags().GetString("profile")
-//			kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+//
 //			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
 //			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
 //			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
-//			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+//
 //			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 //
 //			debugModeEnabled := checkDebug(debugFlag)
@@ -865,11 +865,11 @@ package cmd
 //			configFile, _ := cmd.Flags().GetString("config")
 //			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 //			profile, _ := cmd.Flags().GetString("profile")
-//			kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
+//
 //			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
 //			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
 //			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
-//			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+//
 //			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 //
 //			debugModeEnabled := checkDebug(debugFlag)
@@ -951,7 +951,7 @@ package cmd
 //								if !rowLookup[store.Id] {
 //									lineData := []string{
 //										//"StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId"
-//										store.Id, fmt.Sprintf("%s", sType.ShortName), store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, GetCurrentTime(),
+//										store.Id, fmt.Sprintf("%s", sType.ShortName), store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, getCurrentTime(),
 //									}
 //									csvStoreData = append(csvStoreData, lineData)
 //									rowLookup[store.Id] = true
@@ -983,7 +983,7 @@ package cmd
 //							if !rowLookup[store.Id] {
 //								lineData := []string{
 //									// "StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId"
-//									store.Id, sType.ShortName, store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, GetCurrentTime(),
+//									store.Id, sType.ShortName, store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, getCurrentTime(),
 //								}
 //								csvStoreData = append(csvStoreData, lineData)
 //								rowLookup[store.Id] = true
@@ -1010,7 +1010,7 @@ package cmd
 //							if !rowLookup[cert.Thumbprint] {
 //								lineData := []string{
 //									// "Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"
-//									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), fmt.Sprintf("%v", cert.Locations), GetCurrentTime(),
+//									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), fmt.Sprintf("%v", cert.Locations), getCurrentTime(),
 //								}
 //								csvCertData = append(csvCertData, lineData)
 //								rowLookup[cert.Thumbprint] = true
@@ -1041,7 +1041,7 @@ package cmd
 //								}
 //								lineData := []string{
 //									// "Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"
-//									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), locationsFormatted, GetCurrentTime(),
+//									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), locationsFormatted, getCurrentTime(),
 //								}
 //								csvCertData = append(csvCertData, lineData)
 //								rowLookup[cert.Thumbprint] = true

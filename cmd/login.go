@@ -72,9 +72,6 @@ WARNING: The 'username'' and 'password' will be stored in the config file in pla
 			log.Info().Msg("Using default profile")
 			// Check for environment variables
 			var authEnvErr []error
-
-			//log.Println("[DEBUG] Checking for environment variables for kfutil configuration data.")
-
 			if noPrompt {
 				log.Info().Msg("Using environment variables for configuration data.")
 				// First try to auth with environment variables
@@ -82,12 +79,11 @@ WARNING: The 'username'' and 'password' will be stored in the config file in pla
 				if authEnvErr != nil {
 					for _, err := range authEnvErr {
 						log.Error().Err(err)
-						outputError(err, false, "")
+						//outputError(err, false, "")
 					}
 				}
 				if !validConfigFileEntry(authConfig, profile) {
 					// Attempt to auth with config file
-					//log.Println("[DEBUG] Attempting to authenticate via config 'default' profile.")
 					log.Info().Msgf("Attempting to authenticate via config '%s' profile.", profile)
 					authConfig, authEnvErr = authConfigFile(configFile, profile, "", noPrompt, true) // always save config file is login is called
 					if authEnvErr != nil {
@@ -123,7 +119,6 @@ WARNING: The 'username'' and 'password' will be stored in the config file in pla
 					authConfig, authErr = authInteractive(existingAuth.Hostname, existingAuth.Username, existingAuth.Password, existingAuth.Domain, existingAuth.APIPath, profile, !noPrompt, true, configFile)
 					log.Debug().Msg("authInteractive() returned")
 					if authErr != nil {
-						//log.Fatal(authErr)
 						log.Error().Err(authErr)
 						return authErr
 					}

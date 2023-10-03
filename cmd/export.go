@@ -105,21 +105,11 @@ var exportCmd = &cobra.Command{
 			CustomReports:       []keyfactor.ModelsCustomReportCreationRequest{},
 			SecurityRoles:       []api.CreateSecurityRoleArg{},
 		}
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("kfcHostName")
-		kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
-		kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
-		kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
 			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)

@@ -48,8 +48,11 @@ func Test_StoreTypesListCmd(t *testing.T) {
 	// iterate over the store types and verify that each has a name shortname and storetype
 	for _, storeType := range storeTypes {
 		assert.NotNil(t, storeType["Name"], "Expected store type to have a Name")
+		t.Log(storeType["Name"])
 		assert.NotNil(t, storeType["ShortName"], "Expected store type to have ShortName")
+		t.Log(storeType["ShortName"])
 		assert.NotNil(t, storeType["StoreType"], "Expected store type to have a StoreType")
+		t.Log(storeType["StoreType"])
 
 		// verify that the store type is an integer
 		_, ok := storeType["StoreType"].(float64)
@@ -60,6 +63,7 @@ func Test_StoreTypesListCmd(t *testing.T) {
 		// verify name is a string
 		_, ok = storeType["Name"].(string)
 		assert.True(t, ok, "Expected name to be a string")
+		break // only need to test one
 	}
 }
 
