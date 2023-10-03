@@ -188,5 +188,5 @@ const (
 
 Also supported is the ability specify extensions and skip the interactive prompts.
 `
-	HelmUoUse = `uo [-t <token>] [-o <path>] [-f <file, url, or '-'>]`
+	HelmUoUse = `uo [-t <token>] [-o <path>] [-f <file, url, or '-'>] [-e <extension name>@<version>]...`
 )
