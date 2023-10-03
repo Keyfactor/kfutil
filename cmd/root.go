@@ -75,7 +75,41 @@ func initClient(flagConfig string, flagProfile string, flagAuthProviderType stri
 			Profile:    flagAuthProviderProfile,
 			Parameters: nil,
 		}
-		return authViaProviderParams(&providerConfig)
+		pvConfig, pErr := authViaProviderParams(&providerConfig)
+		if pErr != nil {
+			log.Error().Err(pErr).
+				Str("providerConfig.Type", providerConfig.Type).
+				Str("providerConfig.Profile", providerConfig.Profile).
+				Msg("unable to auth via provider")
+			return nil, pErr
+		}
+		commandConfig = pvConfig
+		clientAuth.Username = commandConfig.Servers[flagProfile].Username
+		clientAuth.Password = commandConfig.Servers[flagProfile].Password
+		clientAuth.Domain = commandConfig.Servers[flagProfile].Domain
+		clientAuth.Hostname = commandConfig.Servers[flagProfile].Hostname
+		clientAuth.APIPath = commandConfig.Servers[flagProfile].APIPath
+
+		log.Debug().Str("clientAuth.Username", clientAuth.Username).
+			Str("clientAuth.Password", hashSecretValue(clientAuth.Password)).
+			Str("clientAuth.Domain", clientAuth.Domain).
+			Str("clientAuth.Hostname", clientAuth.Hostname).
+			Str("clientAuth.APIPath", clientAuth.APIPath).
+			Msg("Client authentication params")
+
+		log.Debug().Msg("call: api.NewKeyfactorClient()")
+		c, err := api.NewKeyfactorClient(&clientAuth)
+		log.Debug().Msg("complete: api.NewKeyfactorClient()")
+
+		if err != nil {
+			//fmt.Printf("Error connecting to Keyfactor: %s\n", err)
+			outputError(err, true, "text")
+			//log.Fatalf("[ERROR] creating Keyfactor client: %s", err)
+			return nil, fmt.Errorf("unable to create Keyfactor Command client: %s", err)
+		}
+		log.Info().Msg("Keyfactor Command client created")
+		return c, nil
+
 	}
 
 	log.Debug().Msg("call: authEnvVars()")
