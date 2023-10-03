@@ -118,7 +118,7 @@ func TestExecuteCommand(t *testing.T, cmd *cobra.Command, args ...string) (outpu
 	t.Logf("Run \"%s %s\"", cmd.Use, strings.Join(args, " "))
 
 	buf := new(bytes.Buffer)
-	//cmd.SetOut(buf)
+	cmd.SetOut(buf)
 	cmd.SetArgs(args)
 	err = cmd.Execute()
 	return buf.Bytes(), err

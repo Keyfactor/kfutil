@@ -145,6 +145,31 @@ func TestNewUniversalOrchestratorHelmValueBuilder(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("NonInteractiveMode", func(t *testing.T) {
+		extension, err := extensions.NewGithubReleaseFetcher("", GetGithubToken()).GetFirstExtension()
+		if err != nil {
+			return
+		}
+
+		builder := NewUniversalOrchestratorHelmValueBuilder().
+			InteractiveMode(false).
+			Extensions([]string{string(extension)})
+
+		err = builder.PreFlight()
+		if err != nil {
+			t.Error(err)
+		}
+
+		_, err = builder.Build()
+		if err != nil {
+			t.Error(err)
+		}
+
+		if len(builder.newValues.InitContainers) != 1 {
+			t.Errorf("expected 1 init container, got %d", len(builder.newValues.InitContainers))
+		}
+	})
 }
 
 func TestInteractiveUOValueBuilder_staticBuild(t *testing.T) {
@@ -167,7 +192,7 @@ func TestInteractiveUOValueBuilder_staticBuild(t *testing.T) {
 	})
 
 	t.Run("InvalidExtensions", func(t *testing.T) {
-
+		// TODO
 	})
 }
 

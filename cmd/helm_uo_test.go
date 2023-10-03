@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 	"kfutil/pkg/cmdtest"
+	"kfutil/pkg/cmdutil/extensions"
 	"kfutil/pkg/helm"
 	"os"
 	"testing"
@@ -57,6 +58,53 @@ func TestHelmUo_SaveAndExit(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestHelmUo(t *testing.T) {
+	uoCmd := NewCmdHelmUo()
+	var debug, noPrompt bool
+	var profile, config string
+	uoCmd.Flags().BoolVarP(&debug, "debug", "b", false, "debug")
+	uoCmd.Flags().BoolVarP(&noPrompt, "no-prompt", "y", false, "no-prompt")
+	uoCmd.Flags().StringVarP(&profile, "profile", "p", "", "profile")
+	uoCmd.Flags().StringVarP(&config, "config", "c", "", "config")
+
+	// Get an orchestrator name
+	extension, err := extensions.NewGithubReleaseFetcher("", GetGithubToken()).GetFirstExtension()
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Create a blank YAML file on disk
+	_, err = os.Create("test.yaml")
+	if err != nil {
+		t.Error(err)
+	}
+
+	args := []string{"-t", GetGithubToken(), "-e", fmt.Sprintf("%s", extension), "-f", "test.yaml"}
+
+	valuesYamlString, err := cmdtest.TestExecuteCommand(t, uoCmd, args...)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Serialize the values.yaml string to a struct
+	values := helm.UniversalOrchestratorHelmValues{}
+	err = yaml.Unmarshal(valuesYamlString, &values)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Check that the values.yaml struct has the extension
+	if len(values.InitContainers) == 0 {
+		t.Errorf("Expected at least one init container, got %v", len(values.InitContainers))
+	}
+
+	// Remove the test.yaml file
+	err = os.Remove("test.yaml")
+	if err != nil {
+		t.Error(err)
 	}
 }
 

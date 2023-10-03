@@ -70,6 +70,19 @@ func (b *InteractiveUOValueBuilder) Extensions(extensionsString []string) *Inter
 		b.extensions[extension.Name] = extension.Version
 	}
 
+	// Create an extension installer tool
+	installerTool := extensions.NewExtensionInstallerBuilder().Token(b.token)
+	installerTool.SetExtensionsToInstall(b.extensions)
+
+	// Lint the extensions
+	err := installerTool.ValidateExtensionsToInstall()
+	if err != nil {
+		b.errs = append(b.errs, err)
+	}
+
+	// installerTool now contains the correct list of extensions to install
+	b.extensions = installerTool.GetExtensionsToInstall()
+
 	return b
 }
 
@@ -103,10 +116,6 @@ func (b *InteractiveUOValueBuilder) Values(file flags.FilenameOptions) *Interact
 }
 
 func (b *InteractiveUOValueBuilder) PreFlight() error {
-	if b.newValues.CommandAgentURL == "" {
-		b.newValues.CommandAgentURL = fmt.Sprintf("https://%s/KeyfactorAgents", b.commandHostname)
-	}
-
 	// Print any errors and exit if there are any
 	if len(b.errs) > 0 {
 		for _, err := range b.errs {
@@ -114,6 +123,11 @@ func (b *InteractiveUOValueBuilder) PreFlight() error {
 		}
 		return fmt.Errorf("exiting due to errors")
 	}
+
+	if b.newValues.CommandAgentURL == "" && b.commandHostname != "" {
+		b.newValues.CommandAgentURL = fmt.Sprintf("https://%s/KeyfactorAgents", b.commandHostname)
+	}
+
 	return nil
 }
 
@@ -147,14 +161,14 @@ func (b *InteractiveUOValueBuilder) Build() (string, error) {
 	var err error
 
 	// If b.extensions is not nil, we are in non-interactive mode
-	if b.extensions != nil {
-		err = b.staticBuild()
+	if b.interactiveMode {
+		// We are in interactive mode
+		err = b.interactiveBuild()
 		if err != nil {
 			return "", err
 		}
 	} else {
-		// We are in interactive mode
-		err = b.interactiveBuild()
+		err = b.staticBuild()
 		if err != nil {
 			return "", err
 		}
