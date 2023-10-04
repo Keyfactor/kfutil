@@ -19,11 +19,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"io"
-	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -201,13 +201,13 @@ func isExperimentalFeatureEnabled(expFlag bool, isExperimental bool) (bool, erro
 	return envValue, nil
 }
 
-func generateRandomNumberString(length int) string {
-	// Generate a random number string of the specified length
-	var numberString string
-	for i := 0; i < length; i++ {
-		numberString += fmt.Sprintf("%d", rand.Intn(10))
+func generateRandomUUID() string {
+	uuidObj, err := uuid.NewRandom()
+	if err != nil {
+		// Handle the error if UUID generation fails.
+		panic(err)
 	}
-	return numberString
+	return uuidObj.String()
 }
 
 func loadJSONFile(filename string) (map[string]interface{}, error) {

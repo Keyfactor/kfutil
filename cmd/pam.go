@@ -81,7 +81,7 @@ var pamTypesListCmd = &cobra.Command{
 			log.Error().Err(mErr).Send()
 			return mErr
 		}
-		log.Info().Str("output", string(jsonString)).
+		log.Info().
 			Msg("successfully listed PAM provider types")
 		outputResult(jsonString, outputFormat)
 		return nil
@@ -102,7 +102,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 
 		// Specific flags
 		pamConfigFile, _ := cmd.Flags().GetString("from-file")
-		providerName, _ := cmd.Flags().GetString("name")
+		pamProviderName, _ := cmd.Flags().GetString("name")
 		repoName, _ := cmd.Flags().GetString("repo")
 		branchName, _ := cmd.Flags().GetString("branch")
 
@@ -114,7 +114,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 		}
 
 		// Log flags
-		log.Info().Str("name", providerName).
+		log.Info().Str("name", pamProviderName).
 			Str("repo", repoName).
 			Str("branch", branchName).
 			Msg("create PAM Provider Type")
@@ -140,11 +140,11 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 		if repoName != "" {
 			// get JSON config from integration-manifest on GitHub
 			log.Debug().
-				Str("providerName", providerName).
+				Str("pamProviderName", pamProviderName).
 				Str("repoName", repoName).
 				Str("branchName", branchName).
 				Msg("call: GetTypeFromInternet()")
-			pamProviderType, err = GetTypeFromInternet(providerName, repoName, branchName, pamProviderType)
+			pamProviderType, err = GetTypeFromInternet(pamProviderName, repoName, branchName, pamProviderType)
 			log.Debug().Msg("returned: GetTypeFromInternet()")
 			if err != nil {
 				log.Error().Err(err).Send()
@@ -161,9 +161,12 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 			}
 		}
 
-		if providerName != "" {
-			pamProviderType.Name = providerName
+		if pamProviderName != "" {
+			pamProviderType.Name = pamProviderName
 		}
+
+		log.Info().Str("pamProviderName", pamProviderType.Name).
+			Msg("creating PAM provider type")
 
 		log.Debug().Msg("call: PAMProviderCreatePamProviderType()")
 		createdPamProviderType, httpResponse, rErr := sdkClient.PAMProviderApi.PAMProviderCreatePamProviderType(context.Background()).
@@ -174,7 +177,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 		log.Trace().Interface("httpResponse", httpResponse).Msg("PAMProviderCreatePamProviderType")
 		if rErr != nil {
 			log.Error().Err(rErr).Send()
-			return rErr
+			return returnHttpErr(httpResponse, rErr)
 		}
 
 		log.Debug().Msg("Converting PAM Provider Type response to JSON")

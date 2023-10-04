@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -165,7 +167,8 @@ func Test_PAMGetCmd(t *testing.T) {
 func Test_PAMTypesCreateCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
-	randomName := "test-" + generateRandomNumberString(5)
+	randomName := generateRandomUUID()
+	t.Logf("randomName: %s", randomName)
 	testCmd.SetArgs([]string{"pam", "types-create", "--repo", "hashicorp-vault-pam", "--name", randomName})
 	output := captureOutput(func() {
 		err := testCmd.Execute()
@@ -173,6 +176,7 @@ func Test_PAMTypesCreateCmd(t *testing.T) {
 	})
 	var createResponse interface{}
 	if err := json.Unmarshal([]byte(output), &createResponse); err != nil {
+		t.Log(output)
 		t.Fatalf("Error unmarshalling JSON: %v", err)
 	}
 	assert.NotEmpty(t, createResponse.(map[string]interface{})["Id"])
@@ -183,9 +187,17 @@ func Test_PAMTypesCreateCmd(t *testing.T) {
 
 func Test_PAMCreateCmd(t *testing.T) {
 	// test
+
+	// get current working dir
+	cwd, _ := os.Getwd()
+	t.Logf("cwd: %s", cwd)
+
 	providerName := "Delinea-SecretServer-test"
-	inputFileName := "artifacts/pam/pam-create-template.json"
-	invalidInputFileName := "pam-create-invalid.json"
+	t.Logf("providerName: %s", providerName)
+	inputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-template.json")
+	t.Logf("inputFileName: %s", inputFileName)
+	invalidInputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-invalid.json")
+	t.Logf("invalidInputFileName: %s", invalidInputFileName)
 	//cProviderTypeName := "Delinea-SecretServer"
 
 	// read input file into a map[string]interface{}
@@ -232,11 +244,17 @@ func Test_PAMCreateCmd(t *testing.T) {
 }
 
 func Test_PAMUpdateCmd(t *testing.T) {
-	//updatedName := "Delinea-SecretServer-test-updated"
 	// test
+	// get current working dir
+	cwd, _ := os.Getwd()
+	t.Logf("cwd: %s", cwd)
+
 	providerName := "Delinea-SecretServer-test"
-	inputFileName := "artifacts/pam/pam-create-template.json"
-	//cProviderTypeName := "Delinea-SecretServer"
+	t.Logf("providerName: %s", providerName)
+	inputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-template.json")
+	t.Logf("inputFileName: %s", inputFileName)
+	invalidInputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-invalid.json")
+	t.Logf("invalidInputFileName: %s", invalidInputFileName)
 
 	// read input file into a map[string]interface{}
 	updatedFileName, fErr := testFormatPamCreateConfig(t, inputFileName, "", false)
@@ -282,8 +300,17 @@ func Test_PAMUpdateCmd(t *testing.T) {
 
 func Test_PAMDeleteCmd(t *testing.T) {
 	// test
+	// get current working dir
+	cwd, _ := os.Getwd()
+	t.Logf("cwd: %s", cwd)
+
 	providerName := "Delinea-SecretServer-test"
-	inputFileName := "artifacts/pam/pam-create-template.json"
+	t.Logf("providerName: %s", providerName)
+	inputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-template.json")
+	t.Logf("inputFileName: %s", inputFileName)
+	invalidInputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-invalid.json")
+	t.Logf("invalidInputFileName: %s", invalidInputFileName)
+
 	//cProviderTypeName := "Delinea-SecretServer"
 
 	// read input file into a map[string]interface{}

@@ -47,6 +47,7 @@ var storesTypesListCmd = &cobra.Command{
 		if debugErr != nil {
 			return debugErr
 		}
+		informDebug(debugFlag)
 
 		// Authenticate
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
@@ -84,11 +85,11 @@ var storesTypeGetCmd = &cobra.Command{
 
 		// Debug + expEnabled checks
 		isExperimental := false
-		informDebug(debugFlag)
 		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
+		informDebug(debugFlag)
 
 		// Authenticate
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
@@ -411,12 +412,12 @@ var fetchStoreTypes = &cobra.Command{
 		gitRef, _ := cmd.Flags().GetString(FlagGitRef)
 
 		// Debug + expEnabled checks
-		informDebug(debugFlag)
 		isExperimental := false
 		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
+		informDebug(debugFlag)
 
 		if gitRef == "" {
 			gitRef = "main"

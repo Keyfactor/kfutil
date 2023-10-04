@@ -4,6 +4,8 @@ set -e -o pipefail
 # Define the default values using environment variables
 default_vault_name="${VAULT_NAME:-kfutil}"
 default_secret_name="${SECRET_NAME:-integration-labs}"
+echo "Default vault name: $default_vault_name"
+echo "Default secret name: $default_secret_name"
 
 export METADATA_URL="http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://vault.azure.net"
 
@@ -11,6 +13,10 @@ export METADATA_URL="http://169.254.169.254/metadata/identity/oauth2/token?api-v
 read_keyvault_secret() {
   local vault_name="$1"
   local secret_name="$2"
+
+  echo "Vault Name: $vault_name"
+  echo "Secret Name: $secret_name"
+
   # Make a request to the metadata endpoint
   echo "Querying metadata endpoint for access token..."
   echo "Metadata URL: $METADATA_URL"
@@ -36,7 +42,9 @@ read_keyvault_secret() {
 
   #echo "Secret Value: $secret_value"
   mkdir -p ~/.keyfactor
-  echo $secret_value | jq -r . > ~/.keyfactor/command_config.json
+  echo "${secret_value}" | jq -r . > "${secret_name}.json"
+  rm -f "${HOME}/.keyfactor/command_config.json" || true
+  echo "${secret_value}" | jq -r . > "${HOME}/.keyfactor/command_config.json"
 #  echo $secret_value > .env
 }
 

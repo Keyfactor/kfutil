@@ -24,7 +24,7 @@ import (
 	"testing"
 )
 
-func Test_StoresHelpCmd(t *testing.T) {
+func Test_Stores_HelpCmd(t *testing.T) {
 	// Test root help
 	testCmd := RootCmd
 	testCmd.SetArgs([]string{"stores", "--help"})
@@ -48,7 +48,7 @@ func Test_StoresHelpCmd(t *testing.T) {
 	}
 }
 
-func Test_StoresListCmd(t *testing.T) {
+func Test_Stores_ListCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
 	testCmd.SetArgs([]string{"stores", "list", "--exp"})
@@ -76,7 +76,7 @@ func Test_StoresListCmd(t *testing.T) {
 	}
 }
 
-func Test_StoresGetCmd(t *testing.T) {
+func Test_Stores_GetCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
 	testCmd.SetArgs([]string{"stores", "list", "--exp"})
@@ -124,19 +124,19 @@ func Test_StoresGetCmd(t *testing.T) {
 	}
 }
 
-func Test_StoresCreateCmd(t *testing.T) {
+func Test_Stores_CreateCmd(t *testing.T) {
 	// TODO: test create command
 }
 
-func Test_StoresUpdateCmd(t *testing.T) {
+func Test_Stores_UpdateCmd(t *testing.T) {
 	// TODO: test update command
 }
 
-func Test_StoresDeleteCmd(t *testing.T) {
+func Test_Stores_DeleteCmd(t *testing.T) {
 	// This is covered by import/export tests
 }
 
-func Test_StoresImportCmd(t *testing.T) {
+func Test_Stores_ImportCmd(t *testing.T) {
 
 	// first export a store
 	_, files := testExportStore(t, "k8ssecret")
@@ -163,7 +163,7 @@ func Test_StoresImportCmd(t *testing.T) {
 
 			// modify row
 			row["Id"] = ""
-			row["StorePath"] = fmt.Sprintf("%s-test-%s", row["StorePath"], generateRandomNumberString(6))
+			row["StorePath"] = fmt.Sprintf("%s-test-%s", row["StorePath"], generateRandomUUID())
 			row["Properties.ServerUsername"] = "kubeconfig"
 			row["Properties.ServerPassword"] = "test"
 
@@ -202,7 +202,7 @@ func Test_StoresImportCmd(t *testing.T) {
 	}
 }
 
-func Test_StoresExportCmd(t *testing.T) {
+func Test_Stores_ExportCmd(t *testing.T) {
 	// test
 	_, files := testExportStore(t, "k8ssecret")
 
@@ -225,7 +225,7 @@ func Test_StoresExportCmd(t *testing.T) {
 	}
 }
 
-func Test_StoresGenerateImportTemplateCmd(t *testing.T) {
+func Test_Stores_GenerateImportTemplateCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
 	testCmd.SetArgs([]string{"stores", "import", "generate-template", "--store-type-name", "k8ssecret", "--exp"})
