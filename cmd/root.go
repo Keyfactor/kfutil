@@ -295,7 +295,7 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Enable debugFlag logging.")
 	RootCmd.PersistentFlags().BoolVar(&logInsecure, "log-insecure", false, "Log insecure API requests. (USE AT YOUR OWN RISK, this WILL log sensitive information to the console.)")
 	RootCmd.PersistentFlags().StringVarP(&profile, "profile", "", "", "Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.")
-	RootCmd.PersistentFlags().StringVar(&outputFormat, "format", "text", "Output format. (text/json)")
+	RootCmd.PersistentFlags().StringVar(&outputFormat, "format", "text", "How to format the CLI output. Currently only `text` is supported.")
 
 	RootCmd.PersistentFlags().StringVar(&providerType, "auth-provider-type", "", "Provider type choices: (azid)")
 	// Validating the provider-type flag against the predefined choices
