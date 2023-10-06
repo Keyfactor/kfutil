@@ -41,7 +41,7 @@
         "DisplayName": "Vault Region",
         "Type": "MultipleChoice",
         "DependsOn": "",
-        "DefaultValue": "eastus,eastus2,southcentralus,westus2,westus3,australiaeast,northeurope,swedencentral,uksouth",
+        "DefaultValue": "eastus,eastus2,westus2,westus3,westus",
         "Required": false
       },
       {
@@ -75,6 +75,60 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Optional"
+  },
+  {
+    "Name": "Azure Application (Auth)",
+    "ShortName": "AzureApp",
+    "Capability": "AzureApp",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId": 279,
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false
+      },
+      {
+        "StoreTypeId": 279,
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false
+      },
+      {
+        "StoreTypeId": 279,
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
   },
   {
     "Name": "Azure Application Gateway",
@@ -139,6 +193,60 @@
     "CustomAliasAllowed": "Required",
     "ServerRegistration": 13,
     "InventoryEndpoint": "/AnyInventory/Update"
+  },
+  {
+    "Name": "Azure Service Principal (SSO/SAML)",
+    "ShortName": "AzureSP",
+    "Capability": "AzureSP",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "StoreTypeId": 280,
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false
+      },
+      {
+        "StoreTypeId": 280,
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false
+      },
+      {
+        "StoreTypeId": 280,
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Required",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
   },
   {
     "Name": "Fortigate",
@@ -1484,109 +1592,6 @@
     "CustomAliasAllowed": "Forbidden"
   },
   {
-    "Name": "WinCert",
-    "ShortName": "WinCert",
-    "Capability": "WinCert",
-    "LocalStore": false,
-    "SupportedOperations": {
-      "Add": true,
-      "Create": false,
-      "Discovery": false,
-      "Enrollment": true,
-      "Remove": true
-    },
-    "Properties": [
-      {
-        "Name": "spnwithport",
-        "DisplayName": "SPN With Port",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "false",
-        "Required": false
-      },
-      {
-        "Name": "WinRM Protocol",
-        "DisplayName": "WinRm Protocol",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "http, https",
-        "Required": true
-      },
-      {
-        "Name": "WinRm Port",
-        "DisplayName": "WinRm Port",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": "5985",
-        "Required": true
-      },
-      {
-        "Name": "ServerUsername",
-        "DisplayName": "Server Username",
-        "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
-      },
-      {
-        "Name": "ServerPassword",
-        "DisplayName": "Server Password",
-        "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
-      },
-      {
-        "Name": "ServerUseSsl",
-        "DisplayName": "Use SSL",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "true",
-        "Required": true
-      }
-    ],
-    "EntryParameters": [
-      {
-        "Name": "ProviderName",
-        "DisplayName": "Provider Name",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": false
-        }
-      },
-      {
-        "Name": "SAN",
-        "DisplayName": "SAN",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": true
-        }
-      }
-    ],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "PrivateKeyAllowed": "Required",
-    "JobProperties": [
-      "ProviderName",
-      "SAN"
-    ],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden",
-    "ServerRegistration": 7,
-    "InventoryEndpoint": "/AnyInventory/Update"
-  },
-  {
     "Name": "Windows Certificate",
     "ShortName": "WinCert",
     "Capability": "WinCert",
@@ -1684,7 +1689,7 @@
       "Style": "Default"
     },
     "StorePathValue": "",
-    "PrivateKeyAllowed": "Required",
+    "PrivateKeyAllowed": "Optional",
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
