@@ -54,6 +54,18 @@ $env:KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
 $env:KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 ```
 
+## Authentication Providers
+
+`kfutil` supports the following authentication providers in order of precedence:
+
+| Provider Type                | Description                                                                                                                                                          |
+|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Azure Key Vault via Azure ID | This provider will read the Keyfactor Command credentials from Azure Key Vault. For more info review the [auth providers](docs/auth_providers#azure-key-vault) docs. |
+| Environment                  | This provider will read the Keyfactor Command credentials from the environment variables listed above.                                                               |
+| File                         | This is the default provider. It will read the credentials from a file on disk at `$HOME/.keyfactor/command_config.json`                                             |
+| User Interactive             | This provider will prompt the user for their credentials.                                                                                                            |
+
+
 ## Commands
 
 ### Login

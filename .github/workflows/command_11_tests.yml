@@ -1,0 +1,82 @@
+name: KFC 11.X.X Tests
+
+on:
+  push:
+    branches:
+      - "*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+      - name: Install dependencies
+        run: go mod download && go mod tidy
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az --version
+
+  ### Store Type Tests
+  Test_StoreTypes_KFC_11_0_0:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      SECRET_NAME: "command-config-1100-clean"
+      KEYFACTOR_HOSTNAME: "int11-test-clean.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          unset KFUTIL_DEBUG
+          go test -v ./cmd -run "^Test_StoreTypes*"
+
+  ### Store Tests
+  Test_Stores_KFC_11_0_0:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - Test_StoreTypes_KFC_11_0_0
+    env:
+      SECRET_NAME: "command-config-1100"
+      KEYFACTOR_HOSTNAME: "integrations1100b3-lab.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          unset KFUTIL_DEBUG
+          go test -v ./cmd -run "^Test_Stores_*"
+
+  ### PAM Tests
+  Test_PAM_KFC_11_0_0:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - Test_StoreTypes_KFC_11_0_0
+    env:
+      SECRET_NAME: "command-config-1100"
+      KEYFACTOR_HOSTNAME: "integrations1100b3-lab.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          unset KFUTIL_DEBUG
+          go test -v ./cmd -run "^Test_PAM*"

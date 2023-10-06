@@ -1,9 +1,17 @@
-// Package cmd Copyright 2022 Keyfactor
-// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
-// and limitations under the License.
+// Package cmd Copyright 2023 Keyfactor
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cmd
 
 import (
@@ -134,7 +142,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		for _, store := range stores {
 			if _, ok := store.Thumbprints[cert]; ok {
 				// Cert is already in the store do nothing
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true", GetCurrentTime()}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true", getCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -143,7 +151,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 				}
 			} else {
 				// Cert is not deployed to this store and will need to be added
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false", GetCurrentTime()}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false", getCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -180,7 +188,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		for _, store := range stores {
 			if _, ok := store.Thumbprints[cert]; ok {
 				// Cert is deployed to this store and will need to be removed
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "true", "true", GetCurrentTime()}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "true", "true", getCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -198,7 +206,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 				})
 			} else {
 				// Cert is not deployed to this store do nothing
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "false", GetCurrentTime()}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "false", getCurrentTime()}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -314,7 +322,7 @@ func readCertsFile(certsFilePath string, kfclient *api.Client) (map[string]strin
 	return certs, nil
 }
 
-func isRootStore(st *api.GetCertificateStoreResponse, invs *[]api.CertStoreInventory, minCerts int, maxKeys int, maxLeaf int) bool {
+func isRootStore(st *api.GetCertificateStoreResponse, invs *[]api.CertStoreInventoryV1, minCerts int, maxKeys int, maxLeaf int) bool {
 	leafCount := 0
 	keyCount := 0
 	certCount := 0
@@ -387,21 +395,21 @@ kfutil stores rot reconcile --import-csv <audit-file>
 		PreRunE:                nil,
 		Run: func(cmd *cobra.Command, args []string) {
 			// Global flags
-			debugFlag, _ := cmd.Flags().GetBool("debug")
+			debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 			configFile, _ := cmd.Flags().GetString("config")
 			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 			profile, _ := cmd.Flags().GetString("profile")
-			kfcHostName, _ := cmd.Flags().GetString("hostname")
-			kfcUsername, _ := cmd.Flags().GetString("username")
-			kfcPassword, _ := cmd.Flags().GetString("password")
-			kfcDomain, _ := cmd.Flags().GetString("domain")
-			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+
+			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
+
 			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 
 			debugModeEnabled := checkDebug(debugFlag)
 			log.Println("Debug mode enabled: ", debugModeEnabled)
 			var lookupFailures []string
-			kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+			kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 			storesFile, _ := cmd.Flags().GetString("stores")
 			addRootsFile, _ := cmd.Flags().GetString("add-certs")
 			removeRootsFile, _ := cmd.Flags().GetString("remove-certs")
@@ -437,7 +445,7 @@ kfutil stores rot reconcile --import-csv <audit-file>
 					continue
 				}
 
-				inventory, invErr := kfClient.GetCertStoreInventory(entry[0])
+				inventory, invErr := kfClient.GetCertStoreInventoryV1(entry[0])
 				if invErr != nil {
 					log.Printf("[ERROR] getting cert store inventory for: %s\n%s", entry[0], invErr)
 				}
@@ -533,8 +541,8 @@ kfutil stores rot reconcile --import-csv <audit-file>
 		Aliases:    nil,
 		SuggestFor: nil,
 		Short:      "Reconcile either takes in or will generate an audit report and then add/remove certs as needed.",
-		Long: `Root of Trust (rot): Will parse either a combination of CSV files that define certs to 
-add and/or certs to remove with a CSV of certificate stores or an audit CSV file. If an audit CSV file is provided, the 
+		Long: `Root of Trust (rot): Will parse either a combination of CSV files that define certs to
+add and/or certs to remove with a CSV of certificate stores or an audit CSV file. If an audit CSV file is provided, the
 add and remove actions defined in the audit file will be immediately executed. If a combination of CSV files are provided,
 the utility will first generate an audit report and then execute the add/remove actions defined in the audit report.`,
 		Example:                "",
@@ -552,15 +560,15 @@ the utility will first generate an audit report and then execute the add/remove 
 		PreRunE:                nil,
 		Run: func(cmd *cobra.Command, args []string) {
 			// Global flags
-			debugFlag, _ := cmd.Flags().GetBool("debug")
+			debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 			configFile, _ := cmd.Flags().GetString("config")
 			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 			profile, _ := cmd.Flags().GetString("profile")
-			kfcHostName, _ := cmd.Flags().GetString("hostname")
-			kfcUsername, _ := cmd.Flags().GetString("username")
-			kfcPassword, _ := cmd.Flags().GetString("password")
-			kfcDomain, _ := cmd.Flags().GetString("domain")
-			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+
+			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
+
 			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 
 			debugModeEnabled := checkDebug(debugFlag)
@@ -568,7 +576,7 @@ the utility will first generate an audit report and then execute the add/remove 
 			log.Println("Debug mode enabled: ", debugModeEnabled)
 
 			var lookupFailures []string
-			kfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+			kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 			storesFile, _ := cmd.Flags().GetString("stores")
 			addRootsFile, _ := cmd.Flags().GetString("add-certs")
 			isCSV, _ := cmd.Flags().GetBool("import-csv")
@@ -740,7 +748,7 @@ the utility will first generate an audit report and then execute the add/remove 
 						lookupFailures = append(lookupFailures, entry[0])
 						continue
 					}
-					inventory, invErr := kfClient.GetCertStoreInventory(entry[0])
+					inventory, invErr := kfClient.GetCertStoreInventoryV1(entry[0])
 					if invErr != nil {
 						log.Fatalf("[ERROR] getting cert store inventory: %s", invErr)
 					}
@@ -860,15 +868,15 @@ the utility will first generate an audit report and then execute the add/remove 
 		PreRunE:                nil,
 		Run: func(cmd *cobra.Command, args []string) {
 			// Global flags
-			debugFlag, _ := cmd.Flags().GetBool("debug")
+			debugFlag, _ := cmd.Flags().GetBool("debugFlag")
 			configFile, _ := cmd.Flags().GetString("config")
 			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
 			profile, _ := cmd.Flags().GetString("profile")
-			kfcHostName, _ := cmd.Flags().GetString("hostname")
-			kfcUsername, _ := cmd.Flags().GetString("username")
-			kfcPassword, _ := cmd.Flags().GetString("password")
-			kfcDomain, _ := cmd.Flags().GetString("domain")
-			kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+
+			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
+			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
+			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
+
 			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 
 			debugModeEnabled := checkDebug(debugFlag)
@@ -886,7 +894,7 @@ the utility will first generate an audit report and then execute the add/remove 
 			var csvStoreData [][]string
 			var csvCertData [][]string
 			var rowLookup = make(map[string]bool)
-			kfClient, cErr := initClient(configFile, profile, noPrompt, authConfig, false)
+			kfClient, cErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 			if len(storeType) != 0 {
 				for _, s := range storeType {
 					if cErr != nil {
@@ -950,7 +958,7 @@ the utility will first generate an audit report and then execute the add/remove 
 								if !rowLookup[store.Id] {
 									lineData := []string{
 										//"StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId"
-										store.Id, fmt.Sprintf("%s", sType.ShortName), store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, GetCurrentTime(),
+										store.Id, fmt.Sprintf("%s", sType.ShortName), store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, getCurrentTime(),
 									}
 									csvStoreData = append(csvStoreData, lineData)
 									rowLookup[store.Id] = true
@@ -982,7 +990,7 @@ the utility will first generate an audit report and then execute the add/remove 
 							if !rowLookup[store.Id] {
 								lineData := []string{
 									// "StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId"
-									store.Id, sType.ShortName, store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, GetCurrentTime(),
+									store.Id, sType.ShortName, store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, getCurrentTime(),
 								}
 								csvStoreData = append(csvStoreData, lineData)
 								rowLookup[store.Id] = true
@@ -1009,7 +1017,7 @@ the utility will first generate an audit report and then execute the add/remove 
 							if !rowLookup[cert.Thumbprint] {
 								lineData := []string{
 									// "Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"
-									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), fmt.Sprintf("%v", cert.Locations), GetCurrentTime(),
+									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), fmt.Sprintf("%v", cert.Locations), getCurrentTime(),
 								}
 								csvCertData = append(csvCertData, lineData)
 								rowLookup[cert.Thumbprint] = true
@@ -1040,7 +1048,7 @@ the utility will first generate an audit report and then execute the add/remove 
 								}
 								lineData := []string{
 									// "Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"
-									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), locationsFormatted, GetCurrentTime(),
+									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), locationsFormatted, getCurrentTime(),
 								}
 								csvCertData = append(csvCertData, lineData)
 								rowLookup[cert.Thumbprint] = true

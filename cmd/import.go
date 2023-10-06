@@ -1,3 +1,17 @@
+// Package cmd Copyright 2023 Keyfactor
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cmd
 
 import (
@@ -29,23 +43,13 @@ var importCmd = &cobra.Command{
 	Short: "Keyfactor instance import utilities.",
 	Long:  `A collection of APIs and utilities for importing Keyfactor instance data.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
+
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
@@ -67,7 +71,7 @@ var importCmd = &cobra.Command{
 			log.Fatalf("Error: %s", jErr)
 		}
 		kfClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
-		oldkfClient, _ := initClient(configFile, profile, noPrompt, authConfig, false)
+		oldkfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 		if cmd.Flag("all").Value.String() == "true" {
 			importCollections(out.Collections, kfClient)
 			importMetadataFields(out.MetadataFields, kfClient)
@@ -116,11 +120,11 @@ var importCmd = &cobra.Command{
 
 func importCollections(collections []keyfactor.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest, kfClient *keyfactor.APIClient) {
 	for _, collection := range collections {
-		_, httpResp, reqErr := kfClient.CertificateCollectionApi.CertificateCollectionCreateCollection(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).
-			Request(collection).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+		_, httpResp, reqErr := kfClient.CertificateCollectionApi.CertificateCollectionCreateCollection(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).
+			Request(collection).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(collection.Name)
 		if reqErr != nil {
-			fmt.Printf("%s Error! Unable to create collection %s - %s%s\n", colorRed, string(name), parseError(httpResp.Body), colorWhite)
+			fmt.Printf("%s Error! Unable to create collection %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
 		} else {
 			name, _ := json.Marshal(collection.Name)
 			fmt.Println("Added", string(name), "to collections")
@@ -131,11 +135,11 @@ func importCollections(collections []keyfactor.KeyfactorApiModelsCertificateColl
 func importMetadataFields(metadataFields []keyfactor.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest, kfClient *keyfactor.APIClient) {
 	for _, metadata := range metadataFields {
 		_, httpResp, reqErr := kfClient.MetadataFieldApi.MetadataFieldCreateMetadataField(context.Background()).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).MetadataFieldType(metadata).
-			XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).MetadataFieldType(metadata).
+			XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(metadata.Name)
 		if reqErr != nil {
-			fmt.Printf("%s Error! Unable to create metadata field type %s - %s%s\n", colorRed, string(name), parseError(httpResp.Body), colorWhite)
+			fmt.Printf("%s Error! Unable to create metadata field type %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
 		} else {
 			fmt.Println("Added", string(name), "to metadata field types.")
 		}
@@ -144,10 +148,10 @@ func importMetadataFields(metadataFields []keyfactor.KeyfactorApiModelsMetadataF
 
 func importIssuedCertAlerts(alerts []keyfactor.KeyfactorApiModelsAlertsIssuedIssuedAlertCreationRequest, kfClient *keyfactor.APIClient) {
 	for _, alert := range alerts {
-		_, httpResp, reqErr := kfClient.IssuedAlertApi.IssuedAlertAddIssuedAlert(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Req(alert).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+		_, httpResp, reqErr := kfClient.IssuedAlertApi.IssuedAlertAddIssuedAlert(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).Req(alert).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(alert.DisplayName)
 		if reqErr != nil {
-			fmt.Printf("%s Error! Unable to create issued cert alert %s - %s%s\n", colorRed, string(name), parseError(httpResp.Body), colorWhite)
+			fmt.Printf("%s Error! Unable to create issued cert alert %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
 		} else {
 			fmt.Println("Added", string(name), "to issued cert alerts.")
 		}
@@ -156,10 +160,10 @@ func importIssuedCertAlerts(alerts []keyfactor.KeyfactorApiModelsAlertsIssuedIss
 
 func importDeniedCertAlerts(alerts []keyfactor.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest, kfClient *keyfactor.APIClient) {
 	for _, alert := range alerts {
-		_, httpResp, reqErr := kfClient.DeniedAlertApi.DeniedAlertAddDeniedAlert(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Req(alert).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+		_, httpResp, reqErr := kfClient.DeniedAlertApi.DeniedAlertAddDeniedAlert(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).Req(alert).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(alert.DisplayName)
 		if reqErr != nil {
-			fmt.Printf("%s Error! Unable to create denied cert alert %s - %s%s\n", colorRed, string(name), parseError(httpResp.Body), colorWhite)
+			fmt.Printf("%s Error! Unable to create denied cert alert %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
 		} else {
 			fmt.Println("Added", string(name), "to denied cert alerts.")
 		}
@@ -168,10 +172,10 @@ func importDeniedCertAlerts(alerts []keyfactor.KeyfactorApiModelsAlertsDeniedDen
 
 func importPendingCertAlerts(alerts []keyfactor.KeyfactorApiModelsAlertsPendingPendingAlertCreationRequest, kfClient *keyfactor.APIClient) {
 	for _, alert := range alerts {
-		_, httpResp, reqErr := kfClient.PendingAlertApi.PendingAlertAddPendingAlert(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Req(alert).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+		_, httpResp, reqErr := kfClient.PendingAlertApi.PendingAlertAddPendingAlert(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).Req(alert).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(alert.DisplayName)
 		if reqErr != nil {
-			fmt.Printf("%s Error! Unable to create pending cert alert %s - %s%s\n", colorRed, string(name), parseError(httpResp.Body), colorWhite)
+			fmt.Printf("%s Error! Unable to create pending cert alert %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
 		} else {
 			fmt.Println("Added", string(name), "to pending cert alerts.")
 		}
@@ -180,10 +184,10 @@ func importPendingCertAlerts(alerts []keyfactor.KeyfactorApiModelsAlertsPendingP
 
 func importNetworks(networks []keyfactor.KeyfactorApiModelsSslCreateNetworkRequest, kfClient *keyfactor.APIClient) {
 	for _, network := range networks {
-		_, httpResp, reqErr := kfClient.SslApi.SslCreateNetwork(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Network(network).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+		_, httpResp, reqErr := kfClient.SslApi.SslCreateNetwork(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).Network(network).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(network.Name)
 		if reqErr != nil {
-			fmt.Printf("%s Error! Unable to create SSL network %s - %s%s\n", colorRed, string(name), parseError(httpResp.Body), colorWhite)
+			fmt.Printf("%s Error! Unable to create SSL network %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
 		} else {
 			fmt.Println("Added", string(name), "to SSL networks.")
 		}
@@ -192,7 +196,7 @@ func importNetworks(networks []keyfactor.KeyfactorApiModelsSslCreateNetworkReque
 
 // identify matching templates between instances by name, then return the template Id of the matching template in the import instance
 func findMatchingTemplates(exportedWorkflowDef exportKeyfactorAPIModelsWorkflowsDefinitionCreateRequest, kfClient *keyfactor.APIClient) *string {
-	importInstanceTemplates, _, _ := kfClient.TemplateApi.TemplateGetTemplates(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	importInstanceTemplates, _, _ := kfClient.TemplateApi.TemplateGetTemplates(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 	for _, template := range importInstanceTemplates {
 		importInstTempNameJson, _ := json.Marshal(template.TemplateName)
 		exportInstTempNameJson, _ := json.Marshal(exportedWorkflowDef.KeyName)
@@ -218,10 +222,10 @@ func importWorkflowDefinitions(workflowDefs []exportKeyfactorAPIModelsWorkflowsD
 		if newTemplateId != nil {
 			workflowDefReq.Key = newTemplateId
 		}
-		_, httpResp, reqErr := kfClient.WorkflowDefinitionApi.WorkflowDefinitionCreateNewDefinition(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Request(workflowDefReq).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+		_, httpResp, reqErr := kfClient.WorkflowDefinitionApi.WorkflowDefinitionCreateNewDefinition(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).Request(workflowDefReq).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(workflowDef.DisplayName)
 		if reqErr != nil {
-			fmt.Printf("%s Error! Unable to create workflow definition %s - %s%s\n", colorRed, string(name), parseError(httpResp.Body), colorWhite)
+			fmt.Printf("%s Error! Unable to create workflow definition %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
 		} else {
 			fmt.Println("Added", string(name), "to workflow definitions.")
 		}
@@ -230,7 +234,7 @@ func importWorkflowDefinitions(workflowDefs []exportKeyfactorAPIModelsWorkflowsD
 
 // check for built-in report discrepancies between instances, return the report id of reports that need to be updated in import instance
 func checkBuiltInReportDiffs(exportedReport exportModelsReport, kfClient *keyfactor.APIClient) *int32 {
-	importInstanceReports, _, _ := kfClient.ReportsApi.ReportsQueryReports(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+	importInstanceReports, _, _ := kfClient.ReportsApi.ReportsQueryReports(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 	//check if built in report was modified from default in exported instance; if modified, update built-in report in new instance
 	for _, report := range importInstanceReports {
 		importInstDispNameJson, _ := json.Marshal(report.DisplayName)
@@ -267,10 +271,10 @@ func importBuiltInReports(reports []exportModelsReport, kfClient *keyfactor.APIC
 				log.Fatalf("Error: %s", jErr)
 			}
 			reportReq.Id = newReportId
-			_, httpResp, reqErr := kfClient.ReportsApi.ReportsUpdateReport(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Request(reportReq).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+			_, httpResp, reqErr := kfClient.ReportsApi.ReportsUpdateReport(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).Request(reportReq).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 			name, _ := json.Marshal(report.DisplayName)
 			if reqErr != nil {
-				fmt.Printf("%s Error! Unable to update built-in report %s - %s%s\n", colorRed, string(name), parseError(httpResp.Body), colorWhite)
+				fmt.Printf("%s Error! Unable to update built-in report %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
 			} else {
 				fmt.Println("Updated", string(name), "in built-in reports.")
 			}
@@ -280,10 +284,10 @@ func importBuiltInReports(reports []exportModelsReport, kfClient *keyfactor.APIC
 
 func importCustomReports(reports []keyfactor.ModelsCustomReportCreationRequest, kfClient *keyfactor.APIClient) {
 	for _, report := range reports {
-		_, httpResp, reqErr := kfClient.ReportsApi.ReportsCreateCustomReport(context.Background()).XKeyfactorRequestedWith(xKeyfactorRequestedWith).Request(report).XKeyfactorApiVersion(xKeyfactorApiVersion).Execute()
+		_, httpResp, reqErr := kfClient.ReportsApi.ReportsCreateCustomReport(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).Request(report).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 		name, _ := json.Marshal(report.DisplayName)
 		if reqErr != nil {
-			fmt.Printf("%s Error! Unable to create custom report %s - %s%s\n", colorRed, string(name), parseError(httpResp.Body), colorWhite)
+			fmt.Printf("%s Error! Unable to create custom report %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
 		} else {
 			fmt.Println("Added", string(name), "to custom reports.")
 		}
@@ -295,7 +299,7 @@ func importSecurityRoles(roles []api.CreateSecurityRoleArg, kfClient *api.Client
 		_, reqErr := kfClient.CreateSecurityRole(&role)
 		name, _ := json.Marshal(role.Name)
 		if reqErr != nil {
-			fmt.Printf("%s Error! Unable to create security role %s - %s%s\n", colorRed, string(name), reqErr, colorWhite)
+			fmt.Printf("%s Error! Unable to create security role %s - %s%s\n", ColorRed, string(name), reqErr, ColorWhite)
 		} else {
 			fmt.Println("Added", string(name), "to security roles.")
 		}
