@@ -18,6 +18,7 @@ package cmdutil
 
 import (
 	"fmt"
+	"runtime"
 )
 
 func PrintError(err error) {
@@ -25,4 +26,8 @@ func PrintError(err error) {
 	if err != nil {
 		fmt.Printf("\033[31m%s\u001B[0m\n", err)
 	}
+}
+
+func GetOs() string {
+	return runtime.GOOS
 }

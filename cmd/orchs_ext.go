@@ -89,7 +89,7 @@ func (f *OrchsExtFlags) AddFlags(flags *pflag.FlagSet) {
 	flags.StringVarP(f.GithubToken, "token", "t", *f.GithubToken, "Token used for related authentication - required for private repositories")
 	flags.StringVarP(f.GithubOrg, "org", "", *f.GithubOrg, "Github organization to download extensions from. Default is keyfactor.")
 	flags.StringVarP(f.OutDir, "out", "o", *f.OutDir, "Path to the extensions directory to download extensions into. Default is ./extensions")
-	flags.StringSliceVarP(f.Extensions, "extensions", "e", *f.Extensions, "List of extensions to download. Should be in the format <extension name>:<version>. If no version is specified, the latest official version will be downloaded.")
+	flags.StringSliceVarP(f.Extensions, "extension", "e", *f.Extensions, "List of extensions to download. Should be in the format <extension name>@<version>. If no version is specified, the latest official version will be downloaded.")
 	flags.BoolVarP(f.AutoConfirm, "confirm", "y", *f.AutoConfirm, "Automatically confirm the download of extensions")
 	flags.BoolVarP(f.Upgrade, "update", "u", *f.Upgrade, "Update existing extensions if they are out of date.")
 	flags.BoolVarP(f.Prune, "prune", "P", *f.Prune, "Remove extensions from the extensions directory that are not in the extension configuration file or specified on the command line")

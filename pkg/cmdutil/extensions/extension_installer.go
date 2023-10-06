@@ -27,7 +27,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 )
@@ -510,23 +509,28 @@ func (b *ExtensionInstaller) unzip(zipFilePath, destinationDirectory string) err
 	}(archive)
 
 	for _, f := range archive.File {
-		filePath := filepath.Join(destinationDirectory, f.Name)
-		log.Println("unzipping file", filePath)
+		rawPath := adjustFilePath(f.Name)
+		log.Println("unzipping file", rawPath)
 
-		if !strings.HasPrefix(filePath, filepath.Clean(destinationDirectory)+string(os.PathSeparator)) {
-			return fmt.Errorf("%s: illegal file path", filePath)
+		// Remove the root directory from the path
+		pathComponents := strings.Split(rawPath, string(os.PathSeparator))
+		if len(pathComponents) > 1 {
+			pathComponents = pathComponents[1:] // remove the first directory
 		}
-		if f.FileInfo().IsDir() {
+		filePath := filepath.Join(destinationDirectory, filepath.Join(pathComponents...))
+
+		// Safety check for any malicious zip archives that might attempt to navigate to parent directories
+		if !strings.HasPrefix(filePath, filepath.Clean(destinationDirectory)+string(os.PathSeparator)) {
+			return fmt.Errorf("%s: illegal file path", rawPath)
+		}
+
+		if isDirectory(f) {
 			log.Println("creating directory...")
 			err = os.MkdirAll(filePath, os.ModePerm)
 			if err != nil {
 				return err
 			}
 			continue
-		}
-
-		if strings.Contains(filePath, "\\") && runtime.GOOS != "windows" {
-			return fmt.Errorf("illegal file path: %s", filePath)
 		}
 
 		if err = os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
@@ -558,6 +562,18 @@ func (b *ExtensionInstaller) unzip(zipFilePath, destinationDirectory string) err
 	}
 
 	return nil
+}
+
+func isDirectory(file *zip.File) bool {
+	return file.FileInfo().IsDir() || (strings.HasSuffix(adjustFilePath(file.Name), "/") && cmdutil.GetOs() != "windows")
+}
+
+func adjustFilePath(path string) string {
+	if strings.Contains(path, "\\") && cmdutil.GetOs() != "windows" {
+		path = strings.ReplaceAll(path, "\\", "/")
+	}
+
+	return path
 }
 
 func (b *ExtensionInstaller) PromptForExtensions() error {

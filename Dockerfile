@@ -18,7 +18,7 @@ COPY pkg/ pkg/
 
 # Build
 # the GOARCH has a default value to allow the binary be built according to the host where the command
-# was called. For example, if we call make docker-build in a local env which has the Apple Silicon M1 SO
+# was called. For example, if we build in a local env which has the Apple Silicon M1 chip,
 # the docker BUILDPLATFORM arg will be linux/arm64, but for Apple x86 it will be linux/amd64. Therefore,
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
 RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o kfutil main.go
@@ -28,8 +28,8 @@ WORKDIR /
 COPY --from=builder /workspace/kfutil /usr/local/bin/kfutil
 
 # Install ca-certificates so that HTTPS works consistently
-RUN apt update
-RUN apt install ca-certificates -y
+RUN apt-get update
+RUN apt-get install ca-certificates -y
 
 # Spin forever so that the container doesn't exit and the user can exec into it
 ENTRYPOINT ["tail", "-f", "/dev/null"]
