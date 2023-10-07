@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
 	"gopkg.in/yaml.v3"
+	"io"
 	"kfutil/pkg/cmdutil"
 	"kfutil/pkg/cmdutil/extensions"
 	"kfutil/pkg/cmdutil/flags"
@@ -31,8 +32,9 @@ import (
 )
 
 const (
-	installerImage           = "m8rmclarenkf/uo_extension_installer:1.0.5"
-	installerImagePullPolicy = "IfNotPresent"
+	installerInitContainerName = "universal-orchestrator-extension-installer"
+	installerImage             = "ghcr.io/keyfactor/kfutil:v1.2.0"
+	installerImagePullPolicy   = "IfNotPresent"
 )
 
 type InteractiveUOValueBuilder struct {
@@ -45,6 +47,7 @@ type InteractiveUOValueBuilder struct {
 	newValuesString string
 	exitAfterPrompt bool
 	interactiveMode bool
+	writer          io.Writer
 }
 
 type menuOption struct {
@@ -56,6 +59,12 @@ type menuOption struct {
 
 func NewUniversalOrchestratorHelmValueBuilder() *InteractiveUOValueBuilder {
 	return &InteractiveUOValueBuilder{}
+}
+
+func (b *InteractiveUOValueBuilder) Writer(writer io.Writer) *InteractiveUOValueBuilder {
+	b.writer = writer
+
+	return b
 }
 
 func (b *InteractiveUOValueBuilder) CommandHostname(hostname string) *InteractiveUOValueBuilder {
@@ -152,9 +161,6 @@ func (b *InteractiveUOValueBuilder) staticBuild() error {
 		return errors.New("extensions cannot be nil")
 	}
 
-	// Clear the init containers
-	b.newValues.InitContainers = make([]InitContainer, 0)
-
 	// Set the init containers for the extension installer
 	b.setExtensionInstallerInitContainers(b.extensions)
 
@@ -218,6 +224,15 @@ func GetIsPositiveNumberValidator() survey.Validator {
 		}
 
 		return nil
+	}
+}
+
+func (b *InteractiveUOValueBuilder) AddRuntimeLog(format string, a ...any) {
+	if b.writer != nil {
+		_, err := fmt.Fprintf(b.writer, format+"\n", a...)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
@@ -345,7 +360,7 @@ func (b *InteractiveUOValueBuilder) SaveAndExit() error {
 		return fmt.Errorf("failed to marshal newValues struct into yaml: %w", err)
 	}
 
-	if b.overrideFile == "" {
+	if b.overrideFile != "" {
 		// Write the yaml string locally to an override file
 		err = os.WriteFile(b.overrideFile, buf, 0644)
 	}

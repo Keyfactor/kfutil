@@ -19,48 +19,88 @@ package helm
 import (
 	"fmt"
 	"kfutil/pkg/cmdutil/extensions"
+	"strings"
 )
 
 func (b *InteractiveUOValueBuilder) cacheCurrentlyInstalledExtensions() extensions.Extensions {
 	installedExtensions := make(extensions.Extensions)
+	extensionInitContainer := InitContainer{}
+
 	for _, container := range b.newValues.InitContainers {
-		var extensionName extensions.ExtensionName
-		extensionVersion := extensions.Version("")
-		for _, env := range container.Env {
-			if env.Name == "EXTENSION_NAME" {
-				extensionName = extensions.ExtensionName(env.Value)
-			}
-			if env.Name == "EXTENSION_VERSION" {
-				extensionVersion = extensions.Version(env.Value)
-			}
+		if container.Name == installerInitContainerName {
+			extensionInitContainer = container
+			break
 		}
-		if extensionName != "" {
-			installedExtensions[extensionName] = extensionVersion
+	}
+
+	if extensionInitContainer.Name == "" {
+		return installedExtensions
+	}
+
+	// Parse the extension list from the init container args
+	for _, env := range extensionInitContainer.Args {
+		if strings.HasPrefix(env, "--extension=") {
+			extension, _ := extensions.ParseExtensionString(strings.ReplaceAll(env, "--extension=", ""))
+			installedExtensions[extension.Name] = extension.Version
 		}
 	}
 
 	return installedExtensions
 }
 
+// setExtensionInstallerInitContainers sets the extension installer container args verbatim from the extensionsToInstall map.
+// If an extension is already installed, it will be upgraded to the latest version.
 func (b *InteractiveUOValueBuilder) setExtensionInstallerInitContainers(extensionsToInstall extensions.Extensions) {
+	var extensionInstallerInitContainer *InitContainer
+
+	// Reference the extension installer init container
+	for i, container := range b.newValues.InitContainers {
+		if container.Name == installerInitContainerName {
+			extensionInstallerInitContainer = &b.newValues.InitContainers[i]
+			break
+		}
+	}
+
+	// Create the extension installer init container if it does not exist
+	if extensionInstallerInitContainer == nil {
+		initContainer := InitContainer{
+			Name:            installerInitContainerName,
+			Image:           installerImage,
+			ImagePullPolicy: installerImagePullPolicy,
+			Env:             []Environment{},
+			VolumeMounts: []VolumeMount{
+				{
+					Name:      "command-pv-claim",
+					MountPath: "/app/extensions",
+					SubPath:   "",
+					ReadOnly:  false,
+				},
+			},
+			Command: []string{"kfutil", "orchs", "extensions", "--out=/app/extensions", "--confirm", "-P"},
+			Args:    []string{},
+		}
+		b.newValues.InitContainers = append(b.newValues.InitContainers, initContainer)
+
+		// Reference the extension installer init container
+		extensionInstallerInitContainer = &b.newValues.InitContainers[len(b.newValues.InitContainers)-1]
+	}
+
+	// Reset the extension installer init container args
+	extensionInstallerInitContainer.Args = []string{}
+
 	for extension, latestVersion := range extensionsToInstall {
-		initContainerName := fmt.Sprintf("%s-installer", extension)
 		extensionAlreadyInstalled := false
 
-		// If the extension is already covered in the Init Containers, upgrade it
-		for i, container := range b.newValues.InitContainers {
-			if container.Name == initContainerName {
-				extensionAlreadyInstalled = true
-				for j, env := range container.Env {
-					if env.Name == "EXTENSION_VERSION" && env.Value != string(latestVersion) {
-						fmt.Printf("Upgrading %s from %s to %s\n", extension, env.Value, latestVersion)
-						b.newValues.InitContainers[i].Env[j].Value = string(latestVersion)
-						break
-					} else if env.Name == "EXTENSION_VERSION" && env.Value == string(latestVersion) {
-						fmt.Printf("Extension %s is already configured for version %s\n", extension, latestVersion)
-					}
+		// Upgrade the extension if it is already installed
+		for i, arg := range extensionInstallerInitContainer.Args {
+			if strings.HasPrefix(arg, "--extension=") {
+				installedExtension, _ := extensions.ParseExtensionString(arg)
+				if installedExtension.Name == extension && installedExtension.Version != latestVersion {
+					extensionAlreadyInstalled = true
+					extensionInstallerInitContainer.Args[i] = fmt.Sprintf("--extension=%s@%s", extension, latestVersion)
+					b.AddRuntimeLog(fmt.Sprintf("Upgrading extension %s to version %s", extension, latestVersion))
+					break
 				}
-				break
 			}
 		}
 
@@ -68,31 +108,8 @@ func (b *InteractiveUOValueBuilder) setExtensionInstallerInitContainers(extensio
 			continue
 		}
 
-		b.newValues.InitContainers = append(b.newValues.InitContainers, InitContainer{
-			Name:            initContainerName,
-			Image:           installerImage,
-			ImagePullPolicy: installerImagePullPolicy,
-			Env: []Environment{
-				{
-					Name:  "EXTENSION_NAME",
-					Value: string(extension),
-				},
-				{
-					Name:  "EXTENSION_VERSION",
-					Value: string(latestVersion),
-				},
-				{
-					Name:  "INSTALL_PATH",
-					Value: fmt.Sprintf("/app/extensionList/%s", extension),
-				},
-			},
-			VolumeMounts: []VolumeMount{
-				{
-					Name:      b.newValues.ExtensionStorage.Name,
-					MountPath: "/app/extensionList",
-				},
-			},
-		})
+		// Install the extension if it is not already installed
+		extensionInstallerInitContainer.Args = append(extensionInstallerInitContainer.Args, fmt.Sprintf("--extension=%s@%s", extension, latestVersion))
 	}
 }
 
@@ -104,7 +121,7 @@ func (b *InteractiveUOValueBuilder) selectExtensionsHandler() error {
 	installedExtensions := b.cacheCurrentlyInstalledExtensions()
 
 	// Set up the installer tool
-	installerTool.SetExtensionsToInstall(installedExtensions)
+	installerTool.SetCurrentlyInstalled(installedExtensions)
 
 	// Prompt the user to select which extensions to install
 	err := installerTool.PromptForExtensions()
@@ -114,6 +131,15 @@ func (b *InteractiveUOValueBuilder) selectExtensionsHandler() error {
 
 	// Get the list of extensions to install
 	extensionsToInstall := installerTool.GetExtensionsToInstall()
+
+	// Copy installedExtensions to extensionsToInstall.
+	// setExtensionInstallerInitContainers will upgrade any extensions that are already installed,
+	// and will remove any extensions that are no longer selected.
+	for extension, version := range installedExtensions {
+		if _, ok := extensionsToInstall[extension]; !ok {
+			extensionsToInstall[extension] = version
+		}
+	}
 
 	// Set the init containers for the extension installer
 	b.setExtensionInstallerInitContainers(extensionsToInstall)

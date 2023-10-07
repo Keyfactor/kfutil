@@ -624,6 +624,10 @@ func (b *ExtensionInstaller) PromptForExtensions() error {
 	return nil
 }
 
+func (b *ExtensionInstaller) SetCurrentlyInstalled(currentlyInstalled Extensions) {
+	b.currentlyInstalled = currentlyInstalled
+}
+
 func (b *ExtensionInstaller) SetExtensionsToInstall(extensionsToInstall Extensions) {
 	b.extensionsToInstall = extensionsToInstall
 }

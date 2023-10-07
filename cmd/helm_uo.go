@@ -70,7 +70,7 @@ func (f *HelmUoFlags) AddFlags(flags *pflag.FlagSet) {
 	// Add custom flags
 	flags.StringVarP(f.GithubToken, "token", "t", *f.GithubToken, "Token used for related authentication - required for private repositories")
 	flags.StringVarP(f.OutPath, "out", "o", *f.OutPath, "Path to output the modified values.yaml file. This file can then be used with helm install -f <file> to override the default values.")
-	flags.StringSliceVarP(f.Extensions, "extensions", "e", *f.Extensions, "List of extensions to install. Should be in the format <extension name>@<version>. If no version is specified, the latest version will be downloaded.")
+	flags.StringSliceVarP(f.Extensions, "extension", "e", *f.Extensions, "List of extensions to install. Should be in the format <extension name>@<version>. If no version is specified, the latest version will be downloaded.")
 }
 
 func NewCmdHelmUo() *cobra.Command {
@@ -95,7 +95,8 @@ func NewCmdHelmUo() *cobra.Command {
 				OverrideFile(options.OutPath).
 				Token(options.GithubToken).
 				Values(options.FilenameOptions).
-				InteractiveMode(options.InteractiveMode)
+				InteractiveMode(options.InteractiveMode).
+				Writer(cmd.OutOrStdout())
 
 			// Pre flight
 			err = builder.PreFlight()

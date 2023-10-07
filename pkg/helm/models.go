@@ -22,6 +22,8 @@ type InitContainer struct {
 	ImagePullPolicy string        `yaml:"imagePullPolicy"`
 	Env             []Environment `yaml:"env"`
 	VolumeMounts    []VolumeMount `yaml:"volumeMounts"`
+	Command         []string      `yaml:"command"`
+	Args            []string      `yaml:"args"`
 }
 
 type Environment struct {

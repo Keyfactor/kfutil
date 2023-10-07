@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/AlecAivazis/survey/v2/core"
 	"github.com/AlecAivazis/survey/v2/terminal"
+	"gopkg.in/yaml.v3"
 	"kfutil/pkg/cmdtest"
 	"kfutil/pkg/cmdutil/extensions"
 	"kfutil/pkg/cmdutil/flags"
@@ -206,15 +207,51 @@ func TestInteractiveUOValueBuilder_staticBuild(t *testing.T) {
 			t.Error("expected error, got nil")
 		}
 	})
-
-	t.Run("InvalidExtensions", func(t *testing.T) {
-		// TODO
-	})
 }
 
 func TestInteractiveUOValueBuilder(t *testing.T) {
 	t.Helper()
 	interactiveBuilder := NewTestBuilder()
+
+	t.Run("StaticExtensionInstaller", func(t *testing.T) {
+		extension, err := extensions.NewGithubReleaseFetcher("", GetGithubToken()).GetFirstExtension()
+		if err != nil {
+			return
+		}
+
+		toolBuilder := NewUniversalOrchestratorHelmValueBuilder().
+			CommandHostname("test").
+			Token(GetGithubToken()).
+			Extensions([]string{string(extension)}).
+			InteractiveMode(false).
+			Values(flags.FilenameOptions{Filenames: []string{"/Users/hroszell/Documents/dev/containers/containerized-uo-deployment-dev/universal-orchestrator/values.yaml"}})
+
+		toolBuilder.exitAfterPrompt = true
+
+		values, err := toolBuilder.Build()
+		if err != nil {
+			return
+		}
+
+		// Marshal the values to a UniversalOrchestratorHelmValues
+		var newValues UniversalOrchestratorHelmValues
+		err = yaml.Unmarshal([]byte(values), &newValues)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if len(newValues.InitContainers) != 1 {
+			t.Errorf("expected 1 init container, got %d", len(newValues.InitContainers))
+		}
+
+		if len(newValues.InitContainers[0].Args) != 1 {
+			t.Error("expected 1 init container arg, got 0")
+		}
+
+		if !strings.HasPrefix(newValues.InitContainers[0].Args[0], fmt.Sprintf("--extension=%s", extension)) {
+			t.Errorf("expected init container arg to contain extension, got %s", newValues.InitContainers[0].Args[0])
+		}
+	})
 
 	tests := []cmdtest.PromptTest{
 		{
