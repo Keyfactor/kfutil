@@ -17,6 +17,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/google/go-cmp/cmp"
 	"github.com/rs/zerolog/log"
@@ -588,6 +589,100 @@ func authViaProvider() (*api.Client, error) {
 			//log.Fatalf("[ERROR] creating Keyfactor client: %s", err)
 			return nil, fmt.Errorf("unable to create Keyfactor Command client: %s", err)
 		}
+		log.Info().Msg("Keyfactor Command client created")
+		log.Debug().Str("flagAuthProvider", providerType).
+			Str("providerProfile", providerProfile).
+			Msg("returning from provider auth")
+		return c, nil
+	}
+	return nil, fmt.Errorf("unable to auth via provider, providerType is empty")
+}
+
+func authViaProviderGenClient() (*keyfactor.APIClient, error) {
+	var commandConfig ConfigurationFile
+	if providerType != "" {
+		log.Info().Str("providerType", providerType).Msg("attempting to auth via auth provider")
+		var providerConfig AuthProvider
+		if providerProfile == "" {
+			log.Info().Str("providerProfile", providerProfile).Msg("auth provider profile not set, defaulting to 'default'")
+			providerProfile = "default"
+		}
+
+		providerConfig = AuthProvider{
+			Type:       providerType,
+			Profile:    providerProfile,
+			Parameters: nil,
+		}
+
+		if configFile == "" {
+			homeDir, hdErr := os.UserHomeDir()
+			if hdErr != nil {
+				homeDir, hdErr = os.Getwd()
+				if hdErr != nil {
+					homeDir = "." // Default to current directory
+				}
+			}
+			configFile = path.Join(homeDir, ".keyfactor", DefaultConfigFileName)
+		}
+
+		// Load config file
+		log.Debug().Str("configFile", configFile).Msg("configFile is set, loading config file")
+		log.Debug().Msg("calling loadConfigurationFile()")
+		configurationFile, cErr := loadConfigurationFile(configFile, true)
+		log.Debug().Msg("loadConfigurationFile() returned")
+		if cErr != nil {
+			log.Error().Err(cErr).Msg("unable to load provider config file")
+			return nil, cErr
+		}
+		// look for profile in config file
+		log.Debug().Str("profile", profile).
+			Str("providerProfile", providerProfile).
+			Msg("checking if providerProfile exists in config file")
+
+		providerConfigEntry, providerProfileExists := configurationFile.Servers[providerProfile]
+		if !providerProfileExists {
+			log.Error().Str("providerProfile", providerProfile).Msg("providerProfile does not exist in config file")
+			return nil, fmt.Errorf("providerProfile '%s' does not exist in config file", providerProfile)
+		}
+		params := providerConfigEntry.AuthProvider.Parameters
+		if params == nil {
+			log.Error().Msg("providerProfile parameters are empty")
+			return nil, fmt.Errorf("providerProfile '%s' parameters are empty", providerProfile)
+		}
+		providerConfig.Parameters = params
+
+		log.Debug().Str("providerConfig.Type", providerConfig.Type).
+			Msg("call: authViaProviderParams()")
+		pvConfig, pErr := authViaProviderParams(&providerConfig)
+		log.Debug().Msg("returned: authViaProviderParams()")
+		if pErr != nil {
+			log.Error().Err(pErr).
+				Str("providerConfig.Type", providerConfig.Type).
+				Str("providerConfig.Profile", providerConfig.Profile).
+				Msg("unable to auth via provider")
+			return nil, pErr
+		}
+		log.Trace().Interface("pvConfig", pvConfig).Send()
+
+		commandConfig = pvConfig
+		sdkClientConfig := make(map[string]string)
+		sdkClientConfig["host"] = commandConfig.Servers[providerProfile].Hostname
+		sdkClientConfig["username"] = commandConfig.Servers[providerProfile].Username
+		sdkClientConfig["password"] = commandConfig.Servers[providerProfile].Password
+		sdkClientConfig["domain"] = commandConfig.Servers[providerProfile].Domain
+		sdkClientConfig["apiPath"] = commandConfig.Servers[providerProfile].APIPath
+
+		log.Debug().Str("clientAuth.Username", sdkClientConfig["username"]).
+			Str("clientAuth.Password", hashSecretValue(sdkClientConfig["password"])).
+			Str("clientAuth.Domain", sdkClientConfig["domain"]).
+			Str("clientAuth.Hostname", sdkClientConfig["host"]).
+			Str("clientAuth.APIPath", sdkClientConfig["apiPath"]).
+			Msg("Client authentication params")
+
+		log.Debug().Msg("call: api.NewKeyfactorClient()")
+		configuration := keyfactor.NewConfiguration(sdkClientConfig)
+		c := keyfactor.NewAPIClient(configuration)
+		log.Debug().Msg("complete: api.NewKeyfactorClient()")
 		log.Info().Msg("Keyfactor Command client created")
 		log.Debug().Str("flagAuthProvider", providerType).
 			Str("providerProfile", providerProfile).
