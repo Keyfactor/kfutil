@@ -200,6 +200,10 @@ func initClient(flagConfigFile string, flagProfile string, flagAuthProviderType 
 func initGenClient(flagConfig string, flagProfile string, noPrompt bool, authConfig *api.AuthConfig, saveConfig bool) (*keyfactor.APIClient, error) {
 	var commandConfig ConfigurationFile
 
+	if providerType != "" {
+		return authViaProviderGenClient()
+	}
+
 	commandConfig, _ = authEnvVars(flagConfig, "", saveConfig)
 
 	if flagConfig != "" || !validConfigFileEntry(commandConfig, flagProfile) {

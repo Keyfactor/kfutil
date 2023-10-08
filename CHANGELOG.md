@@ -1,6 +1,6 @@
 # v1.2.0
 ## Features
-feat(auth): Added support for sourcing credentials from [Azure Key Vault using Azure ID](docs/auth_providers#azure-key-vault)
+feat(auth): Added support for sourcing credentials from [Azure Key Vault using Azure ID](docs/auth_providers.md#azure-key-vault)
 feat(cli): Added enhanced logging when `KFUTIL_DEBUG` is set.
 feat(store-types): `store-types create` now supports the `--all` flag.
 feat(stores): `stores` sub CLI is now non-experimental. [See docs](docs/kfutil_stores.md)
