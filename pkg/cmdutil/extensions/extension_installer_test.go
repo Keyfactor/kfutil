@@ -266,6 +266,7 @@ func TestExtensionInstaller_cacheExtensionsDir(t *testing.T) {
 func TestExtensionInstaller_applyUpgradesToExtensionsToInstall(t *testing.T) {
 	builder := NewExtensionInstallerBuilder()
 	builder.currentlyInstalled = make(Extensions)
+	builder.Token(GetGithubToken())
 
 	// Get an extension
 	extension, err := NewGithubReleaseFetcher("", GetGithubToken()).GetFirstExtension()

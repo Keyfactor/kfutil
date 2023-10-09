@@ -170,6 +170,7 @@ func TestNewUniversalOrchestratorHelmValueBuilder(t *testing.T) {
 		}
 
 		builder := NewUniversalOrchestratorHelmValueBuilder().
+			Token(GetGithubToken()).
 			InteractiveMode(false).
 			Extensions([]string{string(extension)})
 
