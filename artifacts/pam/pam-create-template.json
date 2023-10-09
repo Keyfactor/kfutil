@@ -1,0 +1,77 @@
+{
+  "Area" : 1,
+  "Name": "Delinea-SecretServer-test",
+  "ProviderType": {
+    "Id": "",
+    "Name": "Delinea-SecretServer",
+    "ProviderTypeParams": [
+      {
+        "Id": -1,
+        "Name": "Host",
+        "DisplayName": "Secret Server URL",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": -1,
+        "Name": "Username",
+        "DisplayName": "Secret Server Username",
+        "DataType": 2,
+        "InstanceLevel": false
+      },
+      {
+        "Id": -1,
+        "Name": "Password",
+        "DisplayName": "Secret Server Password",
+        "DataType": 2,
+        "InstanceLevel": false
+      },
+      {
+        "Id": -1,
+        "Name": "SecretId",
+        "DisplayName": "Secret ID",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": -1,
+        "Name": "SecretFieldName",
+        "DisplayName": "Secret Field Name",
+        "DataType": 1,
+        "InstanceLevel": true
+      }
+    ]
+  },
+  "ProviderTypeParamValues": [
+    {
+      "Value": "https://secretserver.delinea.com",
+      "ProviderTypeParam": {
+        "Id": -1,
+        "Name": "Host",
+        "DisplayName": "Secret Server URL",
+        "DataType": 1,
+        "InstanceLevel": false
+      }
+    },
+    {
+      "Value": "myusername",
+      "ProviderTypeParam": {
+        "Id": -1,
+        "Name": "Username",
+        "DisplayName": "Secret Server Username",
+        "DataType": 1,
+        "InstanceLevel": false
+      }
+    },
+    {
+      "Value": "mypasswd",
+      "ProviderTypeParam": {
+        "Id": -1,
+        "Name": "Password",
+        "DisplayName": "Secret Server Password",
+        "DataType": 1,
+        "InstanceLevel": false
+      }
+    }
+  ]
+}
