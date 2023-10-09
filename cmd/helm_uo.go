@@ -84,7 +84,6 @@ func NewCmdHelmUo() *cobra.Command {
 			options, err := helmUoFlags.ToOptions(cmd, args)
 			if err != nil {
 				cmdutil.PrintError(err)
-				log.Fatalf("[ERROR] Exiting: %s", err)
 				return err
 			}
 
@@ -108,7 +107,7 @@ func NewCmdHelmUo() *cobra.Command {
 			newValues, err := builder.Build()
 			if err != nil {
 				cmdutil.PrintError(err)
-				log.Fatalf("[ERROR] Exiting: %s", err)
+				return err
 			}
 
 			// Write the new values to stdout
@@ -145,11 +144,17 @@ func (f *HelmUoFlags) ToOptions(cmd *cobra.Command, args []string) (*HelmUoOptio
 	// Global flags
 	flags.GetDebugFlag(cmd)
 
+	// Determine if feature is enabled
+	expEnabled, _ := cmd.Flags().GetBool("exp")
+	_, err := IsExperimentalFeatureEnabled(expEnabled, true)
+	if err != nil {
+		return nil, fmt.Errorf("feature gate check failed: %s", err)
+	}
+
 	// Get the command config entry from global flags
 	noPrompt := flags.GetNoPromptFlag(cmd)
 	profile := flags.GetProfileFlag(cmd)
 	configFile := flags.GetConfigFlag(cmd)
-
 	commandConfig, _ := authConfigFile(configFile, profile, noPrompt, false)
 
 	// Get the hostname from the command config

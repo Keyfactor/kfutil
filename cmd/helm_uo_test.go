@@ -79,12 +79,13 @@ func TestHelmUo_SaveAndExit(t *testing.T) {
 
 func TestHelmUo(t *testing.T) {
 	uoCmd := NewCmdHelmUo()
-	var debug, noPrompt bool
+	var debug, noPrompt, exp bool
 	var profile, config string
 	uoCmd.Flags().BoolVarP(&debug, "debug", "b", false, "debug")
 	uoCmd.Flags().BoolVarP(&noPrompt, "no-prompt", "y", false, "no-prompt")
 	uoCmd.Flags().StringVarP(&profile, "profile", "p", "", "profile")
 	uoCmd.Flags().StringVarP(&config, "config", "c", "", "config")
+	uoCmd.Flags().BoolVarP(&exp, "exp", "", false, "exp")
 
 	// Get an orchestrator name
 	extension, err := extensions.NewGithubReleaseFetcher("", GetGithubToken()).GetFirstExtension()
@@ -98,7 +99,7 @@ func TestHelmUo(t *testing.T) {
 		t.Error(err)
 	}
 
-	args := []string{"-t", GetGithubToken(), "-e", fmt.Sprintf("%s", extension), "-f", "test.yaml"}
+	args := []string{"--exp", "-t", GetGithubToken(), "-e", fmt.Sprintf("%s", extension), "-f", "test.yaml"}
 
 	valuesYamlString, err := cmdtest.TestExecuteCommand(t, uoCmd, args...)
 	if err != nil {

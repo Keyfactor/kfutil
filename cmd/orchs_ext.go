@@ -253,5 +253,5 @@ This command will download extensions for Keyfactor Command Universal Orchestrat
 )
 
 var (
-	OrchsExtAliases = []string{"extensions"}
+	OrchsExtAliases = []string{"extensions", "exts", "extension"}
 )
