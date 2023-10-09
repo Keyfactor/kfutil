@@ -188,9 +188,7 @@ func initClient(flagConfigFile string, flagProfile string, flagAuthProviderType 
 	log.Debug().Msg("complete: api.NewKeyfactorClient()")
 
 	if err != nil {
-		//fmt.Printf("Error connecting to Keyfactor: %s\n", err)
 		outputError(err, true, "text")
-		//log.Fatalf("[ERROR] creating Keyfactor client: %s", err)
 		return nil, fmt.Errorf("unable to create Keyfactor Command client: %s", err)
 	}
 	log.Info().Msg("Keyfactor Command client created")
