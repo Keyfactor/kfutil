@@ -1,6 +1,6 @@
 # v1.2.0
 ## Features
-
+ 
 ### Auth
 - Added support for sourcing credentials from [Azure Key Vault using Azure ID](docs/auth_providers.md#azure-key-vault)
 
