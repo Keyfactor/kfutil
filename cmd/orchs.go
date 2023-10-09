@@ -24,9 +24,10 @@ import (
 
 // orchsCmd represents the orchs command
 var orchsCmd = &cobra.Command{
-	Use:   "orchs",
-	Short: "Keyfactor agents/orchestrators APIs and utilities.",
-	Long:  `A collections of APIs and utilities for interacting with Keyfactor orchestrators.`,
+	Use:     "orchs",
+	Short:   "Keyfactor agents/orchestrators APIs and utilities.",
+	Long:    `A collections of APIs and utilities for interacting with Keyfactor orchestrators.`,
+	Aliases: OrchsAliases,
 }
 
 // getOrchestratorCmd represents the get orchestrator command
@@ -229,6 +230,9 @@ func init() {
 
 	RootCmd.AddCommand(orchsCmd)
 
+	// EXT orchestrators command
+	orchsCmd.AddCommand(NewCmdOrchsExt())
+
 	// LIST orchestrators command
 	orchsCmd.AddCommand(listOrchestratorsCmd)
 	// GET orchestrator command
@@ -263,3 +267,7 @@ func init() {
 	//orchsCmd.AddCommand(downloadOrchestrator)
 	//orchsCmd.AddCommand(installOrchestrator)
 }
+
+var (
+	OrchsAliases = []string{"orchestrator", "orchestrators", "orch"}
+)
