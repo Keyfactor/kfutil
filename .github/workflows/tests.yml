@@ -382,3 +382,31 @@ jobs:
 #          kfutil logout || true
 #          printenv | grep -i keyfactor
 #          go test -v ./cmd -run "^Test_PAM*"
+
+  Test_Kfutil_pkg:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      # Checkout code
+      # https://github.com/actions/checkout
+      - name: Checkout code
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+
+      # Setup GoLang build environment
+      # https://github.com/actions/setup-go
+      - name: Set up Go 1.x
+        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      # Install dependencies
+      - name: Install dependencies
+        run: go mod download
+
+      # Run the tests with coverage found in the pkg directory
+      - name: Run tests
+        run: go test -v -cover ./pkg/...
