@@ -1,5 +1,5 @@
 # Build the kfutil binary
-FROM golang:1.19 as builder
+FROM golang:1.20 as builder
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -23,13 +23,9 @@ COPY pkg/ pkg/
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
 RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o kfutil main.go
 
-FROM ubuntu:latest
+FROM alpine:latest
 WORKDIR /
 COPY --from=builder /workspace/kfutil /usr/local/bin/kfutil
-
-# Install ca-certificates so that HTTPS works consistently
-RUN apt-get update
-RUN apt-get install ca-certificates -y
 
 # Spin forever so that the container doesn't exit and the user can exec into it
 ENTRYPOINT ["tail", "-f", "/dev/null"]
