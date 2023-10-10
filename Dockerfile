@@ -27,9 +27,5 @@ FROM alpine:latest
 WORKDIR /
 COPY --from=builder /workspace/kfutil /usr/local/bin/kfutil
 
-# Install ca-certificates so that HTTPS works consistently
-RUN apt-get update
-RUN apt-get install ca-certificates -y
-
 # Spin forever so that the container doesn't exit and the user can exec into it
 ENTRYPOINT ["tail", "-f", "/dev/null"]
