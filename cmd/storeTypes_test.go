@@ -113,7 +113,7 @@ func Test_StoreTypesFetchTemplatesCmd(t *testing.T) {
 func Test_StoreTypesGetCmd(t *testing.T) {
 	testCmd := RootCmd
 	// Attempt to get the AWS store type because it comes with the product
-	testCmd.SetArgs([]string{"store-types", "get", "--name", "IIS"})
+	testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM"})
 	output := captureOutput(func() {
 		err := testCmd.Execute()
 		assert.NoError(t, err)
@@ -137,13 +137,13 @@ func Test_StoreTypesGetCmd(t *testing.T) {
 	_, ok = storeType["Name"].(string)
 	assert.True(t, ok, "Expected name to be a string")
 	// check that shortname == AWS
-	assert.Equal(t, storeType["ShortName"], "IIS", "Expected short name to be IIS")
+	assert.Equal(t, storeType["ShortName"], "PEM", "Expected short name to be PEM")
 }
 
 func Test_StoreTypesGetGenericCmd(t *testing.T) {
 	testCmd := RootCmd
 	// Attempt to get the AWS store type because it comes with the product
-	testCmd.SetArgs([]string{"store-types", "get", "--name", "IIS", "--generic"})
+	testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--generic"})
 	output := captureOutput(func() {
 		err := testCmd.Execute()
 		assert.NoError(t, err)
@@ -170,8 +170,8 @@ func Test_StoreTypesGetGenericCmd(t *testing.T) {
 	// verify name is a string
 	_, ok = storeType["Name"].(string)
 	assert.True(t, ok, "Expected name to be a string")
-	// check that shortname == IIS
-	assert.Equal(t, storeType["ShortName"], "IIS", "Expected short name to be IIS")
+	// check that shortname == PEM
+	assert.Equal(t, storeType["ShortName"], "PEM", "Expected short name to be PEM")
 }
 
 func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
