@@ -19,7 +19,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
-	golang.org/x/crypto v0.12.0
+	golang.org/x/crypto v0.14.0
 	gopkg.in/yaml.v3 v3.0.1
 //github.com/google/go-cmp/cmp v0.5.9
 )
@@ -42,7 +42,7 @@ require (
 	github.com/spbsoluble/go-pkcs12 v0.3.3 // indirect
 	go.mozilla.org/pkcs7 v0.0.0-20210826202110-33d05740a352 // indirect
 	golang.org/x/net v0.14.0 // indirect
-	golang.org/x/sys v0.12.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 )
