@@ -1,11 +1,14 @@
 ## Quickstart
 
 ### Prerequisites:
+
 - [Github CLI](https://cli.github.com/)
-- [zip](https://linuxize.com/post/how-to-unzip-files-in-linux/#installing-unzip) CLI tool, used to unzip the release files. 
+- [zip](https://linuxize.com/post/how-to-unzip-files-in-linux/#installing-unzip) CLI tool, used to unzip the release
+  files.
 - `$HOME/.local/bin` in your `$PATH` and exists.
 
 ### Installation:
+
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/gh-dl-release.sh)
 ````
@@ -26,13 +29,16 @@ and use them if they are set. If they are not set, the utility will fail to conn
 | KFUTIL_DEBUG       | Set to `1` or `true` to enable debug logging.                                            |
 
 Linux/MacOS:
+
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 export KEYFACTOR_USERNAME="<myusername>" # Do not include domain
 export KEYFACTOR_PASSWORD="<mypassword>"
 export KEYFACTOR_DOMAIN="<mykeyfactordomain>"
 ```
+
 Additional variables:
+
 ```bash
 export KEYFACTOR_API_PATH="/KeyfactorAPI" # Defaults to /KeyfactorAPI if not set ex. my.domain.com/KeyfactorAPI
 export KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
@@ -40,14 +46,16 @@ export KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 ```
 
 Windows Powershell:
+
 ```powershell
-$env:KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
-$env:KEYFACTOR_USERNAME="<myusername>" # Do not include domain
-$env:KEYFACTOR_PASSWORD="<mypassword>"
-$env:KEYFACTOR_DOMAIN="<mykeyfactordomain>"
+$env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"
+$env:KEYFACTOR_USERNAME = "<myusername>" # Do not include domain
+$env:KEYFACTOR_PASSWORD = "<mypassword>"
+$env:KEYFACTOR_DOMAIN = "<mykeyfactordomain>"
 ```
 
 Additional variables:
+
 ```bash
 $env:KEYFACTOR_API_PATH="/KeyfactorAPI" # Defaults to /KeyfactorAPI if not set ex. my.domain.com/KeyfactorAPI
 $env:KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
@@ -58,17 +66,17 @@ $env:KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 
 `kfutil` supports the following authentication providers in order of precedence:
 
-| Provider Type                | Description                                                                                                                                                          |
-|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Azure Key Vault via Azure ID | This provider will read the Keyfactor Command credentials from Azure Key Vault. For more info review the [auth providers](docs/auth_providers#azure-key-vault) docs. |
-| Environment                  | This provider will read the Keyfactor Command credentials from the environment variables listed above.                                                               |
-| File                         | This is the default provider. It will read the credentials from a file on disk at `$HOME/.keyfactor/command_config.json`                                             |
-| User Interactive             | This provider will prompt the user for their credentials.                                                                                                            |
-
+| Provider Type                | Description                                                                                                                                                             |
+|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Azure Key Vault via Azure ID | This provider will read the Keyfactor Command credentials from Azure Key Vault. For more info review the [auth providers](docs/auth_providers.md#azure-key-vault) docs. |
+| Environment                  | This provider will read the Keyfactor Command credentials from the environment variables listed above.                                                                  |
+| File                         | This is the default provider. It will read the credentials from a file on disk at `$HOME/.keyfactor/command_config.json`                                                |
+| User Interactive             | This provider will prompt the user for their credentials.                                                                                                               |
 
 ## Commands
 
 ### Login
+
 For full documentation on the `login` command, see the [login](docs/kfutil_login.md) documentation.
 
 *WARNING* - The `login` command will store your Keyfactor credentials in a file on your local machine. This file is not
@@ -80,6 +88,7 @@ kfutil login
 ```
 
 ### Logout
+
 For full documentation on the `logout` command, see the [logout](docs/kfutil_logout.md) documentation.
 
 *WARNING* - This will delete the file containing your Keyfactor credentials at `$HOME/.keyfactor/command_config.json`.

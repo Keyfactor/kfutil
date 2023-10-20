@@ -1,31 +1,31 @@
 - [Keyfactor Command Utility (kfutil)](#keyfactor-command-utility--kfutil-)
-  - [Integration status: Production - Ready for use in production environments.](#integration-status--production---ready-for-use-in-production-environments)
-  * [Support for Keyfactor Command Utility (kfutil)](#support-for-keyfactor-command-utility--kfutil-)
-  * [Quickstart](#quickstart)
-    + [Prerequisites:](#prerequisites-)
-    + [Installation:](#installation-)
-    + [Environmental Variables](#environmental-variables)
-  * [Authentication Providers](#authentication-providers)
-  * [Commands](#commands)
-    + [Login](#login)
-    + [Logout](#logout)
-  * [Commands](#commands-1)
-    + [Bulk operations](#bulk-operations)
-      - [Bulk create cert stores](#bulk-create-cert-stores)
-      - [Bulk create cert store types](#bulk-create-cert-store-types)
-    + [Root of Trust](#root-of-trust)
-    + [Root of Trust Quickstart](#root-of-trust-quickstart)
-      - [Generate Certificate List Template](#generate-certificate-list-template)
-      - [Generate Certificate Store List Template](#generate-certificate-store-list-template)
-      - [Run Root of Trust Audit](#run-root-of-trust-audit)
-      - [Run Root of Trust Reconcile](#run-root-of-trust-reconcile)
-    + [Certificate Store Inventory](#certificate-store-inventory)
-      - [Show the inventory of a certificate store](#show-the-inventory-of-a-certificate-store)
-      - [Add certificates to certificate stores](#add-certificates-to-certificate-stores)
-      - [Remove certificates from certificate stores](#remove-certificates-from-certificate-stores)
-  * [Development](#development)
-    + [Adding a new command](#adding-a-new-command)
+    - [Integration status: Production - Ready for use in production environments.](#integration-status--production---ready-for-use-in-production-environments)
 
+    * [Support for Keyfactor Command Utility (kfutil)](#support-for-keyfactor-command-utility--kfutil-)
+    * [Quickstart](#quickstart)
+        + [Prerequisites:](#prerequisites-)
+        + [Installation:](#installation-)
+        + [Environmental Variables](#environmental-variables)
+    * [Authentication Providers](#authentication-providers)
+    * [Commands](#commands)
+        + [Login](#login)
+        + [Logout](#logout)
+    * [Commands](#commands-1)
+        + [Bulk operations](#bulk-operations)
+            - [Bulk create cert stores](#bulk-create-cert-stores)
+            - [Bulk create cert store types](#bulk-create-cert-store-types)
+        + [Root of Trust](#root-of-trust)
+        + [Root of Trust Quickstart](#root-of-trust-quickstart)
+            - [Generate Certificate List Template](#generate-certificate-list-template)
+            - [Generate Certificate Store List Template](#generate-certificate-store-list-template)
+            - [Run Root of Trust Audit](#run-root-of-trust-audit)
+            - [Run Root of Trust Reconcile](#run-root-of-trust-reconcile)
+        + [Certificate Store Inventory](#certificate-store-inventory)
+            - [Show the inventory of a certificate store](#show-the-inventory-of-a-certificate-store)
+            - [Add certificates to certificate stores](#add-certificates-to-certificate-stores)
+            - [Remove certificates from certificate stores](#remove-certificates-from-certificate-stores)
+    * [Development](#development)
+        + [Adding a new command](#adding-a-new-command)
 
 # Keyfactor Command Utility (kfutil)
 
@@ -113,12 +113,12 @@ $env:KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 
 `kfutil` supports the following authentication providers in order of precedence:
 
-| Provider Type                | Description                                                                                                                                                          |
-|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Azure Key Vault via Azure ID | This provider will read the Keyfactor Command credentials from Azure Key Vault. For more info review the [auth providers](docs/auth_providers#azure-key-vault) docs. |
-| Environment                  | This provider will read the Keyfactor Command credentials from the environment variables listed above.                                                               |
-| File                         | This is the default provider. It will read the credentials from a file on disk at `$HOME/.keyfactor/command_config.json`                                             |
-| User Interactive             | This provider will prompt the user for their credentials.                                                                                                            |
+| Provider Type                | Description                                                                                                                                                             |
+|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Azure Key Vault via Azure ID | This provider will read the Keyfactor Command credentials from Azure Key Vault. For more info review the [auth providers](docs/auth_providers.md#azure-key-vault) docs. |
+| Environment                  | This provider will read the Keyfactor Command credentials from the environment variables listed above.                                                                  |
+| File                         | This is the default provider. It will read the credentials from a file on disk at `$HOME/.keyfactor/command_config.json`                                                |
+| User Interactive             | This provider will prompt the user for their credentials.                                                                                                               |
 
 ## Commands
 
