@@ -219,8 +219,10 @@ func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 		t.Log("GITHUB_ACTIONS: ", isGhAction)
 		if isGhAction == "true" {
 			ghBranch := os.Getenv("GITHUB_REF")
+			ghBranch = strings.Replace(ghBranch, "refs/heads/", "", 1)
 			testArgs = append(testArgs, "--git-ref", ghBranch)
 			t.Log("GITHUB_REF: ", ghBranch)
+
 		}
 		t.Log("testArgs: ", testArgs)
 
