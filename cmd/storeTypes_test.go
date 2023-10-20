@@ -216,10 +216,13 @@ func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 		// check if I'm running inside a Github Action
 		testArgs := []string{"store-types", "create", "--all"}
 		isGhAction := os.Getenv("GITHUB_ACTIONS")
+		t.Log("GITHUB_ACTIONS: ", isGhAction)
 		if isGhAction == "true" {
 			ghBranch := os.Getenv("GITHUB_REF")
 			testArgs = append(testArgs, "--git-ref", ghBranch)
+			t.Log("GITHUB_REF: ", ghBranch)
 		}
+		t.Log("testArgs: ", testArgs)
 
 		// Attempt to get the AWS store type because it comes with the product
 		testCmd.SetArgs(testArgs)
