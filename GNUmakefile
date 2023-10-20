@@ -8,7 +8,7 @@ NAME=kfutil
 BINARY=${NAME}
 VERSION := $(GITHUB_REF_NAME)
 ifeq ($(VERSION),)
-	VERSION := v1.1.0
+	VERSION := v1.2.0
 endif
 OS_ARCH := $(shell go env GOOS)_$(shell go env GOARCH)
 BASEDIR := ${HOME}/go/bin
@@ -40,13 +40,14 @@ release:
 	GOOS=windows GOARCH=386 go build -o ./bin/${BINARY}_${VERSION}_windows_386
 	GOOS=windows GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_windows_amd64
 
-install: fmt setversion
+install: fmt
 	go build -o ${BINARY}
 	rm -rf ${INSTALLDIR}/${BINARY}
 	mkdir -p ${INSTALLDIR}
 	chmod oug+x ${BINARY}
 	cp ${BINARY} ${INSTALLDIR}
-	mv ${BINARY} /usr/local/bin/${BINARY}
+	mkdir -p ${HOME}/.local/bin || true
+	mv ${BINARY} ${HOME}/.local/bin/${BINARY}
 
 vendor:
 	go mod vendor

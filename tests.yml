@@ -1,0 +1,155 @@
+---
+login:
+  config_file_tests:
+    - name: login with valid default location config file using default profile
+      description: |
+        This test will use the default profile in the `command_config.json` file.
+      command: kfutil stores list > output.json
+      before_script:
+        - source scripts/ci/clear_environment.sh
+        - source scripts/ci/get_akv_command_config.sh --keyvault {{ akv_vault_name }} --secret command_config_default_valid
+      validate_script:
+        - cat output.json | jq -r .
+      expect:
+        - "Login successful!"
+      config_file:
+        name: command_config.json
+        path: ~/.keyfactor/command_config.json
+        secret_provider:
+          type: akv
+          vault_name: kfutil_tests
+          secret_name: command_config_default_valid
+    - name: login with invalid profile name
+      description: |
+        This test will use a profile not listed in the `command_config.json` file.
+      command: kfutil stores list --profile invalid
+      before_script:
+        - source scripts/ci/clear_environment.sh
+        - source scripts/ci/get_akv_command_config.sh --keyvault {{ akv_vault_name }} --secret command_config_custom_valid
+      expect:
+        - "Profile not found"
+      allow_fail: true
+    - name: invalid format config file in default location
+      description: |
+        This test will use a config file in the default location that is not in the correct format.
+      command: kfutil stores list
+      before_script:
+        - source scripts/ci/clear_environment.sh
+        - source scripts/ci/get_akv_command_config.sh --keyvault {{ akv_vault_name }} --secret command_config_invalid
+      expect:
+        - "Invalid config file"
+      allow_fail: true
+    - name: valid v1 config file in default location
+      description: |
+        This test will use a config file in the default location that is in the v1 format which is a single command 
+        instance entry, no profiles or auth providers
+      command: kfutil stores list
+      before_script:
+        - source scripts/ci/clear_environment.sh
+        - source scripts/ci/get_akv_command_config.sh --keyvault {{ akv_vault_name }} --secret command_config_v1_valid
+      expect:
+        - "JSON response list of stores"
+    - name: login with valid default location config file using custom profile
+      description: |
+        This test will use a profile in the `command_config.json` file that is not the default profile.
+      command: kfutil stores list --profile {{ command_profile }} > output.json
+      before_script:
+        - source scripts/ci/clear_environment.sh
+        - source scripts/ci/get_akv_command_config.sh --keyvault {{ akv_vault_name }} --secret command_config_custom_valid
+      validate_script:
+        - cat output.json | jq -r .
+      expect:
+        - "JSON response list of stores"
+  auth_provider_tests:
+    azure_identity:
+      - name: login with valid azid auth provider
+        description: |
+          This test will use attempt to fetch a command_config.json file from azure keyvault, using azure identity. This
+          is not expected to create a `command_config.json` on disk, but rather use the config file in memory. This test
+          will not work on a machine that does not have an azure identity.
+        command: kfutil stores list --profile azid --auth-provider azid --auth-provider-profile default > output.json && cat output.json
+        before_script:
+          - source scripts/ci/clear_environment.sh
+          - source scripts/ci/get_akv_command_config.sh --keyvault {{ akv_vault_name }} --secret command_config_azid_default_valid
+        validate_script:
+          - cat output.json | jq -r .
+          - ./scripts/ci/is_empty_command_config.sh
+        expect:
+          - "JSON response list of stores"
+      - name: login with valid azid auth provider only using profile parameter
+        description: |
+          This test will attempt to use an existing `command_config.json` with a profile `azid` that has a valid auth 
+          provider configuration which will pull a `command_config.json` from azure keyvault, using azure identity into
+          memory and use the `profile` defined in the auth provider configuration. This test will not work on a machine
+          that does not have an azure identity.
+        command: kfutil stores list --profile azid > output.json && cat output.json
+        before_script:
+          - source scripts/ci/clear_environment.sh
+          - source scripts/ci/get_akv_command_config.sh --keyvault {{ akv_vault_name }} --secret command_config_azid_default_valid
+        validate_script:
+          - cat output.json | jq -r .
+          - ./scripts/ci/is_empty_command_config.sh
+        expect:
+          - "JSON response list of stores"
+      - name: login with invalid provider profile
+        description: |
+          This test will use attempt to fetch a command_config.json file from azure keyvault, using azure identity. This
+          is not expected to create a `command_config.json` on disk, but rather use the config file in memory. This test
+          will not work on a machine that does not have an azure identity.
+        command: kfutil stores list --profile azid --auth-provider azid --auth-provider-profile invalid
+        before_script:
+          - source scripts/ci/clear_environment.sh
+          - source scripts/ci/get_akv_command_config.sh --keyvault {{ akv_vault_name }} --secret command_config_azid_default_valid
+        expect:
+          - "Profile not found"
+        allow_fail: true
+      - name: login with valid non-default provider profile
+        description: |
+          This test will use attempt to fetch a command_config.json file from azure keyvault, using azure identity. This
+          is not expected to create a `command_config.json` on disk, but rather use the config file in memory. This test
+          will not work on a machine that does not have an azure identity.
+        command: kfutil stores list --profile azid --auth-provider azid --auth-provider-profile {{ command_azid_profile }} > output.json && cat output.json
+        before_script:
+          - source scripts/ci/clear_environment.sh
+          - source scripts/ci/get_akv_command_config.sh --keyvault {{ akv_vault_name }} --secret command_config_azid_custom_valid
+        validate_script:
+          - cat output.json | jq -r .
+          - ./scripts/ci/is_empty_command_config.sh
+        expect:
+          - "JSON response list of stores"
+  env_var_tests:
+    - name: login with valid credentials as environmental variables
+      command: kfutil login --no-prompt
+      before_script:
+        - source scripts/ci/clear_environment.sh
+        - source scripts/ci/get_akv_command_env.sh --keyvault {{ akv_vault_name }} --secret command_env_complete
+      expect:
+        - "Login successful!"
+      env_file:
+        name: .env_complete
+        secret_provider:
+          type: akv
+          vault_name: kfutil_tests
+          secret_name: command_env_complete
+
+  parameter_tests:
+    - name: login with valid credentials as parameters
+      command: kfutil login -h {{ command_hostname }} -u {{ command_username }} -p {{ command_password }}
+      expect:
+        - "Login successful!"
+
+    - name: login with invalid password
+      command: kfutil login -h {{ command_hostname }} -u {{ command_username }} -p invalid
+      expect:
+        - "Login failed!"
+      allow_fail: true
+    - name: login with invalid hostname
+      command: kfutil login -h invalid -u {{ command_username }} -p {{ command_password }}
+      expect:
+        - "Login failed!"
+      allow_fail: true
+    - name: login with invalid username
+      command: kfutil login -h {{ command_hostname }} -u invalid -p {{ command_password }}
+      expect:
+        - "Login failed!"
+      allow_fail: true

@@ -1,25 +1,32 @@
 // Package cmd Copyright 2023 Keyfactor
-// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
-// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions
-// and limitations under the License.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package cmd
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
 	"io"
-	"log"
 	"net/http"
 	"os"
-
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
-	"github.com/spf13/cobra"
 )
 
-type JsonImportableObject interface {
+type JSONImportableObject interface {
 	keyfactor.KeyfactorApiPAMProviderTypeCreateRequest |
 		keyfactor.CSSCMSDataModelModelsProvider
 }
@@ -36,44 +43,48 @@ var pamTypesListCmd = &cobra.Command{
 	Use:   "types-list",
 	Short: "Returns a list of all available PAM provider types.",
 	Long:  "Returns a list of all available PAM provider types.",
-	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		isExperimental := false
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
-		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
-			log.Fatalf("[ERROR]: %s", expErr)
+		informDebug(debugFlag)
+		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		if debugErr != nil {
+			return debugErr
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
-		log.Println("Debug mode enabled: ", debugModeEnabled)
+		// Log flags
+		log.Info().Msg("list PAM Provider Types")
 
+		// Authenticate
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
-		pamTypes, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderGetPamProviderTypes(context.Background()).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+
+		// CLI Logic
+		log.Debug().Msg("call: PAMProviderGetPamProviderTypes()")
+		pamTypes, httpResponse, err := sdkClient.PAMProviderApi.PAMProviderGetPamProviderTypes(context.Background()).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Execute()
-		if errors != nil {
-			WriteApiError("Get PAM Types", httpResponse, errors)
-			return
+		log.Debug().Msg("returned: PAMProviderGetPamProviderTypes()")
+		log.Trace().Interface("httpResponse", httpResponse).
+			Msg("PAMProviderGetPamProviderTypes")
+		if err != nil {
+			log.Error().Err(err).
+				Str("httpResponseCode", httpResponse.Status).
+				Msg("error listing PAM provider types")
+			return err
 		}
 
-		jsonString, marshallError := json.Marshal(pamTypes)
-		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+		log.Debug().Msg("Converting PAM Provider Types response to JSON")
+		jsonString, mErr := json.Marshal(pamTypes)
+		if mErr != nil {
+			log.Error().Err(mErr).Send()
+			return mErr
 		}
-		fmt.Printf("%s", jsonString)
+		log.Info().
+			Msg("successfully listed PAM provider types")
+		outputResult(jsonString, outputFormat)
+		return nil
 	},
 }
 
@@ -85,72 +96,100 @@ Github. To install from GitHub, use the --repo flag to specify the GitHub reposi
 NOTE: the file from Github must be named integration-manifest.json and must use the same schema as 
 https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.json. To install from a local file, use
 --from-file to specify the path to the JSON file.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		isExperimental := false
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
-		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
-			log.Fatalf("[ERROR]: %s", expErr)
-		}
-
-		debugModeEnabled := checkDebug(debugFlag)
-		log.Println("Debug mode enabled: ", debugModeEnabled)
-		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
+		// Specific flags
 		pamConfigFile, _ := cmd.Flags().GetString("from-file")
-		providerName, _ := cmd.Flags().GetString("name")
+		pamProviderName, _ := cmd.Flags().GetString("name")
 		repoName, _ := cmd.Flags().GetString("repo")
 		branchName, _ := cmd.Flags().GetString("branch")
 
-		if pamConfigFile == "" && repoName == "" {
-			log.Printf("%sError - must supply either a config file or GitHub repository to get file from.", colorRed)
-			return
+		// Debug + expEnabled checks
+		informDebug(debugFlag)
+		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		if debugErr != nil {
+			return debugErr
 		}
+
+		// Log flags
+		log.Info().Str("name", pamProviderName).
+			Str("repo", repoName).
+			Str("branch", branchName).
+			Msg("create PAM Provider Type")
+
+		// Authenticate
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
+
+		// Check required flags
+		if pamConfigFile == "" && repoName == "" {
+			cmd.Usage()
+			return fmt.Errorf("must supply either a config `--from-file` or a `--repo` GitHub repository to get file from")
+		} else if pamConfigFile != "" && repoName != "" {
+			cmd.Usage()
+			return fmt.Errorf("must supply either a config `--from-file` or a `--repo` GitHub repository to get file from, not both")
+		}
+
+		// CLI Logic
 
 		var pamProviderType *keyfactor.KeyfactorApiPAMProviderTypeCreateRequest
-		var errors error
+		var err error
 		if repoName != "" {
 			// get JSON config from integration-manifest on GitHub
-			pamProviderType, errors = GetTypeFromInternet(providerName, repoName, branchName, pamProviderType)
-			if errors != nil {
-				log.Printf("%sError reading from GitHub %s/%s: %s", colorRed, repoName, branchName, errors)
-				return
+			log.Debug().
+				Str("pamProviderName", pamProviderName).
+				Str("repoName", repoName).
+				Str("branchName", branchName).
+				Msg("call: GetTypeFromInternet()")
+			pamProviderType, err = GetTypeFromInternet(pamProviderName, repoName, branchName, pamProviderType)
+			log.Debug().Msg("returned: GetTypeFromInternet()")
+			if err != nil {
+				log.Error().Err(err).Send()
+				return err
 			}
 		} else {
-			pamProviderType, errors = GetTypeFromConfigFile(pamConfigFile, pamProviderType)
-			if errors != nil {
-				log.Printf("%sError reading from file %s: %s", colorRed, pamConfigFile, errors)
-				return
+			log.Debug().Str("pamConfigFile", pamConfigFile).
+				Msg("call: GetTypeFromConfigFile()")
+			pamProviderType, err = GetTypeFromConfigFile(pamConfigFile, pamProviderType)
+			log.Debug().Msg("returned: GetTypeFromConfigFile()")
+			if err != nil {
+				log.Error().Err(err).Send()
+				return err
 			}
 		}
 
-		// pamType, errors :=
-		createdPamProviderType, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderCreatePamProviderType(context.Background()).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
-			Type_(*pamProviderType).
-			Execute()
-		if errors != nil {
-			WriteApiError("Create PAM Provider type", httpResponse, errors)
-			return
+		if pamProviderName != "" {
+			pamProviderType.Name = pamProviderName
 		}
 
-		jsonString, marshallError := json.Marshal(createdPamProviderType)
-		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+		log.Info().Str("pamProviderName", pamProviderType.Name).
+			Msg("creating PAM provider type")
+
+		log.Debug().Msg("call: PAMProviderCreatePamProviderType()")
+		createdPamProviderType, httpResponse, rErr := sdkClient.PAMProviderApi.PAMProviderCreatePamProviderType(context.Background()).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
+			Type_(*pamProviderType).
+			Execute()
+		log.Debug().Msg("returned: PAMProviderCreatePamProviderType()")
+		log.Trace().Interface("httpResponse", httpResponse).Msg("PAMProviderCreatePamProviderType")
+		if rErr != nil {
+			log.Error().Err(rErr).Send()
+			return returnHttpErr(httpResponse, rErr)
 		}
-		fmt.Printf("%s", jsonString)
+
+		log.Debug().Msg("Converting PAM Provider Type response to JSON")
+		jsonString, mErr := json.Marshal(createdPamProviderType)
+		if mErr != nil {
+			log.Error().Err(mErr).Send()
+			return mErr
+		}
+		log.Info().Str("output", string(jsonString)).
+			Msg("successfully created PAM provider type")
+		outputResult(jsonString, outputFormat)
+		return nil
 	},
 }
 
@@ -158,44 +197,49 @@ var pamProvidersListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Returns a list of all the configured PAM providers.",
 	Long:  "Returns a list of all the configured PAM providers.",
-	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		isExperimental := false
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
-		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
-			log.Fatalf("[ERROR]: %s", expErr)
+		// Specific flags
+
+		// Debug + expEnabled checks
+		informDebug(debugFlag)
+		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		if debugErr != nil {
+			return debugErr
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
-		log.Println("Debug mode enabled: ", debugModeEnabled)
+		// Log flags
+		log.Info().Msg("list PAM Providers")
+
+		// Authenticate
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
-		pamProviders, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderGetPamProviders(context.Background()).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+
+		// CLI Logic
+		log.Debug().Msg("call: PAMProviderGetPamProviders()")
+		pamProviders, httpResponse, err := sdkClient.PAMProviderApi.PAMProviderGetPamProviders(context.Background()).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Execute()
-		if errors != nil {
-			WriteApiError("Get PAM Providers", httpResponse, errors)
-			return
+		log.Debug().Msg("returned: PAMProviderGetPamProviders()")
+		log.Trace().Interface("httpResponse", httpResponse).Msg("PAMProviderGetPamProviders")
+		if err != nil {
+			log.Error().Err(err).Send()
+			return err
 		}
 
-		jsonString, marshallError := json.Marshal(pamProviders)
-		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+		log.Debug().Msg("Converting PAM Providers response to JSON")
+		jsonString, mErr := json.Marshal(pamProviders)
+		if mErr != nil {
+			log.Error().Err(mErr).Send()
+			return mErr
 		}
-		fmt.Printf("%s", jsonString)
+		log.Info().Str("output", string(jsonString)).
+			Msg("successfully listed PAM providers")
+		outputResult(jsonString, outputFormat)
+		return nil
 	},
 }
 
@@ -203,46 +247,52 @@ var pamProvidersGetCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get a specific defined PAM Provider by ID.",
 	Long:  "Get a specific defined PAM Provider by ID.",
-	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		isExperimental := false
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
-		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
-			log.Fatalf("[ERROR]: %s", expErr)
-		}
-
-		debugModeEnabled := checkDebug(debugFlag)
-		log.Println("Debug mode enabled: ", debugModeEnabled)
-		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
+		// Specific flags
 		pamProviderId, _ := cmd.Flags().GetInt32("id")
-		// pamProviderName := cmd.Flags().GetString("name")
+		pamProviderName, _ := cmd.Flags().GetString("name")
 
-		pamProvider, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderGetPamProvider(context.Background(), pamProviderId).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+		// Debug + expEnabled checks
+		informDebug(debugFlag)
+		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		if debugErr != nil {
+			return debugErr
+		}
+		log.Info().Str("name", pamProviderName).
+			Int32("id", pamProviderId).
+			Msg("get PAM Provider")
+
+		// Authenticate
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
+
+		// CLI Logic
+		log.Debug().Msg("call: PAMProviderGetPamProvider()")
+		pamProvider, httpResponse, err := sdkClient.PAMProviderApi.PAMProviderGetPamProvider(context.Background(), pamProviderId).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Execute()
-		if errors != nil {
-			WriteApiError("Get PAM Provider", httpResponse, errors)
-			return
+		log.Debug().Msg("returned: PAMProviderGetPamProvider()")
+		log.Trace().Interface("httpResponse", httpResponse).Msg("PAMProviderGetPamProvider")
+
+		if err != nil {
+			log.Error().Err(err).Str("httpResponseCode", httpResponse.Status).Msg("error getting PAM provider")
+			return err
 		}
 
-		jsonString, marshallError := json.Marshal(pamProvider)
-		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+		log.Debug().Msg("Converting PAM Provider response to JSON")
+		jsonString, mErr := json.Marshal(pamProvider)
+		if mErr != nil {
+			log.Error().Err(mErr).Send()
+			return mErr
 		}
-		fmt.Printf("%s", jsonString)
+		log.Info().Str("output", string(jsonString)).
+			Msg("successfully retrieved PAM provider")
+		outputResult(jsonString, outputFormat)
+		return nil
 	},
 }
 
@@ -250,54 +300,63 @@ var pamProvidersCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new PAM Provider, currently only supported from file.",
 	Long:  "Create a new PAM Provider, currently only supported from file.",
-	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		isExperimental := false
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
-		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
-			log.Fatalf("[ERROR]: %s", expErr)
-		}
-
-		debugModeEnabled := checkDebug(debugFlag)
-		log.Println("Debug mode enabled: ", debugModeEnabled)
-		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
+		// Specific flags
 		pamConfigFile, _ := cmd.Flags().GetString("from-file")
 
-		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
-		pamProvider, errors := GetTypeFromConfigFile(pamConfigFile, pamProvider)
-		if errors != nil {
-			log.Printf("%sError reading from file %s: %s", colorRed, pamConfigFile, errors)
-			return
+		// Debug + expEnabled checks
+		informDebug(debugFlag)
+		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		if debugErr != nil {
+			return debugErr
 		}
 
-		// pamType, errors :=
-		createdPamProvider, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderCreatePamProvider(context.Background()).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+		// Log flags
+		log.Info().Str("file", pamConfigFile).
+			Msg("create PAM Provider from file")
+
+		// Authenticate
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		// kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
+
+		// CLI Logic
+		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
+		log.Debug().Msg("call: GetTypeFromConfigFile()")
+		pamProvider, err := GetTypeFromConfigFile(pamConfigFile, pamProvider)
+		log.Debug().Msg("returned: GetTypeFromConfigFile()")
+		if err != nil {
+			log.Error().Err(err).
+				Str("file", pamConfigFile).
+				Msg("failed parsing PAM Provider config from file")
+			return err
+		}
+
+		log.Debug().Msg("call: PAMProviderCreatePamProvider()")
+		createdPamProvider, httpResponse, cErr := sdkClient.PAMProviderApi.PAMProviderCreatePamProvider(context.Background()).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Provider(*pamProvider).
 			Execute()
-		if errors != nil {
-			WriteApiError("Create PAM Provider", httpResponse, errors)
-			return
+		log.Debug().Msg("returned: PAMProviderCreatePamProvider()")
+		log.Trace().Interface("httpResponse", httpResponse).Msg("PAMProviderCreatePamProvider")
+		if cErr != nil {
+			// output response body
+			log.Debug().Msg("Converting PAM Provider response body to string")
+			return returnHttpErr(httpResponse, cErr)
 		}
 
-		jsonString, marshallError := json.Marshal(createdPamProvider)
-		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+		log.Debug().Msg("Converting PAM Provider response to JSON")
+		jsonString, mErr := json.Marshal(createdPamProvider)
+		if mErr != nil {
+			log.Error().Err(mErr).Msg("invalid API response from Keyfactor Command")
+			return mErr
 		}
-		fmt.Printf("%s", jsonString)
+		log.Info().Str("output", string(jsonString)).Msg("successfully created PAM provider")
+		outputResult(jsonString, outputFormat)
+		return nil
 	},
 }
 
@@ -305,54 +364,65 @@ var pamProvidersUpdateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Updates an existing PAM Provider, currently only supported from file.",
 	Long:  "Updates an existing PAM Provider, currently only supported from file.",
-	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		isExperimental := false
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
-		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
-			log.Fatalf("[ERROR]: %s", expErr)
-		}
-
-		debugModeEnabled := checkDebug(debugFlag)
-		log.Println("Debug mode enabled: ", debugModeEnabled)
-		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
+		// Specific flags
 		pamConfigFile, _ := cmd.Flags().GetString("from-file")
 
-		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
-		pamProvider, errors := GetTypeFromConfigFile(pamConfigFile, pamProvider)
-		if errors != nil {
-			log.Printf("%sError reading from file %s: %s", colorRed, pamConfigFile, errors)
-			return
+		// Debug + expEnabled checks
+		informDebug(debugFlag)
+		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		if debugErr != nil {
+			return debugErr
 		}
 
-		// pamType, errors :=
-		createdPamProvider, httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderUpdatePamProvider(context.Background()).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
+		// Log flags
+		log.Info().Str("file", pamConfigFile).
+			Msg("update PAM Provider from file")
+
+		// Authenticate
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
+
+		// CLI Logic
+		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
+		log.Debug().Str("file", pamConfigFile).
+			Msg("call: GetTypeFromConfigFile()")
+		pamProvider, err := GetTypeFromConfigFile(pamConfigFile, pamProvider)
+		log.Debug().Msg("returned: GetTypeFromConfigFile()")
+		if err != nil {
+			//log.Printf("%sError reading from file %s: %s", ColorRed, pamConfigFile, err)
+			log.Error().Err(err).Str("file", pamConfigFile).Msg("failed parsing PAM Provider config from file")
+			return err
+		}
+
+		log.Debug().Msg("call: PAMProviderUpdatePamProvider()")
+		createdPamProvider, httpResponse, err := sdkClient.PAMProviderApi.PAMProviderUpdatePamProvider(context.Background()).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Provider(*pamProvider).
 			Execute()
-		if errors != nil {
-			WriteApiError("Create PAM Provider", httpResponse, errors)
-			return
+		log.Debug().Msg("returned: PAMProviderUpdatePamProvider()")
+		log.Trace().Interface("httpResponse", httpResponse).Msg("PAMProviderUpdatePamProvider")
+		if err != nil {
+			returnHttpErr(httpResponse, err)
 		}
 
-		jsonString, marshallError := json.Marshal(createdPamProvider)
-		if marshallError != nil {
-			log.Printf("%sError: %s", colorRed, marshallError)
+		log.Debug().Msg("Converting PAM Provider response to JSON")
+		jsonString, mErr := json.Marshal(createdPamProvider)
+		if mErr != nil {
+			log.Error().Err(mErr).Msg("invalid API response from Keyfactor Command")
+			return mErr
 		}
-		fmt.Printf("%s", jsonString)
+
+		log.Info().
+			Str("pamConfigFile", pamConfigFile).
+			Str("output", string(jsonString)).
+			Msg("successfully updated PAM provider")
+		outputResult(jsonString, outputFormat)
+		return nil
 	},
 }
 
@@ -360,108 +430,174 @@ var pamProvidersDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a defined PAM Provider by ID.",
 	Long:  "Delete a defined PAM Provider by ID.",
-	Run: func(cmd *cobra.Command, args []string) {
-		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debug")
-		configFile, _ := cmd.Flags().GetString("config")
-		noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		profile, _ := cmd.Flags().GetString("profile")
-		expEnabled, _ := cmd.Flags().GetBool("exp")
-		kfcHostName, _ := cmd.Flags().GetString("hostname")
-		kfcUsername, _ := cmd.Flags().GetString("username")
-		kfcPassword, _ := cmd.Flags().GetString("password")
-		kfcDomain, _ := cmd.Flags().GetString("domain")
-		kfcAPIPath, _ := cmd.Flags().GetString("api-path")
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
 		isExperimental := false
 
-		_, expErr := IsExperimentalFeatureEnabled(expEnabled, isExperimental)
-		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an experimental feature, %s", expErr))
-			log.Fatalf("[ERROR]: %s", expErr)
-		}
-
-		debugModeEnabled := checkDebug(debugFlag)
-		log.Println("Debug mode enabled: ", debugModeEnabled)
-		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
+		// Specific flags
 		pamProviderId, _ := cmd.Flags().GetInt32("id")
 		// pamProviderName := cmd.Flags().GetString("name")
 
-		httpResponse, errors := sdkClient.PAMProviderApi.PAMProviderDeletePamProvider(context.Background(), pamProviderId).
-			XKeyfactorRequestedWith(xKeyfactorRequestedWith).XKeyfactorApiVersion(xKeyfactorApiVersion).
-			Execute()
-		if errors != nil {
-			WriteApiError("Delete PAM Provider", httpResponse, errors)
-			return
+		// Debug + expEnabled checks
+		informDebug(debugFlag)
+		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		if debugErr != nil {
+			return debugErr
 		}
 
-		fmt.Printf("Deleted PAM Provider %d", pamProviderId)
+		// Log flags
+		log.Info().Int32("id", pamProviderId).
+			Msg("delete PAM Provider")
+
+		// Authenticate
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
+
+		// CLI Logic
+		log.Debug().
+			Int32("id", pamProviderId).
+			Msg("call: PAMProviderDeletePamProvider()")
+		httpResponse, err := sdkClient.PAMProviderApi.PAMProviderDeletePamProvider(context.Background(), pamProviderId).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
+			Execute()
+		log.Debug().Msg("returned: PAMProviderDeletePamProvider()")
+		log.Trace().Interface("httpResponse", httpResponse).Msg("PAMProviderDeletePamProvider")
+		if err != nil {
+			log.Error().Err(err).Int32("id", pamProviderId).Msg("failed to delete PAM provider")
+			return err
+		}
+
+		log.Info().Int32("id", pamProviderId).Msg("successfully deleted PAM provider")
+		outputResult(fmt.Sprintf("Deleted PAM provider with ID %d", pamProviderId), outputFormat)
+		return nil
 	},
 }
 
-func GetPamTypeInternet(providerName string, repo string, branch string) (interface{}, error) {
+func GetPAMTypeInternet(providerName string, repo string, branch string) (interface{}, error) {
+	log.Debug().Str("providerName", providerName).
+		Str("repo", repo).
+		Str("branch", branch).
+		Msg("entered: GetPAMTypeInternet()")
+
 	if branch == "" {
+		log.Info().Msg("branch not specified, using 'main' by default")
 		branch = "main"
 	}
-	response, errors := http.Get(fmt.Sprintf("https://raw.githubusercontent.com/Keyfactor/%s/%s/integration-manifest.json", repo, branch))
-	if errors != nil {
-		return nil, errors
-	}
-	defer response.Body.Close()
-	manifest, errors := io.ReadAll(response.Body)
-	if errors != nil {
-		return nil, errors
-	}
-	var manifestJson map[string]interface{}
-	errors = json.Unmarshal(manifest, &manifestJson)
-	if errors != nil {
-		log.Printf("%sError during Unmarshal() of PAM integration-manifest", colorRed)
-		return nil, errors
-	}
-	pamTypeJson := manifestJson["about"].(map[string]interface{})["pam"].(map[string]interface{})["pam_types"].(map[string]interface{})[providerName]
 
+	providerUrl := fmt.Sprintf("https://raw.githubusercontent.com/Keyfactor/%s/%s/integration-manifest.json", repo, branch)
+	log.Debug().Str("providerUrl", providerUrl).
+		Msg("Getting PAM Type from Internet")
+	response, err := http.Get(providerUrl)
+	if err != nil {
+		log.Error().Err(err).
+			Str("providerUrl", providerUrl).
+			Msg("error getting PAM Type from Internet")
+		return nil, err
+	}
+	log.Trace().Interface("httpResponse", response).
+		Msg("GetPAMTypeInternet")
+
+	//check response status code is 200
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("invalid response status: %s", response.Status)
+	}
+
+	defer response.Body.Close()
+
+	log.Debug().Msg("Parsing PAM response")
+	manifest, iErr := io.ReadAll(response.Body)
+	if iErr != nil {
+		log.Error().Err(iErr).
+			Str("providerUrl", providerUrl).
+			Msg("unable to read PAM response")
+		return nil, iErr
+	}
+	log.Trace().Interface("manifest", manifest).Send()
+
+	var manifestJson map[string]interface{}
+	log.Debug().Msg("Converting PAM response to JSON")
+	jErr := json.Unmarshal(manifest, &manifestJson)
+	if jErr != nil {
+		log.Error().Err(jErr).
+			Str("providerUrl", providerUrl).
+			Msg("invalid integration-manifest.json provided")
+		return nil, jErr
+	}
+	log.Debug().Msg("Parsing manifest response for PAM type config")
+	pamTypeJson := manifestJson["about"].(map[string]interface{})["pam"].(map[string]interface{})["pam_types"].(map[string]interface{})[providerName]
+	if pamTypeJson == nil {
+		// Check if only one PAM Type is defined
+		pamTypeJson = manifestJson["about"].(map[string]interface{})["pam"].(map[string]interface{})["pam_types"].(map[string]interface{})
+		if len(pamTypeJson.(map[string]interface{})) == 1 {
+			for _, v := range pamTypeJson.(map[string]interface{}) {
+				pamTypeJson = v
+			}
+		} else {
+			return nil, fmt.Errorf("unable to find PAM type %s in manifest on %s", providerName, providerUrl)
+		}
+	}
+
+	log.Trace().Interface("pamTypeJson", pamTypeJson).Send()
+	log.Debug().Msg("returning: GetPAMTypeInternet()")
 	return pamTypeJson, nil
 }
 
-func WriteApiError(process string, httpResponse *http.Response, errors error) {
-	fmt.Printf("%s Error processing request for %s - %s - %s", colorRed, process, errors, parseError(httpResponse.Body))
+func GetTypeFromInternet[T JSONImportableObject](providerName string, repo string, branch string, returnType *T) (*T, error) {
+	log.Debug().Str("providerName", providerName).
+		Str("repo", repo).
+		Str("branch", branch).
+		Msg("entered: GetTypeFromInternet()")
+
+	log.Debug().Msg("call: GetPAMTypeInternet()")
+	manifestJSON, err := GetPAMTypeInternet(providerName, repo, branch)
+	log.Debug().Msg("returned: GetPAMTypeInternet()")
+	if err != nil {
+		log.Error().Err(err).Send()
+		return new(T), err
+	}
+
+	log.Debug().Msg("Converting PAM Type from manifest to bytes")
+	manifestJSONBytes, jErr := json.Marshal(manifestJSON)
+	if jErr != nil {
+		log.Error().Err(jErr).Send()
+		return new(T), jErr
+	}
+
+	var objectFromJSON T
+	log.Debug().Msg("Converting PAM Type from bytes to JSON")
+	mErr := json.Unmarshal(manifestJSONBytes, &objectFromJSON)
+	if mErr != nil {
+		log.Error().Err(mErr).Send()
+		return new(T), mErr
+	}
+
+	log.Debug().Msg("returning: GetTypeFromInternet()")
+	return &objectFromJSON, nil
 }
 
-func GetTypeFromInternet[T JsonImportableObject](providerName string, repo string, branch string, returnType *T) (*T, error) {
-	manifestJson, errors := GetPamTypeInternet(providerName, repo, branch)
-	if errors != nil {
-		return new(T), errors
-	}
+func GetTypeFromConfigFile[T JSONImportableObject](filename string, returnType *T) (*T, error) {
+	log.Debug().Str("filename", filename).
+		Msg("entered: GetTypeFromConfigFile()")
 
-	manifestJsonBytes, errors := json.Marshal(manifestJson)
-	if errors != nil {
-		log.Printf("Error during Marshal() of PAM Type from manifest: %s", errors)
-		return new(T), errors
-	}
-
-	var objectFromJson T
-	errors = json.Unmarshal(manifestJsonBytes, &objectFromJson)
-	if errors != nil {
-		log.Printf("Error during Unmarshal(): %s", errors)
-		return new(T), errors
-	}
-
-	return &objectFromJson, nil
-}
-
-func GetTypeFromConfigFile[T JsonImportableObject](filename string, returnType *T) (*T, error) {
-	file, errors := os.Open(filename)
-	if errors != nil {
-		return new(T), errors
+	log.Debug().Str("filename", filename).
+		Msg("Opening PAM Type config file")
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return new(T), err
 	}
 
 	var objectFromFile T
+	log.Debug().Msg("Decoding PAM Type config file")
 	decoder := json.NewDecoder(file)
-	errors = decoder.Decode(&objectFromFile)
-	if errors != nil {
-		return new(T), errors
+	dErr := decoder.Decode(&objectFromFile)
+	if dErr != nil {
+		log.Error().Err(dErr).Send()
+		return new(T), dErr
 	}
 
+	log.Debug().Msg("returning: GetTypeFromConfigFile()")
 	return &objectFromFile, nil
 }
 
@@ -473,13 +609,15 @@ func init() {
 	var id int32
 	RootCmd.AddCommand(pamCmd)
 
-	// PAM Provider Types
+	// PAM Provider Types List
 	pamCmd.AddCommand(pamTypesListCmd)
+
+	// PAM Provider Types Create
 	pamCmd.AddCommand(pamTypesCreateCmd)
 	pamTypesCreateCmd.Flags().StringVarP(&filePath, "from-file", "f", "", "Path to a JSON file containing the PAM Type Object Data.")
 	pamTypesCreateCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the PAM Provider Type.")
 	pamTypesCreateCmd.Flags().StringVarP(&repo, "repo", "r", "", "Keyfactor repository name of the PAM Provider Type.")
-	pamTypesCreateCmd.Flags().StringVarP(&branch, "branch", "b", "", "Branch name for the repository. Can be left blank for 'main' by default.")
+	pamTypesCreateCmd.Flags().StringVarP(&branch, "branch", "b", "", "Branch name for the repository. Defaults to 'main'.")
 
 	// PAM Providers
 	pamCmd.AddCommand(pamProvidersListCmd)
