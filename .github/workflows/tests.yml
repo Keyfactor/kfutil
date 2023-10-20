@@ -26,18 +26,18 @@ jobs:
   # 10.x.x
   kf_10_x_x:
     runs-on: ubuntu-latest
-    needs: 
+    needs:
       - build
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Run tests
         run: echo "Running tests for KF 10.x.x"
-    
+
   ### Store Type Tests
   Test_StoreTypes_KFC_10_4_5:
     runs-on: ubuntu-latest
-    needs: 
+    needs:
       - build
       - kf_10_x_x
     env:
@@ -55,7 +55,7 @@ jobs:
           go test -v ./cmd -run "^Test_StoreTypes*"
   Test_StoreTypes_KFC_10_2_1:
     runs-on: ubuntu-latest
-    needs: 
+    needs:
       - build
       - kf_10_x_x
     env:
@@ -72,24 +72,43 @@ jobs:
           unset KFUTIL_DEBUG
           go test -v ./cmd -run "^Test_StoreTypes*"
 
-#  Test_StoreTypes_KFC_10_1_1:
-#    runs-on: ubuntu-latest
-#    needs:
-#      - build
-#      - kf_10_x_x
-#    env:
-#      SECRET_NAME: "command-config-1011-clean"
-#      KEYFACTOR_HOSTNAME: "int1011-test-clean.kfdelivery.com"
-#      KEYFACTOR_DOMAIN: "command"
-#      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
-#      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#      - name: Run tests
-#        run: |
-#          unset KFUTIL_DEBUG
-#          go test -v ./cmd -run "^Test_StoreTypes*"
+  Test_StoreTypes_KFC_10_1_1:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - kf_10_x_x
+    env:
+      SECRET_NAME: "command-config-1011-clean"
+      KEYFACTOR_HOSTNAME: "int1011-test-clean.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          unset KFUTIL_DEBUG
+          go test -v ./cmd -run "^Test_StoreTypes*"
+
+  #  Test_StoreTypes_KFC_10_1_1:
+  #    runs-on: ubuntu-latest
+  #    needs:
+  #      - build
+  #      - kf_10_x_x
+  #    env:
+  #      SECRET_NAME: "command-config-1011-clean"
+  #      KEYFACTOR_HOSTNAME: "int1011-test-clean.kfdelivery.com"
+  #      KEYFACTOR_DOMAIN: "command"
+  #      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+  #      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+  #    steps:
+  #      - name: Checkout code
+  #        uses: actions/checkout@v4
+  #      - name: Run tests
+  #        run: |
+  #          unset KFUTIL_DEBUG
+  #          go test -v ./cmd -run "^Test_StoreTypes*"
 
   ### Store Tests
   Test_Stores_KFC_10_4_5:
@@ -129,25 +148,25 @@ jobs:
           unset KFUTIL_DEBUG
           go test -v ./cmd -run "^Test_Stores_*"
 
-#  Test_Stores_KFC_10_1_1:
-#    runs-on: ubuntu-latest
-#    needs:
-#      - build
-#      - kf_10_x_x
-#      - Test_StoreTypes_KFC_10_1_1
-#    env:
-#      SECRET_NAME: "command-config-1011"
-#      KEYFACTOR_HOSTNAME: "integrations1011-lab.kfdelivery.com"
-#      KEYFACTOR_DOMAIN: "command"
-#      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
-#      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#      - name: Run tests
-#        run: |
-#          unset KFUTIL_DEBUG
-#          go test -v ./cmd -run "^Test_Stores_*"
+  #  Test_Stores_KFC_10_1_1:
+  #    runs-on: ubuntu-latest
+  #    needs:
+  #      - build
+  #      - kf_10_x_x
+  #      - Test_StoreTypes_KFC_10_1_1
+  #    env:
+  #      SECRET_NAME: "command-config-1011"
+  #      KEYFACTOR_HOSTNAME: "integrations1011-lab.kfdelivery.com"
+  #      KEYFACTOR_DOMAIN: "command"
+  #      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+  #      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+  #    steps:
+  #      - name: Checkout code
+  #        uses: actions/checkout@v4
+  #      - name: Run tests
+  #        run: |
+  #          unset KFUTIL_DEBUG
+  #          go test -v ./cmd -run "^Test_Stores_*"
 
   ### PAM Tests
   Test_PAM_KFC_10_4_5:
@@ -189,25 +208,25 @@ jobs:
         run: |
           unset KFUTIL_DEBUG
           go test -v ./cmd -run "^Test_PAM*"
-#  Test_PAM_KFC_10_1_1:
-#    runs-on: ubuntu-latest
-#    needs:
-#      - build
-#      - kf_10_x_x
-#      - Test_StoreTypes_KFC_10_1_1
-#    env:
-#      SECRET_NAME: "command-config-1011"
-#      KEYFACTOR_HOSTNAME: "integrations1011-lab.kfdelivery.com"
-#      KEYFACTOR_DOMAIN: "command"
-#      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
-#      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#      - name: Run tests
-#        run: |
-#          unset KFUTIL_DEBUG
-#          go test -v ./cmd -run "^Test_PAM*"
+  #  Test_PAM_KFC_10_1_1:
+  #    runs-on: ubuntu-latest
+  #    needs:
+  #      - build
+  #      - kf_10_x_x
+  #      - Test_StoreTypes_KFC_10_1_1
+  #    env:
+  #      SECRET_NAME: "command-config-1011"
+  #      KEYFACTOR_HOSTNAME: "integrations1011-lab.kfdelivery.com"
+  #      KEYFACTOR_DOMAIN: "command"
+  #      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+  #      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+  #    steps:
+  #      - name: Checkout code
+  #        uses: actions/checkout@v4
+  #      - name: Run tests
+  #        run: |
+  #          unset KFUTIL_DEBUG
+  #          go test -v ./cmd -run "^Test_PAM*"
 
   ### PAM Tests AKV Auth Provider
   Test_AKV_PAM_KFC_10_4_5:
@@ -261,128 +280,106 @@ jobs:
       - name: Run tests
         run: |
           go test -v ./cmd -run "^Test_PAM*"
-#  Test_AKV_PAM_KFC_10_1_1:
-#    runs-on: self-hosted
-#    needs:
-#      - kf_10_x_x
-#      - Test_PAM_KFC_10_1_1
-#    env:
-#      SECRET_NAME: "command-config-1011-az"
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#      - name: Set up Go
-#        uses: actions/setup-go@v4
-#        with:
-#          go-version: "1.20"
-#      - name: Install dependencies
-#        run: go mod download && go mod tidy
-#      - name: Get secret from Azure Key Vault
-#        run: |
-#          . ./examples/auth/akv/akv_auth.sh
-#          cat $HOME/.keyfactor/command_config.json
-#      - name: Install kfutil
-#        run: |
-#          make install
-#      - name: Run tests
-#        run: |
-#          go test -v ./cmd -run "^Test_PAM*"
-#  # 11.x.x
-#  kf_11_x_x:
-#    runs-on: ubuntu-latest
-#    needs:
-#      - build
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#      - name: Run tests
-#        run: echo "Running tests for KF 11.x.x"
-#  ### Store Type Tests
-#  Test_StoreTypes_KFC_11_0_0:
-#    runs-on: ubuntu-latest
-#    needs:
-#      - build
-#      - kf_11_x_x
-#    env:
-#      SECRET_NAME: "command-config-1100-clean"
-#      KEYFACTOR_HOSTNAME: "int11-test-clean.kfdelivery.com"
-#      KEYFACTOR_DOMAIN: "command"
-#      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
-#      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#      - name: Run tests
-#        run: |
-#          unset KFUTIL_DEBUG
-#          go test -v ./cmd -run "^Test_StoreTypes*"
-#
-#  ### Store Tests
-#  Test_Stores_KFC_11_0_0:
-#    runs-on: ubuntu-latest
-#    needs:
-#      - build
-#      - kf_11_x_x
-#      - Test_StoreTypes_KFC_11_0_0
-#    env:
-#      SECRET_NAME: "command-config-1100"
-#      KEYFACTOR_HOSTNAME: "integrations1100b3-lab.kfdelivery.com"
-#      KEYFACTOR_DOMAIN: "command"
-#      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
-#      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#      - name: Run tests
-#        run: |
-#          unset KFUTIL_DEBUG
-#          go test -v ./cmd -run "^Test_Stores_*"
-#
-#  ### PAM Tests
-#  Test_PAM_KFC_11_0_0:
-#    runs-on: ubuntu-latest
-#    needs:
-#      - build
-#      - kf_11_x_x
-#      - Test_StoreTypes_KFC_11_0_0
-#    env:
-#      SECRET_NAME: "command-config-1100"
-#      KEYFACTOR_HOSTNAME: "integrations1100b3-lab.kfdelivery.com"
-#      KEYFACTOR_DOMAIN: "command"
-#      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
-#      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#      - name: Run tests
-#        run: |
-#          unset KFUTIL_DEBUG
-#          go test -v ./cmd -run "^Test_PAM*"
-#  ### PAM Tests AKV Auth Provider
-#  Test_AKV_PAM_KFC_11_0_0:
-#    runs-on: self-hosted
-#    needs:
-#      - build
-#      - kf_11_x_x
-#      - Test_StoreTypes_KFC_11_0_0
-#      - Test_PAM_KFC_11_0_0
-#    env:
-#      SECRET_NAME: "command-config-1100-az"
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#
-#      - name: Get secret from Azure Key Vault
-#        run: |
-#          . ./examples/auth/akv/akv_auth.sh
-#
-#      - name: Run tests
-#        run: |
-#          unset KFUTIL_DEBUG
-#          kfutil logout || true
-#          printenv | grep -i keyfactor
-#          go test -v ./cmd -run "^Test_PAM*"
 
+  kf_11_x_x:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: echo "Running tests for KF 11.x.x"
+
+  ### Store Type Tests
+  Test_StoreTypes_KFC_11_0_0:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - kf_11_x_x
+    env:
+      SECRET_NAME: "command-config-1100-clean"
+      KEYFACTOR_HOSTNAME: "int11-test-clean.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          unset KFUTIL_DEBUG
+          go test -v ./cmd -run "^Test_StoreTypes*"
+
+  ### Store Tests
+  Test_Stores_KFC_11_0_0:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - kf_11_x_x
+      - Test_StoreTypes_KFC_11_0_0
+    env:
+      SECRET_NAME: "command-config-1100"
+      KEYFACTOR_HOSTNAME: "integrations1100-lab.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: go test -v ./cmd -run "^Test_Stores_*"
+
+  ### PAM Tests
+  Test_PAM_KFC_11_0_0:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - kf_11_x_x
+      - Test_StoreTypes_KFC_11_0_0
+    env:
+      SECRET_NAME: "command-config-1100"
+      KEYFACTOR_HOSTNAME: "integrations1100-lab.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          unset KFUTIL_DEBUG
+          go test -v ./cmd -run "^Test_PAM*"
+
+
+  ### PAM Tests AKV Auth Provider
+  Test_AKV_PAM_KFC_11_0_0:
+    runs-on: self-hosted
+    needs:
+      - Test_PAM_KFC_11_0_0
+    env:
+      SECRET_NAME: "command-config-1100-az"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+      - name: Install dependencies
+        run: go mod download && go mod tidy
+      - name: Get secret from Azure Key Vault
+        run: |
+          . ./examples/auth/akv/akv_auth.sh
+          cat $HOME/.keyfactor/command_config.json
+      - name: Install kfutil
+        run: |
+          make install
+      - name: Run tests
+        run: |
+          go test -v ./cmd -run "^Test_PAM*"
+
+  # Package Tests
   Test_Kfutil_pkg:
     runs-on: ubuntu-latest
     needs:

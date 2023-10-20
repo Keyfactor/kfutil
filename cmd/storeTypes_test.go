@@ -177,7 +177,17 @@ func Test_StoreTypesGetGenericCmd(t *testing.T) {
 func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
-	testCmd.SetArgs([]string{"store-types", "templates-fetch"})
+	testArgs := []string{"store-types", "templates-fetch"}
+	isGhAction := os.Getenv("GITHUB_ACTIONS")
+	t.Log("GITHUB_ACTIONS: ", isGhAction)
+	if isGhAction == "true" {
+		ghBranch := os.Getenv("GITHUB_REF")
+		ghBranch = strings.Replace(ghBranch, "refs/heads/", "", 1)
+		testArgs = append(testArgs, "--git-ref", ghBranch)
+		t.Log("GITHUB_REF: ", ghBranch)
+	}
+	t.Log("testArgs: ", testArgs)
+	testCmd.SetArgs(testArgs)
 	templatesOutput := captureOutput(func() {
 		err := testCmd.Execute()
 		assert.NoError(t, err)
@@ -192,6 +202,7 @@ func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 
 	// iterate over the store types and verify that each has a name shortname and storetype
 	for sType := range storeTypes {
+		t.Log("Creating store type: " + sType)
 		storeType := storeTypes[sType].(map[string]interface{})
 		assert.NotNil(t, storeType["Name"], "Expected store type to have a name")
 		assert.NotNil(t, storeType["ShortName"], "Expected store type to have short name")
@@ -213,7 +224,7 @@ func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 	t.Run(fmt.Sprintf("Create ALL StoreTypes"), func(t *testing.T) {
 		testCmd := RootCmd
-		// check if I'm running inside a Github Action
+		// check if I'm running inside a GitHub Action
 		testArgs := []string{"store-types", "create", "--all"}
 		isGhAction := os.Getenv("GITHUB_ACTIONS")
 		t.Log("GITHUB_ACTIONS: ", isGhAction)
