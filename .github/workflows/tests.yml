@@ -148,6 +148,26 @@ jobs:
           unset KFUTIL_DEBUG
           go test -v ./cmd -run "^Test_Stores_*"
 
+  Test_Stores_KFC_10_1_1:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - kf_10_x_x
+      - Test_StoreTypes_KFC_10_1_1
+    env:
+      SECRET_NAME: "command-config-1011"
+      KEYFACTOR_HOSTNAME: "integrations1011-lab.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          unset KFUTIL_DEBUG
+          go test -v ./cmd -run "^Test_Stores_*"
+
   #  Test_Stores_KFC_10_1_1:
   #    runs-on: ubuntu-latest
   #    needs:
@@ -198,6 +218,25 @@ jobs:
     env:
       SECRET_NAME: "command-config-1021"
       KEYFACTOR_HOSTNAME: "integrations1021-lab.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          unset KFUTIL_DEBUG
+          go test -v ./cmd -run "^Test_PAM*"
+  Test_PAM_KFC_10_1_1:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - kf_10_x_x
+      - Test_StoreTypes_KFC_10_1_1
+    env:
+      SECRET_NAME: "command-config-1011"
+      KEYFACTOR_HOSTNAME: "integrations1011-lab.kfdelivery.com"
       KEYFACTOR_DOMAIN: "command"
       KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
       KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
@@ -281,6 +320,35 @@ jobs:
         run: |
           go test -v ./cmd -run "^Test_PAM*"
 
+  Test_AKV_PAM_KFC_10_1_1:
+    runs-on: self-hosted
+    needs:
+      - Test_PAM_KFC_10_1_1
+    env:
+      SECRET_NAME: "command-config-1011-az"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.20"
+      - name: Install dependencies
+        run: go mod download && go mod tidy
+      - name: Get secret from Azure Key Vault
+        run: |
+          . ./examples/auth/akv/akv_auth.sh
+          cat $HOME/.keyfactor/command_config.json
+      - name: Install kfutil
+        run: |
+          make install
+      - name: Run tests
+        run: |
+          go test -v ./cmd -run "^Test_PAM*"
+
+
+
+  ## KFC 11.x.x
   kf_11_x_x:
     runs-on: ubuntu-latest
     needs:
@@ -378,6 +446,7 @@ jobs:
       - name: Run tests
         run: |
           go test -v ./cmd -run "^Test_PAM*"
+
 
   # Package Tests
   Test_Kfutil_pkg:
