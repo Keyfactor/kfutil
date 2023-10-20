@@ -448,6 +448,17 @@ jobs:
           go test -v ./cmd -run "^Test_PAM*"
 
 
+  # Tester Install Script
+  Test_Install_Script:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Test Quick Install Script
+          run: |
+            bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME}/install.sh)
+            which kfutil
+            kfutil version
+            rm $(which kfutil)
+
   # Package Tests
   Test_Kfutil_pkg:
     runs-on: ubuntu-latest

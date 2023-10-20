@@ -48,16 +48,18 @@ through their Keyfactor representative.
 ## Quickstart
 
 ### Prerequisites:
-
-- [Github CLI](https://cli.github.com/)
-- [zip](https://linuxize.com/post/how-to-unzip-files-in-linux/#installing-unzip) CLI tool, used to unzip the release
-  files.
+- [jq](https://stedolan.github.io/jq/download/) CLI tool, used to parse JSON output.
+- Either
+  - [curl](https://curl.se/download.html) CLI tool, used to download the release files.
+  - OR [wget](https://www.gnu.org/software/wget/) CLI tool, used to download the release files.
+- [unzip](https://linuxize.com/post/how-to-unzip-files-in-linux/#installing-unzip) CLI tool, used to unzip the release
+- [openssl](https://www.openssl.org/source/) CLI tool, used to validate package checksum.
 - `$HOME/.local/bin` in your `$PATH` and exists.
 
 ### Installation:
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/gh-dl-release.sh)
+bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh)
 ````
 
 ### Environmental Variables
