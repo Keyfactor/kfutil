@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"strings"
 	"testing"
 )
@@ -212,8 +213,16 @@ func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 	t.Run(fmt.Sprintf("Create ALL StoreTypes"), func(t *testing.T) {
 		testCmd := RootCmd
+		// check if I'm running inside a Github Action
+		testArgs := []string{"store-types", "create", "--all"}
+		isGhAction := os.Getenv("GITHUB_ACTIONS")
+		if isGhAction == "true" {
+			ghBranch := os.Getenv("GITHUB_REF")
+			testArgs = append(testArgs, "--git-ref", ghBranch)
+		}
+
 		// Attempt to get the AWS store type because it comes with the product
-		testCmd.SetArgs([]string{"store-types", "create", "--all"})
+		testCmd.SetArgs(testArgs)
 		output := captureOutput(func() {
 			err := testCmd.Execute()
 			assert.NoError(t, err)
