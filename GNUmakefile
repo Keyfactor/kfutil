@@ -8,7 +8,7 @@ NAME=kfutil
 BINARY=${NAME}
 VERSION := $(GITHUB_REF_NAME)
 ifeq ($(VERSION),)
-	VERSION := v1.2.0
+	VERSION := v1.2.1
 endif
 OS_ARCH := $(shell go env GOOS)_$(shell go env GOARCH)
 BASEDIR := ${HOME}/go/bin

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"strings"
 	"testing"
 )
@@ -112,7 +113,7 @@ func Test_StoreTypesFetchTemplatesCmd(t *testing.T) {
 func Test_StoreTypesGetCmd(t *testing.T) {
 	testCmd := RootCmd
 	// Attempt to get the AWS store type because it comes with the product
-	testCmd.SetArgs([]string{"store-types", "get", "--name", "IIS"})
+	testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM"})
 	output := captureOutput(func() {
 		err := testCmd.Execute()
 		assert.NoError(t, err)
@@ -136,13 +137,13 @@ func Test_StoreTypesGetCmd(t *testing.T) {
 	_, ok = storeType["Name"].(string)
 	assert.True(t, ok, "Expected name to be a string")
 	// check that shortname == AWS
-	assert.Equal(t, storeType["ShortName"], "IIS", "Expected short name to be IIS")
+	assert.Equal(t, storeType["ShortName"], "PEM", "Expected short name to be PEM")
 }
 
 func Test_StoreTypesGetGenericCmd(t *testing.T) {
 	testCmd := RootCmd
 	// Attempt to get the AWS store type because it comes with the product
-	testCmd.SetArgs([]string{"store-types", "get", "--name", "IIS", "--generic"})
+	testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--generic"})
 	output := captureOutput(func() {
 		err := testCmd.Execute()
 		assert.NoError(t, err)
@@ -169,14 +170,24 @@ func Test_StoreTypesGetGenericCmd(t *testing.T) {
 	// verify name is a string
 	_, ok = storeType["Name"].(string)
 	assert.True(t, ok, "Expected name to be a string")
-	// check that shortname == IIS
-	assert.Equal(t, storeType["ShortName"], "IIS", "Expected short name to be IIS")
+	// check that shortname == PEM
+	assert.Equal(t, storeType["ShortName"], "PEM", "Expected short name to be PEM")
 }
 
 func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
-	testCmd.SetArgs([]string{"store-types", "templates-fetch"})
+	testArgs := []string{"store-types", "templates-fetch"}
+	isGhAction := os.Getenv("GITHUB_ACTIONS")
+	t.Log("GITHUB_ACTIONS: ", isGhAction)
+	if isGhAction == "true" {
+		ghBranch := os.Getenv("GITHUB_REF")
+		ghBranch = strings.Replace(ghBranch, "refs/heads/", "", 1)
+		testArgs = append(testArgs, "--git-ref", ghBranch)
+		t.Log("GITHUB_REF: ", ghBranch)
+	}
+	t.Log("testArgs: ", testArgs)
+	testCmd.SetArgs(testArgs)
 	templatesOutput := captureOutput(func() {
 		err := testCmd.Execute()
 		assert.NoError(t, err)
@@ -191,6 +202,7 @@ func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 
 	// iterate over the store types and verify that each has a name shortname and storetype
 	for sType := range storeTypes {
+		t.Log("Creating store type: " + sType)
 		storeType := storeTypes[sType].(map[string]interface{})
 		assert.NotNil(t, storeType["Name"], "Expected store type to have a name")
 		assert.NotNil(t, storeType["ShortName"], "Expected store type to have short name")
@@ -212,8 +224,21 @@ func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 	t.Run(fmt.Sprintf("Create ALL StoreTypes"), func(t *testing.T) {
 		testCmd := RootCmd
+		// check if I'm running inside a GitHub Action
+		testArgs := []string{"store-types", "create", "--all"}
+		isGhAction := os.Getenv("GITHUB_ACTIONS")
+		t.Log("GITHUB_ACTIONS: ", isGhAction)
+		if isGhAction == "true" {
+			ghBranch := os.Getenv("GITHUB_REF")
+			ghBranch = strings.Replace(ghBranch, "refs/heads/", "", 1)
+			testArgs = append(testArgs, "--git-ref", ghBranch)
+			t.Log("GITHUB_REF: ", ghBranch)
+
+		}
+		t.Log("testArgs: ", testArgs)
+
 		// Attempt to get the AWS store type because it comes with the product
-		testCmd.SetArgs([]string{"store-types", "create", "--all"})
+		testCmd.SetArgs(testArgs)
 		output := captureOutput(func() {
 			err := testCmd.Execute()
 			assert.NoError(t, err)

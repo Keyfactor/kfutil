@@ -402,7 +402,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 	},
 }
 
-var fetchStoreTypes = &cobra.Command{
+var fetchStoreTypesCmd = &cobra.Command{
 	Use:   "templates-fetch",
 	Short: "Fetches store type templates from Keyfactor's Github.",
 	Long:  `Fetches store type templates from Keyfactor's Github.`,
@@ -634,7 +634,8 @@ func init() {
 	RootCmd.AddCommand(storeTypesCmd)
 
 	// GET store type templates
-	storeTypesCmd.AddCommand(fetchStoreTypes)
+	storeTypesCmd.AddCommand(fetchStoreTypesCmd)
+	fetchStoreTypesCmd.Flags().StringVarP(&gitRef, FlagGitRef, "b", "main", "The git branch or tag to reference when pulling store-types from the internet.")
 
 	// LIST command
 	storeTypesCmd.AddCommand(storesTypesListCmd)
