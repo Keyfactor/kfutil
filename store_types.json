@@ -69,6 +69,194 @@
     "CustomAliasAllowed": "Optional"
   },
   {
+    "Name": "AWS Cert Manager IAM Auth",
+    "ShortName": "AWSCerManA",
+    "Capability": "AWSCerManA",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "awsrole",
+        "DisplayName": "AWS Assume Identity Role",
+        "Type": "String",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "awsregions",
+        "DisplayName": "AWS Regions",
+        "Type": "String",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "true",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "AWS Region",
+        "DisplayName": "AWS Region",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [
+      "AWS Region"
+    ],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Optional"
+  },
+  {
+    "Name": "AWS Certificate Manager With Okta Auth",
+    "ShortName": "AwsCerManO",
+    "Capability": "AwsCerManO",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "scope",
+        "DisplayName": "Okta OAuth Scope",
+        "Type": "String",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "grant_type",
+        "DisplayName": "Okta OAuth Grant Type",
+        "Type": "String",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "awsrole",
+        "DisplayName": "AWS Assume Identity Role",
+        "Type": "String",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "awsregions",
+        "DisplayName": "AWS Regions",
+        "Type": "String",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "true",
+        "Required": true
+      },
+      {
+        "Name": "oauthpath",
+        "DisplayName": "OKTA OAuth Path",
+        "Type": "String",
+        "DependsOn": null,
+        "DefaultValue": "/oauth2/default/v1/token",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "AWS Region",
+        "DisplayName": "AWS Region",
+        "Type": "MultipleChoice",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": false,
+          "OnReenrollment": true
+        },
+        "DefaultValue": "us-east-1",
+        "Options": "us-east-1,us-east-2"
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": true,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [
+      "AWS Region"
+    ],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Optional"
+  },
+  {
     "Name": "Azure Application (Auth)",
     "ShortName": "AzureApp",
     "Capability": "AzureApp",
