@@ -177,7 +177,7 @@ WARNING: The 'username'' and 'password' will be stored in the config file in pla
 	FParseErrWhitelist:         cobra.FParseErrWhitelist{},
 	CompletionOptions:          cobra.CompletionOptions{},
 	TraverseChildren:           false,
-	Hidden:                     true,
+	Hidden:                     false,
 	SilenceErrors:              false,
 	SilenceUsage:               false,
 	DisableFlagParsing:         false,
