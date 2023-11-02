@@ -1,3 +1,11 @@
+# v1.2.1
+## Bug Fixes
+
+### StoreTypes
+- `store-type templates-fetch` now supports a `--git-ref` flag to specify a specific branch, tag, or commit to fetch templates from.
+- `store-types create` now omits the `StorePath` value when not specified. This fixes the issue where the `StorePath` 
+value was being set to "" which Command interpreted as only allowing "" for store paths on created store types.
+
 # v1.2.0
 ## Features
  
