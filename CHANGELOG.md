@@ -9,6 +9,10 @@
 - `store-types create` now omits the `StorePath` value when not specified. This fixes the issue where the `StorePath`
   value was being set to "" which Command interpreted as only allowing "" for store paths on created store types.
 
+### CLI
+
+- `login` now un-hidden from CLI help.
+
 # v1.2.0
 
 ## Features
