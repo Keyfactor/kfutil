@@ -19,6 +19,7 @@ package cmd
 import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
+	manifestv1 "kfutil/pkg/keyfactor/v1"
 	"testing"
 )
 
@@ -59,7 +60,7 @@ func Test_StoreTypesGetCmd(t *testing.T) {
 func Test_StoreTypesGetGenericCmd(t *testing.T) {
 	testCmd := RootCmd
 	// Attempt to get the AWS store type because it comes with the product
-	testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--generic"})
+	testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--output-to-integration-manifest"})
 	output := captureOutput(func() {
 		err := testCmd.Execute()
 		assert.NoError(t, err)
@@ -88,4 +89,25 @@ func Test_StoreTypesGetGenericCmd(t *testing.T) {
 	assert.True(t, ok, "Expected name to be a string")
 	// check that shortname == PEM
 	assert.Equal(t, storeType["ShortName"], "PEM", "Expected short name to be PEM")
+}
+
+func Test_StoreTypesGetOutputToManifest(t *testing.T) {
+	testCmd := RootCmd
+	// Attempt to get the AWS store type because it comes with the product
+	testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--generic"})
+	captureOutput(func() {
+		err := testCmd.Execute()
+		assert.NoError(t, err)
+	})
+
+	// Verify that integration-manifest.json was created
+	manifest := manifestv1.IntegrationManifest{}
+	err := manifest.LoadFromFilesystem()
+	if err != nil {
+		t.Fatalf("Error loading integration manifest: %v", err)
+	}
+
+	if len(manifest.About.Orchestrator.StoreTypes) != 1 {
+		t.Fatalf("Expected 1 store type, got %d", len(manifest.About.Orchestrator.StoreTypes))
+	}
 }
