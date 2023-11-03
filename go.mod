@@ -10,7 +10,7 @@ require (
 	github.com/Keyfactor/keyfactor-go-client-sdk v1.0.2
 	github.com/Keyfactor/keyfactor-go-client/v2 v2.1.4
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
-	github.com/creack/pty v1.1.18
+	github.com/creack/pty v1.1.20
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.4.0
 	github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
