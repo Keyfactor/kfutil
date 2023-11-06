@@ -59,7 +59,10 @@ through their Keyfactor representative.
 ### Installation:
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh)
+curl -fsSL -o get-kfutil.sh https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh
+chmod +x get-kfutil.sh
+# Install kfutil to $HOME/.local/bin. Use -h for help and examples.
+./get-kfutil.sh
 ````
 
 ### Environmental Variables

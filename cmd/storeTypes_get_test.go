@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
 	manifestv1 "kfutil/pkg/keyfactor/v1"
+	"os"
 	"testing"
 )
 
@@ -94,7 +95,7 @@ func Test_StoreTypesGetGenericCmd(t *testing.T) {
 func Test_StoreTypesGetOutputToManifest(t *testing.T) {
 	testCmd := RootCmd
 	// Attempt to get the AWS store type because it comes with the product
-	testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--generic"})
+	testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--output-to-integration-manifest"})
 	captureOutput(func() {
 		err := testCmd.Execute()
 		assert.NoError(t, err)
@@ -109,5 +110,11 @@ func Test_StoreTypesGetOutputToManifest(t *testing.T) {
 
 	if len(manifest.About.Orchestrator.StoreTypes) != 1 {
 		t.Fatalf("Expected 1 store type, got %d", len(manifest.About.Orchestrator.StoreTypes))
+	}
+
+	// Clean up
+	err = os.Remove("integration-manifest.json")
+	if err != nil {
+		t.Errorf("Error removing integration-manifest.json: %v", err)
 	}
 }

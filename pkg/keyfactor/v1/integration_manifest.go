@@ -142,12 +142,14 @@ func NewIntegrationManifest() *IntegrationManifest {
 	}
 }
 
-// LoadFromFilesystem loads an integration manifest from the current working directory
+// LoadFromFilesystem loads an integration manifest from the current working directory.
+// If the file does not exist, it returns nil
 func (im *IntegrationManifest) LoadFromFilesystem() error {
 	// Load the integration manifest from the current working directory
 	manifestFileBytes, err := os.Open("integration-manifest.json")
 	if err != nil {
-		log.Debug().Msg("Could not open integration-manifest.json")
+		log.Debug().Msg("Could not open integration-manifest.json - it may not exist")
+		return nil
 	}
 
 	// Marshal the integration manifest into the IntegrationManifest struct

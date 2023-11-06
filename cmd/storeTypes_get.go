@@ -67,7 +67,7 @@ func (f *StoreTypesGetFlags) AddFlags(flags *pflag.FlagSet) {
 	flags.StringVarP(f.storeTypeName, "name", "n", "", "Name of the certificate store type to get.")
 	flags.BoolVarP(f.genericFormat, "generic", "g", false, "Output the store type in a generic format stripped of all fields specific to the Command instance.")
 	flags.StringVarP(f.gitRef, FlagGitRef, "b", "main", "The git branch or tag to reference when pulling store-types from the internet.")
-	flags.BoolVarP(f.outputToIntegrationManifest, "output-to-integration-manifest", "o", false, "Update the integration manifest with the store type. It overrides the store type in the manifest if it already exists. If the integration manifest does not exist in the current directory, it will be created.")
+	flags.BoolVarP(f.outputToIntegrationManifest, "output-to-integration-manifest", "", false, "Update the integration manifest with the store type. It overrides the store type in the manifest if it already exists. If the integration manifest does not exist in the current directory, it will be created.")
 }
 
 func NewCmdStoreTypesGet() *cobra.Command {
@@ -100,6 +100,10 @@ func NewCmdStoreTypesGet() *cobra.Command {
 			// Authenticate
 			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 			kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+
+			if kfClient == nil {
+				return fmt.Errorf("failed to initialize Keyfactor client")
+			}
 
 			storeTypes, err := kfClient.GetCertificateStoreType(options.storeTypeInterface)
 			if err != nil {
