@@ -136,7 +136,7 @@ type PamDetails struct {
 	DbName                  string `json:"dbName,omitempty"`
 }
 
-func NewIntegrationManifest() *IntegrationManifest {
+func CreateIntegrationManifest() *IntegrationManifest {
 	return &IntegrationManifest{
 		Schema: imSchema,
 	}

@@ -495,7 +495,7 @@ func init() {
 	storeTypesCmd.AddCommand(storesTypesListCmd)
 
 	// GET commands
-	storeTypesCmd.AddCommand(NewCmdStoreTypesGet())
+	storeTypesCmd.AddCommand(CreateCmdStoreTypesGet())
 
 	// CREATE command
 	var listValidStoreTypes bool

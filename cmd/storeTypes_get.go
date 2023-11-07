@@ -70,7 +70,7 @@ func (f *StoreTypesGetFlags) AddFlags(flags *pflag.FlagSet) {
 	flags.BoolVarP(f.outputToIntegrationManifest, "output-to-integration-manifest", "", false, "Update the integration manifest with the store type. It overrides the store type in the manifest if it already exists. If the integration manifest does not exist in the current directory, it will be created.")
 }
 
-func NewCmdStoreTypesGet() *cobra.Command {
+func CreateCmdStoreTypesGet() *cobra.Command {
 	storeTypesGetFlags := CreateStoreTypesGetFlags()
 
 	cmd := &cobra.Command{
@@ -118,7 +118,7 @@ func NewCmdStoreTypesGet() *cobra.Command {
 
 			// If outputToIntegrationManifest is true, update the integration manifest with the store type
 			if options.outputToIntegrationManifest {
-				imv1 := manifestv1.NewIntegrationManifest()
+				imv1 := manifestv1.CreateIntegrationManifest()
 				err = imv1.LoadFromFilesystem()
 				if err != nil {
 					return err
