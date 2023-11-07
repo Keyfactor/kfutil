@@ -21,3 +21,4 @@ vendor/
 *.csv
 /.vs/**/*
 /.vscode/**/*
+.DS_Store
