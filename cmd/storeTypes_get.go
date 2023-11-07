@@ -46,7 +46,7 @@ type StoreTypesGetFlags struct {
 	outputToIntegrationManifest *bool
 }
 
-func NewStoreTypesGetFlags() *StoreTypesGetFlags {
+func CreateStoreTypesGetFlags() *StoreTypesGetFlags {
 	var storeTypeID int
 	var storeTypeName string
 	var genericFormat bool
@@ -71,7 +71,7 @@ func (f *StoreTypesGetFlags) AddFlags(flags *pflag.FlagSet) {
 }
 
 func NewCmdStoreTypesGet() *cobra.Command {
-	storeTypesGetFlags := NewStoreTypesGetFlags()
+	storeTypesGetFlags := CreateStoreTypesGetFlags()
 
 	cmd := &cobra.Command{
 		Use:   StoreTypesGetUsage,
