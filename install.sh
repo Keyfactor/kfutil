@@ -89,7 +89,6 @@ verifySupported() {
         "linux-arm64"
         "linux-ppc64le"
         "linux-s390x"
-        "windows-amd64"
     )
 
     match_found=false
@@ -156,14 +155,14 @@ getVersion() {
             printf "Cannot find release '%s' for %s.\n" "$VERSION" "$remote_release_url"
             exit 1
         else
-            echo "kfutil version $VERSION exists"
+            echo "$BINARY_NAME version $VERSION exists"
         fi
     fi
 }
 
-# checkkfutilInstalledVersion checks which version of kfutil is installed and
+# checkBinaryInstalledVersion checks which version of kfutil is installed and
 # if it needs to be changed.
-checkkfutilInstalledVersion() {
+checkBinaryInstalledVersion() {
     if [[ -f "${INSTALL_DIR}/${BINARY_NAME}" ]]; then
         local version
         version=$("${INSTALL_DIR}/${BINARY_NAME}" version)
@@ -172,10 +171,10 @@ checkkfutilInstalledVersion() {
         version=${version%%\%*}
         version=$(echo "$version" | tr -d 'v')
         if [[ "$version" == "$VERSION" ]]; then
-            echo "kfutil ${version} is already installed"
+            echo "kfutil ${version} is already installed in ${INSTALL_DIR}/${BINARY_NAME}"
             return 0
         else
-            echo "Changing from kfutil 'v${version}' to 'v${VERSION}'."
+            echo "Changing from ${BINARY_NAME} 'v${version}' to 'v${VERSION}'."
             return 1
         fi
     else
@@ -187,7 +186,7 @@ checkkfutilInstalledVersion() {
 downloadFile() {
     local download_url
     local base_url
-    base_url="https://github.com/Keyfactor/kfutil/releases/download/v${VERSION}"
+    base_url="https://github.com/Keyfactor/${BINARY_NAME}/releases/download/v${VERSION}"
     KFUTIL_DIST="kfutil_${VERSION}_${OS}_${ARCH}.zip"
     download_url="${base_url}/${KFUTIL_DIST}"
     checksum_url="${base_url}/kfutil_${VERSION}_SHA256SUMS"
@@ -208,6 +207,11 @@ downloadFile() {
 
 # verifyChecksum verifies the SHA256 checksum of the binary package.
 verifyChecksum() {
+    if [ "${VERIFY_CHECKSUM}" == "false" ]; then
+        echo "Skipping checksum verification"
+        return 0
+    fi
+
     local sum
     local expected_sum
 
@@ -241,7 +245,7 @@ testVersion() {
     set +e
     command -v $BINARY_NAME >/dev/null 2>&1
     if [ "$?" = "1" ]; then
-        echo "$BINARY_NAME not found. Is $INSTALL_DIR on your "'$PATH?'
+        echo "$BINARY_NAME not found. Is $INSTALL_DIR in your "'$PATH?'
         exit 1
     fi
 
@@ -255,8 +259,8 @@ testVersion() {
     if [[ "$version" == "$VERSION" ]]; then
         echo "$BINARY_NAME $version is installed and available."
     else
-        echo "$BINARY_NAME $version is installed, but wanted version $VERSION."
-        exit 1
+       echo "$BINARY_NAME $version is installed, but wanted version $VERSION."
+       exit 1
     fi
 
     set -e
@@ -290,9 +294,7 @@ uninstall() {
     trap uninstall_fail_trap EXIT
     set -e
 
-    echo "$BINARY_NAME is installed in ${current_install_dir}"
-
-    echo "Uninstalling $BINARY_NAME"
+    printf "Uninstalling %s from %s... " "$BINARY_NAME" "${current_install_dir}"
 
     # Uninstall binary
     runAsRoot rm -f "$current_install_dir"
@@ -305,7 +307,7 @@ uninstall() {
     fi
     set -e
 
-    echo "$BINARY_NAME has been uninstalled"
+    echo "Done."
 }
 
 usage() {
@@ -361,7 +363,7 @@ initOS
 verifySupported
 getVersion
 
-if ! checkkfutilInstalledVersion; then
+if ! checkBinaryInstalledVersion; then
     downloadFile
     verifyChecksum
     installFile
