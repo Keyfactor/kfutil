@@ -11,9 +11,21 @@
 
 ### Installation:
 
+#### Linux/MacOS
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh)
+curl -fsSL -o get-kfutil.sh https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh
+chmod +x get-kfutil.sh
+# Install kfutil to $HOME/.local/bin. Use -h for help and examples.
+./get-kfutil.sh
 ````
+
+#### Windows (or Linux/MacOS if PowerShell is preferred)
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.ps1" -OutFile "install.ps1"
+# Install kfutil to $HOME/AppData/Local/Microsoft/WindowsApps.
+# Use Get-Help .\install.ps1 -Full for help and examples.
+.\install.ps1
+```
 
 ### Environmental Variables
 
