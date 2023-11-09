@@ -314,7 +314,7 @@ func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat str
 }
 
 const (
-	StoreTypesGetUsage = `get [-i <store-type-id> | -n <store-type-name>] [-g] [-b <git-ref>] [-o]`
+	StoreTypesGetUsage = `get [-i <store-type-id> | -n <store-type-name>] [-b <git-ref>] [-g | --output-to-integration-manifest]`
 	StoreTypesGetShort = `Get a specific store type by either name or ID.`
 	StoreTypesGetLong  = StoreTypesGetShort
 )

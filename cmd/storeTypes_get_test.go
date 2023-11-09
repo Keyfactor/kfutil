@@ -24,7 +24,7 @@ import (
 	"testing"
 )
 
-func TestStoreTypesGetCmd(t *testing.T) {
+func Test_StoreTypesGet(t *testing.T) {
 	t.Run("WithName", func(t *testing.T) {
 		testCmd := RootCmd
 		// Attempt to get the AWS store type because it comes with the product
