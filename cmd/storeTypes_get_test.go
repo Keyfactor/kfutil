@@ -19,6 +19,7 @@ package cmd
 import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
+	"kfutil/pkg/cmdtest"
 	manifestv1 "kfutil/pkg/keyfactor/v1"
 	"os"
 	"testing"
@@ -27,12 +28,11 @@ import (
 func Test_StoreTypesGet(t *testing.T) {
 	t.Run("WithName", func(t *testing.T) {
 		testCmd := RootCmd
-		// Attempt to get the AWS store type because it comes with the product
-		testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--debug"})
-		output := captureOutput(func() {
-			err := testCmd.Execute()
-			assert.NoError(t, err)
-		})
+
+		output, err := cmdtest.TestExecuteCommand(t, testCmd, []string{"store-types", "get", "--name", "PEM", "--debug"}...)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
 		var storeType map[string]interface{}
 		if err := json.Unmarshal([]byte(output), &storeType); err != nil {
 			t.Fatalf("Error unmarshalling JSON: %v", err)
@@ -57,14 +57,12 @@ func Test_StoreTypesGet(t *testing.T) {
 
 	t.Run("GenericOutput", func(t *testing.T) {
 		testCmd := RootCmd
-		// Attempt to get the AWS store type because it comes with the product
-		testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "-g", "--debug"})
-		output := captureOutput(func() {
-			err := testCmd.Execute()
-			assert.NoError(t, err)
-		})
+		output, err := cmdtest.TestExecuteCommand(t, testCmd, []string{"store-types", "get", "--name", "PEM", "-g", "--debug"}...)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
 		var storeType map[string]interface{}
-		if err := json.Unmarshal([]byte(output), &storeType); err != nil {
+		if err := json.Unmarshal(output, &storeType); err != nil {
 			t.Fatalf("Error unmarshalling JSON: %v", err)
 		}
 
@@ -91,16 +89,14 @@ func Test_StoreTypesGet(t *testing.T) {
 
 	t.Run("OutputToManifest", func(t *testing.T) {
 		testCmd := RootCmd
-		// Attempt to get the AWS store type because it comes with the product
-		testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--output-to-integration-manifest", "--debug"})
-		captureOutput(func() {
-			err := testCmd.Execute()
-			assert.NoError(t, err)
-		})
+		_, err := cmdtest.TestExecuteCommand(t, testCmd, []string{"store-types", "get", "--name", "PEM", "--output-to-integration-manifest", "--debug"}...)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
 
 		// Verify that integration-manifest.json was created
 		manifest := manifestv1.IntegrationManifest{}
-		err := manifest.LoadFromFilesystem()
+		err = manifest.LoadFromFilesystem()
 		if err != nil {
 			t.Fatalf("Error loading integration manifest: %v", err)
 		}
