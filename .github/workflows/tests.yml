@@ -51,7 +51,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Run tests
         run: |
-          unset KFUTIL_DEBUG
+          export KFUTIL_DEBUG=1
           go test -v ./cmd -run "^Test_StoreTypes*"
   Test_StoreTypes_KFC_10_2_1:
     runs-on: ubuntu-latest
