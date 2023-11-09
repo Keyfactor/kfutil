@@ -28,7 +28,7 @@ func Test_StoreTypesGet(t *testing.T) {
 	t.Run("WithName", func(t *testing.T) {
 		testCmd := RootCmd
 		// Attempt to get the AWS store type because it comes with the product
-		testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM"})
+		testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--debug"})
 		output := captureOutput(func() {
 			err := testCmd.Execute()
 			assert.NoError(t, err)
@@ -58,7 +58,7 @@ func Test_StoreTypesGet(t *testing.T) {
 	t.Run("GenericOutput", func(t *testing.T) {
 		testCmd := RootCmd
 		// Attempt to get the AWS store type because it comes with the product
-		testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "-g"})
+		testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "-g", "--debug"})
 		output := captureOutput(func() {
 			err := testCmd.Execute()
 			assert.NoError(t, err)
@@ -92,7 +92,7 @@ func Test_StoreTypesGet(t *testing.T) {
 	t.Run("OutputToManifest", func(t *testing.T) {
 		testCmd := RootCmd
 		// Attempt to get the AWS store type because it comes with the product
-		testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--output-to-integration-manifest"})
+		testCmd.SetArgs([]string{"store-types", "get", "--name", "PEM", "--output-to-integration-manifest", "--debug"})
 		captureOutput(func() {
 			err := testCmd.Execute()
 			assert.NoError(t, err)

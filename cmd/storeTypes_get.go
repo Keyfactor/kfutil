@@ -78,15 +78,6 @@ func CreateCmdStoreTypesGet() *cobra.Command {
 		Short: StoreTypesGetShort,
 		Long:  StoreTypesGetLong,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Compute the runtime options from flags passed to the command
-			options, err := storeTypesGetFlags.ToOptions(cmd, args)
-			if err != nil {
-				return fmt.Errorf("failed to get runtime options from flags: %s", err)
-			}
-			if options.storeTypeInterface == nil {
-				return fmt.Errorf("store type not specified - this should never happen")
-			}
-
 			// Silence usage on error
 			cmd.SilenceUsage = true
 
@@ -96,6 +87,15 @@ func CreateCmdStoreTypesGet() *cobra.Command {
 				return debugErr
 			}
 			informDebug(debugFlag)
+
+			// Compute the runtime options from flags passed to the command
+			options, err := storeTypesGetFlags.ToOptions(cmd, args)
+			if err != nil {
+				return fmt.Errorf("failed to get runtime options from flags: %s", err)
+			}
+			if options.storeTypeInterface == nil {
+				return fmt.Errorf("store type not specified - this should never happen")
+			}
 
 			// Authenticate
 			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
@@ -110,6 +110,7 @@ func CreateCmdStoreTypesGet() *cobra.Command {
 				log.Error().Err(err).Msg(fmt.Sprintf("unable to get certificate store type %s", options.storeTypeInterface))
 				return err
 			}
+			log.Trace().Msg(fmt.Sprintf("storeTypes: %+v", storeTypes))
 			output, jErr := formatStoreTypeOutput(storeTypes, outputFormat, options.outputType)
 			if jErr != nil {
 				log.Error().Err(jErr).Msg("unable to format certificate store type output")
@@ -118,6 +119,7 @@ func CreateCmdStoreTypesGet() *cobra.Command {
 
 			// If outputToIntegrationManifest is true, update the integration manifest with the store type
 			if options.outputToIntegrationManifest {
+				log.Debug().Msg("Writing store type to integration manifest")
 				imv1 := manifestv1.CreateIntegrationManifest()
 				err = imv1.LoadFromFilesystem()
 				if err != nil {
@@ -163,6 +165,7 @@ type StoreTypesGetOptions struct {
 }
 
 func (f *StoreTypesGetFlags) ToOptions(cmd *cobra.Command, args []string) (*StoreTypesGetOptions, error) {
+	log.Debug().Msg("call: storeTypesGetFlags.ToOptions")
 	if len(args) > 0 {
 		return nil, fmt.Errorf("unexpected arguments: %v", args)
 	}
@@ -175,28 +178,35 @@ func (f *StoreTypesGetFlags) ToOptions(cmd *cobra.Command, args []string) (*Stor
 	// Get the values from the flags
 	if f.storeTypeID != nil {
 		options.storeTypeID = *f.storeTypeID
+		log.Debug().Msg(fmt.Sprintf("storeTypeID: %d", options.storeTypeID))
 	}
 
 	if f.storeTypeName != nil {
 		options.storeTypeName = *f.storeTypeName
+		log.Debug().Msg(fmt.Sprintf("storeTypeName: %s", options.storeTypeName))
 	}
 
 	if f.genericFormat != nil {
 		options.genericFormat = *f.genericFormat
+		log.Debug().Msg(fmt.Sprintf("genericFormat: %t", options.genericFormat))
 	}
 
 	if f.gitRef != nil {
 		options.gitRef = *f.gitRef
+		log.Debug().Msg(fmt.Sprintf("gitRef: %s", options.gitRef))
 	}
 
 	if f.outputToIntegrationManifest != nil {
 		options.outputToIntegrationManifest = *f.outputToIntegrationManifest
+		log.Debug().Msg(fmt.Sprintf("outputToIntegrationManifest: %t", options.outputToIntegrationManifest))
 	}
 
+	log.Debug().Msg("complete: storeTypesGetFlags.ToOptions")
 	return options, options.Validate()
 }
 
 func (f *StoreTypesGetOptions) Validate() error {
+	log.Debug().Msg("call: storeTypesGetFlags.Validate")
 	// storeTypeID and storeTypeName are mutually exclusive
 	if f.storeTypeID > 0 && f.storeTypeName != "" {
 		return fmt.Errorf("only one of --id or --name can be provided")
@@ -242,6 +252,7 @@ func (f *StoreTypesGetOptions) Validate() error {
 		f.outputType = "generic"
 	}
 
+	log.Debug().Msg("complete: storeTypesGetFlags.Validate")
 	return nil
 }
 
