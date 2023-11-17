@@ -1,3 +1,10 @@
+# v1.3.0
+## Features
+
+### Store-Type Get
+- Added `--output-to-integration-manifest` flag to `kfutil store-types get` to download a remote certificate store type definition into an `integration-manifest.json` file locally.
+  - This path now has the following usage: `get [-i <store-type-id> | -n <store-type-name>] [-b <git-ref>] [-g | --output-to-integration-manifest]`
+
 # v1.2.0
 ## Features
  
