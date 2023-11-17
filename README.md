@@ -1,49 +1,18 @@
-- [Keyfactor Command Utility (kfutil)](#keyfactor-command-utility--kfutil-)
-    - [Integration status: Production - Ready for use in production environments.](#integration-status--production---ready-for-use-in-production-environments)
-
-    * [Support for Keyfactor Command Utility (kfutil)](#support-for-keyfactor-command-utility--kfutil-)
-    * [Quickstart](#quickstart)
-        + [Prerequisites:](#prerequisites-)
-        + [Installation:](#installation-)
-        + [Environmental Variables](#environmental-variables)
-    * [Authentication Providers](#authentication-providers)
-    * [Commands](#commands)
-        + [Login](#login)
-        + [Logout](#logout)
-    * [Commands](#commands-1)
-        + [Bulk operations](#bulk-operations)
-            - [Bulk create cert stores](#bulk-create-cert-stores)
-            - [Bulk create cert store types](#bulk-create-cert-store-types)
-        + [Root of Trust](#root-of-trust)
-        + [Root of Trust Quickstart](#root-of-trust-quickstart)
-            - [Generate Certificate List Template](#generate-certificate-list-template)
-            - [Generate Certificate Store List Template](#generate-certificate-store-list-template)
-            - [Run Root of Trust Audit](#run-root-of-trust-audit)
-            - [Run Root of Trust Reconcile](#run-root-of-trust-reconcile)
-        + [Certificate Store Inventory](#certificate-store-inventory)
-            - [Show the inventory of a certificate store](#show-the-inventory-of-a-certificate-store)
-            - [Add certificates to certificate stores](#add-certificates-to-certificate-stores)
-            - [Remove certificates from certificate stores](#remove-certificates-from-certificate-stores)
-    * [Development](#development)
-        + [Adding a new command](#adding-a-new-command)
-
 # Keyfactor Command Utility (kfutil)
 
-`kfutil` is a go-lang CLI wrapper for Keyfactor Command API. It also includes other utility/helper functions around
-automating common Keyfactor Command operations.
+`kfutil` is a go-lang CLI wrapper for Keyfactor Command API. It also includes other utility/helper functions around automating common Keyfactor Command operations.
 
 #### Integration status: Production - Ready for use in production environments.
 
+
+
 ## Support for Keyfactor Command Utility (kfutil)
 
-Keyfactor Command Utility (kfutil) is open source and there is **no SLA** for this tool/library/client. Keyfactor will
-address issues as resources become available. Keyfactor customers may request escalation by opening up a support ticket
-through their Keyfactor representative.
+Keyfactor Command Utility (kfutil) is open source and there is **no SLA** for this tool/library/client. Keyfactor will address issues as resources become available. Keyfactor customers may request escalation by opening up a support ticket through their Keyfactor representative.
 
-###### To report a problem or suggest a new feature, use the **[Issues](../../issues)
+###### To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
 
-** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)
-** tab.
+
 
 ## Quickstart
 
@@ -54,13 +23,25 @@ through their Keyfactor representative.
   - OR [wget](https://www.gnu.org/software/wget/) CLI tool, used to download the release files.
 - [unzip](https://linuxize.com/post/how-to-unzip-files-in-linux/#installing-unzip) CLI tool, used to unzip the release
 - [openssl](https://www.openssl.org/source/) CLI tool, used to validate package checksum.
-- `$HOME/.local/bin` in your `$PATH` and exists.
+- `$HOME/.local/bin` in your `$PATH` and exists if not running as root, else `/usr/local/bin` if running as root.
 
 ### Installation:
 
+#### Linux/MacOS
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh)
+curl -fsSL -o get-kfutil.sh https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh
+chmod +x get-kfutil.sh
+# Install kfutil to $HOME/.local/bin. Use -h for help and examples.
+./get-kfutil.sh
 ````
+
+#### Windows (or Linux/MacOS if PowerShell is preferred)
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.ps1" -OutFile "install.ps1"
+# Install kfutil to $HOME/AppData/Local/Microsoft/WindowsApps.
+# Use Get-Help .\install.ps1 -Full for help and examples.
+.\install.ps1
+```
 
 ### Environmental Variables
 
@@ -130,10 +111,7 @@ For full documentation on the `login` command, see the [login](docs/kfutil_login
 
 *WARNING* - The `login` command will store your Keyfactor credentials in a file on your local machine. This file is not
 encrypted and is not secure. It is recommended that you use the `login` command only on your local machine and not on a
-shared machine. Instead of using the `login` command, you can set the environmental variables listed above. **You may
-also
-choose to use login and provide an empty password, in this mode you will be prompted for your password each time you run
-a command.**
+shared machine. Instead of using the `login` command, you can set the environmental variables listed above.
 
 ```bash
 kfutil login
