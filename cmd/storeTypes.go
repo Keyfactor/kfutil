@@ -21,7 +21,6 @@ import (
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 	"io"
 	"net/http"
 	"os"
@@ -64,83 +63,6 @@ var storesTypesListCmd = &cobra.Command{
 		if jErr != nil {
 
 			log.Error().Err(jErr).Msg("unable to marshal certificate store types to JSON")
-			return jErr
-		}
-		outputResult(output, outputFormat)
-		return nil
-	},
-}
-
-var storesTypeGetCmd = &cobra.Command{
-	Use:   "get",
-	Short: "Get a specific store type by either name or ID.",
-	Long:  `Get a specific store type by either name or ID.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cmd.SilenceUsage = true
-		// Specific flags
-		genericFormat, _ := cmd.Flags().GetBool("generic")
-		gitRef, _ := cmd.Flags().GetString(FlagGitRef)
-		id, _ := cmd.Flags().GetInt("id")
-		name, _ := cmd.Flags().GetString("name")
-
-		// Debug + expEnabled checks
-		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
-		if debugErr != nil {
-			return debugErr
-		}
-		informDebug(debugFlag)
-
-		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
-
-		// CLI Logic
-		if gitRef == "" {
-			gitRef = "main"
-		}
-		outputType := "full"
-		if genericFormat {
-			outputType = "generic"
-		}
-		var st interface{}
-		// Check inputs
-		if id < 0 && name == "" {
-			validStoreTypes := getValidStoreTypes("", gitRef)
-			prompt := &survey.Select{
-				Message: "Choose a store type:",
-				Options: validStoreTypes,
-			}
-			var selected string
-			err := survey.AskOne(prompt, &selected)
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-			st = selected
-		} else if id >= 0 && name != "" {
-			mexErr := fmt.Errorf("ID and Name are mutually exclusive")
-			log.Error().Err(mexErr).Send()
-			return mexErr
-		} else if id >= 0 {
-			st = id
-		} else if name != "" {
-			st = name
-		} else {
-			log.Error().Err(InvalidInputError).Send()
-			return InvalidInputError
-		}
-
-		storeTypes, err := kfClient.GetCertificateStoreType(st)
-		if err != nil {
-
-			log.Error().Err(err).Msg(fmt.Sprintf("unable to get certificate store type %s", st))
-			return err
-		}
-		output, jErr := formatStoreTypeOutput(storeTypes, outputFormat, outputType)
-		if jErr != nil {
-
-			log.Error().Err(jErr).Msg("unable to format certificate store type output")
 			return jErr
 		}
 		outputResult(output, outputFormat)
@@ -484,74 +406,6 @@ func createStoreFromFile(filename string, kfClient *api.Client) (*api.Certificat
 	return createResp, nil
 }
 
-func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat string, outputType string) (string, error) {
-	var sOut interface{}
-	sOut = storeType
-	if outputType == "generic" {
-		// Convert to api.GenericCertificateStoreType
-		var genericProperties []api.StoreTypePropertyDefinitionGeneric
-		for _, prop := range *storeType.Properties {
-			genericProp := api.StoreTypePropertyDefinitionGeneric{
-				Name:         prop.Name,
-				DisplayName:  prop.DisplayName,
-				Type:         prop.Type,
-				DependsOn:    prop.DependsOn,
-				DefaultValue: prop.DefaultValue,
-				Required:     prop.Required,
-			}
-			genericProperties = append(genericProperties, genericProp)
-		}
-
-		var genericEntryParameters []api.EntryParameterGeneric
-		for _, param := range *storeType.EntryParameters {
-			genericParam := api.EntryParameterGeneric{
-				Name:         param.Name,
-				DisplayName:  param.DisplayName,
-				Type:         param.Type,
-				RequiredWhen: param.RequiredWhen,
-				DependsOn:    param.DependsOn,
-				DefaultValue: param.DefaultValue,
-				Options:      param.Options,
-			}
-			genericEntryParameters = append(genericEntryParameters, genericParam)
-		}
-
-		genericStoreType := api.CertificateStoreTypeGeneric{
-			Name:                storeType.Name,
-			ShortName:           storeType.ShortName,
-			Capability:          storeType.Capability,
-			SupportedOperations: storeType.SupportedOperations,
-			Properties:          &genericProperties,
-			EntryParameters:     &genericEntryParameters,
-			PasswordOptions:     storeType.PasswordOptions,
-			//StorePathType:       storeType.StorePathType,
-			StorePathValue:    storeType.StorePathValue,
-			PrivateKeyAllowed: storeType.PrivateKeyAllowed,
-			//JobProperties:      jobProperties,
-			ServerRequired:     storeType.ServerRequired,
-			PowerShell:         storeType.PowerShell,
-			BlueprintAllowed:   storeType.BlueprintAllowed,
-			CustomAliasAllowed: storeType.CustomAliasAllowed,
-		}
-		sOut = genericStoreType
-	}
-
-	switch {
-	case outputFormat == "yaml" || outputFormat == "yml":
-		output, jErr := yaml.Marshal(sOut)
-		if jErr != nil {
-			return "", jErr
-		}
-		return fmt.Sprintf("%s", output), nil
-	default:
-		output, jErr := json.MarshalIndent(sOut, "", "  ")
-		if jErr != nil {
-			return "", jErr
-		}
-		return fmt.Sprintf("%s", output), nil
-	}
-}
-
 func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfutil/main/store_types.json")
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfctl/master/storetypes/storetypes.json")
@@ -641,22 +495,14 @@ func init() {
 	storeTypesCmd.AddCommand(storesTypesListCmd)
 
 	// GET commands
-	storeTypesCmd.AddCommand(storesTypeGetCmd)
-	var storeTypeID int
-	var storeTypeName string
-	var dryRun bool
-	var genericFormat bool
-	storesTypeGetCmd.Flags().IntVarP(&storeTypeID, "id", "i", -1, "ID of the certificate store type to get.")
-	storesTypeGetCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to get.")
-	storesTypeGetCmd.MarkFlagsMutuallyExclusive("id", "name")
-	storesTypeGetCmd.Flags().BoolVarP(&genericFormat, "generic", "g", false, "Output the store type in a generic format stripped of all fields specific to the Command instance.")
-	//storesTypeGetCmd.Flags().StringVarP(&outputFormat, "format", "f", "json", "Output format. Valid choices are: 'json', 'yaml'. Default is 'json'.")
-	storesTypeGetCmd.Flags().StringVarP(&gitRef, FlagGitRef, "b", "main", "The git branch or tag to reference when pulling store-types from the internet.")
+	storeTypesCmd.AddCommand(CreateCmdStoreTypesGet())
 
 	// CREATE command
 	var listValidStoreTypes bool
 	var filePath string
 	var createAll bool
+	var storeTypeName string
+	var storeTypeID int
 	storeTypesCmd.AddCommand(storesTypeCreateCmd)
 	storesTypeCreateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Short name of the certificate store type to get. Valid choices are: "+validTypesString)
 	storesTypeCreateCmd.Flags().BoolVarP(&listValidStoreTypes, "list", "l", false, "List valid store types.")
@@ -670,6 +516,7 @@ func init() {
 
 	// DELETE command
 	var deleteAll bool
+	var dryRun bool
 	storeTypesCmd.AddCommand(storesTypeDeleteCmd)
 	storesTypeDeleteCmd.Flags().IntVarP(&storeTypeID, "id", "i", -1, "ID of the certificate store type to delete.")
 	storesTypeDeleteCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to delete.")
