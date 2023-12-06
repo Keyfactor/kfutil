@@ -160,8 +160,6 @@ jobs:
             echo "Updating version in version.go"
             sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
             cat pkg/version/version.go
-            git show
-            git status
             git remote -v
             git branch
             git checkout -b ${{ env.GITHUB_HEAD_REF }}"
