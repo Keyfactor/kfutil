@@ -117,7 +117,6 @@ jobs:
           echo "MANUAL_VERSION=${{env.PR_BASE_TAG}}.0-rc.0" | tee -a "$GITHUB_ENV"
       - name: Set semver info
         id: set-semver-info
-        if: needs.get-versions.outputs.LATEST_TAG != ''
         uses: fiddlermikey/action-bump-semver@main
         with:
           current_version: ${{ env.LATEST_TAG}}
