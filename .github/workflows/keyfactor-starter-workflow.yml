@@ -167,7 +167,7 @@ jobs:
   update-if-needed:
     needs: check-package-version
     runs-on: ubuntu-latest
-    if: env.UPDATE_VERSION == 'true'
+    if: ${{ env.UPDATE_VERSION }} == 'true'
 
     steps:
       - name: Checkout repository
