@@ -154,12 +154,16 @@ jobs:
         id: check-version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTHOR_NAME: 'Keyfactor'
+          AUTHOR_EMAIL: 'keyfactor@keyfactor.github.io'
         run: |
           if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
             echo "Updating version in version.go"
             sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
             cat pkg/version/version.go
             git add pkg/version/version.go
+            git config --global user.email "${{ env.AUTHOR_EMAIL }}"
+            git config --global user.name "${{ env.AUTHOR_NAME }}"
             git commit -m "Bump package version to ${{ env.MANUAL_VERSION }}"
             git push
             echo "Version mismatch! Please create a new pull request with the updated version."
