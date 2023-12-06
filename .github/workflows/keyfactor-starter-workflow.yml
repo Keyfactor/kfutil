@@ -140,9 +140,9 @@ jobs:
       - name: Show next sem-version
         if: needs.get-versions.outputs.LATEST_TAG != ''
         run: |
-          echo "MANUAL_VERSION=${{ steps.set-semver-info.outputs.new_version }}" > "$GITHUB_ENV"
+          echo "MANUAL_VERSION=v${{ steps.set-semver-info.outputs.new_version }}" > "$GITHUB_ENV"
       - run: |
-          echo "Next version: ${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Next version: v${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Get Package Version
         id: get-pkg-version
@@ -154,11 +154,11 @@ jobs:
         id: check-version
         run: |
           if [ "${{ github.event_name }}" == "push" ]; then
-            if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.VERSION }}" ]; then
+            if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
               echo "Updating version in version.go"
-              sed -i "s/const VERSION = .*/const VERSION = \"${{ env.VERSION }}\"/" pkg/version/version.go
+              sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
               git add pkg/version/version.go
-              git commit -m "Bump package version to ${{ env.VERSION }}"
+              git commit -m "Bump package version to ${{ env.MANUAL_VERSION }}"
               git push
               echo "Version mismatch! Please create a new pull request with the updated version."
               exit 1
