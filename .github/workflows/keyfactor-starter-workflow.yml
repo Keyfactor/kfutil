@@ -157,6 +157,7 @@ jobs:
             if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
               echo "Updating version in version.go"
               sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
+              cat pkg/version/version.go
               git add pkg/version/version.go
               git commit -m "Bump package version to ${{ env.MANUAL_VERSION }}"
               git push
