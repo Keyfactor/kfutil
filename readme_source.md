@@ -13,10 +13,7 @@
 
 #### Linux/MacOS
 ```bash
-curl -fsSL -o get-kfutil.sh https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh
-chmod +x get-kfutil.sh
-# Install kfutil to $HOME/.local/bin. Use -h for help and examples.
-./get-kfutil.sh
+bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh)
 ````
 
 #### Windows (or Linux/MacOS if PowerShell is preferred)
