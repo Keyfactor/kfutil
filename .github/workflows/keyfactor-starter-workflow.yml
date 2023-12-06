@@ -10,7 +10,7 @@ on:
       - 'release-*.*'
 
 jobs:
-  check-pkg-version:
+  get-versions:
     runs-on: ubuntu-latest
     outputs:
       PR_BASE_REF: ${{ steps.set-outputs.outputs.PR_BASE_REF }}
@@ -23,11 +23,14 @@ jobs:
       IS_RELEASE_BRANCH: ${{ steps.set-outputs.outputs.IS_RELEASE_BRANCH }}
       IS_HOTFIX: ${{ steps.set-outputs.outputs.IS_HOTFIX }}
       LATEST_TAG: ${{ steps.set-outputs.outputs.LATEST_TAG }}
+
+
     steps:
       - name: Check out the code
         uses: actions/checkout@v3
 
       - name: Display base.ref from Pull Request
+        if: github.event_name == 'pull_request'
         id: display-from-pr
         run: |
           echo "Event: ${{ github.event_name }}" | tee -a $GITHUB_STEP_SUMMARY
@@ -109,21 +112,36 @@ jobs:
           echo "IS_HOTFIX=${{ env.IS_HOTFIX }}" | tee -a "$GITHUB_OUTPUT"
           echo "LATEST_TAG=${{ env.LATEST_TAG }}" | tee -a "$GITHUB_OUTPUT"
 
-      - name: Set Next Version
-        id: set-next-version
+  create-github-release:
+    needs: get-versions
+    if: github.event_name == 'pull_request' && needs.get-versions.outputs.IS_RELEASE_BRANCH == 'True'
+    outputs:
+      release_version: ${{ steps.create_release.outputs.current_tag }}
+      release_url: ${{ steps.create_release.outputs.upload_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "INC_LEVEL=${{ needs.get-versions.outputs.INC_LEVEL}}"
+      - name: Check if initial release
+        if: needs.get-versions.outputs.LATEST_TAG == ''
         run: |
-          echo "INC_LEVEL=${{ env.INC_LEVEL}}"
-          echo "INITIAL_VERSION=${{env.PR_BASE_TAG}}.0-rc.0" | tee -a "$GITHUB_STEP_SUMMARY" | tee -a "$GITHUB_ENV"
-          echo "MANUAL_VERSION=${{env.PR_BASE_TAG}}.0-rc.0" | tee -a "$GITHUB_ENV"
+          echo "INITIAL_VERSION=${{needs.get-versions.outputs.PR_BASE_TAG}}.0-rc.0" | tee -a "$GITHUB_STEP_SUMMARY" | tee -a "$GITHUB_ENV"
+          echo "MANUAL_VERSION=${{needs.get-versions.outputs.PR_BASE_TAG}}.0-rc.0" | tee -a "$GITHUB_ENV"
       - name: Set semver info
         id: set-semver-info
+        if: needs.get-versions.outputs.LATEST_TAG != ''
         uses: fiddlermikey/action-bump-semver@main
         with:
-          current_version: ${{ env.LATEST_TAG}}
-          level: ${{ env.INC_LEVEL}}
+          current_version: ${{ needs.get-versions.outputs.LATEST_TAG}}
+          level: ${{ needs.get-versions.outputs.INC_LEVEL}}
           preID: rc
+      - name: Show next sem-version
+        if: needs.get-versions.outputs.LATEST_TAG != ''
+        run: |
+          echo "MANUAL_VERSION=${{ steps.set-semver-info.outputs.new_version }}" > "$GITHUB_ENV"
       - run: |
-          echo "Next version: ${{ env.MANUAL_VERSION }}"
+          echo "Next version: ${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Get Package Version
         id: get-pkg-version
         run: echo "CURRENT_PKG_VERSION=$(cat pkg/version/version.go | grep 'const VERSION' | awk '{print $NF}' | tr -d '"')" | tee -a "$GITHUB_ENV"
@@ -155,6 +173,26 @@ jobs:
           git add version/version.go
           git commit -m "Set version to ${{ env.VERSION }}"
           git push
+#      - name: Create new release
+#        id: create_release
+#        uses: keyfactor/action-create-release@v3
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          MANUAL_VERSION: ${{ env.MANUAL_VERSION }}
+#        if: github.event_name == 'pull_request' && needs.get-versions.outputs.IS_RELEASE_BRANCH == 'True'
+#        with:
+#          release_name: ${{ env.MANUAL_VERSION }}
+#          body: |
+#            [Changelog](/./CHANGELOG.md)
+#            [Readme](/./README.md)
+#            For the latest README.md updates visit the [Main Page](/../main) for this repository
+#          draft: false
+#          prerelease: ${{ needs.get-versions.outputs.IS_PRE_RELEASE == 'True'}}
+#          prerelease_suffix: rc
+#          tag_name: ${{ env.MANUAL_VERSION }}
+#          auto_increment_type: ${{ (needs.get-versions.outputs.IS_PRE_RELEASE == 'True') && 'prerelease' || 'patch' }}
+#          tag_schema: semantic
+#          commitish: ${{ github.sha }}
 
 #  call-starter-workflow:
 #    uses: keyfactor/actions/.github/workflows/starter.yml@v2
