@@ -112,7 +112,7 @@ jobs:
           echo "IS_HOTFIX=${{ env.IS_HOTFIX }}" | tee -a "$GITHUB_OUTPUT"
           echo "LATEST_TAG=${{ env.LATEST_TAG }}" | tee -a "$GITHUB_OUTPUT"
 
-  create-github-release:
+  set-package-version:
     needs: get-versions
     if: github.event_name == 'pull_request' && needs.get-versions.outputs.IS_RELEASE_BRANCH == 'True'
     outputs:
@@ -144,8 +144,10 @@ jobs:
 
       - name: Get Package Version
         id: get-pkg-version
-        run: echo "CURRENT_PKG_VERSION=$(cat pkg/version/version.go | grep 'const VERSION' | awk '{print $NF}' | tr -d '"')" | tee -a "$GITHUB_ENV"
-
+        run: |
+          pwd
+          ls -la
+          echo "CURRENT_PKG_VERSION=$(cat pkg/version/version.go | grep 'const VERSION' | awk '{print $NF}' | tr -d '"')" | tee -a "$GITHUB_ENV"
       - name: Compare package version
         id: check-version
         run: |
