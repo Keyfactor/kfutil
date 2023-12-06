@@ -153,31 +153,19 @@ jobs:
       - name: Compare package version
         id: check-version
         run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
-              echo "Updating version in version.go"
-              sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
-              cat pkg/version/version.go
-              git add pkg/version/version.go
-              git commit -m "Bump package version to ${{ env.MANUAL_VERSION }}"
-              git push
-              echo "Version mismatch! Please create a new pull request with the updated version."
-              exit 1
-            else
-              echo "Version matches. Continue with the workflow."
-            fi
+          if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
+            echo "Updating version in version.go"
+            sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
+            cat pkg/version/version.go
+            git add pkg/version/version.go
+            git commit -m "Bump package version to ${{ env.MANUAL_VERSION }}"
+            git push
+            echo "Version mismatch! Please create a new pull request with the updated version."
+            exit 1
           else
-            echo "Skipping version check for events other than push."
+            echo "Version matches. Continue with the workflow."
           fi
 
-      - name: Set new version
-        if: steps.check-version.outcome == 'success'
-        run: |
-          echo "Setting new version in version.go"
-          sed -i "s/const VERSION = .*/const VERSION = \"${{ env.VERSION }}\"/" version/version.go
-          git add version/version.go
-          git commit -m "Set version to ${{ env.VERSION }}"
-          git push
 #      - name: Create new release
 #        id: create_release
 #        uses: keyfactor/action-create-release@v3
