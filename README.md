@@ -29,7 +29,10 @@ Keyfactor Command Utility (kfutil) is open source and there is **no SLA** for th
 
 #### Linux/MacOS
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh)
+curl -fsSL -o get-kfutil.sh https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh
+chmod +x get-kfutil.sh
+# Install kfutil to $HOME/.local/bin. Use -h for help and examples.
+./get-kfutil.sh
 ````
 
 #### Windows (or Linux/MacOS if PowerShell is preferred)
