@@ -109,15 +109,19 @@ jobs:
           echo "IS_HOTFIX=${{ env.IS_HOTFIX }}" | tee -a "$GITHUB_OUTPUT"
           echo "LATEST_TAG=${{ env.LATEST_TAG }}" | tee -a "$GITHUB_OUTPUT"
 
+      - name: Get current version
+        id: get-version
+        run: echo "::set-output name=version::$(cat pkg/version/version.go | grep 'const VERSION' | awk '{print $NF}' | tr -d '"')"
+
       - name: Compare package version
         id: check-version
         run: |
           if [ "${{ github.event_name }}" == "push" ]; then
             if [ "${{ steps.get-version.outputs.version }}" != "${{ env.VERSION }}" ]; then
               echo "Updating version in version.go"
-              sed -i "s/const VERSION = .*/const VERSION = \"${{ env.VERSION }}\"/" version/version.go
-              git add version/version.go
-              git commit -m "Update version to ${{ env.VERSION }}"
+              sed -i "s/const VERSION = .*/const VERSION = \"${{ env.VERSION }}\"/" pkg/version/version.go
+              git add pkg/version/version.go
+              git commit -m "Bump package version to ${{ env.VERSION }}"
               git push
               echo "Version mismatch! Please create a new pull request with the updated version."
               exit 1
@@ -127,6 +131,7 @@ jobs:
           else
             echo "Skipping version check for events other than push."
           fi
+
       - name: Set new version
         if: steps.check-version.outcome == 'success'
         run: |
