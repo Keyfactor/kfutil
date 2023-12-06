@@ -3,7 +3,7 @@ name: Keyfactor Bootstrap Workflow
 on:
   workflow_dispatch:
   pull_request:
-    types: [opened, closed, synchronize, edited, reopened]
+    types: [ opened, closed, synchronize, edited, reopened ]
   push:
   create:
     branches:
@@ -120,6 +120,8 @@ jobs:
       release_url: ${{ steps.create_release.outputs.upload_url }}
     runs-on: ubuntu-latest
     steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
       - run: |
           echo "INC_LEVEL=${{ needs.get-versions.outputs.INC_LEVEL}}"
       - name: Check if initial release
