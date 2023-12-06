@@ -161,8 +161,8 @@ jobs:
             sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
             cat pkg/version/version.go
             git branch
-            git checkout -b ${{ env.GITHUB_BASE_REF }}
-            git pull origin ${{ env.GITHUB_BASE_REF }}
+            git checkout -b ${{ github.event.pull_request.base.ref }}"
+            git pull origin ${{ github.event.pull_request.base.ref }}"
             git add pkg/version/version.go
             git config --global user.email "${{ env.AUTHOR_EMAIL }}"
             git config --global user.name "${{ env.AUTHOR_NAME }}"
