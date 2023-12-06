@@ -1,3 +1,13 @@
+# v1.3.1
+
+## Bug Fixes
+
+### Package
+- Bump package version to `1.3.1` to fix an issue with the `1.3.0` release.
+
+### Installer
+- Remove `v` prefix from installer URL path to accommodate for the new build process.
+
 # v1.3.0
 ## Features
 
