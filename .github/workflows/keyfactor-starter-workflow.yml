@@ -167,7 +167,6 @@ jobs:
   update-if-needed:
     needs: check-package-version
     runs-on: ubuntu-latest
-    if: ${{ env.UPDATE_VERSION }} == 'true'
 
     steps:
       - name: Checkout repository
@@ -175,11 +174,13 @@ jobs:
 
       - name: Update Package Version
         id: update-version
+        if: ${{ env.UPDATE_VERSION }} == 'true'
         run: |
           sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
 
       - uses: Keyfactor/add-and-commit@v9.1.3
         name: Add and Commit
+        needs: update-version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
