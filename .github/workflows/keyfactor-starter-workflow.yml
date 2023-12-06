@@ -161,6 +161,10 @@ jobs:
             sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
             cat pkg/version/version.go
             git remote -v
+            echo "Checking out ${{ env.PR_BASE_REF }}"
+            echo "git checkout -b ${{ env.GITHUB_REF }}"
+            echo "git checkout -b ${{ env.GITHUB_HEAD_REF }}"
+            printenv
             git checkout -b ${{ env.GITHUB_HEAD_REF }}
             git add pkg/version/version.go
             git config --global user.email "${{ env.AUTHOR_EMAIL }}"
