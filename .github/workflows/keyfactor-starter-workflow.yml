@@ -111,7 +111,7 @@ jobs:
           echo "IS_HOTFIX=${{ env.IS_HOTFIX }}" | tee -a "$GITHUB_OUTPUT"
           echo "LATEST_TAG=${{ env.LATEST_TAG }}" | tee -a "$GITHUB_OUTPUT"
 
-  set-package-version:
+  check-package-version:
     needs: get-versions
     if: github.event_name == 'pull_request' && needs.get-versions.outputs.IS_RELEASE_BRANCH == 'True'
     outputs:
@@ -158,23 +158,52 @@ jobs:
         run: |
           if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
             echo "Updating version in version.go"
-            sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
-            cat pkg/version/version.go
-            git remote -v
-            echo "Checking out ${{ env.PR_BASE_REF }}"
-            echo "git checkout -b ${{ env.GITHUB_REF }}"
-            echo "git checkout -b ${{ env.GITHUB_HEAD_REF }}"
-            git checkout -b $GITHUB_HEAD_REF
-            git add pkg/version/version.go
-            git config --global user.email "${{ env.AUTHOR_EMAIL }}"
-            git config --global user.name "${{ env.AUTHOR_NAME }}"
-            git commit -m "Bump package version to ${{ env.MANUAL_VERSION }}"
-            git push
-            echo "Version mismatch! Please create a new pull request with the updated version."
-            exit 1
+            echo "UPDATE_VERSION=true" >> $GITHUB_ENV
           else
-            echo "Version matches. Continue with the workflow."
+            echo "Versions match, no update needed"
+            echo "UPDATE_VERSION=false" >> $GITHUB_ENV
           fi
+
+  update-if-needed:
+    needs: check-package-version
+    runs-on: ubuntu-latest
+    if: env.UPDATE_VERSION == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Update Package Version
+        id: update-version
+        run: |
+          sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
+
+      - uses: Keyfactor/add-and-commit@v9.1.3
+        name: Add and Commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          add: pkg/version/version.go --force
+          message: "Bump package version to ${{ env.MANUAL_VERSION }}"
+          author_name: Keyfactor
+          author_email: keyfactor@keyfactor.github.io
+#  sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
+#  cat pkg/version/version.go
+#  git remote -v
+#  echo "Checking out ${{ env.PR_BASE_REF }}"
+#  echo "git checkout -b ${{ env.GITHUB_REF }}"
+#  echo "git checkout -b ${{ env.GITHUB_HEAD_REF }}"
+#  git checkout -b $GITHUB_HEAD_REF
+#  git add pkg/version/version.go
+#  git config --global user.email "${{ env.AUTHOR_EMAIL }}"
+#  git config --global user.name "${{ env.AUTHOR_NAME }}"
+#  git commit -m "Bump package version to ${{ env.MANUAL_VERSION }}"
+#  git push
+#  echo "Version mismatch! Please create a new pull request with the updated version."
+#  exit 1
+#  else
+#  echo "Version matches. Continue with the workflow."
+#  fi
 
 #      - name: Create new release
 #        id: create_release
