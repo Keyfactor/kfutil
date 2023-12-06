@@ -254,7 +254,7 @@ function Get-BinaryAndSum {
         [string]$Architecture
     )
 
-    $ReleaseUrl = "https://github.com/Keyfactor/${BinaryName}/releases/download/v${Version}"
+    $ReleaseUrl = "https://github.com/Keyfactor/${BinaryName}/releases/download/${Version}"
     $Dist = "${BinaryName}_${Version}_${OS}_${Architecture}.zip"
     
     $DistUrl = "${ReleaseUrl}/${Dist}"
