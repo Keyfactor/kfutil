@@ -109,8 +109,24 @@ jobs:
           echo "IS_HOTFIX=${{ env.IS_HOTFIX }}" | tee -a "$GITHUB_OUTPUT"
           echo "LATEST_TAG=${{ env.LATEST_TAG }}" | tee -a "$GITHUB_OUTPUT"
 
-      - name: Get current version
-        id: get-version
+      - name: Set Next Version
+        id: set-next-version
+        run: |
+          echo "INC_LEVEL=${{ env.INC_LEVEL}}"
+          echo "INITIAL_VERSION=${{env.PR_BASE_TAG}}.0-rc.0" | tee -a "$GITHUB_STEP_SUMMARY" | tee -a "$GITHUB_ENV"
+          echo "MANUAL_VERSION=${{env.PR_BASE_TAG}}.0-rc.0" | tee -a "$GITHUB_ENV"
+      - name: Set semver info
+        id: set-semver-info
+        if: needs.get-versions.outputs.LATEST_TAG != ''
+        uses: fiddlermikey/action-bump-semver@main
+        with:
+          current_version: ${{ env.LATEST_TAG}}
+          level: ${{ env.INC_LEVEL}}
+          preID: rc
+      - run: |
+          echo "Next version: ${{ env.MANUAL_VERSION }}"
+      - name: Get Package Version
+        id: get-pkg-version
         run: echo "CURRENT_PKG_VERSION=$(cat pkg/version/version.go | grep 'const VERSION' | awk '{print $NF}' | tr -d '"')" | tee -a "$GITHUB_ENV"
 
       - name: Compare package version
