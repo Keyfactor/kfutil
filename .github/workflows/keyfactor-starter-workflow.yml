@@ -24,7 +24,6 @@ jobs:
       IS_HOTFIX: ${{ steps.set-outputs.outputs.IS_HOTFIX }}
       LATEST_TAG: ${{ steps.set-outputs.outputs.LATEST_TAG }}
 
-
     steps:
       - name: Check out the code
         uses: actions/checkout@v3
@@ -142,7 +141,7 @@ jobs:
         run: |
           echo "MANUAL_VERSION=v${{ steps.set-semver-info.outputs.new_version }}" > "$GITHUB_ENV"
       - run: |
-          echo "Next version: v${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Next version: ${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Get Package Version
         id: get-pkg-version
@@ -161,6 +160,7 @@ jobs:
             echo "Updating version in version.go"
             sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
             cat pkg/version/version.go
+            git checkout -b ${{ env.PR_BASE_REF }}
             git add pkg/version/version.go
             git config --global user.email "${{ env.AUTHOR_EMAIL }}"
             git config --global user.name "${{ env.AUTHOR_NAME }}"
