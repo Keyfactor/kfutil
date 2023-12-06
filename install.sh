@@ -186,7 +186,7 @@ checkBinaryInstalledVersion() {
 downloadFile() {
     local download_url
     local base_url
-    base_url="https://github.com/Keyfactor/${BINARY_NAME}/releases/download/v${VERSION}"
+    base_url="https://github.com/Keyfactor/${BINARY_NAME}/releases/download/${VERSION}"
     KFUTIL_DIST="kfutil_${VERSION}_${OS}_${ARCH}.zip"
     download_url="${base_url}/${KFUTIL_DIST}"
     checksum_url="${base_url}/kfutil_${VERSION}_SHA256SUMS"
