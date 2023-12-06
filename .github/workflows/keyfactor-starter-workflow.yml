@@ -160,9 +160,11 @@ jobs:
             echo "Updating version in version.go"
             sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
             cat pkg/version/version.go
+            git show
+            git status
+            git remote -v
             git branch
-            git checkout -b ${{ github.event.pull_request.base.ref }}"
-            git pull origin ${{ github.event.pull_request.base.ref }}"
+            git checkout -b ${{ env.GITHUB_HEAD_REF }}"
             git add pkg/version/version.go
             git config --global user.email "${{ env.AUTHOR_EMAIL }}"
             git config --global user.name "${{ env.AUTHOR_NAME }}"
