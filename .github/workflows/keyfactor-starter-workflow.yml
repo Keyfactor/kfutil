@@ -152,6 +152,8 @@ jobs:
           echo "CURRENT_PKG_VERSION=$(cat pkg/version/version.go | grep 'const VERSION' | awk '{print $NF}' | tr -d '"')" | tee -a "$GITHUB_ENV"
       - name: Compare package version
         id: check-version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
             echo "Updating version in version.go"
