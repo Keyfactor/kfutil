@@ -208,7 +208,7 @@ jobs:
           echo "Checking out ${{ github.head_ref }}"
           echo "git checkout -b ${{ github.head_ref }}"
           git checkout -b ${{ github.head_ref }}
-          git reset --hard origin/${{ github.head_ref }}
+          git pull origin ${{ github.head_ref }}
           sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
           git add pkg/version/version.go
           git config --global user.email "${{ env.AUTHOR_EMAIL }}"
