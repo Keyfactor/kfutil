@@ -193,7 +193,7 @@ jobs:
 
       - name: Commit to PR branch
         id: commit-version
-        if: ${{ needs.check-package-version.outputs.update_version == 'true' }} && ${{ needs.get-versions.outputs.NEXT_VERSION != '' }}
+        if: ${{ needs.check-package-version.outputs.update_version == 'true' }}
         env:
           AUTHOR_EMAIL: keyfactor@keyfactor.github.io
           AUTHOR_NAME: Keyfactor Robot
