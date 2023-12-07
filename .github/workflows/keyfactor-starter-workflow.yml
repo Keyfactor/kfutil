@@ -152,21 +152,26 @@ jobs:
           echo "CURRENT_PKG_VERSION=$(cat pkg/version/version.go | grep 'const VERSION' | awk '{print $NF}' | tr -d '"')" | tee -a "$GITHUB_ENV"
       - name: Compare package version
         id: check_version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AUTHOR_NAME: 'Keyfactor'
-          AUTHOR_EMAIL: 'keyfactor@keyfactor.github.io'
-          UPDATE_VERSION: ${{ steps.check_version.outputs.update_version }}
         run: |
           if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
             echo "Updating version in version.go"
-            echo "UPDATE_VERSION=true" >> $GITHUB_ENV
             echo "update_version=true" >> $GITHUB_ENV
             echo "update_version=true" | tee -a "$GITHUB_STEP_SUMMARY"
           else
             echo "Versions match, no update needed"
             echo "UPDATE_VERSION=false" >> $GITHUB_ENV
           fi
+        env:
+          UPDATE_VERSION: ${{ steps.check_version.outputs.update_version }}
+
+      - name: Set Outputs
+        id: set-outputs
+        if: needs.get-versions.outputs.LATEST_TAG != ''
+        run: |
+          echo "UPDATE_VERSION=${{ steps.check_version.outputs.update_version }}" | tee -a "$GITHUB_OUTPUT"
+          echo "CURRENT_PKG_VERSION=${{ env.CURRENT_PKG_VERSION }}" | tee -a "$GITHUB_OUTPUT"
+          echo "MANUAL_VERSION=${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_OUTPUT"
+          echo "NEW_PKG_VERSION=${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_OUTPUT"
 
   update-if-needed:
     needs: check-package-version
