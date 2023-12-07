@@ -1,6 +1,9 @@
 name: go tests
 
 on:
+#  push:
+#    branches:
+#      - "*"
   workflow_run:
     workflows:
       - "Keyfactor Bootstrap Workflow"
