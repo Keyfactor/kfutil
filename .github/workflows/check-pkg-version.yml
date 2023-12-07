@@ -161,7 +161,8 @@ jobs:
             echo "update_version=true" | tee -a "$GITHUB_STEP_SUMMARY"
           else
             echo "Versions match, no update needed"
-            echo "UPDATE_VERSION=false" >> $GITHUB_ENV
+            echo "update_version=false" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+            echo "update_version=false" | tee -a $GITHUB_STEP_SUMMARY
           fi
         env:
           UPDATE_VERSION: ${{ steps.check_version.outputs.update_version }}
@@ -183,6 +184,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: No Update
+        if: ${{ needs.check-package-version.outputs.update_version != 'true' }}
+        run: |
+          echo "Versions match, no update needed"
+          exit 0
 
       - name: Commit to PR branch
         id: commit-version
