@@ -23,6 +23,7 @@ jobs:
       IS_RELEASE_BRANCH: ${{ steps.set-outputs.outputs.IS_RELEASE_BRANCH }}
       IS_HOTFIX: ${{ steps.set-outputs.outputs.IS_HOTFIX }}
       LATEST_TAG: ${{ steps.set-outputs.outputs.LATEST_TAG }}
+      NEXT_VERSION: ${{ steps.set-outputs.outputs.NEW_PKG_VERSION }}
 
     steps:
       - name: Check out the code
@@ -174,7 +175,9 @@ jobs:
           echo "NEW_PKG_VERSION=${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_OUTPUT"
 
   update-if-needed:
-    needs: check-package-version
+    needs:
+      - get-versions
+      - check-package-version
     runs-on: ubuntu-latest
 
     steps:
@@ -186,19 +189,9 @@ jobs:
           echo "update_version=${{ needs.check-package-version.outputs.update_version }}" 
           echo "UPDATE_VERSION=${{ needs.check-package-version.outputs.update_version }}"
 
-      - name: Update Package Version
-        id: update-version
-        if: ${{ needs.check-package-version.outputs.update_version == 'true' }}
-        run: |
-          sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
-          cat pkg/version/version.go
-          echo ${{ github.ref }}
-          echo ${{ github.head_ref }}
-          echo ${{ github.base_ref }}
-
       - name: Commit to PR branch
         id: commit-version
-        if: ${{ needs.check-package-version.outputs.update_version == 'true' }}
+        if: ${{ needs.check-package-version.outputs.update_version == 'true' }} && ${{ needs.get-versions.outputs.NEXT_VERSION != '' }}
         env:
           AUTHOR_EMAIL: keyfactor@keyfactor.github.io
           AUTHOR_NAME: Keyfactor Robot
@@ -210,7 +203,7 @@ jobs:
           echo "git checkout -b ${{ github.head_ref }}"
           git checkout -b ${{ github.head_ref }}
           git reset --hard origin/${{ github.head_ref }}
-          sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
+          sed -i "s/const VERSION = .*/const VERSION = \"${{ needs.get-versions.outputs.NEXT_VERSION }}\"/" pkg/version/version.go
           git add pkg/version/version.go
           git config --global user.email "${{ env.AUTHOR_EMAIL }}"
           git config --global user.name "${{ env.AUTHOR_NAME }}"
