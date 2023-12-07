@@ -213,7 +213,7 @@ jobs:
           git config --global user.email "${{ env.AUTHOR_EMAIL }}"
           git config --global user.name "${{ env.AUTHOR_NAME }}"
           git commit -m "Bump package version to ${{ env.MANUAL_VERSION }}"
-          git push
+          git push --set-upstream origin ${{ github.head_ref }}
           echo "Version mismatch! Please create a new pull request with the updated version."
           exit 1
 
