@@ -206,7 +206,7 @@ jobs:
           message: "Bump package version to ${{ env.MANUAL_VERSION }}"
           author_name: Keyfactor
           author_email: keyfactor@keyfactor.github.io
-          branch: ${{ github.head_ref }}
+          fetch: true
 #  sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
 #  cat pkg/version/version.go
 #  git remote -v
