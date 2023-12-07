@@ -162,6 +162,7 @@ jobs:
             echo "Updating version in version.go"
             echo "UPDATE_VERSION=true" >> $GITHUB_ENV
             echo "update_version=true" >> $GITHUB_ENV
+            echo "update_version=true" | tee -a "$GITHUB_STEP_SUMMARY"
           else
             echo "Versions match, no update needed"
             echo "UPDATE_VERSION=false" >> $GITHUB_ENV
@@ -174,6 +175,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Output update_version
+        run: |
+          echo "update_version=${{ needs.check-package-version.outputs.update_version }}" 
+          echo "UPDATE_VERSION=${{ needs.check-package-version.outputs.update_version }}"
 
       - name: Update Package Version
         id: update-version
