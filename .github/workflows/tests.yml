@@ -1,14 +1,13 @@
 name: go tests
 
 on:
-  push:
-    branches:
-      - "*"
   workflow_run:
     workflows:
-      - "Keyfactor Bootstrap Workflow"
+      - "Check and Update Package Version"
     types:
       - completed
+    branches:
+      - "*"
 
 jobs:
   build:
