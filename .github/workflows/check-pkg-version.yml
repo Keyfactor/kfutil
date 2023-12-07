@@ -1,13 +1,9 @@
 name: Check and Update Package Version
 
 on:
-  workflow_dispatch:
-  pull_request:
-    types: [ opened, closed, synchronize, edited, reopened ]
   push:
-  create:
     branches:
-      - 'release-*.*'
+      - "*"
 
 jobs:
   get-versions:
