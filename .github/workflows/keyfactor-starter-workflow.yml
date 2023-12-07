@@ -156,7 +156,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AUTHOR_NAME: 'Keyfactor'
           AUTHOR_EMAIL: 'keyfactor@keyfactor.github.io'
-          UPDATE_VERSION: ${{ steps.set_version.outputs.update_version }}
+          UPDATE_VERSION: ${{ steps.check_version.outputs.update_version }}
         run: |
           if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
             echo "Updating version in version.go"
