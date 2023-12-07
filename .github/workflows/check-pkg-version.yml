@@ -202,12 +202,12 @@ jobs:
         env:
           AUTHOR_EMAIL: keyfactor@keyfactor.github.io
           AUTHOR_NAME: Keyfactor Robot
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git remote -v
-          echo "Checking out ${{ env.PR_BASE_REF }}"
-          echo "git checkout -b ${{ env.GITHUB_REF }}"
-          echo "git checkout -b ${{ env.GITHUB_HEAD_REF }}"
-          git checkout -b $GITHUB_HEAD_REF
+          echo "Checking out ${{ github.head_ref }}"
+          echo "git checkout -b ${{ github.head_ref }}"
+          git checkout -b ${{ github.head_ref }}
           sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
           git add pkg/version/version.go
           git config --global user.email "${{ env.AUTHOR_EMAIL }}"
