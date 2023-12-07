@@ -155,7 +155,7 @@ jobs:
         run: |
           if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
             echo "Updating version in version.go"
-            echo "update_version=true" >> $GITHUB_ENV
+            echo "update_version=true" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
             echo "update_version=true" | tee -a "$GITHUB_STEP_SUMMARY"
           else
             echo "Versions match, no update needed"
