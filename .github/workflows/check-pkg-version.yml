@@ -142,7 +142,7 @@ jobs:
       - name: Show next sem-version
         if: needs.get-versions.outputs.LATEST_TAG != ''
         run: |
-          echo "MANUAL_VERSION=v${{ steps.set-semver-info.outputs.new_version }}" > "$GITHUB_ENV"
+          echo "MANUAL_VERSION=${{ steps.set-semver-info.outputs.new_version }}" > "$GITHUB_ENV"
       - run: |
           echo "Next version: ${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_STEP_SUMMARY"
 
@@ -183,11 +183,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Output update_version
-        run: |
-          echo "update_version=${{ needs.check-package-version.outputs.update_version }}" 
-          echo "UPDATE_VERSION=${{ needs.check-package-version.outputs.update_version }}"
 
       - name: Commit to PR branch
         id: commit-version
