@@ -117,6 +117,7 @@ jobs:
     outputs:
       release_version: ${{ steps.create_release.outputs.current_tag }}
       release_url: ${{ steps.create_release.outputs.upload_url }}
+      update_version: ${{ steps.check_version.outputs.update_version }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
@@ -150,15 +151,17 @@ jobs:
           ls -la
           echo "CURRENT_PKG_VERSION=$(cat pkg/version/version.go | grep 'const VERSION' | awk '{print $NF}' | tr -d '"')" | tee -a "$GITHUB_ENV"
       - name: Compare package version
-        id: check-version
+        id: check_version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AUTHOR_NAME: 'Keyfactor'
           AUTHOR_EMAIL: 'keyfactor@keyfactor.github.io'
+          UPDATE_VERSION: ${{ steps.set_version.outputs.update_version }}
         run: |
           if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
             echo "Updating version in version.go"
             echo "UPDATE_VERSION=true" >> $GITHUB_ENV
+            echo "update_version=true" >> $GITHUB_ENV
           else
             echo "Versions match, no update needed"
             echo "UPDATE_VERSION=false" >> $GITHUB_ENV
@@ -174,13 +177,13 @@ jobs:
 
       - name: Update Package Version
         id: update-version
-        if: ${{ env.UPDATE_VERSION }} == 'true'
+        if: ${{ needs.check-package-version.outputs.update_version == 'true' }}
         run: |
           sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
 
       - uses: Keyfactor/add-and-commit@v9.1.3
         name: Add and Commit
-        needs: update-version
+        if: ${{ needs.check-package-version.outputs.update_version == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
