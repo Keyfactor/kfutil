@@ -119,6 +119,7 @@ jobs:
       release_version: ${{ steps.create_release.outputs.current_tag }}
       release_url: ${{ steps.create_release.outputs.upload_url }}
       update_version: ${{ steps.check_version.outputs.update_version }}
+      next_version: ${{ steps.set-semver-info.outputs.new_version }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out the code
@@ -176,7 +177,6 @@ jobs:
 
   update-if-needed:
     needs:
-      - get-versions
       - check-package-version
     runs-on: ubuntu-latest
 
@@ -203,7 +203,7 @@ jobs:
           echo "git checkout -b ${{ github.head_ref }}"
           git checkout -b ${{ github.head_ref }}
           git reset --hard origin/${{ github.head_ref }}
-          sed -i "s/const VERSION = .*/const VERSION = \"${{ needs.get-versions.outputs.NEXT_VERSION }}\"/" pkg/version/version.go
+          sed -i "s/const VERSION = .*/const VERSION = \"${{ needs.check-package-version.outputs.next_version }}\"/" pkg/version/version.go
           git add pkg/version/version.go
           git config --global user.email "${{ env.AUTHOR_EMAIL }}"
           git config --global user.name "${{ env.AUTHOR_NAME }}"
