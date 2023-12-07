@@ -1,0 +1,270 @@
+name: Check and Update Package Version
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [ opened, closed, synchronize, edited, reopened ]
+  push:
+  create:
+    branches:
+      - 'release-*.*'
+
+jobs:
+  get-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      PR_BASE_REF: ${{ steps.set-outputs.outputs.PR_BASE_REF }}
+      PR_COMMIT_SHA: ${{ steps.set-outputs.outputs.PR_COMMIT_SHA }}
+      GITHUB_SHA: ${{ steps.set-outputs.outputs.GITHUB_SHA }}
+      PR_BASE_TAG: ${{ steps.set-outputs.outputs.PR_BASE_TAG }}
+      IS_FULL_RELEASE: ${{ steps.set-outputs.outputs.IS_FULL_RELEASE }}
+      IS_PRE_RELEASE: ${{ steps.set-outputs.outputs.IS_PRE_RELEASE }}
+      INC_LEVEL: ${{ steps.set-outputs.outputs.INC_LEVEL }}
+      IS_RELEASE_BRANCH: ${{ steps.set-outputs.outputs.IS_RELEASE_BRANCH }}
+      IS_HOTFIX: ${{ steps.set-outputs.outputs.IS_HOTFIX }}
+      LATEST_TAG: ${{ steps.set-outputs.outputs.LATEST_TAG }}
+      NEXT_VERSION: ${{ steps.set-outputs.outputs.NEW_PKG_VERSION }}
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+
+      - name: Display base.ref from Pull Request
+        if: github.event_name == 'pull_request'
+        id: display-from-pr
+        run: |
+          echo "Event: ${{ github.event_name }}" | tee -a $GITHUB_STEP_SUMMARY
+          echo "Event Action: ${{ github.event.action }}" | tee -a $GITHUB_STEP_SUMMARY
+          echo "PR_BASE_REF=${{ github.event.pull_request.base.ref }}" | tee -a "$GITHUB_ENV" | tee -a $GITHUB_STEP_SUMMARY
+          echo "PR_STATE=${{ github.event.pull_request.state }}" | tee -a "$GITHUB_ENV" | tee -a $GITHUB_STEP_SUMMARY
+          echo "PR_MERGED=${{ github.event.pull_request.merged }}" | tee -a "$GITHUB_ENV" | tee -a $GITHUB_STEP_SUMMARY
+          echo "PR_COMMIT_SHA=${{ github.event.pull_request.merge_commit_sha }}" | tee -a "$GITHUB_ENV" | tee -a $GITHUB_STEP_SUMMARY
+          echo "GITHUB_SHA=${{ github.sha }}" | tee -a "$GITHUB_ENV" | tee -a $GITHUB_STEP_SUMMARY
+          baseref="${{ github.event.pull_request.base.ref }}"
+          basetag="${baseref#release-}"
+          echo "PR_BASE_TAG=$basetag" | tee -a "$GITHUB_ENV" | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Display base_ref from Push Event
+        if: github.event_name == 'push'
+        id: display-from-push
+        run: |
+          echo "Branch Ref: ${{ github.ref }}" | tee -a $GITHUB_STEP_SUMMARY
+          echo "Event: ${{ github.event_name }}" | tee -a $GITHUB_STEP_SUMMARY
+          echo "github.sha: ${{ github.sha }}" | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Find Latest Tag
+        if: github.event_name == 'pull_request'
+        id: find-latest-tag
+        run: |
+          prbasetag="${{env.PR_BASE_TAG}}"
+          git fetch --tags
+          if [[ -n `git tag` ]]; then
+            echo "Setting vars"
+            allBranchTags=`git tag --sort=-v:refname | grep "^$prbasetag" || echo ""`
+            allRepoTags=`git tag --sort=-v:refname`
+            branchTagBase=`git tag --sort=-v:refname | grep "^$prbasetag" | grep -o '^[0-9.]*' | head -n 1 || echo ""`
+            latestTagBase=`git tag --sort=-v:refname | grep -o '^[0-9.]*' | head -n 1`
+            latestBranchTag=`git tag --sort=-v:refname | grep "^$prbasetag" | grep "^$branchTagBase" | head -n 1 || echo ""`
+            latestReleasedTag=`git tag --sort=-v:refname | grep "^$prbasetag" | grep "^$branchTagBase$" | head -n 1 || echo ""`
+
+            # If the *TagBase values are not found in the list of tags, it means no final release was produced, and the latest*Tag vars will be empty
+            if [[ -z "$latestReleasedTag" ]]; then
+              latestTag="$latestBranchTag"
+            else
+              latestTag="$latestReleasedTag"
+            fi
+            echo "LATEST_TAG=${latestTag}" | tee -a "$GITHUB_ENV"
+
+            if [[ "$latestTagBase" == *"$branchTagBase" ]]; then
+              hf="False"
+            else
+              hf="True"
+            fi
+
+            # The intention is to use this to set the make_latest:false property when 
+            # dispatching the create-release action, but it is not *yet* a configurable option
+            echo "IS_HOTFIX=$hf" | tee -a "$GITHUB_ENV"
+          else
+            echo "No tags exist in this repo"
+            echo "LATEST_TAG=" | tee -a "$GITHUB_ENV"
+          fi
+      - name: Set Outputs
+        if: github.event_name == 'pull_request'
+        id: set-outputs
+        run: |
+          echo "PR_BASE_REF=${{ env.PR_BASE_REF }}" | tee -a "$GITHUB_OUTPUT"
+          echo "PR_STATE=${{ env.PR_STATE }}"
+          echo "PR_MERGED=${{ env.PR_MERGED }}"
+          if [[ "${{ env.PR_STATE }}" == "closed" && "${{ env.PR_MERGED }}" == "true" && "${{ env.PR_COMMIT_SHA }}" == "${{ env.GITHUB_SHA }}" ]]; then
+            echo "IS_FULL_RELEASE=True" | tee -a "$GITHUB_OUTPUT"
+            echo "INC_LEVEL=patch" | tee -a "$GITHUB_OUTPUT"
+          fi
+          if [[ "${{ env.PR_STATE }}" == "open" ]]; then
+            echo "IS_PRE_RELEASE=True" | tee -a "$GITHUB_OUTPUT" | tee -a "$GITHUB_ENV"
+            echo "INC_LEVEL=prerelease" | tee -a "$GITHUB_OUTPUT"
+          fi
+          if [[ "${{ env.PR_BASE_REF }}" == "release-"* ]]; then
+            echo "IS_RELEASE_BRANCH=True" | tee -a "$GITHUB_OUTPUT" | tee -a "$GITHUB_ENV"
+          fi
+          echo "PR_COMMIT_SHA=${{ env.PR_COMMIT_SHA }}" | tee -a "$GITHUB_OUTPUT"
+          echo "GITHUB_SHA=${{ env.GITHUB_SHA }}" | tee -a "$GITHUB_OUTPUT"
+          echo "PR_BASE_TAG=${{ env.PR_BASE_TAG }}" | tee -a "$GITHUB_OUTPUT"
+          echo "IS_HOTFIX=${{ env.IS_HOTFIX }}" | tee -a "$GITHUB_OUTPUT"
+          echo "LATEST_TAG=${{ env.LATEST_TAG }}" | tee -a "$GITHUB_OUTPUT"
+
+  check-package-version:
+    needs: get-versions
+    if: github.event_name == 'pull_request' && needs.get-versions.outputs.IS_RELEASE_BRANCH == 'True'
+    outputs:
+      release_version: ${{ steps.create_release.outputs.current_tag }}
+      release_url: ${{ steps.create_release.outputs.upload_url }}
+      update_version: ${{ steps.check_version.outputs.update_version }}
+      next_version: ${{ steps.set-semver-info.outputs.new_version }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v3
+      - run: |
+          echo "INC_LEVEL=${{ needs.get-versions.outputs.INC_LEVEL}}"
+      - name: Check if initial release
+        if: needs.get-versions.outputs.LATEST_TAG == ''
+        run: |
+          echo "INITIAL_VERSION=${{needs.get-versions.outputs.PR_BASE_TAG}}.0-rc.0" | tee -a "$GITHUB_STEP_SUMMARY" | tee -a "$GITHUB_ENV"
+          echo "MANUAL_VERSION=${{needs.get-versions.outputs.PR_BASE_TAG}}.0-rc.0" | tee -a "$GITHUB_ENV"
+      - name: Set semver info
+        id: set-semver-info
+        if: needs.get-versions.outputs.LATEST_TAG != ''
+        uses: fiddlermikey/action-bump-semver@main
+        with:
+          current_version: ${{ needs.get-versions.outputs.LATEST_TAG}}
+          level: ${{ needs.get-versions.outputs.INC_LEVEL}}
+          preID: rc
+      - name: Show next sem-version
+        if: needs.get-versions.outputs.LATEST_TAG != ''
+        run: |
+          echo "MANUAL_VERSION=${{ steps.set-semver-info.outputs.new_version }}" > "$GITHUB_ENV"
+      - run: |
+          echo "Next version: ${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Get Package Version
+        id: get-pkg-version
+        run: |
+          pwd
+          ls -la
+          echo "CURRENT_PKG_VERSION=$(cat pkg/version/version.go | grep 'const VERSION' | awk '{print $NF}' | tr -d '"')" | tee -a "$GITHUB_ENV"
+      - name: Compare package version
+        id: check_version
+        run: |
+          if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
+            echo "Updating version in version.go"
+            echo "update_version=true" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+            echo "update_version=true" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Versions match, no update needed"
+            echo "update_version=false" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+            echo "update_version=false" | tee -a $GITHUB_STEP_SUMMARY
+          fi
+        env:
+          UPDATE_VERSION: ${{ steps.check_version.outputs.update_version }}
+
+      - name: Set Outputs
+        id: set-outputs
+        if: needs.get-versions.outputs.LATEST_TAG != ''
+        run: |
+          echo "UPDATE_VERSION=${{ steps.check_version.outputs.update_version }}" | tee -a "$GITHUB_OUTPUT"
+          echo "CURRENT_PKG_VERSION=${{ env.CURRENT_PKG_VERSION }}" | tee -a "$GITHUB_OUTPUT"
+          echo "MANUAL_VERSION=${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_OUTPUT"
+          echo "NEW_PKG_VERSION=${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_OUTPUT"
+
+  update-if-needed:
+    needs:
+      - check-package-version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: No Update
+        if: ${{ needs.check-package-version.outputs.update_version != 'true' }}
+        run: |
+          echo "Versions match, no update needed"
+          exit 0
+
+      - name: Commit to PR branch
+        id: commit-version
+        if: ${{ needs.check-package-version.outputs.update_version == 'true' }}
+        env:
+          AUTHOR_EMAIL: keyfactor@keyfactor.github.io
+          AUTHOR_NAME: Keyfactor Robot
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git remote -v
+          echo "Checking out ${{ github.head_ref }}"
+          git fetch
+          echo "git checkout -b ${{ github.head_ref }}"
+          git checkout -b ${{ github.head_ref }}
+          git reset --hard origin/${{ github.head_ref }}
+          sed -i "s/const VERSION = .*/const VERSION = \"${{ needs.check-package-version.outputs.next_version }}\"/" pkg/version/version.go
+          git add pkg/version/version.go
+          git config --global user.email "${{ env.AUTHOR_EMAIL }}"
+          git config --global user.name "${{ env.AUTHOR_NAME }}"
+          git commit -m "Bump package version to ${{ env.MANUAL_VERSION }}"
+          git push --set-upstream origin ${{ github.head_ref }}
+          echo "Version mismatch! Please create a new pull request with the updated version."
+          exit 1
+
+  call-starter-workflow:
+    uses: keyfactor/actions/.github/workflows/starter.yml@v2
+    secrets:
+      token: ${{ secrets.V2BUILDTOKEN}}
+      APPROVE_README_PUSH: ${{ secrets.APPROVE_README_PUSH}}
+      gpg_key: ${{ secrets.KF_GPG_PRIVATE_KEY }}
+      gpg_pass: ${{ secrets.KF_GPG_PASSPHRASE }}
+#  sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
+#  cat pkg/version/version.go
+#  git remote -v
+#  echo "Checking out ${{ env.PR_BASE_REF }}"
+#  echo "git checkout -b ${{ env.GITHUB_REF }}"
+#  echo "git checkout -b ${{ env.GITHUB_HEAD_REF }}"
+#  git checkout -b $GITHUB_HEAD_REF
+#  git add pkg/version/version.go
+#  git config --global user.email "${{ env.AUTHOR_EMAIL }}"
+#  git config --global user.name "${{ env.AUTHOR_NAME }}"
+#  git commit -m "Bump package version to ${{ env.MANUAL_VERSION }}"
+#  git push
+#  echo "Version mismatch! Please create a new pull request with the updated version."
+#  exit 1
+#  else
+#  echo "Version matches. Continue with the workflow."
+#  fi
+
+#      - name: Create new release
+#        id: create_release
+#        uses: keyfactor/action-create-release@v3
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          MANUAL_VERSION: ${{ env.MANUAL_VERSION }}
+#        if: github.event_name == 'pull_request' && needs.get-versions.outputs.IS_RELEASE_BRANCH == 'True'
+#        with:
+#          release_name: ${{ env.MANUAL_VERSION }}
+#          body: |
+#            [Changelog](/./CHANGELOG.md)
+#            [Readme](/./README.md)
+#            For the latest README.md updates visit the [Main Page](/../main) for this repository
+#          draft: false
+#          prerelease: ${{ needs.get-versions.outputs.IS_PRE_RELEASE == 'True'}}
+#          prerelease_suffix: rc
+#          tag_name: ${{ env.MANUAL_VERSION }}
+#          auto_increment_type: ${{ (needs.get-versions.outputs.IS_PRE_RELEASE == 'True') && 'prerelease' || 'patch' }}
+#          tag_schema: semantic
+#          commitish: ${{ github.sha }}
+
+#  call-starter-workflow:
+#    uses: keyfactor/actions/.github/workflows/starter.yml@v2
+#    secrets:
+#      token: ${{ secrets.V2BUILDTOKEN}}
+#      APPROVE_README_PUSH: ${{ secrets.APPROVE_README_PUSH}}
+#      gpg_key: ${{ secrets.KF_GPG_PRIVATE_KEY }}
+#      gpg_pass: ${{ secrets.KF_GPG_PASSPHRASE }}
+
