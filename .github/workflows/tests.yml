@@ -1,10 +1,13 @@
 name: go tests
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - "Check and Update Package Version"
+    types:
+      - completed
     branches:
       - "*"
-  workflow_dispatch:
 
 jobs:
   build:
@@ -13,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.21"
       - name: Install dependencies
@@ -278,7 +281,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - name: Install dependencies
@@ -304,7 +307,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - name: Install dependencies
@@ -330,7 +333,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - name: Install dependencies
@@ -431,7 +434,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.20"
       - name: Install dependencies
@@ -475,7 +478,7 @@ jobs:
       # Setup GoLang build environment
       # https://github.com/actions/setup-go
       - name: Set up Go 1.x
-        uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
           go-version-file: 'go.mod'
           cache: true
