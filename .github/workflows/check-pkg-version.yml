@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Check out the code
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.V2BUILDTOKEN}}
 
       - name: Display base.ref from Pull Request
         if: github.event_name == 'pull_request'
@@ -184,6 +186,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.V2BUILDTOKEN}}
 
       - name: No Update
         if: ${{ needs.check-package-version.outputs.update_version != 'true' }}
@@ -197,7 +201,7 @@ jobs:
         env:
           AUTHOR_EMAIL: keyfactor@keyfactor.github.io
           AUTHOR_NAME: Keyfactor Robot
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN}}
         run: |
           git remote -v
           echo "Checking out ${{ github.head_ref }}"
