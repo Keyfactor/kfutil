@@ -30,7 +30,7 @@ jobs:
           echo "KFUTIL_ARG=${{ github.event.client_payload.targetRepo }}" | tee -a $GITHUB_ENV
       - name: Check Open PRs for Existing Branch
         id: check-branch
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             // Look for open pull requests
@@ -175,7 +175,7 @@ jobs:
 
       - name: Create new PR for the newly created branch
         if: env.UPDATE_FILE == 'T' && env.PR_BRANCH == 'create'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             console.log(`Created ${{env.KFUTIL_ARG}} `)
