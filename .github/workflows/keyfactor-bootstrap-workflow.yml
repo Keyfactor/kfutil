@@ -1,4 +1,4 @@
-name: Check and Update Package Version
+name: Keyfactor Bootstrap Workflow
 
 on:
   workflow_dispatch:
@@ -178,7 +178,7 @@ jobs:
           echo "MANUAL_VERSION=${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_OUTPUT"
           echo "NEW_PKG_VERSION=${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_OUTPUT"
 
-  update-if-needed:
+  update-pkg-version:
     needs:
       - check-package-version
     runs-on: ubuntu-latest
@@ -188,7 +188,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.V2BUILDTOKEN}}
-
       - name: No Update
         if: ${{ needs.check-package-version.outputs.update_version != 'true' }}
         run: |
@@ -220,56 +219,9 @@ jobs:
 
   call-starter-workflow:
     uses: keyfactor/actions/.github/workflows/starter.yml@v2
-    needs: update-if-needed
+    needs: update-pkg-version
     secrets:
       token: ${{ secrets.V2BUILDTOKEN}}
       APPROVE_README_PUSH: ${{ secrets.APPROVE_README_PUSH}}
       gpg_key: ${{ secrets.KF_GPG_PRIVATE_KEY }}
       gpg_pass: ${{ secrets.KF_GPG_PASSPHRASE }}
-#  sed -i "s/const VERSION = .*/const VERSION = \"${{ env.MANUAL_VERSION }}\"/" pkg/version/version.go
-#  cat pkg/version/version.go
-#  git remote -v
-#  echo "Checking out ${{ env.PR_BASE_REF }}"
-#  echo "git checkout -b ${{ env.GITHUB_REF }}"
-#  echo "git checkout -b ${{ env.GITHUB_HEAD_REF }}"
-#  git checkout -b $GITHUB_HEAD_REF
-#  git add pkg/version/version.go
-#  git config --global user.email "${{ env.AUTHOR_EMAIL }}"
-#  git config --global user.name "${{ env.AUTHOR_NAME }}"
-#  git commit -m "Bump package version to ${{ env.MANUAL_VERSION }}"
-#  git push
-#  echo "Version mismatch! Please create a new pull request with the updated version."
-#  exit 1
-#  else
-#  echo "Version matches. Continue with the workflow."
-#  fi
-
-#      - name: Create new release
-#        id: create_release
-#        uses: keyfactor/action-create-release@v3
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          MANUAL_VERSION: ${{ env.MANUAL_VERSION }}
-#        if: github.event_name == 'pull_request' && needs.get-versions.outputs.IS_RELEASE_BRANCH == 'True'
-#        with:
-#          release_name: ${{ env.MANUAL_VERSION }}
-#          body: |
-#            [Changelog](/./CHANGELOG.md)
-#            [Readme](/./README.md)
-#            For the latest README.md updates visit the [Main Page](/../main) for this repository
-#          draft: false
-#          prerelease: ${{ needs.get-versions.outputs.IS_PRE_RELEASE == 'True'}}
-#          prerelease_suffix: rc
-#          tag_name: ${{ env.MANUAL_VERSION }}
-#          auto_increment_type: ${{ (needs.get-versions.outputs.IS_PRE_RELEASE == 'True') && 'prerelease' || 'patch' }}
-#          tag_schema: semantic
-#          commitish: ${{ github.sha }}
-
-#  call-starter-workflow:
-#    uses: keyfactor/actions/.github/workflows/starter.yml@v2
-#    secrets:
-#      token: ${{ secrets.V2BUILDTOKEN}}
-#      APPROVE_README_PUSH: ${{ secrets.APPROVE_README_PUSH}}
-#      gpg_key: ${{ secrets.KF_GPG_PRIVATE_KEY }}
-#      gpg_pass: ${{ secrets.KF_GPG_PASSPHRASE }}
-
