@@ -1,3 +1,8 @@
+# v1.3.2
+
+### Package
+- Bump deps `cobra` version to `v1.8.0`, `azcore` version to `v1.9.0`, `pty` version to `v1.1.21`
+
 # v1.3.1
 
 ## Bug Fixes
