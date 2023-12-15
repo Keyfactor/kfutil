@@ -108,7 +108,7 @@ jobs:
 
       - name: Save Store Types JSON Artifact
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: store-types  
           path: |
@@ -117,14 +117,14 @@ jobs:
 
       - name: Save Invalid Store Types JSON Artifact
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: invalid-repos 
           path: ./tools/store-type-merge/invalid_repos.json  
 
       - name: Save logs directory
         if: success()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: logs 
           path: ./tools/store-type-merge/log 
