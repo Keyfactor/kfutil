@@ -91,7 +91,6 @@ jobs:
             echo "LATEST_TAG=" | tee -a "$GITHUB_ENV"
           fi
       - name: Set Outputs
-        if: github.event_name == 'pull_request'
         id: set-outputs
         run: |
           echo "PR_BASE_REF=${{ env.PR_BASE_REF }}" | tee -a "$GITHUB_OUTPUT"
