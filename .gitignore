@@ -22,3 +22,6 @@ vendor/
 /.vs/**/*
 /.vscode/**/*
 .DS_Store
+
+# version.go file will be overwritten during the build
+pkg/version/version.go
