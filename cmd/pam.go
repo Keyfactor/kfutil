@@ -69,8 +69,14 @@ var pamTypesListCmd = &cobra.Command{
 		log.Trace().Interface("httpResponse", httpResponse).
 			Msg("PAMProviderGetPamProviderTypes")
 		if err != nil {
+			var status string
+			if httpResponse != nil {
+				status = httpResponse.Status
+			} else {
+				status = "No HTTP response received from Keyfactor Command."
+			}
 			log.Error().Err(err).
-				Str("httpResponseCode", httpResponse.Status).
+				Str("httpResponseCode", status).
 				Msg("error listing PAM provider types")
 			return err
 		}
