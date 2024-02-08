@@ -93,7 +93,11 @@ func Test_PAMTypesListCmd(t *testing.T) {
 			//}
 
 			// Check params is a list of maps
-			pTypeParams := providerConfig["ProviderTypeParams"].([]interface{})
+			pTypeParams, ok := providerConfig["ProviderTypeParams"].([]interface{})
+			if !ok {
+				t.Logf("ProviderTypeParams is not a list of maps for %s", providerConfig["Name"])
+				return
+			}
 			//assert.NotEmpty(t, pTypeParams)
 			//assert.GreaterOrEqual(t, len(pTypeParams), 0)
 			if len(pTypeParams) > 0 {
@@ -509,7 +513,13 @@ func testListPamProviderTypes(t *testing.T, name string, allowFail bool, allowEm
 			}
 
 			// Check params is a list of maps
-			pTypeParams := providerConfig["ProviderTypeParams"].([]interface{})
+			pTypeParams, ok := providerConfig["ProviderTypeParams"].([]interface{})
+			if !ok {
+				// This will happen for KFC 11.0+ where this field is not returned
+				t.Logf("ProviderTypeParams is not a list of maps for %s", providerConfig["Name"])
+				continue
+			}
+
 			//assert.NotEmpty(t, pTypeParams)
 			//assert.GreaterOrEqual(t, len(pTypeParams), 0)
 			if len(pTypeParams) > 0 {
