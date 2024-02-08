@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ const (
 	XKeyfactorRequestedWith = "APIClient"
 	XKeyfactorApiVersion    = "1"
 	FlagGitRef              = "git-ref"
+	FlagFromFile            = "from-file"
 )
 
 var ProviderTypeChoices = []string{

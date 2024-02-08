@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -30,6 +30,10 @@ type JSONImportableObject interface {
 	keyfactor.KeyfactorApiPAMProviderTypeCreateRequest |
 		keyfactor.CSSCMSDataModelModelsProvider
 }
+
+const (
+	convertResponseMsg = "Converting PAM Provider response to JSON"
+)
 
 var pamCmd = &cobra.Command{
 	Use:   "pam",
@@ -107,7 +111,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 		isExperimental := false
 
 		// Specific flags
-		pamConfigFile, _ := cmd.Flags().GetString("from-file")
+		pamConfigFile, _ := cmd.Flags().GetString(FlagFromFile)
 		pamProviderName, _ := cmd.Flags().GetString("name")
 		repoName, _ := cmd.Flags().GetString("repo")
 		branchName, _ := cmd.Flags().GetString("branch")
@@ -158,9 +162,9 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 			}
 		} else {
 			log.Debug().Str("pamConfigFile", pamConfigFile).
-				Msg("call: GetTypeFromConfigFile()")
+				Msg(fmt.Sprintf("call: %s", "GetTypeFromConfigFile()"))
 			pamProviderType, err = GetTypeFromConfigFile(pamConfigFile, pamProviderType)
-			log.Debug().Msg("returned: GetTypeFromConfigFile()")
+			log.Debug().Msg(fmt.Sprintf("returned: %s", "GetTypeFromConfigFile()"))
 			if err != nil {
 				log.Error().Err(err).Send()
 				return err
@@ -289,7 +293,7 @@ var pamProvidersGetCmd = &cobra.Command{
 			return err
 		}
 
-		log.Debug().Msg("Converting PAM Provider response to JSON")
+		log.Debug().Msg(convertResponseMsg)
 		jsonString, mErr := json.Marshal(pamProvider)
 		if mErr != nil {
 			log.Error().Err(mErr).Send()
@@ -311,7 +315,7 @@ var pamProvidersCreateCmd = &cobra.Command{
 		isExperimental := false
 
 		// Specific flags
-		pamConfigFile, _ := cmd.Flags().GetString("from-file")
+		pamConfigFile, _ := cmd.Flags().GetString(FlagFromFile)
 
 		// Debug + expEnabled checks
 		informDebug(debugFlag)
@@ -354,7 +358,7 @@ var pamProvidersCreateCmd = &cobra.Command{
 			return returnHttpErr(httpResponse, cErr)
 		}
 
-		log.Debug().Msg("Converting PAM Provider response to JSON")
+		log.Debug().Msg(convertResponseMsg)
 		jsonString, mErr := json.Marshal(createdPamProvider)
 		if mErr != nil {
 			log.Error().Err(mErr).Msg("invalid API response from Keyfactor Command")
@@ -375,7 +379,7 @@ var pamProvidersUpdateCmd = &cobra.Command{
 		isExperimental := false
 
 		// Specific flags
-		pamConfigFile, _ := cmd.Flags().GetString("from-file")
+		pamConfigFile, _ := cmd.Flags().GetString(FlagFromFile)
 
 		// Debug + expEnabled checks
 		informDebug(debugFlag)
@@ -416,7 +420,7 @@ var pamProvidersUpdateCmd = &cobra.Command{
 			returnHttpErr(httpResponse, err)
 		}
 
-		log.Debug().Msg("Converting PAM Provider response to JSON")
+		log.Debug().Msg(convertResponseMsg)
 		jsonString, mErr := json.Marshal(createdPamProvider)
 		if mErr != nil {
 			log.Error().Err(mErr).Msg("invalid API response from Keyfactor Command")
@@ -620,7 +624,7 @@ func init() {
 
 	// PAM Provider Types Create
 	pamCmd.AddCommand(pamTypesCreateCmd)
-	pamTypesCreateCmd.Flags().StringVarP(&filePath, "from-file", "f", "", "Path to a JSON file containing the PAM Type Object Data.")
+	pamTypesCreateCmd.Flags().StringVarP(&filePath, FlagFromFile, "f", "", "Path to a JSON file containing the PAM Type Object Data.")
 	pamTypesCreateCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the PAM Provider Type.")
 	pamTypesCreateCmd.Flags().StringVarP(&repo, "repo", "r", "", "Keyfactor repository name of the PAM Provider Type.")
 	pamTypesCreateCmd.Flags().StringVarP(&branch, "branch", "b", "", "Branch name for the repository. Defaults to 'main'.")
@@ -632,12 +636,12 @@ func init() {
 	pamProvidersGetCmd.MarkFlagRequired("id")
 
 	pamCmd.AddCommand(pamProvidersCreateCmd)
-	pamProvidersCreateCmd.Flags().StringVarP(&filePath, "from-file", "f", "", "Path to a JSON file containing the PAM Provider Object Data.")
-	pamProvidersCreateCmd.MarkFlagRequired("from-file")
+	pamProvidersCreateCmd.Flags().StringVarP(&filePath, FlagFromFile, "f", "", "Path to a JSON file containing the PAM Provider Object Data.")
+	pamProvidersCreateCmd.MarkFlagRequired(FlagFromFile)
 
 	pamCmd.AddCommand(pamProvidersUpdateCmd)
-	pamProvidersUpdateCmd.Flags().StringVarP(&filePath, "from-file", "f", "", "Path to a JSON file containing the PAM Provider Object Data.")
-	pamProvidersUpdateCmd.MarkFlagRequired("from-file")
+	pamProvidersUpdateCmd.Flags().StringVarP(&filePath, FlagFromFile, "f", "", "Path to a JSON file containing the PAM Provider Object Data.")
+	pamProvidersUpdateCmd.MarkFlagRequired(FlagFromFile)
 
 	pamCmd.AddCommand(pamProvidersDeleteCmd)
 	pamProvidersDeleteCmd.Flags().Int32VarP(&id, "id", "i", 0, "Integer ID of the PAM Provider.")
