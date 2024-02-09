@@ -8,7 +8,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.4.0
 	github.com/Jeffail/gabs v1.4.0
 	github.com/Keyfactor/keyfactor-go-client-sdk v1.0.2
-	github.com/Keyfactor/keyfactor-go-client/v2 v2.1.4
+	github.com/Keyfactor/keyfactor-go-client/v2 v2.2.6
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/creack/pty v1.1.21
 	github.com/google/go-cmp v0.6.0
