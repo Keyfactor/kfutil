@@ -388,6 +388,10 @@ func writeJSONFile(filename string, data interface{}) error {
 }
 
 func returnHttpErr(resp *http.Response, err error) error {
+	if resp == nil {
+		log.Error().Err(err).Msg("unable to create PAM provider - no response")
+		return err
+	}
 	if resp.Body != nil {
 		body, _ := io.ReadAll(resp.Body)
 		log.Error().Err(err).Str("httpResponseCode", resp.Status).

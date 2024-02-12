@@ -164,7 +164,12 @@ func testConfigExists(t *testing.T, filePath string, allowExist bool) {
 			}
 			// Verify that the config file has the correct keys
 			assert.Contains(t, fileConfigJSON, "servers")
-			kfcServers := fileConfigJSON["servers"].(map[string]interface{})
+			kfcServers, ok := fileConfigJSON["servers"].(map[string]interface{})
+			if !ok {
+				t.Errorf("Error decoding config file: %s", err)
+				assert.False(t, ok, "Error decoding config file")
+				return
+			}
 			assert.Contains(t, kfcServers, "default")
 			defaultServer := kfcServers["default"].(map[string]interface{})
 			assert.Contains(t, defaultServer, "host")

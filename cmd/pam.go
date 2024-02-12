@@ -66,8 +66,10 @@ var pamTypesListCmd = &cobra.Command{
 
 		// CLI Logic
 		log.Debug().Msg("call: PAMProviderGetPamProviderTypes()")
-		pamTypes, httpResponse, err := sdkClient.PAMProviderApi.PAMProviderGetPamProviderTypes(context.Background()).
-			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
+		pamTypes, httpResponse, err := sdkClient.PAMProviderApi.
+			PAMProviderGetPamProviderTypes(context.Background()).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).
+			XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Execute()
 		log.Debug().Msg("returned: PAMProviderGetPamProviderTypes()")
 		log.Trace().Interface("httpResponse", httpResponse).
