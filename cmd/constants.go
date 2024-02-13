@@ -26,6 +26,9 @@ const (
 	XKeyfactorApiVersion    = "1"
 	FlagGitRef              = "git-ref"
 	FlagFromFile            = "from-file"
+	DebugFuncEnter          = "entered: %s"
+	DebugFuncExit           = "exiting: %s"
+	DebugFuncCall           = "calling: %s"
 )
 
 var ProviderTypeChoices = []string{

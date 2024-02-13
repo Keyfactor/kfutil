@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"io"
-	"log"
 	"os"
 )
 
@@ -32,9 +32,23 @@ type Body struct {
 }
 
 func parseError(error io.ReadCloser) string {
-	bytes, _ := io.ReadAll(error)
+	log.Debug().Msgf("%s: parseError", DebugFuncEnter)
+
+	log.Debug().Msg("Reading error body")
+	bytes, ioErr := io.ReadAll(error)
+	if ioErr != nil {
+		fmt.Printf("Error: %s\n", ioErr)
+		log.Error().Err(ioErr).Send()
+		return ioErr.Error()
+	}
 	var newError Body
-	json.Unmarshal(bytes, &newError)
+	jErr := json.Unmarshal(bytes, &newError)
+	if jErr != nil {
+		fmt.Printf("Error: %s\n", jErr)
+		log.Error().Err(jErr).Send()
+		return jErr.Error()
+	}
+	log.Debug().Msgf("%s: parseError", DebugFuncExit)
 	return newError.Message
 }
 
@@ -42,92 +56,168 @@ var importCmd = &cobra.Command{
 	Use:   "import",
 	Short: "Keyfactor instance import utilities.",
 	Long:  `A collection of APIs and utilities for importing Keyfactor instance data.`,
-	Run: func(cmd *cobra.Command, args []string) {
-
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		log.Debug().Msgf("%s: importCmd", DebugFuncEnter)
 		isExperimental := true
 
-		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
-		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
-			log.Fatalf("[ERROR]: %s", expErr)
+		informDebug(debugFlag)
+		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		if debugErr != nil {
+			return debugErr
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
-		log.Println("Debug mode enabled: ", debugModeEnabled)
+		log.Info().Msg("Running import...")
+
+		log.Debug().Msgf("%s: createAuthConfigFromParams", DebugFuncCall)
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		if authConfig == nil {
+			return fmt.Errorf("Error: %s", FailedAuthMsg)
+		}
 
 		exportPath := cmd.Flag("file").Value.String()
+		log.Debug().Str("exportPath", exportPath).Msg("exportPath")
+
+		log.Debug().Str("exportPath", exportPath).
+			Msg("Reading exported file")
+
 		jsonFile, oErr := os.Open(exportPath)
 		if oErr != nil {
 			fmt.Printf("Error opening exported file: %s\n", oErr)
-			log.Fatalf("Error: %s", oErr)
+			//log.Fatalf("Error: %s", oErr)
+			log.Error().
+				Str("exportPath", exportPath).
+				Err(oErr).
+				Send()
 		}
 		defer jsonFile.Close()
 		var out outJson
-		bJson, _ := io.ReadAll(jsonFile)
+		bJson, ioErr := io.ReadAll(jsonFile)
+		if ioErr != nil {
+			fmt.Printf("Error reading exported file: %s\n", ioErr)
+			//log.Fatalf("Error: %s", ioErr)
+			log.Error().Err(ioErr).Send()
+			return ioErr
+		}
 		jErr := json.Unmarshal(bJson, &out)
 		if jErr != nil {
 			fmt.Printf("Error reading exported file: %s\n", jErr)
-			log.Fatalf("Error: %s", jErr)
+			//log.Fatalf("Error: %s", jErr)
+			log.Error().Err(jErr).Send()
+			return jErr
 		}
-		kfClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
-		oldkfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		log.Debug().Msgf("%s: initGenClient", DebugFuncCall)
+		kfClient, clientErr := initGenClient(configFile, profile, noPrompt, authConfig, false)
+		log.Debug().Msgf("%s: initClient", DebugFuncExit)
+		oldkfClient, oldClientErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+
+		if clientErr != nil {
+			log.Error().Err(clientErr).Send()
+			return clientErr
+		} else if oldClientErr != nil {
+			log.Error().Err(oldClientErr).Send()
+			return oldClientErr
+		}
+
 		if cmd.Flag("all").Value.String() == "true" {
+			log.Debug().Msgf("%s: importCollections", DebugFuncCall)
 			importCollections(out.Collections, kfClient)
+			log.Debug().Msgf("%s: importMetadataFields", DebugFuncCall)
 			importMetadataFields(out.MetadataFields, kfClient)
+
+			log.Debug().Msgf("%s: importIssuedCertAlerts", DebugFuncCall)
 			importIssuedCertAlerts(out.IssuedCertAlerts, kfClient)
+
+			log.Debug().Msgf("%s: importDeniedCertAlerts", DebugFuncCall)
 			importDeniedCertAlerts(out.DeniedCertAlerts, kfClient)
+
+			log.Debug().Msgf("%s: importPendingCertAlerts", DebugFuncCall)
 			importPendingCertAlerts(out.PendingCertAlerts, kfClient)
+
+			log.Debug().Msgf("%s: importNetworks", DebugFuncCall)
 			importNetworks(out.Networks, kfClient)
+
+			log.Debug().Msgf("%s: importWorkflowDefinitions", DebugFuncCall)
 			importWorkflowDefinitions(out.WorkflowDefinitions, kfClient)
+
+			log.Debug().Msgf("%s: importBuiltInReports", DebugFuncCall)
 			importBuiltInReports(out.BuiltInReports, kfClient)
+
+			log.Debug().Msgf("%s: importCustomReports", DebugFuncCall)
 			importCustomReports(out.CustomReports, kfClient)
+
+			log.Debug().Msgf("%s: importSecurityRoles", DebugFuncCall)
 			importSecurityRoles(out.SecurityRoles, oldkfClient)
 		} else {
 			if len(out.Collections) != 0 && cmd.Flag("collections").Value.String() == "true" {
+				log.Debug().Msgf("%s: importCollections", DebugFuncCall)
 				importCollections(out.Collections, kfClient)
 			}
 			if len(out.MetadataFields) != 0 && cmd.Flag("metadata").Value.String() == "true" {
+				log.Debug().Msgf("%s: importMetadataFields", DebugFuncCall)
 				importMetadataFields(out.MetadataFields, kfClient)
 			}
 			if len(out.IssuedCertAlerts) != 0 && cmd.Flag("issued-alerts").Value.String() == "true" {
+				log.Debug().Msgf("%s: importIssuedCertAlerts", DebugFuncCall)
 				importIssuedCertAlerts(out.IssuedCertAlerts, kfClient)
 			}
 			if len(out.DeniedCertAlerts) != 0 && cmd.Flag("denied-alerts").Value.String() == "true" {
+				log.Debug().Msgf("%s: importDeniedCertAlerts", DebugFuncCall)
 				importDeniedCertAlerts(out.DeniedCertAlerts, kfClient)
 			}
 			if len(out.PendingCertAlerts) != 0 && cmd.Flag("pending-alerts").Value.String() == "true" {
+				log.Debug().Msgf("%s: importPendingCertAlerts", DebugFuncCall)
 				importPendingCertAlerts(out.PendingCertAlerts, kfClient)
 			}
 			if len(out.Networks) != 0 && cmd.Flag("networks").Value.String() == "true" {
+				log.Debug().Msgf("%s: importNetworks", DebugFuncCall)
 				importNetworks(out.Networks, kfClient)
 			}
 			if len(out.WorkflowDefinitions) != 0 && cmd.Flag("workflow-definitions").Value.String() == "true" {
+				log.Debug().Msgf("%s: importWorkflowDefinitions", DebugFuncCall)
 				importWorkflowDefinitions(out.WorkflowDefinitions, kfClient)
 			}
 			if len(out.BuiltInReports) != 0 && cmd.Flag("reports").Value.String() == "true" {
+				log.Debug().Msgf("%s: importBuiltInReports", DebugFuncCall)
 				importBuiltInReports(out.BuiltInReports, kfClient)
 			}
 			if len(out.CustomReports) != 0 && cmd.Flag("reports").Value.String() == "true" {
+				log.Debug().Msgf("%s: importCustomReports", DebugFuncCall)
 				importCustomReports(out.CustomReports, kfClient)
 			}
 			if len(out.SecurityRoles) != 0 && cmd.Flag("security-roles").Value.String() == "true" {
+				log.Debug().Msgf("%s: importSecurityRoles", DebugFuncCall)
 				importSecurityRoles(out.SecurityRoles, oldkfClient)
 			}
 		}
+		log.Debug().Msgf("%s: importCmd", DebugFuncExit)
+		return nil
 	},
 }
 
 func importCollections(collections []keyfactor.KeyfactorApiModelsCertificateCollectionsCertificateCollectionCreateRequest, kfClient *keyfactor.APIClient) {
 	for _, collection := range collections {
-		_, httpResp, reqErr := kfClient.CertificateCollectionApi.CertificateCollectionCreateCollection(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).
-			Request(collection).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
-		name, _ := json.Marshal(collection.Name)
+		_, httpResp, reqErr := kfClient.CertificateCollectionApi.
+			CertificateCollectionCreateCollection(context.Background()).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).
+			Request(collection).
+			XKeyfactorApiVersion(XKeyfactorApiVersion).
+			Execute()
+		name, jmErr := json.Marshal(collection.Name)
+		if jmErr != nil {
+			fmt.Printf("Error: %s\n", jmErr)
+			//log.Fatalf("Error: %s", jmErr)
+			log.Error().Err(jmErr).Send()
+		}
 		if reqErr != nil {
 			fmt.Printf("%s Error! Unable to create collection %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
 		} else {
-			name, _ := json.Marshal(collection.Name)
-			fmt.Println("Added", string(name), "to collections")
+			n, jnErr := json.Marshal(collection.Name)
+			if jnErr != nil {
+				fmt.Printf("Error: %s\n", jnErr)
+				//log.Fatalf("Error: %s", jnErr)
+				log.Error().Err(jnErr).Send()
+			}
+			fmt.Println("Added", string(n), "to collections")
 		}
 	}
 }
@@ -135,13 +225,23 @@ func importCollections(collections []keyfactor.KeyfactorApiModelsCertificateColl
 func importMetadataFields(metadataFields []keyfactor.KeyfactorApiModelsMetadataFieldMetadataFieldCreateRequest, kfClient *keyfactor.APIClient) {
 	for _, metadata := range metadataFields {
 		_, httpResp, reqErr := kfClient.MetadataFieldApi.MetadataFieldCreateMetadataField(context.Background()).
-			XKeyfactorRequestedWith(XKeyfactorRequestedWith).MetadataFieldType(metadata).
-			XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
-		name, _ := json.Marshal(metadata.Name)
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).
+			MetadataFieldType(metadata).
+			XKeyfactorApiVersion(XKeyfactorApiVersion).
+			Execute()
+		n, jmErr := json.Marshal(metadata.Name)
+
 		if reqErr != nil {
-			fmt.Printf("%s Error! Unable to create metadata field type %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
+			if jmErr != nil {
+				fmt.Printf("Error: %s\n", jmErr)
+				//log.Fatalf("Error: %s", jmErr)
+				log.Error().Err(jmErr).Send()
+			}
+			log.Error().Err(reqErr).Send()
+			fmt.Printf("%s Error! Unable to create metadata field type %s - %s%s\n", ColorRed, string(n), parseError(httpResp.Body), ColorWhite)
 		} else {
-			fmt.Println("Added", string(name), "to metadata field types.")
+			log.Info().Msgf("Added %s to metadata field types.", string(n))
+			fmt.Println("Added", string(n), "to metadata field types.")
 		}
 	}
 }
@@ -216,18 +316,33 @@ func importWorkflowDefinitions(workflowDefs []exportKeyfactorAPIModelsWorkflowsD
 		jErr := json.Unmarshal(wJson, &workflowDefReq)
 		if jErr != nil {
 			fmt.Printf("Error: %s\n", jErr)
-			log.Fatalf("Error: %s", jErr)
+			//log.Fatalf("Error: %s", jErr)
+			log.Error().Err(jErr).Send()
 		}
 		newTemplateId := findMatchingTemplates(workflowDef, kfClient)
 		if newTemplateId != nil {
 			workflowDefReq.Key = newTemplateId
 		}
-		_, httpResp, reqErr := kfClient.WorkflowDefinitionApi.WorkflowDefinitionCreateNewDefinition(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).Request(workflowDefReq).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
-		name, _ := json.Marshal(workflowDef.DisplayName)
+		_, httpResp, reqErr := kfClient.WorkflowDefinitionApi. // todo: Why is the object not being used?
+									WorkflowDefinitionCreateNewDefinition(context.Background()).
+									XKeyfactorRequestedWith(XKeyfactorRequestedWith).
+									Request(workflowDefReq).
+									XKeyfactorApiVersion(XKeyfactorApiVersion).
+									Execute()
+		name, jmErr := json.Marshal(workflowDef.DisplayName)
+		if jmErr != nil {
+			fmt.Printf("Error: %s\n", jmErr)
+			//log.Fatalf("Error: %s", jmErr)
+			log.Error().Err(jmErr).Send()
+			return
+		}
+
 		if reqErr != nil {
 			fmt.Printf("%s Error! Unable to create workflow definition %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
+			log.Error().Err(reqErr).Send()
 		} else {
 			fmt.Println("Added", string(name), "to workflow definitions.")
+			log.Info().Msgf("Added %s to workflow definitions.", string(name))
 		}
 	}
 }
@@ -268,15 +383,29 @@ func importBuiltInReports(reports []exportModelsReport, kfClient *keyfactor.APIC
 			jErr := json.Unmarshal(rJson, &reportReq)
 			if jErr != nil {
 				fmt.Printf("Error: %s\n", jErr)
-				log.Fatalf("Error: %s", jErr)
+				//log.Fatalf("Error: %s", jErr)
+				log.Error().Err(jErr).Send()
 			}
 			reportReq.Id = newReportId
-			_, httpResp, reqErr := kfClient.ReportsApi.ReportsUpdateReport(context.Background()).XKeyfactorRequestedWith(XKeyfactorRequestedWith).Request(reportReq).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
-			name, _ := json.Marshal(report.DisplayName)
+			_, httpResp, reqErr := kfClient.ReportsApi. //todo: Why is the object not being used?
+									ReportsUpdateReport(context.Background()).
+									XKeyfactorRequestedWith(XKeyfactorRequestedWith).
+									Request(reportReq).
+									XKeyfactorApiVersion(XKeyfactorApiVersion).
+									Execute()
+			name, jmErr := json.Marshal(report.DisplayName)
+			if jmErr != nil {
+				fmt.Printf("Error: %s\n", jmErr)
+				//log.Fatalf("Error: %s", jmErr)
+				log.Error().Err(jmErr).Send()
+				return
+			}
 			if reqErr != nil {
 				fmt.Printf("%s Error! Unable to update built-in report %s - %s%s\n", ColorRed, string(name), parseError(httpResp.Body), ColorWhite)
+				log.Error().Err(reqErr).Send()
 			} else {
 				fmt.Println("Updated", string(name), "in built-in reports.")
+				log.Info().Msgf("Updated %s in built-in reports.", string(name))
 			}
 		}
 	}

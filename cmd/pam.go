@@ -62,7 +62,10 @@ var pamTypesListCmd = &cobra.Command{
 
 		// Authenticate
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
+		sdkClient, clientErr := initGenClient(configFile, profile, noPrompt, authConfig, false)
+		if clientErr != nil {
+			return clientErr
+		}
 
 		// CLI Logic
 		log.Debug().Msg("call: PAMProviderGetPamProviderTypes()")

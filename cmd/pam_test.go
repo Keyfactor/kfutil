@@ -573,9 +573,18 @@ func testFormatPamCreateConfig(t *testing.T, inputFileName string, providerName 
 
 	// todo: for some reason calling this function mutates pConfig
 	apiProviderType, pvtErr := testListPamProviderTypes(t, cProviderTypeName, false, false)
+
+	if pvtErr != nil {
+		t.Errorf("failed to find PAM provider type '%s' unable to create PAM provider: %v", cProviderTypeName, pvtErr)
+		return "", pvtErr
+	} else if apiProviderType == nil {
+		t.Errorf("failed to find PAM provider type '%s' unable to create PAM provider: %v", cProviderTypeName, pvtErr)
+		return "", pvtErr
+	}
+
 	switch apiProviderType.(type) {
 	case nil:
-		t.Fatalf("failed to find PAM provider type '%s' unable to create PAM provider: %v", cProviderTypeName, pvtErr)
+		t.Errorf("failed to find PAM provider type '%s' unable to create PAM provider: %v", cProviderTypeName, pvtErr)
 		break
 	case map[string]interface{}:
 		aProviderType := apiProviderType.(map[string]interface{})
