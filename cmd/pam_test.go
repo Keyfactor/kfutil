@@ -52,17 +52,17 @@ func Test_PAMHelpCmd(t *testing.T) {
 
 func Test_PAMListCmd(t *testing.T) {
 	// list providers
-	//pamProviders, err := testListPamProviders(t)
-	//assert.NoError(t, err)
-	//if err != nil {
-	//	//t.Fatalf("failed to list PAM providers: %v", err)
-	//	t.Errorf("failed to list PAM providers: %v", err)
-	//	return
-	//}
-	//
-	//if len(pamProviders) <= 0 {
-	//	t.Fatalf("0 PAM providers found, cannot test list")
-	//}
+	pamProviders, err := testListPamProviders(t)
+	assert.NoError(t, err)
+	if err != nil {
+		//t.Fatalf("failed to list PAM providers: %v", err)
+		t.Errorf("failed to list PAM providers: %v", err)
+		return
+	}
+
+	if len(pamProviders) <= 0 {
+		t.Errorf("0 PAM providers found, cannot test list")
+	}
 }
 
 func Test_PAMTypesListCmd(t *testing.T) {
