@@ -173,7 +173,8 @@ func Test_PAMGetCmd(t *testing.T) {
 			assert.NotEmpty(t, pamProvider.(map[string]interface{})["ProviderType"])
 		}
 	} else {
-		t.Fatalf("0 PAM providers found, cannot test get")
+		t.Errorf("0 PAM providers found, cannot test get")
+		return
 	}
 }
 
