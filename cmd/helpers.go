@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -388,6 +388,10 @@ func writeJSONFile(filename string, data interface{}) error {
 }
 
 func returnHttpErr(resp *http.Response, err error) error {
+	if resp == nil {
+		log.Error().Err(err).Msg("unable to create PAM provider - no response")
+		return err
+	}
 	if resp.Body != nil {
 		body, _ := io.ReadAll(resp.Body)
 		log.Error().Err(err).Str("httpResponseCode", resp.Status).
