@@ -300,6 +300,18 @@ func Test_PAMUpdateCmd(t *testing.T) {
 	if err := json.Unmarshal([]byte(output), &updateResponse); err != nil {
 		t.Fatalf("Error unmarshalling JSON: %v", err)
 	}
+	assert.NotNil(t, updateResponse)
+	if updateResponse == nil {
+		t.Errorf("failed to update a PAM provider")
+		return
+	}
+	// check that updateResponse is a map[string]interface{}
+
+	_, ok := updateResponse.(map[string]interface{})
+	if !ok {
+		t.Errorf("updateResponse is not a map[string]interface{}")
+		return
+	}
 	assert.NotEmpty(t, updateResponse.(map[string]interface{})["Id"])
 	assert.NotEmpty(t, updateResponse.(map[string]interface{})["Name"])
 	assert.Equal(t, updateResponse.(map[string]interface{})["Name"], providerName)
