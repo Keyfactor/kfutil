@@ -1,10 +1,13 @@
 name: go tests
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - "Check and Update Package Version"
+    types:
+      - completed
     branches:
       - "*"
-  workflow_dispatch:
 
 jobs:
   build:
