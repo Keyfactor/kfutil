@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -154,7 +154,12 @@ func Test_Stores_ImportCmd(t *testing.T) {
 		csvData, csvErr := csvToMap(f)
 		assert.Nil(t, csvErr)
 		assert.NotEmpty(t, csvData)
+		assert.Greater(t, len(csvData), 0)
 		var modifiedCSVData []map[string]string
+		if len(csvData) == 0 {
+			t.Errorf("No data in file %s", f)
+			return
+		}
 		for _, row := range csvData {
 			// assert that each row has an ID
 			assert.NotEmpty(t, row["Id"])
