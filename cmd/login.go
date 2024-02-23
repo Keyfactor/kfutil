@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
+	kfc "github.com/Keyfactor/keyfactor-go-client-sdk/v11/api/command"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/google/go-cmp/cmp"
 	"github.com/rs/zerolog/log"
@@ -598,7 +598,7 @@ func authViaProvider() (*api.Client, error) {
 	return nil, fmt.Errorf("unable to auth via provider, providerType is empty")
 }
 
-func authViaProviderGenClient() (*keyfactor.APIClient, error) {
+func authViaProviderGenClient() (*kfc.APIClient, error) {
 	var commandConfig ConfigurationFile
 	if providerType != "" {
 		log.Info().Str("providerType", providerType).Msg("attempting to auth via auth provider")
@@ -680,8 +680,13 @@ func authViaProviderGenClient() (*keyfactor.APIClient, error) {
 			Msg("Client authentication params")
 
 		log.Debug().Msg("call: api.NewKeyfactorClient()")
-		configuration := keyfactor.NewConfiguration(sdkClientConfig)
-		c := keyfactor.NewAPIClient(configuration)
+		configuration, authErr := kfc.NewConfiguration(sdkClientConfig)
+		if authErr != nil {
+			log.Error().Err(authErr).Send()
+			outputError(authErr, true, "text")
+			return nil, authErr
+		}
+		c := kfc.NewAPIClient(configuration)
 		log.Debug().Msg("complete: api.NewKeyfactorClient()")
 		log.Info().Msg("Keyfactor Command client created")
 		log.Debug().Str("flagAuthProvider", providerType).
