@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,10 @@
 // limitations under the License.
 package cmd
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	ColorRed                = "\033[31m"
@@ -25,6 +28,10 @@ const (
 	XKeyfactorRequestedWith = "APIClient"
 	XKeyfactorApiVersion    = "1"
 	FlagGitRef              = "git-ref"
+	FlagFromFile            = "from-file"
+	DebugFuncEnter          = "entered: %s"
+	DebugFuncExit           = "exiting: %s"
+	DebugFuncCall           = "calling: %s"
 )
 
 var ProviderTypeChoices = []string{
@@ -36,4 +43,5 @@ var ValidAuthProviders = [2]string{"azure-id", "azid"}
 var (
 	StoreTypeReadError = fmt.Errorf("error reading store type from configuration file")
 	InvalidInputError  = fmt.Errorf("invalid input")
+	CLINow             = time.Now().Unix()
 )

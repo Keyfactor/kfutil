@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
+	kfc "github.com/Keyfactor/keyfactor-go-client-sdk/v11/api/command"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -197,7 +197,7 @@ func initClient(flagConfigFile string, flagProfile string, flagAuthProviderType 
 	return c, nil
 }
 
-func initGenClient(flagConfig string, flagProfile string, noPrompt bool, authConfig *api.AuthConfig, saveConfig bool) (*keyfactor.APIClient, error) {
+func initGenClient(flagConfig string, flagProfile string, noPrompt bool, authConfig *api.AuthConfig, saveConfig bool) (*kfc.APIClient, error) {
 	var commandConfig ConfigurationFile
 
 	if providerType != "" {
@@ -259,8 +259,12 @@ func initGenClient(flagConfig string, flagProfile string, noPrompt bool, authCon
 	sdkClientConfig["password"] = commandConfig.Servers[flagProfile].Password
 	sdkClientConfig["domain"] = commandConfig.Servers[flagProfile].Domain
 
-	configuration := keyfactor.NewConfiguration(sdkClientConfig)
-	c := keyfactor.NewAPIClient(configuration)
+	configuration, cfgErr := kfc.NewConfiguration(sdkClientConfig)
+	if cfgErr != nil {
+		log.Error().Err(cfgErr).Msg("unable to create Keyfactor Command client configuration")
+		return nil, cfgErr
+	}
+	c := kfc.NewAPIClient(configuration)
 	return c, nil
 }
 
