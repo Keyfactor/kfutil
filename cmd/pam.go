@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
+	kfc "github.com/Keyfactor/keyfactor-go-client-sdk/v11/api/command"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"io"
@@ -27,8 +27,8 @@ import (
 )
 
 type JSONImportableObject interface {
-	keyfactor.KeyfactorApiPAMProviderTypeCreateRequest |
-		keyfactor.CSSCMSDataModelModelsProvider
+	kfc.KeyfactorApiPAMProviderTypeCreateRequest |
+		kfc.CSSCMSDataModelModelsProvider
 }
 
 const (
@@ -150,7 +150,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 
 		// CLI Logic
 
-		var pamProviderType *keyfactor.KeyfactorApiPAMProviderTypeCreateRequest
+		var pamProviderType *kfc.KeyfactorApiPAMProviderTypeCreateRequest
 		var err error
 		if repoName != "" {
 			// get JSON config from integration-manifest on GitHub
@@ -339,7 +339,7 @@ var pamProvidersCreateCmd = &cobra.Command{
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 
 		// CLI Logic
-		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
+		var pamProvider *kfc.CSSCMSDataModelModelsProvider
 		log.Debug().Msg("call: GetTypeFromConfigFile()")
 		pamProvider, err := GetTypeFromConfigFile(pamConfigFile, pamProvider)
 		log.Debug().Msg("returned: GetTypeFromConfigFile()")
@@ -403,7 +403,7 @@ var pamProvidersUpdateCmd = &cobra.Command{
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 
 		// CLI Logic
-		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
+		var pamProvider *kfc.CSSCMSDataModelModelsProvider
 		log.Debug().Str("file", pamConfigFile).
 			Msg("call: GetTypeFromConfigFile()")
 		pamProvider, err := GetTypeFromConfigFile(pamConfigFile, pamProvider)

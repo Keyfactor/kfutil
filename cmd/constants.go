@@ -13,7 +13,10 @@
 // limitations under the License.
 package cmd
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	ColorRed                = "\033[31m"
@@ -40,4 +43,5 @@ var ValidAuthProviders = [2]string{"azure-id", "azid"}
 var (
 	StoreTypeReadError = fmt.Errorf("error reading store type from configuration file")
 	InvalidInputError  = fmt.Errorf("invalid input")
+	CLINow             = time.Now().Unix()
 )
