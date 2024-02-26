@@ -301,7 +301,7 @@ func handleInteractiveError(err error, parameterName string) error {
 	if err != nil {
 		if err.Error() != "unexpected newline" {
 			log.Error().Err(err)
-			outputError(fmt.Errorf("error handling parmeter '%s'=%v", parameterName, err), false, "")
+			outputError(fmt.Errorf("error handling parameter '%s'=%v", parameterName, err), false, "")
 			//log.Println(fmt.Sprintf("[ERROR] %s", errMsg))
 			return err
 		}

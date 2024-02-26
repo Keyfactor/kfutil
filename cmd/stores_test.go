@@ -233,10 +233,14 @@ func Test_Stores_ExportCmd(t *testing.T) {
 func Test_Stores_GenerateImportTemplateCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
-	testCmd.SetArgs([]string{"stores", "import", "generate-template", "--store-type-name", "k8ssecret", "--exp"})
+	testCmd.SetArgs([]string{"stores", "import", "generate-template", "--store-type-name", "k8ssecret"})
 	output := captureOutput(func() {
 		err := testCmd.Execute()
 		assert.NoError(t, err)
+		if err != nil {
+			t.Errorf("Error: %v", err)
+			return
+		}
 	})
 
 	assert.Contains(t, output, "Template file for store type with id")
@@ -248,8 +252,10 @@ func Test_Stores_GenerateImportTemplateCmd(t *testing.T) {
 
 	// get last element in outputSplit
 	outfileName := outputSplit[len(outputSplit)-1]
+	t.Logf("outfileName: %s", outfileName)
 	// remove newline from outfileName
 	outfileName = strings.Replace(outfileName, "\n", "", 1)
+	t.Logf("formattedOutfileName: %s", outfileName)
 
 	assert.NotEmpty(t, outfileName)
 	assert.Contains(t, outfileName, "csv")
@@ -257,16 +263,32 @@ func Test_Stores_GenerateImportTemplateCmd(t *testing.T) {
 	// Verify f exists
 	_, err := os.Stat(outfileName)
 	assert.NoError(t, err)
+	if err != nil {
+		t.Errorf("File %s does not exist", outfileName)
+		return
+	}
 
 	// Verify f is not empty
 	f, err := os.Open(outfileName)
 	assert.NoError(t, err)
 	assert.NotNil(t, f)
+	if err != nil {
+		t.Errorf("File %s does not exist", outfileName)
+		return
+	}
 
 	// Verify f has content
 	fileInfo, err := f.Stat()
 	assert.NoError(t, err)
 	assert.NotNil(t, fileInfo)
+	if err != nil {
+		t.Errorf("File %s does not exist", outfileName)
+		return
+	}
+	if fileInfo == nil {
+		t.Errorf("File %s is empty", outfileName)
+		return
+	}
 	assert.NotZero(t, fileInfo.Size())
 
 	// Verify f is a csv
@@ -356,6 +378,9 @@ func deleteStoreTest(t *testing.T, storeID string, allowFail bool) {
 func testValidateCSVHeader(t *testing.T, filename string, header []string, expected []string) {
 	// iterate bulkStoreImportCSVHeader and verify that each header is in the csv header
 	t.Run(fmt.Sprintf("Validate CSV header %s", filename), func(t *testing.T) {
+		// Check that first col isn't empty
+		assert.NotEmpty(t, header[0], "First column of CSV is empty")
+
 		for _, h := range expected {
 			if h != "Properties" {
 				assert.Contains(t, header, h)
