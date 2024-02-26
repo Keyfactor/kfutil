@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -286,7 +286,7 @@ Store type IDs can be found by running the "store-types" command.`,
 		}
 
 		// expEnabled checks
-		isExperimental := true
+		isExperimental := false
 		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
 		if debugErr != nil {
 			return debugErr
@@ -295,7 +295,11 @@ Store type IDs can be found by running the "store-types" command.`,
 
 		// Authenticate
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, clientErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		if clientErr != nil {
+			log.Error().Err(clientErr).Msg("Error initializing client")
+			return clientErr
+		}
 
 		// CLI Logic
 		log.Info().Msg("Generating template for certificate stores")
@@ -330,7 +334,7 @@ Store type IDs can be found by running the "store-types" command.`,
 		log.Debug().Str("filePath", filePath).Msg("Writing template file")
 
 		var csvContent [][]string
-		row := make([]string, len(csvHeaders))
+		var row []string
 
 		log.Debug().Msg("Writing header row")
 		for k, v := range csvHeaders {
