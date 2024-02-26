@@ -1,6 +1,6 @@
 # v1.4.0
 ## Features
-- `stores import generate-template`: New sub CLI to generate a CSV template for bulk importing stores. [See docs](docs/kfutil_stores_import_generate-template.md)`
+- `stores import generate-template`: Sub CLI is now non-experimental. Generate a CSV template for bulk importing certificate stores. [See docs](docs/kfutil_stores_import_generate-template.md)`
 
 ## Fixes
 - Various null pointer references when nothing and/or empty inputs/responses are received.
