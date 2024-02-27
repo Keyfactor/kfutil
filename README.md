@@ -1,9 +1,44 @@
-
 # Keyfactor Command Utility (kfutil)
 
 `kfutil` is a go-lang CLI wrapper for Keyfactor Command API. It also includes other utility/helper functions around automating common Keyfactor Command operations.
 
 #### Integration status: Production - Ready for use in production environments.
+
+<!-- toc -->
+
+- [About the Keyfactor API Client](#about-the-keyfactor-api-client)
+- [Support for Keyfactor Command Utility (kfutil)](#support-for-keyfactor-command-utility-kfutil)
+- [Quickstart](#quickstart)
+  * [Linux/MacOS](#linuxmacos)
+    + [Prerequisites:](#prerequisites)
+    + [Installation:](#installation)
+  * [Windows](#windows)
+    + [Prerequisites:](#prerequisites-1)
+    + [Installation:](#installation-1)
+- [Environmental Variables](#environmental-variables)
+  * [Linux/MacOS:](#linuxmacos)
+  * [Windows Powershell:](#windows-powershell)
+- [Authentication Providers](#authentication-providers)
+- [Commands](#commands)
+  * [Login](#login)
+  * [Logout](#logout)
+- [Commands](#commands-1)
+  * [Bulk operations](#bulk-operations)
+    + [Bulk create cert stores](#bulk-create-cert-stores)
+    + [Bulk create cert store types](#bulk-create-cert-store-types)
+  * [Root of Trust](#root-of-trust)
+  * [Root of Trust Quickstart](#root-of-trust-quickstart)
+    + [Generate Certificate List Template](#generate-certificate-list-template)
+    + [Generate Certificate Store List Template](#generate-certificate-store-list-template)
+    + [Run Root of Trust Audit](#run-root-of-trust-audit)
+    + [Run Root of Trust Reconcile](#run-root-of-trust-reconcile)
+  * [Certificate Store Inventory](#certificate-store-inventory)
+    + [Show the inventory of a certificate store](#show-the-inventory-of-a-certificate-store)
+    + [Add certificates to certificate stores](#add-certificates-to-certificate-stores)
+    + [Remove certificates from certificate stores](#remove-certificates-from-certificate-stores)
+- [Development](#development)
+  * [Adding a new command](#adding-a-new-command)
+<!-- tocstop -->
 
 ## About the Keyfactor API Client
 
@@ -13,18 +48,12 @@ This API client allows for programmatic management of Keyfactor resources.
 
 Keyfactor Command Utility (kfutil) is open source and supported on best effort level for this tool/library/client.  This means customers can report Bugs, Feature Requests, Documentation amendment or questions as well as requests for customer information required for setup that needs Keyfactor access to obtain. Such requests do not follow normal SLA commitments for response or resolution. If you have a support issue, please open a support ticket via the Keyfactor Support Portal at https://support.keyfactor.com/
 
-###### To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
-
----
-
-
----
-
-
+[!NOTE] To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
 
 ## Quickstart
 
-### Prerequisites:
+### Linux/MacOS
+#### Prerequisites:
 - [jq](https://stedolan.github.io/jq/download/) CLI tool, used to parse JSON output.
 - Either
   - [curl](https://curl.se/download.html) CLI tool, used to download the release files.
@@ -33,14 +62,16 @@ Keyfactor Command Utility (kfutil) is open source and supported on best effort l
 - [openssl](https://www.openssl.org/source/) CLI tool, used to validate package checksum.
 - `$HOME/.local/bin` in your `$PATH` and exists if not running as root, else `/usr/local/bin` if running as root.
 
-### Installation:
-
-#### Linux/MacOS
+#### Installation:
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh)
 ````
 
-#### Windows (or Linux/MacOS if PowerShell is preferred)
+### Windows
+#### Prerequisites:
+- Powershell 5.1 or later
+
+#### Installation:
 ```powershell
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.ps1" -OutFile "install.ps1"
 # Install kfutil to $HOME/AppData/Local/Microsoft/WindowsApps.
@@ -48,7 +79,7 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Keyfactor/kfutil/main/
 .\install.ps1
 ```
 
-### Environmental Variables
+## Environmental Variables
 
 All the variables listed below need to be set in your environment. The `kfutil` command will look for these variables
 and use them if they are set. If they are not set, the utility will fail to connect to Keyfactor.
@@ -63,7 +94,7 @@ and use them if they are set. If they are not set, the utility will fail to conn
 | KFUTIL_EXP         | Set to `1` or `true` to enable experimental features.                                    |
 | KFUTIL_DEBUG       | Set to `1` or `true` to enable debug logging.                                            |
 
-Linux/MacOS:
+### Linux/MacOS:
 
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
@@ -80,7 +111,7 @@ export KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
 export KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 ```
 
-Windows Powershell:
+### Windows Powershell:
 
 ```powershell
 $env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"
@@ -138,28 +169,44 @@ kfutil logout
 
 #### Bulk create cert stores
 
-For full documentation, see [stores import](docs/kfutil_stores_import.md).
+For full documentation, see [stores import](docs/kfutil_stores_import.md). For a full user-interactive guide, see the
+[stores bulk operations examples](examples/cert_stores/bulk_operations/README.md).
 
 This will attempt to process a CSV input file of certificate stores to create. The template can be generated by
 running: `kfutil stores import generate-template` command.
 
 ```bash
-kfutil stores import create --file <file name to import> --store-type-id <store type id> --store-type-name <store type name> --results-path <filepath for results> --dry-run <check fields only> [flags]
+kfutil stores import csv --file <file name to import>
 ```
 
 ```bash
-kfutil stores import --help
-Tool for generating import templates and importing certificate stores
+kfutil stores import --help       
+Tools for generating import templates and importing certificate stores
 
 Usage:
   kfutil stores import [command]
 
 Available Commands:
-  create            Create certificate stores
+  csv               Create certificate stores from CSV file.
   generate-template For generating a CSV template with headers for bulk store creation.
 
 Flags:
   -h, --help   help for import
+
+Global Flags:
+      --api-path string                API Path to use for authenticating to Keyfactor Command. (default is KeyfactorAPI) (default "KeyfactorAPI")
+      --auth-provider-profile string   The profile to use defined in the securely stored config. If not specified the config named 'default' will be used if it exists. (default "default")
+      --auth-provider-type string      Provider type choices: (azid)
+      --config string                  Full path to config file in JSON format. (default is $HOME/.keyfactor/command_config.json)
+      --debug                          Enable debugFlag logging.
+      --domain string                  Domain to use for authenticating to Keyfactor Command.
+      --exp                            Enable expEnabled features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)
+      --format text                    How to format the CLI output. Currently only text is supported. (default "text")
+      --hostname string                Hostname to use for authenticating to Keyfactor Command.
+      --no-prompt                      Do not prompt for any user input and assume defaults or environmental variables are set.
+      --password string                Password to use for authenticating to Keyfactor Command. WARNING: Remember to delete your console history if providing kfcPassword here in plain text.
+      --profile string                 Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.
+      --username string                Username to use for authenticating to Keyfactor Command.
 
 Use "kfutil stores import [command] --help" for more information about a command.
 ```
