@@ -19,6 +19,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/Jeffail/gabs"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/rs/zerolog/log"
@@ -280,9 +281,11 @@ Store type IDs can be found by running the "store-types" command.`,
 		storeTypeID, _ := cmd.Flags().GetInt("store-type-id")
 		outpath, _ := cmd.Flags().GetString("outpath")
 
-		inputErr := storeTypeIdentifierFlagCheck(cmd)
-		if inputErr != nil {
-			return inputErr
+		if noPrompt {
+			inputErr := storeTypeIdentifierFlagCheck(cmd)
+			if inputErr != nil {
+				return inputErr
+			}
 		}
 
 		// expEnabled checks
@@ -308,28 +311,72 @@ Store type IDs can be found by running the "store-types" command.`,
 			Str("outpath", outpath).Msg("Specific flags")
 
 		// Check inputs
-		log.Debug().Msg("calling validateStoreTypeInputs()")
-		st, stErr := validateStoreTypeInputs(storeTypeID, storeTypeName, outputFormat)
-		log.Debug().Msg("returned from validateStoreTypeInputs()")
-		if stErr != nil {
-			log.Error().Err(stErr).Msg("Error validating store type inputs")
-			return stErr
+		var (
+			st    interface{}
+			stErr error
+		)
+		var validStoreTypes []string
+		var removeStoreTypes []interface{}
+		if storeTypeID < 0 && storeTypeName == "" && !noPrompt {
+			// prompt for store type
+			validStoreTypesResp, vstErr := kfClient.ListCertificateStoreTypes()
+			if vstErr != nil {
+				log.Error().Err(vstErr).Msg("unable to list certificate store types")
+				validStoreTypes = getValidStoreTypes("", "main")
+			} else {
+				for _, v := range *validStoreTypesResp {
+					validStoreTypes = append(validStoreTypes, v.ShortName)
+					removeStoreTypes = append(removeStoreTypes, v.ShortName)
+				}
+			}
+			log.Info().Msg("No store type specified, prompting user to select one")
+			prompt := &survey.Select{
+				Message: "Choose a store type to export:",
+				Options: validStoreTypes,
+			}
+			var selected string
+			err := survey.AskOne(prompt, &selected)
+			if err != nil {
+				log.Error().Err(err).Msg("user select prompt failed")
+				fmt.Println(err)
+			}
+			log.Info().Str("storeType", selected).Msg("User selected store type")
+			st = []interface{}{selected}
+		} else {
+			log.Debug().Msg("calling validateStoreTypeInputs()")
+			st, stErr = validateStoreTypeInputs(storeTypeID, storeTypeName, outputFormat)
+			log.Debug().Msg("returned from validateStoreTypeInputs()")
+			if stErr != nil {
+				log.Error().Err(stErr).Msg("Error validating store type inputs")
+				return stErr
+			}
 		}
-
+		log.Trace().Interface("st", st).Send()
 		// get storetype for the list of properties
 		log.Debug().Msg("calling getHeadersForStoreType()")
-		intID, csvHeaders := getHeadersForStoreType(st, *kfClient)
-		log.Debug().Msg("returned from getHeadersForStoreType()")
+		intID, sTypeShortName, csvHeaders := getHeadersForStoreType(st, *kfClient)
+		log.Debug().Str("shortName", sTypeShortName).Msg("returned from getHeadersForStoreType()")
 		log.Debug().Int64("intID", intID).
 			Interface("csvHeaders", csvHeaders).
 			Send()
+
+		if storeTypeName != "" && sTypeShortName != "" && storeTypeName != sTypeShortName {
+			log.Debug().Str("storeTypeName", storeTypeName).
+				Str("sTypeShortName", sTypeShortName).
+				Msg("storeTypeName does not match sTypeShortName, overwriting storeTypeName with sTypeShortName")
+			sTypeShortName = storeTypeName
+		}
 
 		// write csv file header row
 		var filePath string
 		if outpath != "" {
 			filePath = outpath
 		} else {
-			filePath = fmt.Sprintf("%s_template_%d.%s", "createstores", intID, "csv")
+			if sTypeShortName != "" {
+				filePath = fmt.Sprintf("%s_bulk_import_template.%s", sTypeShortName, "csv")
+			} else {
+				filePath = fmt.Sprintf("%s_bulk_import_template_%d.%s", "createstores", intID, "csv")
+			}
 		}
 		log.Debug().Str("filePath", filePath).Msg("Writing template file")
 
@@ -410,7 +457,7 @@ var storesExportCmd = &cobra.Command{
 		}
 
 		log.Debug().Msg("calling getHeadersForStoreType()")
-		typeID, csvHeaders := getHeadersForStoreType(st, *kfClient)
+		typeID, _, csvHeaders := getHeadersForStoreType(st, *kfClient)
 		log.Debug().Msg("returned from getHeadersForStoreType()")
 
 		query := map[string]interface{}{"Category": typeID}
@@ -568,8 +615,14 @@ var storesExportCmd = &cobra.Command{
 	},
 }
 
-func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, map[int]string) {
+func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, string, map[int]string) {
 	csvHeaders := make(map[int]string)
+
+	//check if interface is a slice of interfaces
+	if _, ok := id.([]interface{}); ok {
+		id = id.([]interface{})[0]
+		log.Debug().Interface("id", id).Msg("id is a slice of interfaces, setting id to first element")
+	}
 
 	storeType, err := kfClient.GetCertificateStoreType(id)
 	if err != nil {
@@ -609,7 +662,13 @@ func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, map[int
 		csvHeaders[len(csvHeaders)] = "Password"
 	}
 	intId, _ := jsonParsedObj.S("StoreType").Data().(json.Number).Int64()
-	return intId, csvHeaders
+	shortName, snOk := jsonParsedObj.S("ShortName").Data().(string)
+	if !snOk {
+		log.Printf("Error: %s", "unable to retrieve store type id or short name")
+		fmt.Printf("Error: %s\n", "unable to retrieve store type id or short name")
+		shortName = ""
+	}
+	return intId, shortName, csvHeaders
 }
 
 func getRequiredProperties(id interface{}, kfClient api.Client) (int64, []string) {
