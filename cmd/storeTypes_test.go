@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -71,6 +71,12 @@ func Test_StoreTypesListCmd(t *testing.T) {
 
 		// verify that the store type is an integer
 		_, ok := storeType["StoreType"].(float64)
+		if !ok {
+			t.Log("StoreType is not a float64")
+			merr, ook := storeType["StoreType"].(int)
+			t.Log(merr)
+			t.Log(ook)
+		}
 		assert.True(t, ok, "Expected store type to be an integer")
 		// verify short name is a string
 		_, ok = storeType["ShortName"].(string)

@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -163,8 +163,19 @@ func findMatchingFiles(pattern string) ([]string, error) {
 	return matchingFiles, nil
 }
 
-func getCurrentTime() string {
-	return time.Now().Format(time.RFC3339)
+func getCurrentTime(f string) string {
+	switch f {
+	case "unix":
+		return strconv.FormatInt(time.Now().Unix(), 10)
+	case "unixNano":
+		return strconv.FormatInt(time.Now().UnixNano(), 10)
+	case "date":
+		return time.Now().Format("2006-01-02")
+	case "time":
+		return time.Now().Format("15:04:05")
+	default:
+		return time.Now().Format(time.RFC3339)
+	}
 }
 
 func informDebug(debugFlag bool) {
@@ -388,6 +399,10 @@ func writeJSONFile(filename string, data interface{}) error {
 }
 
 func returnHttpErr(resp *http.Response, err error) error {
+	if resp == nil {
+		log.Error().Err(err).Msg("unable to create PAM provider - no response")
+		return err
+	}
 	if resp.Body != nil {
 		body, _ := io.ReadAll(resp.Body)
 		log.Error().Err(err).Str("httpResponseCode", resp.Status).
