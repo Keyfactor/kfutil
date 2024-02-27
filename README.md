@@ -27,7 +27,7 @@
     + [Bulk create cert stores](#bulk-create-cert-stores)
     + [Bulk create cert store types](#bulk-create-cert-store-types)
   * [Root of Trust](#root-of-trust)
-  * [Root of Trust Quickstart](#root-of-trust-quickstart)
+    + [Quickstart](#quickstart-1)
     + [Generate Certificate List Template](#generate-certificate-list-template)
     + [Generate Certificate Store List Template](#generate-certificate-store-list-template)
     + [Run Root of Trust Audit](#run-root-of-trust-audit)
@@ -251,7 +251,7 @@ For full documentation, see [stores rot](docs/kfutil_stores_rot.md).
 The root of trust (rot) utility is a tool that allows you to bulk manage Keyfactor certificate stores and ensure that a
 set of defined certificates are present in each store that meets a certain set of criteria or no criteria at all.
 
-### Root of Trust Quickstart
+#### Quickstart
 
 ```bash
 echo "Generating cert template file certs_template.csv"
