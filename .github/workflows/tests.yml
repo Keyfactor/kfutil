@@ -1,14 +1,17 @@
 name: go tests
 
 on:
-  workflow_dispatch:
-  workflow_run:
-    workflows:
-      - "Check and Update Package Version"
-    types:
-      - completed
+#  workflow_dispatch:
+#  workflow_run:
+#    workflows:
+#      - "Check and Update Package Version"
+#    types:
+#      - completed
+#    branches:
+#      - "*"
+  push:
     branches:
-      - "*"
+      - '*'
 
 jobs:
   build:
