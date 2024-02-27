@@ -144,22 +144,37 @@ This will attempt to process a CSV input file of certificate stores to create. T
 running: `kfutil stores import generate-template` command.
 
 ```bash
-kfutil stores import create --file <file name to import> --store-type-id <store type id> --store-type-name <store type name> --results-path <filepath for results> --dry-run <check fields only> [flags]
+kfutil stores import csv --file <file name to import>
 ```
 
 ```bash
-kfutil stores import --help
-Tool for generating import templates and importing certificate stores
+kfutil stores import --help       
+Tools for generating import templates and importing certificate stores
 
 Usage:
   kfutil stores import [command]
 
 Available Commands:
-  create            Create certificate stores
+  csv               Create certificate stores from CSV file.
   generate-template For generating a CSV template with headers for bulk store creation.
 
 Flags:
   -h, --help   help for import
+
+Global Flags:
+      --api-path string                API Path to use for authenticating to Keyfactor Command. (default is KeyfactorAPI) (default "KeyfactorAPI")
+      --auth-provider-profile string   The profile to use defined in the securely stored config. If not specified the config named 'default' will be used if it exists. (default "default")
+      --auth-provider-type string      Provider type choices: (azid)
+      --config string                  Full path to config file in JSON format. (default is $HOME/.keyfactor/command_config.json)
+      --debug                          Enable debugFlag logging.
+      --domain string                  Domain to use for authenticating to Keyfactor Command.
+      --exp                            Enable expEnabled features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)
+      --format text                    How to format the CLI output. Currently only text is supported. (default "text")
+      --hostname string                Hostname to use for authenticating to Keyfactor Command.
+      --no-prompt                      Do not prompt for any user input and assume defaults or environmental variables are set.
+      --password string                Password to use for authenticating to Keyfactor Command. WARNING: Remember to delete your console history if providing kfcPassword here in plain text.
+      --profile string                 Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.
+      --username string                Username to use for authenticating to Keyfactor Command.
 
 Use "kfutil stores import [command] --help" for more information about a command.
 ```
