@@ -1,0 +1,23 @@
+{
+  "name": "string",
+  "remote": true,
+  "area": 0,
+  "services": {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  },
+  "providerTypeParamValues": [
+    {
+      "id": 0,
+      "value": "string",
+      "instanceId": 0,
+      "instanceGuid": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "providerTypeParam": {
+        "id": 0,
+        "name": "string",
+        "displayName": "string",
+        "instanceLevel": true
+      }
+    }
+  ],
+  "securedAreaId": 0
+}
