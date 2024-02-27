@@ -13,6 +13,10 @@ endif
 OS_ARCH := $(shell go env GOOS)_$(shell go env GOARCH)
 BASEDIR := ${HOME}/go/bin
 INSTALLDIR := ${BASEDIR}
+MARKDOWN_FILE := README.md
+TEMP_TOC_FILE := temp_toc.md
+
+
 
 default: build
 
@@ -70,5 +74,16 @@ prerelease: fmt setversion
 	git push origin :$(VERSION) || true
 	git tag $(VERSION)
 	git push origin $(VERSION)
+
+check_toc:
+	@grep -q 'TOC_START' $(MARKDOWN_FILE) && echo "TOC already exists." || (echo "TOC not found. Generating..." && $(MAKE) generate_toc)
+
+generate_toc:
+	# Generate TOC and store in temporary file
+	markdown-toc -i $(MARKDOWN_FILE) > $(TEMP_TOC_FILE)
+	# check if files are different
+#	@diff -q $(TEMP_TOC_FILE) $(MARKDOWN_FILE) && echo "TOC is up to date." || (echo "TOC is not up to date. Updating..." && mv $(TEMP_TOC_FILE) $(MARKDOWN_FILE))
+#	@rm -f $(TEMP_TOC_FILE)
+
 
 .PHONY: build prerelease release install test fmt vendor version setversion

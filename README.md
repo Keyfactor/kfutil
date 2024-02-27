@@ -1,4 +1,3 @@
-
 # Keyfactor Command Utility (kfutil)
 
 `kfutil` is a go-lang CLI wrapper for Keyfactor Command API. It also includes other utility/helper functions around automating common Keyfactor Command operations.
@@ -13,18 +12,12 @@ This API client allows for programmatic management of Keyfactor resources.
 
 Keyfactor Command Utility (kfutil) is open source and supported on best effort level for this tool/library/client.  This means customers can report Bugs, Feature Requests, Documentation amendment or questions as well as requests for customer information required for setup that needs Keyfactor access to obtain. Such requests do not follow normal SLA commitments for response or resolution. If you have a support issue, please open a support ticket via the Keyfactor Support Portal at https://support.keyfactor.com/
 
-###### To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
-
----
-
-
----
-
-
+[!NOTE] To report a problem or suggest a new feature, use the **[Issues](../../issues)** tab. If you want to contribute actual bug fixes or proposed enhancements, use the **[Pull requests](../../pulls)** tab.
 
 ## Quickstart
 
-### Prerequisites:
+### Linux/MacOS
+#### Prerequisites:
 - [jq](https://stedolan.github.io/jq/download/) CLI tool, used to parse JSON output.
 - Either
   - [curl](https://curl.se/download.html) CLI tool, used to download the release files.
@@ -33,14 +26,16 @@ Keyfactor Command Utility (kfutil) is open source and supported on best effort l
 - [openssl](https://www.openssl.org/source/) CLI tool, used to validate package checksum.
 - `$HOME/.local/bin` in your `$PATH` and exists if not running as root, else `/usr/local/bin` if running as root.
 
-### Installation:
-
-#### Linux/MacOS
+#### Installation:
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh)
 ````
 
-#### Windows (or Linux/MacOS if PowerShell is preferred)
+### Windows
+#### Prerequisites:
+- Powershell 5.1 or later
+
+#### Installation:
 ```powershell
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.ps1" -OutFile "install.ps1"
 # Install kfutil to $HOME/AppData/Local/Microsoft/WindowsApps.
@@ -48,7 +43,7 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Keyfactor/kfutil/main/
 .\install.ps1
 ```
 
-### Environmental Variables
+## Environmental Variables
 
 All the variables listed below need to be set in your environment. The `kfutil` command will look for these variables
 and use them if they are set. If they are not set, the utility will fail to connect to Keyfactor.
@@ -63,7 +58,7 @@ and use them if they are set. If they are not set, the utility will fail to conn
 | KFUTIL_EXP         | Set to `1` or `true` to enable experimental features.                                    |
 | KFUTIL_DEBUG       | Set to `1` or `true` to enable debug logging.                                            |
 
-Linux/MacOS:
+### Linux/MacOS:
 
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
@@ -80,7 +75,7 @@ export KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
 export KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 ```
 
-Windows Powershell:
+### Windows Powershell:
 
 ```powershell
 $env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"

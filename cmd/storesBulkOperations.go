@@ -67,11 +67,11 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		outPath, _ := cmd.Flags().GetString("results-path")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 
-		// Flag Checks
-		inputErr := storeTypeIdentifierFlagCheck(cmd)
-		if inputErr != nil {
-			return inputErr
-		}
+		//// Flag Checks
+		//inputErr := storeTypeIdentifierFlagCheck(cmd)
+		//if inputErr != nil {
+		//	return inputErr
+		//}
 
 		// expEnabled checks
 		isExperimental := false
@@ -96,8 +96,32 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		// Check inputs
 		st, stErr := validateStoreTypeInputs(storeTypeID, storeTypeName, outputFormat)
 		if stErr != nil {
-			log.Error().Err(stErr).Msg("Error validating store type inputs")
-			return stErr
+			if noPrompt {
+				log.Error().Err(stErr).Msg("Error validating store type inputs")
+				return stErr
+			}
+			sTypes, lsErr := listStoresByType(*kfClient)
+			if lsErr != nil {
+				log.Error().Err(stErr).Msg("Error listing store types, unable to import stores")
+				return stErr
+			}
+			// render list of store types as options for user to select
+			var storeTypeOptions []string
+			for name, _ := range *sTypes {
+				storeTypeOptions = append(storeTypeOptions, fmt.Sprintf("%s", name))
+			}
+			prompt := &survey.Select{
+				Message: "Choose a store type to import:",
+				Options: storeTypeOptions,
+			}
+			var selected string
+			err := survey.AskOne(prompt, &selected)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			st = selected
+
 		}
 
 		if outPath == "" {
@@ -281,12 +305,10 @@ Store type IDs can be found by running the "store-types" command.`,
 		storeTypeID, _ := cmd.Flags().GetInt("store-type-id")
 		outpath, _ := cmd.Flags().GetString("outpath")
 
-		if noPrompt {
-			inputErr := storeTypeIdentifierFlagCheck(cmd)
-			if inputErr != nil {
-				return inputErr
-			}
-		}
+		//inputErr := storeTypeIdentifierFlagCheck(cmd)
+		//if inputErr != nil {
+		//	return inputErr
+		//}
 
 		// expEnabled checks
 		isExperimental := false

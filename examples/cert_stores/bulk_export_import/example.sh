@@ -21,9 +21,55 @@ function prompt_user() {
     exit 1
   fi
 
-  list_stores
-  generate_store_template
+#  list_stores
+#  generate_store_template
+  export_stores
+  import_stores
+}
 
+function export_stores() {
+  kfutil stores export
+}
+
+function import_stores(){
+  # Directory containing the CSV files
+  DIRECTORY=$(pwd)
+
+  # Find all CSV files in the specified directory
+  CSV_FILES=($(find "$DIRECTORY" -name "*.csv"))
+
+  # Check if no CSV files were found
+  if [ ${#CSV_FILES[@]} -eq 0 ]; then
+      echo "No CSV files found in the directory."
+      exit 1
+  fi
+
+  # Display the CSV files to the user
+  echo "Select a CSV file by number:"
+  for i in "${!CSV_FILES[@]}"; do
+      echo "$((i+1))) ${CSV_FILES[$i]}"
+  done
+
+  # Prompt the user for a choice
+  read -p "Enter number (1-${#CSV_FILES[@]}): " USER_CHOICE
+
+  # Validate the user input
+  if ! [[ "$USER_CHOICE" =~ ^[0-9]+$ ]] || [ "$USER_CHOICE" -lt 1 ] || [ "$USER_CHOICE" -gt ${#CSV_FILES[@]} ]; then
+      echo "Invalid selection. Please run the script again and select a valid number."
+      exit 1
+  fi
+
+  # Calculate the index of the selected file
+  SELECTED_INDEX=$((USER_CHOICE-1))
+
+  # Get the selected CSV file
+  SELECTED_CSV_FILE=${CSV_FILES[$SELECTED_INDEX]}
+
+  # Execute the command with the selected CSV file
+  kfutil stores import csv \
+    --file="$SELECTED_CSV_FILE"
+
+  echo "CSV import command executed for file: $SELECTED_CSV_FILE"
 }
 
 function list_stores() {
@@ -51,27 +97,7 @@ function install_kfutil() {
 }
 
 function generate_store_template() {
-  local store_type_id="$1"
-  local store_type_name="$2"
-  local outpath="$3"
   command_str="kfutil stores import generate-template"
-
-  # If neither store_type_id nor store_type_name is provided, exit
-  if [[ -z "$store_type_id" && -z "$store_type_name" ]]; then
-    # Prompt for an ID or name
-    read -p "Please provide a store type ID or name: " store_type_id
-    # Check if input is a number
-    if [[ $store_type_id =~ ^[0-9]+$ ]]; then
-      # If input is a number, use it as store_type_id
-      store_type_name=""
-      # append store_type_id to command_str
-      command_str="$command_str --store-type-id $store_type_id"
-    else
-      store_type_name="$store_type_id"
-      # append store_type_name to command_str
-      command_str="$command_str --store-type-name $store_type_name"
-    fi
-  fi
 
   # If outpath is not provided, check for environment variable
   if [[ -z "$outpath" ]]; then
@@ -91,5 +117,14 @@ function generate_store_template() {
   eval "$command_str"
 }
 
+function cleanup() {
+  echo "Cleaning up..."
+  unset outpath
+  unset KFUTIL_STORE_TEMPLATE_PATH
+  rm -f *.csv
+  echo "Cleanup complete."
+}
+
 prompt_user
+cleanup
 
