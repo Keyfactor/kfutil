@@ -4,6 +4,42 @@
 
 #### Integration status: Production - Ready for use in production environments.
 
+<!-- toc -->
+
+- [About the Keyfactor API Client](#about-the-keyfactor-api-client)
+- [Support for Keyfactor Command Utility (kfutil)](#support-for-keyfactor-command-utility-kfutil)
+- [Quickstart](#quickstart)
+  * [Linux/MacOS](#linuxmacos)
+    + [Prerequisites:](#prerequisites)
+    + [Installation:](#installation)
+  * [Windows](#windows)
+    + [Prerequisites:](#prerequisites-1)
+    + [Installation:](#installation-1)
+- [Environmental Variables](#environmental-variables)
+  * [Linux/MacOS:](#linuxmacos)
+  * [Windows Powershell:](#windows-powershell)
+- [Authentication Providers](#authentication-providers)
+- [Commands](#commands)
+  * [Login](#login)
+  * [Logout](#logout)
+- [Commands](#commands-1)
+  * [Bulk operations](#bulk-operations)
+    + [Bulk create cert stores](#bulk-create-cert-stores)
+    + [Bulk create cert store types](#bulk-create-cert-store-types)
+  * [Root of Trust](#root-of-trust)
+  * [Root of Trust Quickstart](#root-of-trust-quickstart)
+    + [Generate Certificate List Template](#generate-certificate-list-template)
+    + [Generate Certificate Store List Template](#generate-certificate-store-list-template)
+    + [Run Root of Trust Audit](#run-root-of-trust-audit)
+    + [Run Root of Trust Reconcile](#run-root-of-trust-reconcile)
+  * [Certificate Store Inventory](#certificate-store-inventory)
+    + [Show the inventory of a certificate store](#show-the-inventory-of-a-certificate-store)
+    + [Add certificates to certificate stores](#add-certificates-to-certificate-stores)
+    + [Remove certificates from certificate stores](#remove-certificates-from-certificate-stores)
+- [Development](#development)
+  * [Adding a new command](#adding-a-new-command)
+<!-- tocstop -->
+
 ## About the Keyfactor API Client
 
 This API client allows for programmatic management of Keyfactor resources.
