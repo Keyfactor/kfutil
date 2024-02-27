@@ -182,7 +182,7 @@ For full documentation, see [stores rot](docs/kfutil_stores_rot.md).
 The root of trust (rot) utility is a tool that allows you to bulk manage Keyfactor certificate stores and ensure that a
 set of defined certificates are present in each store that meets a certain set of criteria or no criteria at all.
 
-### Root of Trust Quickstart
+#### Root of Trust Quickstart
 
 ```bash
 echo "Generating cert template file certs_template.csv"
