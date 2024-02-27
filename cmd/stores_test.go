@@ -342,7 +342,7 @@ func testExportStore(t *testing.T, storeTypeName string) (string, []string) {
 		assert.Contains(t, output, ".csv")
 
 		// assert that a csv file was created in current working directory with a filename that contains 'export_store_*.csv'
-		files, err = findMatchingFiles("export_stores_*.csv")
+		files, err = findMatchingFiles("*stores_export*.csv")
 		assert.Nil(t, err)
 		assert.NotEmpty(t, files)
 	})
