@@ -14,4 +14,4 @@
 
 package version
 
-const VERSION = "1.4.0-rc.13"
+const VERSION = "1.4.0-rc.14"
