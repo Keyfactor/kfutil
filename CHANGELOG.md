@@ -1,3 +1,18 @@
+# v1.4.0
+## Features
+- `stores import generate-template`: Sub CLI is now non-experimental. Generate a CSV template for bulk importing certificate stores. [See docs](docs/kfutil_stores_import_generate-template.md)`
+
+## Fixes
+- Various null pointer references when nothing and/or empty inputs/responses are received.
+- Installer script checksum check now validates properly. #119
+- `stores import` sub CLI is now listed and documented #71
+
+### Store Types
+- Empty `storepath` values are no longer passed to the API.  #56
+
+### PAM Types
+- Handle duplicate provider type that is already created without crashing. #139
+
 # v1.3.2
 
 ### Package
