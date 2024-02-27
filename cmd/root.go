@@ -20,6 +20,7 @@ import (
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	"github.com/spf13/cobra/doc"
 	"golang.org/x/crypto/bcrypt"
 	"io"
 	stdlog "log"
@@ -264,6 +265,18 @@ func initGenClient(flagConfig string, flagProfile string, noPrompt bool, authCon
 	return c, nil
 }
 
+var makeDocsCmd = &cobra.Command{
+	Use:    "makedocs",
+	Short:  "Generate markdown documentation for kfutil",
+	Long:   `Generate markdown documentation for kfutil.`,
+	Hidden: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug().Msg("Enter makeDocsCmd.Run()")
+		doc.GenMarkdownTree(RootCmd, "./docs")
+		log.Debug().Msg("complete: makeDocsCmd.Run()")
+	},
+}
+
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "kfutil",
@@ -315,4 +328,5 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 
+	RootCmd.AddCommand(makeDocsCmd)
 }

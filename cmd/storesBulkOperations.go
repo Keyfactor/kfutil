@@ -414,11 +414,16 @@ var storesExportCmd = &cobra.Command{
 		storeTypeName, _ := cmd.Flags().GetString("store-type-name")
 		storeTypeID, _ := cmd.Flags().GetInt("store-type-id")
 		outpath, _ := cmd.Flags().GetString("outpath")
+		allStores, _ := cmd.Flags().GetBool("all")
 
-		inputErr := storeTypeIdentifierFlagCheck(cmd)
-		if inputErr != nil {
-			return inputErr
+		if noPrompt && !allStores {
+			inputErr := storeTypeIdentifierFlagCheck(cmd)
+			if inputErr != nil && !noPrompt {
+				return inputErr
+			}
 		}
+
+		// Fetch a list of stores from
 
 		// expEnabled checks
 		isExperimental := false
@@ -439,180 +444,270 @@ var storesExportCmd = &cobra.Command{
 			Str("outpath", outpath).
 			Msg("Exporting certificate stores of specified type to CSV")
 
-		// Check inputs
-		st, stErr := validateStoreTypeInputs(storeTypeID, storeTypeName, outputFormat)
-		if stErr != nil {
-			log.Error().Err(stErr).Msg("validating store type inputs")
-			return stErr
+		var (
+			//stTypes      []int
+			stInterfaces interface{}
+			stErr        error
+		)
+		if allStores {
+			//iterate through stores and compile a list of distinct store types
+			storeTypes, stErr := listStoresByType(*kfClient)
+			if stErr != nil {
+				log.Error().Err(stErr).Msg("Error listing store types, unable to export stores")
+				return stErr
+			} else if storeTypes == nil {
+				log.Error().Msg("No store types returned from Keyfactor Command")
+				return fmt.Errorf("no store types returned from Keyfactor Command")
+			}
+			var stInts []interface{}
+			for _, st := range *storeTypes {
+				stInts = append(stInts, st)
+			}
+			stInterfaces = stInts
+		} else {
+			// Check inputs
+			stInterfaces, stErr = validateStoreTypeInputs(storeTypeID, storeTypeName, outputFormat)
+			if stErr != nil {
+				if noPrompt {
+					log.Error().Err(stErr).Msg("validating store type inputs")
+					return stErr
+				}
+				storeTypes, stErr := listStoresByType(*kfClient)
+				if stErr != nil {
+					log.Error().Err(stErr).Msg("Error listing store types, unable to export stores")
+					return stErr
+				} else if storeTypes == nil {
+					log.Error().Msg("No store types returned from Keyfactor Command")
+					return fmt.Errorf("no store types returned from Keyfactor Command")
+				}
+				// render list of store types as options for user to select
+				var storeTypeOptions []string
+				for name, _ := range *storeTypes {
+					storeTypeOptions = append(storeTypeOptions, fmt.Sprintf("%s", name))
+				}
+				prompt := &survey.Select{
+					Message: "Choose a store type to export:",
+					Options: storeTypeOptions,
+				}
+				var selected string
+				err := survey.AskOne(prompt, &selected)
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
+				stInterfaces = []interface{}{selected}
+			}
 		}
 
-		// get storetype for the list of properties
-		log.Debug().Msg("calling getHeadersForStoreType()")
-		storeType, err := kfClient.GetCertificateStoreType(st)
-		log.Debug().Msg("returned from getHeadersForStoreType()")
-		log.Trace().Interface("storeType", storeType).Send()
-		if err != nil {
-			log.Error().Err(err).Msg("retrieving store type")
-			return err
+		var errs []error
+		if stInterfaces == nil {
+			log.Error().Msg("No store types returned from Keyfactor Command")
+			return fmt.Errorf("no store types returned from Keyfactor Command")
 		}
-
-		log.Debug().Msg("calling getHeadersForStoreType()")
-		typeID, _, csvHeaders := getHeadersForStoreType(st, *kfClient)
-		log.Debug().Msg("returned from getHeadersForStoreType()")
-
-		query := map[string]interface{}{"Category": typeID}
-		log.Debug().Interface("query", query).Msg("calling ListCertificateStores()")
-		storeList, lErr := kfClient.ListCertificateStores(&query)
-		log.Debug().Msg("returned from ListCertificateStores()")
-		log.Trace().Interface("storeList", storeList).Send()
-		if lErr != nil {
-			log.Error().Err(lErr).
-				Int64("typeId", typeID).
-				Msg("listing stores of type")
-			return lErr
-		}
-
-		// add Id header to csvHeaders at -1
-		log.Debug().Msg("adding Id header to csvHeaders")
-		csvHeaders[len(csvHeaders)] = "Id"
-		log.Trace().Interface("csvHeaders", csvHeaders).Send()
-		csvData := make(map[string]map[string]interface{}, len(*storeList))
-
-		log.Debug().Msg("iterating through stores")
-		for _, listedStore := range *storeList {
-			if listedStore.CertStoreType != int(typeID) {
-				log.Debug().Int("listedStore.CertStoreType", listedStore.CertStoreType).
-					Msg("skipping store")
+		for _, st := range stInterfaces.([]interface{}) {
+			// get storetype for the list of properties
+			log.Debug().Msg("calling getHeadersForStoreType()")
+			storeType, err := kfClient.GetCertificateStoreType(st)
+			typeName := storeType.ShortName
+			log.Debug().Msg("returned from getHeadersForStoreType()")
+			log.Trace().Interface("storeType", storeType).Send()
+			if err != nil {
+				log.Error().Err(err).Msg("retrieving store type")
+				errs = append(errs, err)
 				continue
 			}
-			log.Debug().Str("listedStore.Id", listedStore.Id).
-				Msg("calling GetCertificateStoreByID()")
-			store, err := kfClient.GetCertificateStoreByID(listedStore.Id)
-			log.Debug().Msg("returned from GetCertificateStoreByID()")
-			log.Trace().Interface("store", store).Send()
-			if err != nil {
-				log.Error().Err(err).Msg("retrieving store by id")
-				return err
+
+			log.Debug().Msg("calling getHeadersForStoreType()")
+			typeID, _, csvHeaders := getHeadersForStoreType(st, *kfClient)
+			log.Debug().Msg("returned from getHeadersForStoreType()")
+
+			query := map[string]interface{}{"Category": typeID}
+			log.Debug().Interface("query", query).Msg("calling ListCertificateStores()")
+			storeList, lErr := kfClient.ListCertificateStores(&query)
+			log.Debug().Msg("returned from ListCertificateStores()")
+			log.Trace().Interface("storeList", storeList).Send()
+			if lErr != nil {
+				log.Error().Err(lErr).
+					Int64("typeId", typeID).
+					Msg("listing stores of type")
+				errs = append(errs, lErr)
+				continue
 			}
 
-			// populate store data into csv
-			log.Debug().Str("store.Id", store.Id).
-				Int("store.ContainerId", store.ContainerId).
-				Str("store.ClientMachine", store.ClientMachine).
-				Str("store.StorePath", store.StorePath).
-				Bool("store.CreateIfMissing", store.CreateIfMissing).
-				Str("store.AgentId", store.AgentId).
-				Msg("populating store data into csv")
+			// add Id header to csvHeaders at -1
+			log.Debug().Msg("adding Id header to csvHeaders")
+			csvHeaders[len(csvHeaders)] = "Id"
+			log.Trace().Interface("csvHeaders", csvHeaders).Send()
+			csvData := make(map[string]map[string]interface{}, len(*storeList))
 
-			csvData[store.Id] = map[string]interface{}{
-				"Id":              store.Id,
-				"ContainerId":     store.ContainerId,
-				"ClientMachine":   store.ClientMachine,
-				"StorePath":       store.StorePath,
-				"CreateIfMissing": store.CreateIfMissing,
-				"AgentId":         store.AgentId,
-			}
-
-			log.Debug().Msg("checking for InventorySchedule")
-			if store.InventorySchedule.Immediate != nil {
-				log.Debug().Msg("found InventorySchedule.Immediate")
-				csvData[store.Id]["InventorySchedule.Immediate"] = store.InventorySchedule.Immediate
-			}
-			if store.InventorySchedule.Interval != nil {
-				log.Debug().Msg("found InventorySchedule.Interval")
-				csvData[store.Id]["InventorySchedule.Interval.Minutes"] = store.InventorySchedule.Interval.Minutes
-			}
-			if store.InventorySchedule.Daily != nil {
-				log.Debug().Msg("found InventorySchedule.Daily")
-				csvData[store.Id]["InventorySchedule.Daily.Time"] = store.InventorySchedule.Daily.Time
-			}
-
-			log.Debug().Msg("checking Properties")
-			for name, prop := range store.Properties {
-				log.Debug().Str("name", name).
-					Interface("prop", prop).
-					Msg("adding to properties CSV data")
-				if name != "ServerUsername" && name != "ServerPassword" { // Don't add ServerUsername and ServerPassword to properties as they can't be exported via API
-					csvData[store.Id]["Properties."+name] = prop
+			log.Debug().Msg("iterating through stores")
+			for _, listedStore := range *storeList {
+				if listedStore.CertStoreType != int(typeID) {
+					log.Debug().Int("listedStore.CertStoreType", listedStore.CertStoreType).
+						Msg("skipping store")
+					continue
 				}
-			}
+				log.Debug().Str("listedStore.Id", listedStore.Id).
+					Msg("calling GetCertificateStoreByID()")
+				store, err := kfClient.GetCertificateStoreByID(listedStore.Id)
+				log.Debug().Msg("returned from GetCertificateStoreByID()")
+				log.Trace().Interface("store", store).Send()
+				if err != nil {
+					log.Error().Err(err).Msg("retrieving store by id")
+					errs = append(errs, err)
+					continue
+				}
 
-			//// conditionally set secret values
-			//if storeType.PasswordOptions.StoreRequired {
-			//	log.Debug().Str("storePassword", hashSecretValue(store.Password.Value)).
-			//		Msg("setting store password")
-			//
-			//	//csvData[store.Id]["Password"] = parseSecretField(store.Password) // todo: find parseSecretField
-			//	csvData[store.Id]["Password"] = store.Password.Value
-			//}
-			//// add ServerUsername and ServerPassword Properties if required for type
-			//if storeType.ServerRequired {
-			//	log.Debug().Interface("store.ServerUsername", store.Properties["ServerUsername"]).
-			//		Str("store.Password", hashSecretValue(store.Password.Value)).
-			//		Msg("setting store.ServerUsername")
-			//	//csvData[store.Id]["Properties.ServerUsername"] = parseSecretField(store.Properties["ServerUsername"]) // todo: find parseSecretField
-			//	//csvData[store.Id]["Properties.ServerPassword"] = parseSecretField(store.Properties["ServerPassword"]) // todo: find parseSecretField
-			//	csvData[store.Id]["Properties.ServerUsername"] = store.Properties["ServerUsername"]
-			//	csvData[store.Id]["Properties.ServerPassword"] = store.Properties["ServerPassword"]
-			//}
-		}
+				// populate store data into csv
+				log.Debug().Str("store.Id", store.Id).
+					Int("store.ContainerId", store.ContainerId).
+					Str("store.ClientMachine", store.ClientMachine).
+					Str("store.StorePath", store.StorePath).
+					Bool("store.CreateIfMissing", store.CreateIfMissing).
+					Str("store.AgentId", store.AgentId).
+					Msg("populating store data into csv")
 
-		// write csv file header row
-		var filePath string
-		if outpath != "" {
-			filePath = outpath
-		} else {
-			filePath = fmt.Sprintf("export_stores_%d.%s", &typeID, "csv")
-		}
-		log.Debug().Str("filePath", filePath).Msg("Writing export file")
+				csvData[store.Id] = map[string]interface{}{
+					"Id":              store.Id,
+					"ContainerId":     store.ContainerId,
+					"ClientMachine":   store.ClientMachine,
+					"StorePath":       store.StorePath,
+					"CreateIfMissing": store.CreateIfMissing,
+					"AgentId":         store.AgentId,
+				}
 
-		var csvContent [][]string
-		headerRow := make([]string, len(csvHeaders))
+				log.Debug().Msg("checking for InventorySchedule")
+				if store.InventorySchedule.Immediate != nil {
+					log.Debug().Msg("found InventorySchedule.Immediate")
+					csvData[store.Id]["InventorySchedule.Immediate"] = store.InventorySchedule.Immediate
+				}
+				if store.InventorySchedule.Interval != nil {
+					log.Debug().Msg("found InventorySchedule.Interval")
+					csvData[store.Id]["InventorySchedule.Interval.Minutes"] = store.InventorySchedule.Interval.Minutes
+				}
+				if store.InventorySchedule.Daily != nil {
+					log.Debug().Msg("found InventorySchedule.Daily")
+					csvData[store.Id]["InventorySchedule.Daily.Time"] = store.InventorySchedule.Daily.Time
+				}
 
-		log.Debug().Msg("Writing header row")
-		for k, v := range csvHeaders {
-			headerRow[k] = v
-		}
-		log.Trace().Interface("row", headerRow).Send()
-		csvContent = append(csvContent, headerRow)
-		index := 1
-
-		log.Debug().Msg("Writing data rows")
-		for _, data := range csvData {
-			log.Debug().Int("index", index).Msg("processing data row")
-			row := make([]string, len(csvHeaders)) // reset row
-			for i, header := range csvHeaders {
-				log.Trace().Int("index", i).
-					Str("header", header).
-					Msg("processing header")
-				if data[header] != nil {
-					if s, ok := data[header].(string); ok {
-						log.Trace().Str("s", s).
-							Msg("setting row value")
-						row[i] = s
-					} else {
-						log.Trace().Interface("data[header]", data[header]).
-							Msg("marshalling data[header]")
-						strData, _ := json.Marshal(data[header])
-						row[i] = string(strData)
-						log.Trace().Int("index", i).
-							Str("row[i]", row[i]).
-							Msg("setting row value")
+				log.Debug().Msg("checking Properties")
+				for name, prop := range store.Properties {
+					log.Debug().Str("name", name).
+						Interface("prop", prop).
+						Msg("adding to properties CSV data")
+					if name != "ServerUsername" && name != "ServerPassword" { // Don't add ServerUsername and ServerPassword to properties as they can't be exported via API
+						csvData[store.Id]["Properties."+name] = prop
 					}
 				}
+
+				//// conditionally set secret values
+				//if storeType.PasswordOptions.StoreRequired {
+				//	log.Debug().Str("storePassword", hashSecretValue(store.Password.Value)).
+				//		Msg("setting store password")
+				//
+				//	//csvData[store.Id]["Password"] = parseSecretField(store.Password) // todo: find parseSecretField
+				//	csvData[store.Id]["Password"] = store.Password.Value
+				//}
+				//// add ServerUsername and ServerPassword Properties if required for type
+				//if storeType.ServerRequired {
+				//	log.Debug().Interface("store.ServerUsername", store.Properties["ServerUsername"]).
+				//		Str("store.Password", hashSecretValue(store.Password.Value)).
+				//		Msg("setting store.ServerUsername")
+				//	//csvData[store.Id]["Properties.ServerUsername"] = parseSecretField(store.Properties["ServerUsername"]) // todo: find parseSecretField
+				//	//csvData[store.Id]["Properties.ServerPassword"] = parseSecretField(store.Properties["ServerPassword"]) // todo: find parseSecretField
+				//	csvData[store.Id]["Properties.ServerUsername"] = store.Properties["ServerUsername"]
+				//	csvData[store.Id]["Properties.ServerPassword"] = store.Properties["ServerPassword"]
+				//}
 			}
-			log.Debug().Msg("appending row to csvContent")
-			csvContent = append(csvContent, row)
-			index++
-			log.Debug().Msg("row appended to csvContent")
+
+			// write csv file header row
+			var filePath string
+			if outpath != "" {
+				filePath = outpath
+			} else {
+				filePath = fmt.Sprintf("%s_stores_export_%s.%s", typeName, getCurrentTime("unix"), "csv")
+			}
+			log.Debug().Str("filePath", filePath).Msg("Writing export file")
+
+			var csvContent [][]string
+			headerRow := make([]string, len(csvHeaders))
+
+			log.Debug().Msg("Writing header row")
+			for k, v := range csvHeaders {
+				headerRow[k] = v
+			}
+			log.Trace().Interface("row", headerRow).Send()
+			csvContent = append(csvContent, headerRow)
+			index := 1
+
+			log.Debug().Msg("Writing data rows")
+			for _, data := range csvData {
+				log.Debug().Int("index", index).Msg("processing data row")
+				row := make([]string, len(csvHeaders)) // reset row
+				for i, header := range csvHeaders {
+					log.Trace().Int("index", i).
+						Str("header", header).
+						Msg("processing header")
+					if data[header] != nil {
+						if s, ok := data[header].(string); ok {
+							log.Trace().Str("s", s).
+								Msg("setting row value")
+							row[i] = s
+						} else {
+							log.Trace().Interface("data[header]", data[header]).
+								Msg("marshalling data[header]")
+							strData, _ := json.Marshal(data[header])
+							row[i] = string(strData)
+							log.Trace().Int("index", i).
+								Str("row[i]", row[i]).
+								Msg("setting row value")
+						}
+					}
+				}
+				log.Debug().Msg("appending row to csvContent")
+				csvContent = append(csvContent, row)
+				index++
+				log.Debug().Msg("row appended to csvContent")
+			}
+
+			writeCsvFile(filePath, csvContent)
+
+			fmt.Printf("\nStores exported for store type with id %d written to %s\n", typeID, filePath)
 		}
-
-		writeCsvFile(filePath, csvContent)
-
-		fmt.Printf("\nStores exported for store type with id %d written to %s\n", typeID, filePath)
-
 		return nil
 	},
+}
+
+func listStoresByType(kfClient api.Client) (*map[string]int, error) {
+	query := map[string]interface{}{}
+	stores, err := kfClient.ListCertificateStores(&query)
+	if err != nil {
+		return nil, err
+	}
+
+	if stores == nil {
+		return nil, fmt.Errorf("no stores returned from Keyfactor Command")
+	}
+	var sTypes []int
+	output := make(map[string]int)
+	for _, store := range *stores {
+		sTypes = append(sTypes, store.CertStoreType)
+		sType, sTypeErr := kfClient.GetCertificateStoreType(store.CertStoreType)
+		if sTypeErr != nil {
+			log.Error().
+				Int("storeTypeId", store.CertStoreType).
+				Err(sTypeErr).
+				Msg("Error retrieving store type")
+			continue
+		}
+		output[sType.ShortName] = store.CertStoreType
+		log.Debug().
+			Int("storeTypeId", store.CertStoreType).
+			Str("storeTypeShortName", sType.ShortName).
+			Msg("store type added to output")
+	}
+	return &output, nil
+
 }
 
 func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, string, map[int]string) {
@@ -859,6 +954,7 @@ func init() {
 		outPath       string
 		file          string
 		resultsPath   string
+		exportAll     bool
 	)
 
 	storesCmd.AddCommand(importStoresCmd)
@@ -879,6 +975,7 @@ func init() {
 	storesCreateFromCSVCmd.Flags().BoolP("dry-run", "d", false, "Do not import, just check for necessary fields.")
 	storesCreateFromCSVCmd.Flags().StringVarP(&resultsPath, "results-path", "o", "", "CSV file containing cert stores to create. defaults to <imported file name>_results.csv")
 
+	storesExportCmd.Flags().BoolVarP(&exportAll, "all", "a", false, "Export all stores grouped by store-type.")
 	storesExportCmd.Flags().StringVarP(&storeTypeName, "store-type-name", "n", "", "The name of the cert store type for the template.  Use if store-type-id is unknown.")
 	storesExportCmd.Flags().IntVarP(&storeTypeId, "store-type-id", "i", -1, "The ID of the cert store type for the template.")
 	storesExportCmd.Flags().StringVarP(&outPath, "outpath", "o", "",

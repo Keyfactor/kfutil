@@ -163,8 +163,19 @@ func findMatchingFiles(pattern string) ([]string, error) {
 	return matchingFiles, nil
 }
 
-func getCurrentTime() string {
-	return time.Now().Format(time.RFC3339)
+func getCurrentTime(f string) string {
+	switch f {
+	case "unix":
+		return strconv.FormatInt(time.Now().Unix(), 10)
+	case "unixNano":
+		return strconv.FormatInt(time.Now().UnixNano(), 10)
+	case "date":
+		return time.Now().Format("2006-01-02")
+	case "time":
+		return time.Now().Format("15:04:05")
+	default:
+		return time.Now().Format(time.RFC3339)
+	}
 }
 
 func informDebug(debugFlag bool) {
