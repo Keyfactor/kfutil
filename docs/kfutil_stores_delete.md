@@ -13,9 +13,10 @@ kfutil stores delete [flags]
 ### Options
 
 ```
-  -a, --all         Attempt to delete ALL stores.
-  -h, --help        help for delete
-  -i, --id string   ID of the certificate store to delete.
+  -a, --all           Attempt to delete ALL stores.
+  -f, --file string   The path to a CSV file containing the Ids of the stores to delete.
+  -h, --help          help for delete
+  -i, --id string     ID of the certificate store to delete.
 ```
 
 ### Options inherited from parent commands
