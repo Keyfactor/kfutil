@@ -1,6 +1,7 @@
 ## Quickstart
 
-### Prerequisites:
+### Linux/MacOS
+#### Prerequisites:
 - [jq](https://stedolan.github.io/jq/download/) CLI tool, used to parse JSON output.
 - Either
   - [curl](https://curl.se/download.html) CLI tool, used to download the release files.
@@ -9,14 +10,16 @@
 - [openssl](https://www.openssl.org/source/) CLI tool, used to validate package checksum.
 - `$HOME/.local/bin` in your `$PATH` and exists if not running as root, else `/usr/local/bin` if running as root.
 
-### Installation:
-
-#### Linux/MacOS
+#### Installation:
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh)
 ````
 
-#### Windows (or Linux/MacOS if PowerShell is preferred)
+### Windows
+#### Prerequisites:
+- Powershell 5.1 or later
+
+#### Installation:
 ```powershell
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.ps1" -OutFile "install.ps1"
 # Install kfutil to $HOME/AppData/Local/Microsoft/WindowsApps.
@@ -24,7 +27,7 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Keyfactor/kfutil/main/
 .\install.ps1
 ```
 
-### Environmental Variables
+## Environmental Variables
 
 All the variables listed below need to be set in your environment. The `kfutil` command will look for these variables
 and use them if they are set. If they are not set, the utility will fail to connect to Keyfactor.
@@ -39,7 +42,7 @@ and use them if they are set. If they are not set, the utility will fail to conn
 | KFUTIL_EXP         | Set to `1` or `true` to enable experimental features.                                    |
 | KFUTIL_DEBUG       | Set to `1` or `true` to enable debug logging.                                            |
 
-Linux/MacOS:
+### Linux/MacOS:
 
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
@@ -56,7 +59,7 @@ export KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
 export KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 ```
 
-Windows Powershell:
+### Windows Powershell:
 
 ```powershell
 $env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"
