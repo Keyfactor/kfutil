@@ -1,3 +1,26 @@
+# v1.4.0
+## Features
+
+### Stores
+- `stores import generate-template`: New sub CLI to generate a CSV template for bulk importing stores. [See docs](docs/kfutil_stores_import_generate-template.md)`.
+- `stores delete`: Support for user interactive mode.
+- `stores delete`: Support of delete from CSV file.
+- `stores export`: Supports `--all` flag and user interactive mode
+
+## Fixes
+- Various null pointer references when nothing and/or empty inputs/responses are received.
+- Installer script checksum check now validates properly. #119
+- `stores import` sub CLI is now listed and documented #71
+
+### Store Types
+- Empty `storepath` values are no longer passed to the API.  #56
+
+### PAM Types
+- Handle duplicate provider type that is already created without crashing. #139
+
+## Docs
+- [Examples for certificate store bulk operations](https://github.com/Keyfactor/kfutil/tree/epic_54795/examples/cert_stores/bulk_operations#readme)
+
 # v1.3.2
 
 ### Package

@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -164,7 +164,12 @@ func testConfigExists(t *testing.T, filePath string, allowExist bool) {
 			}
 			// Verify that the config file has the correct keys
 			assert.Contains(t, fileConfigJSON, "servers")
-			kfcServers := fileConfigJSON["servers"].(map[string]interface{})
+			kfcServers, ok := fileConfigJSON["servers"].(map[string]interface{})
+			if !ok {
+				t.Errorf("Error decoding config file: %s", err)
+				assert.False(t, ok, "Error decoding config file")
+				return
+			}
 			assert.Contains(t, kfcServers, "default")
 			defaultServer := kfcServers["default"].(map[string]interface{})
 			assert.Contains(t, defaultServer, "host")
