@@ -38,6 +38,7 @@
     + [Remove certificates from certificate stores](#remove-certificates-from-certificate-stores)
 - [Development](#development)
   * [Adding a new command](#adding-a-new-command)
+
 <!-- tocstop -->
 
 ## About the Keyfactor API Client

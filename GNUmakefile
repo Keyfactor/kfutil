@@ -79,11 +79,9 @@ check_toc:
 	@grep -q 'TOC_START' $(MARKDOWN_FILE) && echo "TOC already exists." || (echo "TOC not found. Generating..." && $(MAKE) generate_toc)
 
 generate_toc:
-	# Generate TOC and store in temporary file
-	markdown-toc -i $(MARKDOWN_FILE) > $(TEMP_TOC_FILE)
-	# check if files are different
-#	@diff -q $(TEMP_TOC_FILE) $(MARKDOWN_FILE) && echo "TOC is up to date." || (echo "TOC is not up to date. Updating..." && mv $(TEMP_TOC_FILE) $(MARKDOWN_FILE))
-#	@rm -f $(TEMP_TOC_FILE)
+	# check if markdown-toc is installed and if not install it
+	@command -v markdown-toc >/dev/null 2>&1 || (echo "markdown-toc is not installed. Installing..." && npm install -g markdown-toc)
+	markdown-toc -i $(MARKDOWN_FILE) --skip 'Table of Contents'
 
 
 .PHONY: build prerelease release install test fmt vendor version setversion
