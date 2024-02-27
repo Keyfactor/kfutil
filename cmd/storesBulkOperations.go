@@ -526,6 +526,14 @@ var storesExportCmd = &cobra.Command{
 			log.Error().Msg("No store types returned from Keyfactor Command")
 			return fmt.Errorf("no store types returned from Keyfactor Command")
 		}
+		// check if interface is a slice of interfaces
+		if _, isSliceInterface := stInterfaces.([]interface{}); !isSliceInterface {
+			// check if type is interface
+			if _, isInterface := stInterfaces.(interface{}); isInterface {
+				stInterfaces = []interface{}{stInterfaces}
+			}
+		}
+
 		for _, st := range stInterfaces.([]interface{}) {
 			// get storetype for the list of properties
 			log.Debug().Msg("calling getHeadersForStoreType()")
