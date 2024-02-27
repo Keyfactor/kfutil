@@ -70,7 +70,7 @@ jobs:
           sparse-checkout: |
             .github
           path: './merge-folder/'
-          token: ${{ secrets.SDK_SYNC_PAT }}
+          token: ${{ secrets.V2BUILDTOKEN }}
           ref: '${{env.KFUTIL_ARG}}' 
 
 # If the branch does not exist, first check out the main branch from kfutil. 
@@ -82,7 +82,7 @@ jobs:
           sparse-checkout: |
             .github
           path: './merge-folder/'
-          token: ${{ secrets.SDK_SYNC_PAT }}
+          token: ${{ secrets.V2BUILDTOKEN }}
 
 # Save a copy of the original json
       - name: Save original store_types.json
@@ -96,7 +96,7 @@ jobs:
         with:
           repository: 'keyfactor/integration-tools'
           path: './tools/'
-          token: ${{ secrets.SDK_SYNC_PAT }}
+          token: ${{ secrets.V2BUILDTOKEN }}
 
       - name: Run Python Script
         working-directory: ./tools/store-type-merge
@@ -104,7 +104,7 @@ jobs:
           python main.py --repo-name ${{ env.KFUTIL_ARG }} --ref ${{ env.TARGET_REPO_BRANCH }}
           cat store_types.json
         env:
-          GITHUB_TOKEN: ${{ secrets.SDK_SYNC_PAT }}
+          GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN }}
 
       - name: Save Store Types JSON Artifact
         if: success()
@@ -194,4 +194,4 @@ jobs:
             });
             console.log(`Pull request created: ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}} : ${response.data.html_url}`);
         env:
-          GITHUB_TOKEN: ${{ secrets.SDK_SYNC_PAT }}
+          GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN }}

@@ -13,6 +13,10 @@ endif
 OS_ARCH := $(shell go env GOOS)_$(shell go env GOARCH)
 BASEDIR := ${HOME}/go/bin
 INSTALLDIR := ${BASEDIR}
+MARKDOWN_FILE := README.md
+TEMP_TOC_FILE := temp_toc.md
+
+
 
 default: build
 
@@ -70,5 +74,14 @@ prerelease: fmt setversion
 	git push origin :$(VERSION) || true
 	git tag $(VERSION)
 	git push origin $(VERSION)
+
+check_toc:
+	@grep -q 'TOC_START' $(MARKDOWN_FILE) && echo "TOC already exists." || (echo "TOC not found. Generating..." && $(MAKE) generate_toc)
+
+generate_toc:
+	# check if markdown-toc is installed and if not install it
+	@command -v markdown-toc >/dev/null 2>&1 || (echo "markdown-toc is not installed. Installing..." && npm install -g markdown-toc)
+	markdown-toc -i $(MARKDOWN_FILE) --skip 'Table of Contents'
+
 
 .PHONY: build prerelease release install test fmt vendor version setversion
