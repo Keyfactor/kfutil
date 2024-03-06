@@ -14,4 +14,4 @@
 
 package version
 
-const VERSION = "1.4.0"
+var Version = "1.4.0"
