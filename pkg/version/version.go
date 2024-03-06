@@ -1,4 +1,4 @@
-// Package version Copyright 2023 Keyfactor
+// Package version Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
