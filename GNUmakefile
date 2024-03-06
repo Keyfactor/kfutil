@@ -8,7 +8,7 @@ NAME=kfutil
 BINARY=${NAME}
 VERSION := $(GITHUB_REF_NAME)
 ifeq ($(VERSION),)
-	VERSION := v1.2.1
+	VERSION := v1.4.1
 endif
 OS_ARCH := $(shell go env GOOS)_$(shell go env GOARCH)
 BASEDIR := ${HOME}/go/bin
@@ -25,7 +25,7 @@ build: fmt
 
 release:
 	mkdir -p ./bin/${BINARY}_${VERSION}_darwin_amd64
-	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_amd64/kfutil
+	GOOS=darwin GOARCH=amd64 go build  -ldflags="-X 'pkg/version/version.Version=${VERSION})'" -o ./bin/${BINARY}_${VERSION}_darwin_amd64/kfutil
 	cp README.md ./bin/${BINARY}_${VERSION}_darwin_amd64
 	cp LICENSE ./bin/${BINARY}_${VERSION}_darwin_amd64
 	cp CHANGELOG.md ./bin/${BINARY}_${VERSION}_darwin_amd64
@@ -45,7 +45,9 @@ release:
 	GOOS=windows GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_windows_amd64
 
 install: fmt
-	go build -o ${BINARY}
+	#go build -ldflags="-X 'pkg/version/version.Version=${VERSION})'" -o ${BINARY}
+	go build -ldflags="-X 'kfutil/pkg/version.Version=${VERSION}'" -o ${BINARY}
+
 	rm -rf ${INSTALLDIR}/${BINARY}
 	mkdir -p ${INSTALLDIR}
 	chmod oug+x ${BINARY}

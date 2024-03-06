@@ -26,7 +26,7 @@ var versionCmd = &cobra.Command{
 	Short: "Shows version of kfutil",
 	Long:  `Shows version of kfutil`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("kfutil version %s", version.VERSION)
+		fmt.Printf("kfutil version %s", version.Version)
 	},
 }
 
