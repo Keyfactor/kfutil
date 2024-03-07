@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,22 +55,31 @@ func Test_PAMListCmd(t *testing.T) {
 	pamProviders, err := testListPamProviders(t)
 	assert.NoError(t, err)
 	if err != nil {
-		t.Fatalf("failed to list PAM providers: %v", err)
+		//t.Fatalf("failed to list PAM providers: %v", err)
+		t.Errorf("failed to list PAM providers: %v", err)
+		return
 	}
 
 	if len(pamProviders) <= 0 {
-		t.Fatalf("0 PAM providers found, cannot test list")
+		t.Errorf("0 PAM providers found, cannot test list")
 	}
 }
 
 func Test_PAMTypesListCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
+	var err error
 	testCmd.SetArgs([]string{"pam", "types-list"})
 	output := captureOutput(func() {
-		err := testCmd.Execute()
+		err = testCmd.Execute()
 		assert.NoError(t, err)
 	})
+
+	if err != nil {
+		t.Errorf("failed to list PAM provider types: %v", err)
+		return
+	}
+
 	var pTypes []interface{}
 	if err := json.Unmarshal([]byte(output), &pTypes); err != nil {
 		t.Fatalf("Error unmarshalling JSON: %v", err)
@@ -93,7 +102,11 @@ func Test_PAMTypesListCmd(t *testing.T) {
 			//}
 
 			// Check params is a list of maps
-			pTypeParams := providerConfig["ProviderTypeParams"].([]interface{})
+			pTypeParams, ok := providerConfig["ProviderTypeParams"].([]interface{})
+			if !ok {
+				t.Logf("ProviderTypeParams is not a list of maps for %s", providerConfig["Name"])
+				return
+			}
 			//assert.NotEmpty(t, pTypeParams)
 			//assert.GreaterOrEqual(t, len(pTypeParams), 0)
 			if len(pTypeParams) > 0 {
@@ -160,7 +173,8 @@ func Test_PAMGetCmd(t *testing.T) {
 			assert.NotEmpty(t, pamProvider.(map[string]interface{})["ProviderType"])
 		}
 	} else {
-		t.Fatalf("0 PAM providers found, cannot test get")
+		t.Errorf("0 PAM providers found, cannot test get")
+		return
 	}
 }
 
@@ -198,21 +212,22 @@ func Test_PAMCreateCmd(t *testing.T) {
 	t.Logf("inputFileName: %s", inputFileName)
 	invalidInputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-invalid.json")
 	t.Logf("invalidInputFileName: %s", invalidInputFileName)
-	//cProviderTypeName := "Delinea-SecretServer"
 
-	// read input file into a map[string]interface{}
 	updatedFileName, fErr := testFormatPamCreateConfig(t, inputFileName, "", false)
+	t.Logf("updatedFileName: %s", updatedFileName)
 	assert.NoError(t, fErr)
 	if fErr != nil {
-		t.Fatalf("failed to format PAM provider config file '%s': %v", inputFileName, fErr)
+		t.Errorf("failed to format PAM provider config file '%s': %v", inputFileName, fErr)
 		return
 	}
 
-	// Test invalid config file
+	// Test valid config file
 	createResponse, err := testCreatePamProvider(t, updatedFileName, providerName, false)
 	assert.NoError(t, err)
+	assert.NotNil(t, createResponse)
 	if err != nil {
-		t.Fatalf("failed to create a PAM provider: %v", err)
+		t.Errorf("failed to create a PAM provider: %v", err)
+		return
 	}
 
 	createdObject := createResponse.(map[string]interface{})
@@ -284,6 +299,18 @@ func Test_PAMUpdateCmd(t *testing.T) {
 	var updateResponse interface{}
 	if err := json.Unmarshal([]byte(output), &updateResponse); err != nil {
 		t.Fatalf("Error unmarshalling JSON: %v", err)
+	}
+	assert.NotNil(t, updateResponse)
+	if updateResponse == nil {
+		t.Errorf("failed to update a PAM provider")
+		return
+	}
+	// check that updateResponse is a map[string]interface{}
+
+	_, ok := updateResponse.(map[string]interface{})
+	if !ok {
+		t.Errorf("updateResponse is not a map[string]interface{}")
+		return
 	}
 	assert.NotEmpty(t, updateResponse.(map[string]interface{})["Id"])
 	assert.NotEmpty(t, updateResponse.(map[string]interface{})["Name"])
@@ -368,6 +395,11 @@ func testListPamProviders(t *testing.T) ([]interface{}, error) {
 			assert.NoError(t, err)
 		})
 
+		if err != nil {
+			t.Errorf("failed to list PAM providers: %v", err)
+			return
+		}
+
 		if err = json.Unmarshal([]byte(output), &pamProviders); err != nil {
 			t.Fatalf("Error unmarshalling JSON: %v", err)
 		}
@@ -418,7 +450,11 @@ func testCreatePamProvider(t *testing.T, fileName string, providerName string, a
 	t.Run(testName, func(t *testing.T) {
 		testCmd := RootCmd
 
-		testCmd.SetArgs([]string{"pam", "create", "--from-file", fileName})
+		args := []string{"pam", "create", "--from-file", fileName}
+		// log the args as a string
+		t.Logf("args: %s", args)
+		testCmd.SetArgs(args)
+		t.Logf("fileName: %s", fileName)
 		output := captureOutput(func() {
 			err = testCmd.Execute()
 			if !allowFail {
@@ -429,7 +465,7 @@ func testCreatePamProvider(t *testing.T, fileName string, providerName string, a
 			if allowFail {
 				t.Logf("Error unmarshalling JSON: %v", err)
 			} else {
-				t.Fatalf("failed to create a PAM provider: %v", err)
+				t.Errorf("failed to create a PAM provider: %v", err)
 			}
 			return
 		}
@@ -485,7 +521,8 @@ func testListPamProviderTypes(t *testing.T, name string, allowFail bool, allowEm
 	})
 	var pTypes []interface{}
 	if err = json.Unmarshal([]byte(output), &pTypes); err != nil && !allowFail {
-		t.Fatalf("Error unmarshalling JSON: %v", err)
+		t.Errorf("Error unmarshalling JSON: %v", err)
+		return nil, err
 	}
 
 	// assert slice is len >= 0
@@ -509,7 +546,13 @@ func testListPamProviderTypes(t *testing.T, name string, allowFail bool, allowEm
 			}
 
 			// Check params is a list of maps
-			pTypeParams := providerConfig["ProviderTypeParams"].([]interface{})
+			pTypeParams, ok := providerConfig["ProviderTypeParams"].([]interface{})
+			if !ok {
+				// This will happen for KFC 11.0+ where this field is not returned
+				t.Logf("ProviderTypeParams is not a list of maps for %s", providerConfig["Name"])
+				continue
+			}
+
 			//assert.NotEmpty(t, pTypeParams)
 			//assert.GreaterOrEqual(t, len(pTypeParams), 0)
 			if len(pTypeParams) > 0 {
@@ -533,7 +576,7 @@ func testFormatPamCreateConfig(t *testing.T, inputFileName string, providerName 
 
 	assert.NoError(t, pErr)
 	if pErr != nil {
-		t.Fatalf("failed to load PAM provider config file '%s': %v", inputFileName, pErr)
+		t.Errorf("failed to load PAM provider config file '%s': %v", inputFileName, pErr)
 		return "", pErr
 	}
 
@@ -549,10 +592,16 @@ func testFormatPamCreateConfig(t *testing.T, inputFileName string, providerName 
 
 	// todo: for some reason calling this function mutates pConfig
 	apiProviderType, pvtErr := testListPamProviderTypes(t, cProviderTypeName, false, false)
+
+	if pvtErr != nil {
+		t.Errorf("failed to find PAM provider type '%s' unable to create PAM provider: %v", cProviderTypeName, pvtErr)
+		return "", pvtErr
+	} else if apiProviderType == nil {
+		t.Errorf("failed to find PAM provider type '%s' unable to create PAM provider: %v", cProviderTypeName, pvtErr)
+		return "", pvtErr
+	}
+
 	switch apiProviderType.(type) {
-	case nil:
-		t.Fatalf("failed to find PAM provider type '%s' unable to create PAM provider: %v", cProviderTypeName, pvtErr)
-		break
 	case map[string]interface{}:
 		aProviderType := apiProviderType.(map[string]interface{})
 		cProviderType["Id"] = aProviderType["Id"]
@@ -560,11 +609,17 @@ func testFormatPamCreateConfig(t *testing.T, inputFileName string, providerName 
 		cProviderType["ProviderTypeParams"] = aProviderType["ProviderTypeParams"]
 		// iterate over each param and set the ID value on cProviderTypeParamValues
 		nameToIdMap := make(map[string]int)
-		for _, cParam := range cProviderType["ProviderTypeParams"].([]interface{}) {
-			paramId := cParam.(map[string]interface{})["Id"]
-			paramName := cParam.(map[string]interface{})["Name"]
-			nameToIdMap[paramName.(string)] = int(paramId.(float64))
+		paramsFieldName := "ProviderTypeParams"
+		_, ok := cProviderType[paramsFieldName]
+		if ok && cProviderType[paramsFieldName] != nil {
+			t.Logf("PAM definition is v10 or earlier")
+			for _, cParam := range cProviderType[paramsFieldName].([]interface{}) {
+				paramId := cParam.(map[string]interface{})["Id"]
+				paramName := cParam.(map[string]interface{})["Name"]
+				nameToIdMap[paramName.(string)] = int(paramId.(float64))
+			}
 		}
+
 		for idx, pValue := range cProviderTypeParamValues {
 			pValueMap := pValue.(map[string]interface{})
 			paramInfo := pValueMap["ProviderTypeParam"].(map[string]interface{})
@@ -572,16 +627,22 @@ func testFormatPamCreateConfig(t *testing.T, inputFileName string, providerName 
 			pValueMap["ProviderTypeParam"] = paramInfo
 			cProviderTypeParamValues[idx] = pValueMap
 		}
-		break
 	default:
-		t.Fatalf("failed to find PAM provider type '%s' unable to create PAM provider: %v", cProviderTypeName, pvtErr)
+		oErr := pvtErr
+		if oErr == nil {
+			oErr = fmt.Errorf("failed to find PAM provider type '%s' unable to create PAM provider", cProviderTypeName)
+		} else {
+			oErr = fmt.Errorf("failed to find PAM provider type '%s' unable to create PAM provider: %v", cProviderTypeName, oErr)
+		}
+		t.Error(oErr)
+		return "", oErr
 	}
 
 	// reload the config file because it was mutated
 	pConfig, pErr = loadJSONFile(inputFileName)
 	assert.NoError(t, pErr)
 	if pErr != nil {
-		t.Fatalf("failed to load PAM provider config file '%s': %v", inputFileName, pErr)
+		t.Errorf("failed to load PAM provider config file '%s': %v", inputFileName, pErr)
 		return "", pErr
 	}
 
@@ -595,6 +656,7 @@ func testFormatPamCreateConfig(t *testing.T, inputFileName string, providerName 
 
 	if isUpdate {
 		// list providers
+		t.Logf("listing PAM providers for update")
 		providersList, err := testListPamProviders(t)
 		assert.NoError(t, err)
 		if err != nil {
@@ -613,7 +675,9 @@ func testFormatPamCreateConfig(t *testing.T, inputFileName string, providerName 
 				}
 			}
 		} else {
-			t.Fatalf("0 PAM providers found, cannot test delete")
+			dErr := fmt.Errorf("0 PAM providers found, cannot test update")
+			t.Error(dErr)
+			return "", dErr
 		}
 	}
 
@@ -622,7 +686,7 @@ func testFormatPamCreateConfig(t *testing.T, inputFileName string, providerName 
 	updatedFileName := strings.Replace(inputFileName, "-template.json", ".json", 1)
 	wErr := writeJSONFile(updatedFileName, pConfig)
 	if wErr != nil {
-		t.Fatalf("failed to write updated PAM provider config file '%s': %v", inputFileName, wErr)
+		t.Errorf("failed to write updated PAM provider config file '%s': %v", inputFileName, wErr)
 		return "", wErr
 	}
 	return updatedFileName, nil

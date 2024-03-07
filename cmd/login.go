@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -301,7 +301,7 @@ func handleInteractiveError(err error, parameterName string) error {
 	if err != nil {
 		if err.Error() != "unexpected newline" {
 			log.Error().Err(err)
-			outputError(fmt.Errorf("error handling parmeter '%s'=%v", parameterName, err), false, "")
+			outputError(fmt.Errorf("error handling parameter '%s'=%v", parameterName, err), false, "")
 			//log.Println(fmt.Sprintf("[ERROR] %s", errMsg))
 			return err
 		}

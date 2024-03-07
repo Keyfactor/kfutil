@@ -1,4 +1,4 @@
-// Package cmd Copyright 2023 Keyfactor
+// Copyright 2024 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -142,7 +142,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		for _, store := range stores {
 			if _, ok := store.Thumbprints[cert]; ok {
 				// Cert is already in the store do nothing
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true", getCurrentTime()}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "true", getCurrentTime("")}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -151,7 +151,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 				}
 			} else {
 				// Cert is not deployed to this store and will need to be added
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false", getCurrentTime()}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "true", "false", "false", getCurrentTime("")}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -188,7 +188,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 		for _, store := range stores {
 			if _, ok := store.Thumbprints[cert]; ok {
 				// Cert is deployed to this store and will need to be removed
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "true", "true", getCurrentTime()}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "true", "true", getCurrentTime("")}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -206,7 +206,7 @@ func generateAuditReport(addCerts map[string]string, removeCerts map[string]stri
 				})
 			} else {
 				// Cert is not deployed to this store do nothing
-				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "false", getCurrentTime()}
+				row := []string{cert, certIDStr, certLookup.IssuedDN, certLookup.IssuerDN, store.ID, store.Type, store.Machine, store.Path, "false", "false", "false", getCurrentTime("")}
 				data = append(data, row)
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
@@ -958,7 +958,7 @@ the utility will first generate an audit report and then execute the add/remove 
 								if !rowLookup[store.Id] {
 									lineData := []string{
 										//"StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId"
-										store.Id, fmt.Sprintf("%s", sType.ShortName), store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, getCurrentTime(),
+										store.Id, fmt.Sprintf("%s", sType.ShortName), store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, getCurrentTime(""),
 									}
 									csvStoreData = append(csvStoreData, lineData)
 									rowLookup[store.Id] = true
@@ -990,7 +990,7 @@ the utility will first generate an audit report and then execute the add/remove 
 							if !rowLookup[store.Id] {
 								lineData := []string{
 									// "StoreID", "StoreType", "StoreMachine", "StorePath", "ContainerId"
-									store.Id, sType.ShortName, store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, getCurrentTime(),
+									store.Id, sType.ShortName, store.ClientMachine, store.StorePath, fmt.Sprintf("%d", store.ContainerId), store.ContainerName, getCurrentTime(""),
 								}
 								csvStoreData = append(csvStoreData, lineData)
 								rowLookup[store.Id] = true
@@ -1017,7 +1017,7 @@ the utility will first generate an audit report and then execute the add/remove 
 							if !rowLookup[cert.Thumbprint] {
 								lineData := []string{
 									// "Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"
-									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), fmt.Sprintf("%v", cert.Locations), getCurrentTime(),
+									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), fmt.Sprintf("%v", cert.Locations), getCurrentTime(""),
 								}
 								csvCertData = append(csvCertData, lineData)
 								rowLookup[cert.Thumbprint] = true
@@ -1048,7 +1048,7 @@ the utility will first generate an audit report and then execute the add/remove 
 								}
 								lineData := []string{
 									// "Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"
-									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), locationsFormatted, getCurrentTime(),
+									cert.Thumbprint, cert.IssuedCN, cert.IssuerDN, fmt.Sprintf("%d", cert.Id), locationsFormatted, getCurrentTime(""),
 								}
 								csvCertData = append(csvCertData, lineData)
 								rowLookup[cert.Thumbprint] = true
