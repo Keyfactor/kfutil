@@ -29,12 +29,14 @@ const (
 	DebugFuncEnter          = "entered: %s"
 	DebugFuncExit           = "exiting: %s"
 	DebugFuncCall           = "calling: %s"
+	ErrMsgEmptyResponse     = "empty response received from Keyfactor Command %s"
 )
 
 var ProviderTypeChoices = []string{
 	"azid",
 }
 var ValidAuthProviders = [2]string{"azure-id", "azid"}
+var ErrKfcEmptyResponse = fmt.Errorf("empty response recieved from Keyfactor Command")
 
 // Error messages
 var (

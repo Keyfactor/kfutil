@@ -19,17 +19,29 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
 )
+
+func mergeErrsToString(errs *[]error) string {
+	var errStr string
+	if errs == nil || len(*errs) == 0 {
+		return ""
+	}
+	for _, err := range *errs {
+		errStr += fmt.Sprintf("%s\n", err)
+	}
+	return errStr
+}
 
 func boolToPointer(b bool) *bool {
 	return &b
