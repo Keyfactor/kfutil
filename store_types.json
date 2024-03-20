@@ -69,54 +69,44 @@
     "CustomAliasAllowed": "Optional"
   },
   {
-    "Name": "Azure Application (Auth)",
+    "Name": "Azure App Registration (Application)",
     "ShortName": "AzureApp",
     "Capability": "AzureApp",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
-      "Create": false,
-      "Discovery": true,
+      "Remove": true,
       "Enrollment": false,
-      "Remove": true
+      "Discovery": true,
+      "Inventory": true
     },
     "Properties": [
       {
-        "StoreTypeId": 279,
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": "",
         "Required": false
       },
       {
-        "StoreTypeId": 279,
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": "",
         "Required": false
       },
       {
-        "StoreTypeId": 279,
         "Name": "ServerUseSsl",
         "DisplayName": "Use SSL",
         "Type": "Bool",
-        "DependsOn": "",
         "DefaultValue": "true",
         "Required": true
       }
     ],
-    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
       "Style": "Default"
     },
-    "PrivateKeyAllowed": "Forbidden",
-    "JobProperties": [],
+    "PrivateKeyAllowed": "Required",
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
@@ -187,54 +177,44 @@
     "InventoryEndpoint": "/AnyInventory/Update"
   },
   {
-    "Name": "Azure Service Principal (SSO/SAML)",
+    "Name": "Azure Enterprise Application (Service Principal)",
     "ShortName": "AzureSP",
     "Capability": "AzureSP",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
-      "Create": false,
-      "Discovery": true,
+      "Remove": true,
       "Enrollment": false,
-      "Remove": true
+      "Discovery": true,
+      "Inventory": true
     },
     "Properties": [
       {
-        "StoreTypeId": 280,
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": "",
         "Required": false
       },
       {
-        "StoreTypeId": 280,
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": "",
         "Required": false
       },
       {
-        "StoreTypeId": 280,
         "Name": "ServerUseSsl",
         "DisplayName": "Use SSL",
         "Type": "Bool",
-        "DependsOn": "",
         "DefaultValue": "true",
         "Required": true
       }
     ],
-    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
       "Style": "Default"
     },
     "PrivateKeyAllowed": "Required",
-    "JobProperties": [],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
