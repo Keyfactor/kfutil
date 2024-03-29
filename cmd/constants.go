@@ -16,20 +16,33 @@ package cmd
 import "fmt"
 
 const (
-	ColorRed                = "\033[31m"
-	ColorWhite              = "\033[37m"
-	DefaultAPIPath          = "KeyfactorAPI"
-	DefaultConfigFileName   = "command_config.json"
-	FailedAuthMsg           = "Login failed!"
-	SuccessfulAuthMsg       = "Login successful!"
-	XKeyfactorRequestedWith = "APIClient"
-	XKeyfactorApiVersion    = "1"
-	FlagGitRef              = "git-ref"
-	FlagFromFile            = "from-file"
-	DebugFuncEnter          = "entered: %s"
-	DebugFuncExit           = "exiting: %s"
-	DebugFuncCall           = "calling: %s"
-	ErrMsgEmptyResponse     = "empty response received from Keyfactor Command %s"
+	ColorRed                              = "\033[31m"
+	ColorWhite                            = "\033[37m"
+	DefaultAPIPath                        = "KeyfactorAPI"
+	DefaultConfigFileName                 = "command_config.json"
+	DefaultROTAuditStoresOutfilePath      = "rot_audit_selected_stores.csv"
+	DefaultROTAuditAddCertsOutfilePath    = "rot_audit_selected_certs_add.csv"
+	DefaultROTAuditRemoveCertsOutfilePath = "rot_audit_selected_certs_remove.csv"
+	FailedAuthMsg                         = "Login failed!"
+	SuccessfulAuthMsg                     = "Login successful!"
+	XKeyfactorRequestedWith               = "APIClient"
+	XKeyfactorApiVersion                  = "1"
+	FlagGitRef                            = "git-ref"
+	FlagFromFile                          = "from-file"
+	DebugFuncEnter                        = "entered: %s"
+	DebugFuncExit                         = "exiting: %s"
+	DebugFuncCall                         = "calling: %s"
+	ErrMsgEmptyResponse                   = "empty response received from Keyfactor Command %s"
+)
+
+// CLI Menu Defaults
+const (
+	DefaultMenuPageSizeSmall = 25
+	DefaultMenuPageSizeLarge = 100
+)
+
+var (
+	DefaultSourceTypeOptions = []string{"API", "File"}
 )
 
 var ProviderTypeChoices = []string{
@@ -40,6 +53,10 @@ var ErrKfcEmptyResponse = fmt.Errorf("empty response recieved from Keyfactor Com
 
 // Error messages
 var (
-	StoreTypeReadError = fmt.Errorf("error reading store type from configuration file")
-	InvalidInputError  = fmt.Errorf("invalid input")
+	StoreTypeReadError      = fmt.Errorf("error reading store type from configuration file")
+	InvalidInputError       = fmt.Errorf("invalid input")
+	InvalidROTCertsInputErr = fmt.Errorf(
+		"at least one of `--add-certs` or `--remove-certs` is required to perform a" +
+			" root of trust audit",
+	)
 )

@@ -16,89 +16,31 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
+	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/AlecAivazis/survey/v2"
+
+	sdk "github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
 type templateType string
-type StoreCSVEntry struct {
-	ID          string          `json:"id"`
-	Type        string          `json:"type"`
-	Machine     string          `json:"address"`
-	Path        string          `json:"path"`
-	Thumbprints map[string]bool `json:"thumbprints,omitempty"`
-	Serials     map[string]bool `json:"serials,omitempty"`
-	Ids         map[int]bool    `json:"ids,omitempty"`
-}
-type ROTCert struct {
-	ID         int                        `json:"id,omitempty"`
-	ThumbPrint string                     `json:"thumbprint,omitempty"`
-	CN         string                     `json:"cn,omitempty"`
-	Locations  []api.CertificateLocations `json:"locations,omitempty"`
-}
-type ROTAction struct {
-	StoreID    string `json:"store_id,omitempty"`
-	StoreType  string `json:"store_type,omitempty"`
-	StorePath  string `json:"store_path,omitempty"`
-	Thumbprint string `json:"thumbprint,omitempty"`
-	CertID     int    `json:"cert_id,omitempty" mapstructure:"CertID,omitempty"`
-	AddCert    bool   `json:"add,omitempty" mapstructure:"AddCert,omitempty"`
-	RemoveCert bool   `json:"remove,omitempty"  mapstructure:"RemoveCert,omitempty"`
-}
 
 const (
 	tTypeCerts               templateType = "certs"
 	reconcileDefaultFileName string       = "rot_audit.csv"
-)
-
-var (
-	AuditHeader = []string{
-		"Thumbprint",
-		"CertID",
-		"SubjectName",
-		"Issuer",
-		"StoreID",
-		"StoreType",
-		"Machine",
-		"Path",
-		"AddCert",
-		"RemoveCert",
-		"Deployed",
-		"AuditDate",
-	}
-	ReconciledAuditHeader = []string{
-		"Thumbprint",
-		"CertID",
-		"SubjectName",
-		"Issuer",
-		"StoreID",
-		"StoreType",
-		"Machine",
-		"Path",
-		"AddCert",
-		"RemoveCert",
-		"Deployed",
-		"ReconciledDate",
-	}
-	StoreHeader = []string{
-		"StoreID",
-		"StoreType",
-		"StoreMachine",
-		"StorePath",
-		"ContainerId",
-		"ContainerName",
-		"LastQueriedDate",
-	}
-	CertHeader = []string{"Thumbprint", "SubjectName", "Issuer", "CertID", "Locations", "LastQueriedDate"}
 )
 
 // String is used both by fmt.Print and by Cobra in help text
@@ -124,9 +66,9 @@ func (e *templateType) Type() string {
 
 func templateTypeCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return []string{
-		"certs\tGenerates template CSV for certificate input to be used w/ `--add-certs` or `--remove-certs`",
-		"stores\tGenerates template CSV for certificate input to be used w/ `--stores`",
-		"actions\tGenerates template CSV for certificate input to be used w/ `--actions`",
+		"certsGenerates template CSV for certificate input to be used w/ `--add-certs` or `--remove-certs`",
+		"storesGenerates template CSV for certificate input to be used w/ `--stores`",
+		"actionsGenerates template CSV for certificate input to be used w/ `--actions`",
 	}, cobra.ShellCompDirectiveDefault
 }
 
@@ -174,37 +116,66 @@ func generateAuditReport(
 	actions := make(map[string][]ROTAction)
 
 	var errs []error
-	for _, cert := range addCerts {
-		log.Debug().Str("thumbprint", cert).Msg("Looking up certificate")
-		certLookupReq := api.GetCertificateContextArgs{
-			IncludeMetadata:  boolToPointer(true),
-			IncludeLocations: boolToPointer(true),
-			CollectionId:     nil, //todo: add CollectionID support
-			Thumbprint:       cert,
-			Id:               0, //todo: should also allow KFC ID
+	for tp, cId := range addCerts {
+		log.Debug().Str("thumbprint", tp).
+			Str("cert_id", cId).
+			Msg("Looking up certificate")
+		certLookupReq := api.GetCertificateContextArgs{}
+		if cId != "" {
+			certIdInt, cErr := strconv.Atoi(cId)
+			if cErr != nil {
+				log.Error().
+					Err(cErr).
+					Str("thumbprint", tp).
+					Msg("Error converting cert ID to integer, skipping")
+				errs = append(errs, cErr)
+				continue
+			}
+			certLookupReq = api.GetCertificateContextArgs{
+				IncludeMetadata:  boolToPointer(true),
+				IncludeLocations: boolToPointer(true),
+				CollectionId:     nil, //todo: add CollectionID support
+				Thumbprint:       "",
+				Id:               certIdInt,
+			}
+		} else {
+			certLookupReq = api.GetCertificateContextArgs{
+				IncludeMetadata:  boolToPointer(true),
+				IncludeLocations: boolToPointer(true),
+				CollectionId:     nil, //todo: add CollectionID support
+				Thumbprint:       tp,
+				Id:               0, //todo: should also allow KFC ID
+			}
 		}
+
 		log.Debug().
-			Str("thumbprint", cert).
+			Str("thumbprint", tp).
 			Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetCertificateContext"))
 		certLookup, err := kfClient.GetCertificateContext(&certLookupReq)
 		if err != nil {
 			log.Error().
 				Err(err).
-				Str("thumbprint", cert).
+				Str("thumbprint", tp).
 				Msg("Error looking up certificate, skipping")
-			errs = append(errs, err)
+			errMsg := fmt.Errorf(
+				"error recieved from Keyfactor Command when looking up thumbprint '%s':'%w'",
+				tp,
+				err,
+			)
+			errs = append(errs, errMsg)
 			continue
 		}
 		certID := certLookup.Id
 		certIDStr := strconv.Itoa(certID)
-		log.Debug().Str("thumbprint", cert).Msg("Iterating over stores")
+		log.Debug().Str("thumbprint", tp).Msg("Iterating over stores")
 		for _, store := range stores {
-			log.Debug().Str("thumbprint", cert).Str("store_id", store.ID).Msg("Checking if cert is deployed to store")
-			if _, ok := store.Thumbprints[cert]; ok {
+			log.Debug().Str("thumbprint", tp).Str("store_id", store.ID).Msg("Checking if cert is deployed to store")
+			if _, ok := store.Thumbprints[tp]; ok {
 				// Cert is already in the store do nothing
-				log.Info().Str("thumbprint", cert).Str("store_id", store.ID).Msg("Cert is already deployed to store")
+				log.Info().Str("thumbprint", tp).Str("store_id", store.ID).Msg("Cert is already deployed to store")
 				row := []string{
-					cert,
+					//todo: this should be a toCSV field on whatever object this is
+					tp,
 					certIDStr,
 					certLookup.IssuedDN,
 					certLookup.IssuerDN,
@@ -217,14 +188,14 @@ func generateAuditReport(
 					"true",
 					getCurrentTime(""),
 				}
-				log.Trace().Str("thumbprint", cert).Strs("row", row).Msg("Appending data row")
+				log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Appending data row")
 				data = append(data, row)
-				log.Debug().Str("thumbprint", cert).Strs("row", row).Msg("Writing data row to CSV")
+				log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Writing data row to CSV")
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
 					log.Error().
 						Err(wErr).
-						Str("thumbprint", cert).
+						Str("thumbprint", tp).
 						Str("output_file", outputFilePath).
 						Strs("row", row).
 						Msg("Error writing row to CSV")
@@ -232,11 +203,12 @@ func generateAuditReport(
 			} else {
 				// Cert is not deployed to this store and will need to be added
 				log.Info().
-					Str("thumbprint", cert).
+					Str("thumbprint", tp).
 					Str("store_id", store.ID).
 					Msg("Cert is not deployed to store")
 				row := []string{
-					cert,
+					//todo: this should be a toCSV
+					tp,
 					certIDStr,
 					certLookup.IssuedDN,
 					certLookup.IssuerDN,
@@ -250,29 +222,29 @@ func generateAuditReport(
 					getCurrentTime(""),
 				}
 				log.Trace().
-					Str("thumbprint", cert).
+					Str("thumbprint", tp).
 					Strs("row", row).
 					Msg("Appending data row")
 				data = append(data, row)
 				log.Debug().
-					Str("thumbprint", cert).
+					Str("thumbprint", tp).
 					Strs("row", row).
 					Msg("Writing data row to CSV")
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
 					log.Error().
 						Err(wErr).
-						Str("thumbprint", cert).
+						Str("thumbprint", tp).
 						Str("output_file", outputFilePath).
 						Strs("row", row).
 						Msg("Error writing row to CSV")
 				}
 				log.Debug().
-					Str("thumbprint", cert).
+					Str("thumbprint", tp).
 					Msg("Adding 'add' action to actions map")
-				actions[cert] = append(
-					actions[cert], ROTAction{
-						Thumbprint: cert,
+				actions[tp] = append(
+					actions[tp], ROTAction{
+						Thumbprint: tp,
 						CertID:     certID,
 						StoreID:    store.ID,
 						StoreType:  store.Type,
@@ -289,7 +261,7 @@ func generateAuditReport(
 		certLookupReq := api.GetCertificateContextArgs{
 			IncludeMetadata:  boolToPointer(true),
 			IncludeLocations: boolToPointer(true),
-			CollectionId:     nil,
+			CollectionId:     nil, //todo: add support for collection ID
 			Thumbprint:       cert,
 			Id:               0,
 		}
@@ -428,15 +400,18 @@ func generateAuditReport(
 		Str("output_file", outputFilePath).
 		Msg("Audit report written to disk successfully")
 	fmt.Printf("Audit report written to %s\n", outputFilePath) //todo: remove or propagate message to CLI
+	fmt.Printf(
+		"Please review the report and run `kfutil stores rot reconcile --import-csv --input"+
+			"-file %s` apply the changes\n", outputFilePath,
+	)
 
 	if len(errs) > 0 {
-		//combine all errors into single string
-		errStr := mergeErrsToString(&errs)
+		errStr := mergeErrsToString(&errs, false)
 		log.Trace().Str("output_file", outputFilePath).Str(
 			"errors",
 			errStr,
 		).Msg("The following errors occurred while generating audit report")
-		return data, actions, fmt.Errorf("The following errors occurred while generating audit report:\r\n%s", errStr)
+		return data, actions, fmt.Errorf("the following errors occurred while generating audit report:\r\n%s", errStr)
 	}
 	log.Debug().Msg(fmt.Sprintf(DebugFuncExit, "generateAuditReport"))
 	return data, actions, nil
@@ -622,7 +597,7 @@ func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, report
 	}
 	log.Info().Str("reconciled_file", rFileName).Msg("Reconciliation actions scheduled on Keyfactor Command")
 	if len(errs) > 0 {
-		errStr := mergeErrsToString(&errs)
+		errStr := mergeErrsToString(&errs, false)
 		log.Trace().Str("reconciled_file", rFileName).Str(
 			"errors",
 			errStr,
@@ -652,18 +627,44 @@ func readCertsFile(certsFilePath string, kfclient *api.Client) (map[string]strin
 		return nil, rErr
 	}
 
+	//validate header
+	if len(certEntries) == 0 {
+		log.Error().Str("certs_file", certsFilePath).Msg("Empty CSV file")
+		return nil, errors.New("empty CSV file")
+	}
+
 	log.Debug().Str("certs_file", certsFilePath).Msg("Parsing CSV data")
 	var certs = make(map[string]string)
 	log.Trace().Str("certs_file", certsFilePath).Msg("Iterating over CSV data")
-	for _, entry := range certEntries {
+	headerMap := make(map[string]int)
+	for i, entry := range certEntries {
+		if i == 0 {
+			for j, h := range entry {
+				headerMap[h] = j
+			}
+			continue
+		}
+
 		log.Trace().Strs("entry", entry).Msg("Processing row")
 		switch entry[0] {
 		case "CertID", "thumbprint", "id", "CertId", "Thumbprint": //todo: is there a way to do this with a var?
 			log.Trace().Strs("entry", entry).Msg("Skipping header row")
 			continue // Skip header
 		}
+		tp := entry[headerMap["Thumbprint"]]
+		if tp == "" {
+			log.Warn().Strs("entry", entry).Msg("Thumbprint is empty, skipping")
+			continue
+		}
+
+		cId := entry[headerMap["CertID"]]
+		if cId == "" {
+			log.Warn().Strs("entry", entry).Msg("CertID is empty, skipping")
+			continue
+		}
+
 		log.Trace().Strs("entry", entry).Msg("Adding thumbprint to map")
-		certs[entry[0]] = entry[0]
+		certs[tp] = cId
 		log.Trace().Interface("certs", certs).Msg("Cert map")
 	}
 	log.Info().Str("certs_file", certsFilePath).Msg("Certs file read successfully")
@@ -674,7 +675,7 @@ func readCertsFile(certsFilePath string, kfclient *api.Client) (map[string]strin
 
 func isRootStore(
 	st *api.GetCertificateStoreResponse,
-	invs *[]api.CertStoreInventoryV1,
+	invs *[]api.CertStoreInventory,
 	minCerts int,
 	maxKeys int,
 	maxLeaf int,
@@ -690,8 +691,9 @@ func isRootStore(
 
 	if invs == nil || len(*invs) == 0 {
 		log.Warn().Str("store_id", st.Id).Msg("No certificates found in inventory for store")
-		log.Info().Str("store_id", st.Id).Msg("Empty store is not a root store")
-		return false
+		//log.Info().Str("store_id", st.Id).Msg("Empty store is not a root store")
+		//return false
+		invs = &[]api.CertStoreInventory{}
 	}
 
 	log.Debug().Str("store_id", st.Id).Msg("Iterating over inventory")
@@ -717,13 +719,13 @@ func isRootStore(
 				"cert_thumbprint",
 				cert.Thumbprint,
 			).Msg("Checking if cert has a private key")
-			if inv.Parameters["PrivateKeyEntry"] == "Yes" {
-				log.Debug().Str("store_id", st.Id).Str(
-					"cert_thumbprint",
-					cert.Thumbprint,
-				).Msg("Cert has a private key")
-				keyCount++
-			}
+			//if inv.Parameters["PrivateKeyEntry"] == "Yes" {
+			//	log.Debug().Str("store_id", st.Id).Str(
+			//		"cert_thumbprint",
+			//		cert.Thumbprint,
+			//	).Msg("Cert has a private key")
+			//	keyCount++
+			//}
 		}
 	}
 
@@ -766,6 +768,104 @@ func isRootStore(
 	return true
 }
 
+func findTrustStores(
+	minCerts int,
+	maxKeys int,
+	maxLeaf int,
+) []api.GetCertificateStoreResponse {
+	log.Debug().Msg(fmt.Sprintf(DebugFuncEnter, "findTrustStores"))
+	var trustStores []api.GetCertificateStoreResponse
+	log.Info().Msg("Finding root of trust stores")
+	log.Debug().Msg("Iterating over stores")
+
+	// fetch list of stores from Keyfactor
+	stores, err := kfClient.GetCertificateStores()
+
+	for _, st := range *stores {
+		log.Trace().Str("store_id", st.Id).Msg("Processing store")
+		if isRootStore(&st, invs, minCerts, maxKeys, maxLeaf) {
+			log.Debug().Str("store_id", st.Id).Msg("Store is a root of trust")
+			trustStores = append(trustStores, st)
+		}
+	}
+	log.Debug().Msg(fmt.Sprintf(DebugFuncExit, "findTrustStores"))
+	return trustStores
+}
+
+func validateStoresInput(storesFile *string, noPrompt *bool, kfClient *api.Client) (string, error) {
+	if noPrompt == nil {
+		noPrompt = boolToPointer(false)
+	}
+
+	if storesFile == nil || *storesFile == "" {
+		if *noPrompt {
+			return "", fmt.Errorf("stores file is required, use flag `--stores` to specify 1 or more file paths")
+		}
+		apiOrFile := promptSelectFromAPIorFile("certificate stores")
+		switch apiOrFile {
+		case "API":
+			selectedStores := promptSelectStores(kfClient)
+			if len(selectedStores) == 0 {
+				return "", errors.New("no certificate stores selected, unable to continue")
+			}
+			//create stores file
+			storesFile = stringToPointer(fmt.Sprintf("%s", DefaultROTAuditStoresOutfilePath))
+			// create file
+			f, ioErr := os.Create(*storesFile)
+			if ioErr != nil {
+				log.Error().Err(ioErr).Str("stores_file", *storesFile).Msg("Error creating stores file")
+				return "", ioErr
+			}
+			defer f.Close()
+			// create CSV writer
+			log.Debug().Str("stores_file", *storesFile).Msg("Creating CSV writer")
+			writer := csv.NewWriter(f)
+			defer writer.Flush()
+			// write header
+			log.Debug().Str("stores_file", *storesFile).Msg("Writing header to stores file")
+			wErr := writer.Write(StoreHeader)
+			if wErr != nil {
+				log.Error().Err(wErr).Str("stores_file", *storesFile).Msg("Error writing header to stores file")
+				return "", wErr
+			}
+			// write selected stores
+			for _, store := range selectedStores {
+				log.Debug().Str("store_id", store).Msg("Adding store to stores file")
+				//parse ID from selection `<id>: <name>`
+				storeId := strings.Split(store, ":")[1]
+				//remove () and white spaces from storeId
+				storeId = strings.Trim(strings.Trim(strings.Trim(storeId, " "), "("), ")")
+
+				storeInstance := ROTStore{
+					StoreID:       storeId,
+					StoreType:     "",
+					StoreMachine:  "",
+					StorePath:     "",
+					ContainerId:   "",
+					ContainerName: "",
+					LastQueried:   "",
+				}
+				storeLine := storeInstance.toCSV()
+
+				wErr = writer.Write(strings.Split(storeLine, ","))
+				if wErr != nil {
+					log.Error().Err(wErr).Str(
+						"stores_file",
+						*storesFile,
+					).Msg("Error writing store to stores file")
+					continue
+				}
+			}
+			writer.Flush()
+			f.Close()
+			return *storesFile, nil
+		case "File":
+			return promptForFilePath("Input a file path for the CSV file containing stores to audit."), nil
+		}
+	}
+	return *storesFile, nil
+}
+
 var (
 	rotCmd = &cobra.Command{
 		Use:   "rot",
@@ -802,7 +902,9 @@ kfutil stores rot reconcile --import-csv <audit-file>
 		PersistentPreRun:       nil,
 		PersistentPreRunE:      nil,
 		PreRun:                 nil,
-		PreRunE:                nil,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 
@@ -830,6 +932,27 @@ kfutil stores rot reconcile --import-csv <audit-file>
 			kfClient, cErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 			if cErr != nil {
 				log.Error().Err(cErr).Msg("Error initializing Keyfactor client")
+				return cErr
+			}
+
+			// validate flags
+			var storesErr error
+			log.Debug().Str("stores_file", storesFile).Bool("no_prompt", noPrompt).
+				Msg(fmt.Sprintf(DebugFuncCall, "validateStoresInput"))
+			storesFile, storesErr = validateStoresInput(&storesFile, &noPrompt, kfClient)
+			if storesErr != nil {
+				return storesErr
+			}
+
+			log.Debug().Str("add_file", addRootsFile).Str("remove_file", removeRootsFile).Bool("no_prompt", noPrompt).
+				Msg(fmt.Sprintf(DebugFuncCall, "validateCertsInput"))
+			var certsErr error
+			addRootsFile, removeRootsFile, certsErr = validateCertsInput(
+				addRootsFile, removeRootsFile,
+				kfClient,
+			)
+			if certsErr != nil {
+				log.Error().Err(cErr).Msg("Invalid certs input please provide certs to add or remove.")
 				return cErr
 			}
 
@@ -879,14 +1002,14 @@ kfutil stores rot reconcile --import-csv <audit-file>
 					Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetCertificateStoreByID"))
 				apiResp, err := kfClient.GetCertificateStoreByID(entry[0])
 				if err != nil {
-					log.Printf("[ERROR] getting cert store: %s", err)
+					log.Error().Err(err).Str("store_id", entry[0]).Msg("Error getting cert store")
 					lookupFailures = append(lookupFailures, strings.Join(entry, ","))
 					continue
 				}
 
 				log.Debug().Str("store_id", entry[0]).
 					Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetCertStoreInventoryV1"))
-				inventory, invErr := kfClient.GetCertStoreInventoryV1(entry[0])
+				inventory, invErr := kfClient.GetCertStoreInventory(entry[0])
 				if invErr != nil {
 					log.Error().Err(invErr).Str("store_id", entry[0]).Msg("Error getting cert store inventory")
 					lookupFailures = append(lookupFailures, strings.Join(entry, ","))
@@ -912,6 +1035,7 @@ kfutil stores rot reconcile --import-csv <audit-file>
 				log.Info().Str("store_id", entry[0]).Msg("Store is considered a root of trust store")
 
 				log.Trace().Str("store_id", entry[0]).Msg("Creating store entry")
+
 				stores[entry[0]] = StoreCSVEntry{
 					ID:          entry[0],
 					Type:        entry[1],
@@ -928,19 +1052,44 @@ kfutil stores rot reconcile --import-csv <audit-file>
 					thumb := cert.Thumbprints
 					trcMsg := "Adding cert to store"
 					for t, v := range thumb {
-						log.Trace().Str("store_id", entry[0]).Str("thumbprint", t).Msg(trcMsg)
-						stores[entry[0]].Thumbprints[t] = v
+						//log.Trace().Str("store_id", entry[0]).Str("thumbprint", t).Msg(trcMsg)
+						//stores[entry[0]].Thumbprints[t] = v
+						log.Trace().Str("store_id", entry[0]).
+							Int("thumbprint", t).
+							Str("value", v).
+							Msg(trcMsg)
+						stores[entry[0]].Thumbprints[v] = true
 					}
 					for t, v := range cert.Serials {
-						log.Trace().Str("store_id", entry[0]).Str("serial", t).Msg(trcMsg)
-						stores[entry[0]].Serials[t] = v
+						log.Trace().Str("store_id", entry[0]).
+							Int("serial", t).
+							Str("value", v).
+							Msg(trcMsg)
+						//stores[entry[0]].Serials[t] = v
+						//stores[entry[0]].Serials[v] = t
+						stores[entry[0]].Serials[v] = true
 					}
 					for t, v := range cert.Ids {
-						log.Trace().Str("store_id", entry[0]).Int("cert_id", t).Msg(trcMsg)
-						stores[entry[0]].Ids[t] = v
+						log.Trace().Str("store_id", entry[0]).
+							Int("cert_id", t).
+							Int("value", v).
+							Msg(trcMsg)
+						//stores[entry[0]].Ids[t] = v
+						stores[entry[0]].Ids[v] = true
 					}
 				}
 				log.Trace().Strs("entry", entry).Msg("Row processed")
+			}
+
+			if len(lookupFailures) > 0 {
+				log.Error().Strs("lookup_failures", lookupFailures).Msg("The following stores could not be looked up")
+				return fmt.Errorf(
+					"the following stores could not be found on Keyfactor Command:\n%s\nThese errors MUST be resolved"+
+						" in order to proceed", strings.Join(
+						lookupFailures, ","+
+							"\r\n",
+					),
+				)
 			}
 
 			// Read in the add addCerts CSV
@@ -967,7 +1116,6 @@ kfutil stores rot reconcile --import-csv <audit-file>
 					).Msg("Error converting certs to add to JSON")
 					return jErr
 				}
-				log.Printf("[DEBUG] add certs JSON: %s", string(addCertsJSON))
 				log.Trace().Str("add_certs_file", addRootsFile).
 					Str("add_certs_json", string(addCertsJSON)).
 					Msg("Certs to add file read successfully")
@@ -1510,7 +1658,7 @@ the utility will first generate an audit report and then execute the add/remove 
 			}
 			if len(errs) != 0 {
 				log.Error().Errs("errors", errs).Msg("Errors encountered while creating template file")
-				errMsg := mergeErrsToString(&errs)
+				errMsg := mergeErrsToString(&errs, false)
 				return fmt.Errorf("errors encountered while creating template file: %s", errMsg)
 			}
 			fmt.Printf("Template file created at %s.\n", filePath)
@@ -1536,6 +1684,126 @@ the utility will first generate an audit report and then execute the add/remove 
 		SuggestionsMinimumDistance: 0,
 	}
 )
+
+func validateCertsInput(addRootsFile string, removeRootsFile string, client *api.Client) (
+	string,
+	string,
+	error,
+) {
+	log.Debug().Str("add_certs_file", addRootsFile).
+		Str("remove_certs_file", removeRootsFile).
+		Bool("no_prompt", noPrompt).
+		Msg(fmt.Sprintf(DebugFuncEnter, "validateCertsInput"))
+
+	if addRootsFile == "" && removeRootsFile == "" && noPrompt {
+		//cmd.SilenceUsage = false //todo: is this necessary?
+		return addRootsFile, removeRootsFile, InvalidROTCertsInputErr
+	}
+
+	if addRootsFile == "" || removeRootsFile == "" {
+		if addRootsFile == "" && !noPrompt {
+			//prmpt := "Would you like to include a 'certs to add' CSV file?"
+			prmpt := "Provide certificates to add and/or that should be present in selected stores?"
+			provideAddFile := promptYesNo(prmpt)
+			if provideAddFile {
+				addSrcType := promptSelectFromAPIorFile("certificates")
+				switch addSrcType {
+				case "API":
+					selectedCerts := promptSelectCerts(client)
+					if len(selectedCerts) == 0 {
+						return "", "", InvalidROTCertsInputErr
+					}
+					//create stores file
+					addRootsFile = fmt.Sprintf("%s", DefaultROTAuditAddCertsOutfilePath)
+					// create file
+					f, ioErr := os.Create(addRootsFile)
+					if ioErr != nil {
+						log.Error().Err(ioErr).Str(
+							"add_certs_file",
+							addRootsFile,
+						).Msg("Error creating certs to add file")
+						return addRootsFile, removeRootsFile, ioErr
+					}
+					defer f.Close()
+					// create CSV writer
+					log.Debug().Str("add_certs_file", addRootsFile).Msg("Creating CSV writer")
+					writer := csv.NewWriter(f)
+					defer writer.Flush()
+					// write header
+					log.Debug().Str("add_certs_file", addRootsFile).Msg("Writing header to certs to add file")
+					wErr := writer.Write(CertHeader)
+					if wErr != nil {
+						log.Error().Err(wErr).Str(
+							"stores_file",
+							addRootsFile,
+						).Msg("Error writing header to stores file")
+						return addRootsFile, removeRootsFile, wErr
+					}
+					// write selected stores
+					for _, c := range selectedCerts {
+						log.Debug().Str("cert_id", c).Msg("Adding cert to certs file")
+
+						//parse certID, cn and thumbprint from selection `<id>: <cn> (<thumbprint>) - <issued_date>`
+
+						//parse id from selection `<id>: <cn> (<thumbprint>) <issued_date>`
+						certId := strings.Split(c, ":")[0]
+						//remove () and white spaces from storeId
+						certId = strings.Trim(certId, " ")
+						certIdInt, cIdErr := strconv.Atoi(certId)
+						if cIdErr != nil {
+							log.Error().Err(cIdErr).Str("cert_id", certId).Msg("Error converting cert ID to int")
+							certIdInt = -1
+						}
+
+						//parse the cn from the selection `<id>: <cn> (<thumbprint>) <issued_date>`
+						cn := strings.Split(c, "(")[0]
+						cn = strings.Split(cn, ":")[1]
+						cn = strings.Trim(cn, " ")
+
+						//parse thumbprint from selection `<id>: <cn> (<thumbprint>) <issued_date>`
+						thumbprint := strings.Split(c, "(")[1]
+						thumbprint = strings.Split(thumbprint, ")")[0]
+						thumbprint = strings.Trim(strings.Trim(thumbprint, " "), ")")
+
+						certInstance := ROTCert{
+							ID:         certIdInt,
+							ThumbPrint: thumbprint,
+							CN:         cn,
+							SANs:       []string{},
+							Alias:      "",
+							Locations:  []api.CertificateLocations{},
+						}
+						certLine := certInstance.toCSV()
+
+						wErr = writer.Write(strings.Split(certLine, ","))
+						if wErr != nil {
+							log.Error().Err(wErr).Str(
+								"add_certs_file",
+								addRootsFile,
+							).Msg("Error writing store to stores file")
+							continue
+						}
+					}
+					writer.Flush()
+					f.Close()
+				default:
+					addRootsFile = promptForFilePath("Input a file path for the 'certs to add' CSV.")
+				}
+			}
+		}
+		if removeRootsFile == "" && !noPrompt {
+			provideRemoveFile := promptYesNo("Would you like to include a 'certs to remove' CSV file?")
+			if provideRemoveFile {
+				removeRootsFile = promptForFilePath("Input a file path for the 'certs to remove' CSV. ")
+			}
+		}
+		if addRootsFile == "" && removeRootsFile == "" {
+			return "", "", InvalidROTCertsInputErr
+		}
+	}
+	return addRootsFile, removeRootsFile, nil
+
+}
 
 func processFromStoresAndCertFiles(
 	storesFile string,
@@ -1580,7 +1848,7 @@ func processFromStoresAndCertFiles(
 		}
 
 		log.Debug().Str("store_id", row[0]).Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetCertStoreInventoryV1"))
-		inventory, invErr := kfClient.GetCertStoreInventoryV1(row[0])
+		inventory, invErr := kfClient.GetCertStoreInventory(row[0])
 		if invErr != nil {
 			errs = append(errs, invErr)
 			log.Error().Err(invErr).Str(
@@ -1620,32 +1888,32 @@ func processFromStoresAndCertFiles(
 			thumb := cert.Thumbprints
 			for t, v := range thumb {
 				log.Trace().Str("store_id", row[0]).
-					Bool("value", v).
-					Str("thumbprint", t).Msg("Adding cert thumbprint to store object")
-				stores[row[0]].Thumbprints[t] = v
+					Str("value", v).
+					Int("thumbprint", t).Msg("Adding cert thumbprint to store object")
+				//stores[row[0]].Thumbprints[t] = v
 			}
 			for t, v := range cert.Serials {
 				log.Trace().Str("store_id", row[0]).
-					Bool("value", v).
-					Str("serial", t).Msg("Adding cert serial to store object")
-				stores[row[0]].Serials[t] = v
+					Str("value", v).
+					Int("serial", t).Msg("Adding cert serial to store object")
+				//stores[row[0]].Serials[t] = v
 			}
 			for t, v := range cert.Ids {
 				log.Trace().Str("store_id", row[0]).
-					Bool("value", v).
+					Int("value", v).
 					Int("cert_id", t).Msg("Adding cert ID to store object")
-				stores[row[0]].Ids[t] = v
+				//stores[row[0]].Ids[t] = v
 			}
 		}
 	}
 	if len(lookupFailures) > 0 {
-		errMsg := fmt.Errorf("The following stores were not found:\r\n\t%s", strings.Join(lookupFailures, ",\r\n\t"))
+		errMsg := fmt.Errorf("The following stores were not found:\r\n%s", strings.Join(lookupFailures, ",\r\n"))
 		fmt.Printf(errMsg.Error())
 		log.Error().Err(errMsg).
 			Strs("lookup_failures", lookupFailures).
 			Msg("The following stores could not be found")
 		if len(errs) > 0 {
-			apiErrs := mergeErrsToString(&errs)
+			apiErrs := mergeErrsToString(&errs, false)
 			errMsg = fmt.Errorf("%s\r\n%s", errMsg, apiErrs)
 		}
 		return errMsg
@@ -1659,7 +1927,7 @@ func processFromStoresAndCertFiles(
 			Int("max_keys", maxKeys).Send()
 
 		if len(errs) > 0 {
-			apiErrs := mergeErrsToString(&errs)
+			apiErrs := mergeErrsToString(&errs, false)
 			errMsg = fmt.Errorf("%s\r\n%s", errMsg, apiErrs)
 		}
 		return errMsg
@@ -1676,7 +1944,7 @@ func processFromStoresAndCertFiles(
 		if rErr != nil {
 			log.Error().Err(rErr).Str("add_certs_file", addRootsFile).Msg("Error reading certs to add file")
 			if len(errs) > 0 {
-				apiErrs := mergeErrsToString(&errs)
+				apiErrs := mergeErrsToString(&errs, false)
 				rErr = fmt.Errorf("%s\r\n%s", rErr, apiErrs)
 			}
 			return rErr
@@ -1695,7 +1963,7 @@ func processFromStoresAndCertFiles(
 		if rErr != nil {
 			log.Error().Err(rErr).Str("remove_certs_file", removeRootsFile).Msg("Error reading certs to remove file")
 			if len(errs) > 0 {
-				apiErrs := mergeErrsToString(&errs)
+				apiErrs := mergeErrsToString(&errs, false)
 				rErr = fmt.Errorf("%s\r\n%s", rErr, apiErrs)
 			}
 			return rErr
@@ -1705,7 +1973,7 @@ func processFromStoresAndCertFiles(
 	if len(certsToAdd) == 0 && len(certsToRemove) == 0 {
 		log.Info().Msg("No add or remove operations specified, please verify your configuration")
 		if len(errs) > 0 {
-			apiErrs := mergeErrsToString(&errs)
+			apiErrs := mergeErrsToString(&errs, false)
 			return fmt.Errorf(apiErrs)
 		}
 		fmt.Println("No add or remove operations specified, please verify your configuration")
@@ -1735,7 +2003,7 @@ func processFromStoresAndCertFiles(
 			Msg(msg)
 		fmt.Println("No reconciliation actions to take, root stores are up-to-date. Exiting.")
 		if len(errs) > 0 {
-			apiErrs := mergeErrsToString(&errs)
+			apiErrs := mergeErrsToString(&errs, false)
 			return fmt.Errorf(apiErrs)
 		}
 		return nil
@@ -1746,18 +2014,18 @@ func processFromStoresAndCertFiles(
 	if rErr != nil {
 		log.Error().Err(rErr).Msg("Error reconciling root of trust stores")
 		if len(errs) > 0 {
-			apiErrs := mergeErrsToString(&errs)
+			apiErrs := mergeErrsToString(&errs, false)
 			rErr = fmt.Errorf("%s\r\n%s", rErr, apiErrs)
 		}
 		return rErr
 	}
 	if lookupFailures != nil {
 		errMsg := fmt.Errorf(
-			"The following stores could not be found:\r\n\t%s", strings.Join(lookupFailures, ",\r\n\t"),
+			"The following stores could not be found:\r\n%s", strings.Join(lookupFailures, ",\r\n"),
 		)
 		log.Error().Err(errMsg).Strs("lookup_failures", lookupFailures).Send()
 		if len(errs) > 0 {
-			apiErrs := mergeErrsToString(&errs)
+			apiErrs := mergeErrsToString(&errs, false)
 			errMsg = fmt.Errorf("%s\r\n%s", errMsg, apiErrs)
 			return errMsg
 		}
@@ -1777,9 +2045,9 @@ func processFromStoresAndCertFiles(
 	if len(lookupFailures) > 0 {
 		lookupErrs := fmt.Errorf(
 			"Reconciliation completed with failures, "+
-				"the following stores could not be found:\r\n\t%s", strings.Join(
+				"the following stores could not be found:\r\n%s", strings.Join(
 				lookupFailures,
-				"\r\n\t",
+				"\r\n",
 			),
 		)
 		log.Error().Err(lookupErrs).Strs(
@@ -1787,14 +2055,14 @@ func processFromStoresAndCertFiles(
 			lookupFailures,
 		).Msg("The following stores could not be found")
 		if len(errs) > 0 {
-			apiErrs := mergeErrsToString(&errs)
+			apiErrs := mergeErrsToString(&errs, false)
 			lookupErrs = fmt.Errorf("%s\r\n%s", lookupErrs, apiErrs)
 		}
 		return lookupErrs
 	} else if len(errs) > 0 {
-		apiErrs := mergeErrsToString(&errs)
+		apiErrs := mergeErrsToString(&errs, false)
 		log.Error().Str("api_errors", apiErrs).Msg("Reconciliation completed with failures")
-		return fmt.Errorf("Reconciliation completed with failures:\r\n\t%s", apiErrs)
+		return fmt.Errorf("Reconciliation completed with failures:\r\n%s", apiErrs)
 	}
 	return nil
 }
@@ -2051,7 +2319,7 @@ func processCSVReportFile(reportFile string, kfClient *api.Client, dryRun bool) 
 			Msg(rtMsg)
 		fmt.Println(rtMsg)
 		if len(errs) > 0 {
-			errStr := mergeErrsToString(&errs)
+			errStr := mergeErrsToString(&errs, false)
 			log.Error().Str("report_file", reportFile).
 				Str("errors", errStr).
 				Msg("Errors encountered while parsing audit report")
@@ -2074,11 +2342,11 @@ func processCSVReportFile(reportFile string, kfClient *api.Client, dryRun bool) 
 	) //todo: this pathing might not work for everyone
 
 	if len(errs) > 0 {
-		errStr := mergeErrsToString(&errs)
+		errStr := mergeErrsToString(&errs, false)
 		log.Error().Str("report_file", reportFile).
 			Str("errors", errStr).
 			Msg("Errors encountered while reconciling root of trust stores")
-		return fmt.Errorf("errors encountered while reconciling roots:\r\n\t%s", errStr)
+		return fmt.Errorf("errors encountered while reconciling roots:\r\n%s", errStr)
 
 	}
 
@@ -2100,11 +2368,9 @@ func init() {
 		maxLeaves       int
 		tType           = tTypeCerts
 		outputFilePath  string
-		outputFormat    string
 		inputFile       string
 		storeTypes      []string
 		containerNames  []string
-		collections     []string
 		subjectNames    []string
 	)
 
@@ -2228,13 +2494,487 @@ func init() {
 		[]string{},
 		"Subject name(s) to pre-populate the 'certs' template with. If not specified, the template will be empty. Does not work with SANs.",
 	)
-	rotGenStoreTemplateCmd.Flags().StringSliceVar(
-		&collections,
-		"collection",
-		[]string{},
-		"Certificate collection name(s) to pre-populate the stores template with. If not specified, the template will be empty.",
-	)
 
 	rotGenStoreTemplateCmd.RegisterFlagCompletionFunc("type", templateTypeCompletion)
 	rotGenStoreTemplateCmd.MarkFlagRequired("type")
+}
+
+func promptYesNo(q string) bool {
+	isYes := false
+	promptMsg := fmt.Sprintf("%s", q)
+	//check if prompt ends with ? and add it if not
+	if !strings.HasSuffix(promptMsg, "?") {
+		promptMsg = fmt.Sprintf("%s?", promptMsg)
+	}
+	prompt := &survey.Confirm{
+		Message: promptMsg,
+	}
+	survey.AskOne(prompt, &isYes)
+	return isYes
+}
+
+func promptForFilePath(msg string) string {
+	file := ""
+	if msg == "" {
+		msg = "input a file path"
+	}
+	prompt := &survey.Input{
+		Message: msg,
+		Suggest: func(toComplete string) []string {
+			files, _ := filepath.Glob(toComplete + "*")
+			return files
+		},
+	}
+	survey.AskOne(prompt, &file)
+	return file
+}
+
+func promptSelectFromAPIorFile(resourceType string) string {
+	var selected string
+
+	selected = promptSingleSelect(
+		fmt.Sprintf("Source %s from:", resourceType),
+		DefaultSourceTypeOptions,
+		DefaultMenuPageSizeSmall,
+	)
+	return selected
+
+}
+
+func promptSelectCerts(client *api.Client) []string {
+	searchOpts := []string{
+		"Certificate",
+		"Collection",
+	}
+	var selectedCerts []string
+
+	selectedSearch := promptMultiSelect("Select certs to include in audit by:", searchOpts)
+	if len(selectedSearch) == 0 {
+		fmt.Println("No search options selected defaulting to 'Certificate'")
+		selectedSearch = []string{"Certificate"}
+	}
+
+	log.Debug().Strs("selected_search", selectedSearch).Msg("Processing selected search options")
+	for _, s := range selectedSearch {
+		log.Trace().Str("search_option", s).Msg("Processing search option")
+		switch s {
+		case "Certificate":
+			log.Debug().Msg(fmt.Sprintf(DebugFuncCall, "menuCertificates"))
+			certOpts, certErr := menuCertificates(client, nil)
+			if certErr != nil {
+				log.Error().Err(certErr).Msg("Error fetching certificates from Keyfactor Command")
+				continue
+			} else if len(certOpts) == 0 {
+				fmt.Println("No certificates returned from Keyfactor Command")
+				continue
+			}
+			selectedCerts = append(
+				selectedCerts,
+				promptMultiSelect("Select certificates to audit:", certOpts)...,
+			)
+
+		case "Collection":
+			log.Debug().Msg(fmt.Sprintf(DebugFuncCall, "menuCollections"))
+			collectionOpts, colErr := menuCollections(client)
+			if colErr != nil {
+				log.Error().Err(colErr).Msg("Error fetching collections from Keyfactor Command")
+				// todo: prompt for collection name or ID
+				continue
+			}
+			if len(collectionOpts) == 0 {
+				fmt.Println("No collections returned from Keyfactor Command")
+				continue
+			}
+			var selectedCollections []string
+			selectedCollections = append(
+				selectedCollections,
+				promptMultiSelect(
+					"Select certificates associated with collection(s) to audit:",
+					collectionOpts,
+				)...,
+			)
+			//fetch certs associated with selected collections
+			log.Info().Msg("Fetching certificates associated with selected collections")
+			for _, col := range selectedCollections {
+				//parse collection ID from selected collection
+				colVals := strings.Split(col, ":")
+				colID, idErr := strconv.Atoi(colVals[0])
+				if idErr != nil {
+					log.Error().
+						Err(idErr).
+						Str("collection", col).
+						Msg("Error parsing collection ID, unable to fetch certificates")
+					continue
+				}
+
+				params := make(map[string]string)
+				params["CollectionID"] = fmt.Sprintf("%d", colID)
+				log.Debug().
+					Str("collection", col).
+					Int("collection_id", colID).
+					Interface("params", params).
+					Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetCertificatesByCollection"))
+				certOpts, certErr := menuCertificates(client, &params)
+				if certErr != nil {
+					log.Error().Err(certErr).Msg("Error fetching certificates from Keyfactor Command")
+					continue
+				}
+				if len(certOpts) == 0 {
+					log.Warn().Str("collection", col).Msg("No certificates found associated with selected collection")
+					fmt.Println(fmt.Sprintf("No certificates found associated with collection %s", col))
+					continue
+				}
+				selectedCerts = append(selectedCerts, certOpts...)
+			}
+		}
+	}
+	return selectedCerts
+}
+
+func promptSelectStores(client *api.Client) []string {
+	searchOpts := []string{
+		"Store",
+		"StoreType",
+		"Container",
+		//"Collection",
+	}
+	var selectedStores []string
+
+	selectedSearch := promptMultiSelect("Select cert stores to audit by:", searchOpts)
+	if len(selectedSearch) == 0 {
+		fmt.Println("No search options selected defaulting to 'Store'")
+		selectedSearch = []string{"Store"}
+	}
+
+	for _, s := range selectedSearch {
+		switch s {
+		case "Container":
+			contOpts, contErr := menuContainers(client)
+			if contErr != nil {
+				fmt.Println("Error fetching containers from Keyfactor Command: ", contErr)
+				continue
+			} else if contOpts == nil || len(contOpts) == 0 {
+				fmt.Println("No containers found")
+				continue
+			}
+
+			log.Debug().Msg("Prompting user to select containers")
+			selectedStores = append(
+				selectedStores,
+				promptMultiSelect("Select stores associated with container(s) to audit:", contOpts)...,
+			)
+		// Collection based store collection not supported as stores are not associated with collections certificates
+		// are associated with collections
+		//case "Collection":
+		//	collectionOpts, colErr := menuCollections(client)
+		//	if colErr != nil {
+		//		fmt.Println("Error fetching collections from Keyfactor Command: ", colErr)
+		//		continue
+		//	} else if collectionOpts == nil || len(collectionOpts) == 0 {
+		//		fmt.Println("No collections found")
+		//		continue
+		//	}
+		//	var selectedCollections []string
+		//	selectedCollections = append(
+		//		selectedCollections,
+		//		promptMultiSelect(
+		//			"Select stores associated with collection(s) to audit:",
+		//			collectionOpts,
+		//		)...,
+		//	)
+		//
+		//	//fetch stores associated with selected collections
+		//	log.Info().Msg("Fetching stores associated with selected collections")
+		//	log.Debug().Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetStoresByCollection"))
+		//	stores, sErr := client.GetSt(selectedCollections)
+
+		case "StoreType":
+			storeTypeNames, stErr := menuStoreType(client)
+			if stErr != nil {
+				fmt.Println("Error fetching store types from Keyfactor Command: ", stErr)
+				continue
+			} else if len(storeTypeNames) == 0 {
+				fmt.Println("No store types found")
+				continue
+			}
+
+			log.Debug().Msg("Prompting user to select store types")
+			var selectedStoreTypes []string
+			selectedStoreTypes = append(
+				selectedStoreTypes,
+				promptMultiSelect(
+					"Select stores associated with store type(s) to audit:",
+					storeTypeNames,
+				)...,
+			)
+
+			//lookup stores associated with selected store types
+			log.Info().Msg("Fetching stores associated with selected store types")
+			for _, st := range selectedStoreTypes {
+				//parse storetype ID from selected store type
+				stVals := strings.Split(st, ":")
+				stID, idErr := strconv.Atoi(stVals[0])
+				if idErr != nil {
+					log.Error().
+						Err(idErr).
+						Str("store_type", st).
+						Msg("Error parsing store type ID, unable to fetch stores of type")
+					continue
+				}
+
+				log.Debug().Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetStoresByStoreType"))
+				params := make(map[string]interface{})
+				params["CertStoreType"] = stID
+				stores, sErr := menuCertificateStores(client, &params)
+				if sErr != nil {
+					fmt.Println("Error fetching stores from Keyfactor Command: ", sErr)
+					continue
+				} else if len(stores) == 0 {
+					log.Warn().
+						Str("store_type", st).
+						Msg("No stores found associated with selected store type")
+					fmt.Println(fmt.Sprintf("No stores of type %s found", st)) //todo: propagate to top CLI
+					continue
+				}
+				selectedStores = append(selectedStores, stores...)
+			}
+
+		default:
+			stNames, stErr := menuCertificateStores(client, nil)
+			if stErr != nil {
+				fmt.Println("Error fetching stores from Keyfactor Command: ", stErr)
+				continue
+			} else if stNames == nil || len(stNames) == 0 {
+				fmt.Println("No stores found")
+				continue
+			}
+
+			log.Debug().Msg("Prompting user to select stores")
+			selectedStores = append(
+				selectedStores,
+				promptMultiSelect("Select stores to audit:", stNames)...,
+			)
+		}
+	}
+	return selectedStores
+}
+
+func promptSingleSelect(msg string, opts []string, menuPageSize int) string {
+	if menuPageSize <= 0 {
+		menuPageSize = DefaultMenuPageSizeSmall
+	}
+	var choice string
+	prompt := &survey.Select{
+		Message:  msg,
+		Options:  opts,
+		PageSize: menuPageSize,
+	}
+	survey.AskOne(prompt, &choice, survey.WithPageSize(10))
+	return choice
+}
+
+func promptMultiSelect(msg string, opts []string) []string {
+	var choices []string
+	prompt := &survey.MultiSelect{
+		Message:  msg,
+		Options:  opts,
+		PageSize: 10,
+	}
+	survey.AskOne(prompt, &choices, survey.WithPageSize(10))
+	return choices
+}
+
+func menuStoreType(client *api.Client) ([]string, error) {
+	//fetch store type options from keyfactor command
+	log.Info().Msg("Fetching store types from Keyfactor Command")
+	log.Debug().Msg(fmt.Sprintf(DebugFuncCall, "kfClient.ListCertificateStoreTypes"))
+	storeTypes, stErr := client.ListCertificateStoreTypes()
+	if stErr != nil {
+		log.Error().Err(stErr).Msg("Error fetching store types from Keyfactor Command")
+		return nil, stErr
+	} else if storeTypes == nil || len(*storeTypes) == 0 {
+		log.Warn().Msg("No store types returned from Keyfactor Command")
+		//fmt.Println("No store types found")
+		return nil, nil
+	}
+
+	var storeTypeNames []string
+	log.Trace().Interface("store_types", storeTypes).Msg("Formatting store type choices for prompt")
+	for _, st := range *storeTypes {
+		log.Trace().Interface("store_type", st).Msg("Adding store type to options")
+		stName := fmt.Sprintf("%d: %s", st.StoreType, st.Name)
+		log.Trace().Str("store_type_name", stName).Msg("Adding store type to options")
+		storeTypeNames = append(storeTypeNames, stName)
+		log.Trace().Strs("store_type_options", storeTypeNames).Msg("Store type options")
+	}
+	return storeTypeNames, nil
+}
+
+func menuContainers(client *api.Client) ([]string, error) {
+	//fetch container options from keyfactor command
+	log.Info().Msg("Fetching containers from Keyfactor Command")
+	log.Debug().Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetStoreContainers"))
+	containers, cErr := client.GetStoreContainers()
+	if cErr != nil {
+		log.Error().Err(cErr).Msg("Error fetching containers from Keyfactor Command")
+		return nil, cErr
+	} else if containers == nil || len(*containers) == 0 {
+		log.Warn().Msg("No containers returned from Keyfactor Command")
+		return nil, nil
+	}
+	var contOpts []string
+	log.Trace().
+		Interface("containers", containers).
+		Msg("Formatting container choices for prompt")
+	for _, c := range *containers {
+		contName := fmt.Sprintf("%d: %s", c.Id, c.Name)
+		log.Trace().Str("container_name", contName).Msg("Adding container to options")
+		contOpts = append(contOpts, contName)
+		log.Trace().Strs("container_options", contOpts).Msg("Container options")
+	}
+	return contOpts, nil
+}
+
+func menuCollections(client *api.Client) ([]string, error) {
+	//fetch collection options from keyfactor command
+	log.Info().Msg("Fetching collections from Keyfactor Command")
+	log.Debug().Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetCollections"))
+
+	sdkClient, sdkErr := convertClient(client)
+	if sdkErr != nil {
+		log.Error().Err(sdkErr).Msg("Error converting client to v2")
+		return nil, sdkErr
+	}
+	//createdPamProviderType, httpResponse, rErr := sdkClient.PAMProviderApi.PAMProviderCreatePamProviderType(context.Background()).
+	//	XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
+	//	Type_(*pamProviderType).
+	//	Execute()
+	collections, httpResponse, collErr := sdkClient.CertificateCollectionApi.
+		CertificateCollectionGetCollections(context.Background()).
+		XKeyfactorRequestedWith(XKeyfactorRequestedWith).
+		XKeyfactorApiVersion(XKeyfactorApiVersion).
+		Execute()
+
+	defer httpResponse.Body.Close()
+
+	switch {
+	case collErr != nil:
+		log.Error().Err(collErr).Msg("Error fetching collections from Keyfactor Command")
+		return nil, collErr
+	case collections == nil || len(collections) == 0:
+		log.Warn().Msg("No collections returned from Keyfactor Command")
+		return nil, nil
+	case httpResponse.StatusCode != http.StatusOK:
+		log.Warn().Int("status_code", httpResponse.StatusCode).Msg("No collections returned from Keyfactor Command")
+		return nil, fmt.Errorf("%s - no collections returned from Keyfactor Command", httpResponse.Status)
+	}
+
+	var collectionOpts []string
+	log.Trace().Interface("collections", collections).Msg("Formatting collection choices for prompt")
+	for _, c := range collections {
+		collName := fmt.Sprintf("%d: %s", *c.Id, *c.Name)
+		log.Trace().Str("collection_name", collName).Msg("Adding collection to options")
+		collectionOpts = append(collectionOpts, collName)
+		log.Trace().Strs("collection_options", collectionOpts).Msg("Collection options")
+	}
+	return collectionOpts, nil
+}
+
+func convertClient(v1Client *api.Client) (*sdk.APIClient, error) {
+	// todo add support to convert the v1 client to v2 but for now use inputs used to created the v1 client
+	config := make(map[string]string)
+
+	if v1Client != nil {
+		config["host"] = v1Client.Hostname
+		//todo: expose these values in the client
+		//config["username"] = v1Client.Username
+		//config["password"] = v1Client.Password
+		//config["domain"] = v1Client.Domain
+	} else {
+		config["host"] = kfcHostName
+		config["username"] = kfcUsername
+		config["password"] = kfcPassword
+		config["domain"] = kfcDomain
+	}
+
+	configuration := sdk.NewConfiguration(config)
+	sdkClient := sdk.NewAPIClient(configuration)
+	return sdkClient, nil
+}
+
+func menuCertificates(client *api.Client, params *map[string]string) ([]string, error) {
+	//fetch certificate options from keyfactor command
+	log.Info().Msg("Fetching certificates from Keyfactor Command")
+	log.Debug().Msg(fmt.Sprintf(DebugFuncEnter, "menuCertificates"))
+	if params == nil {
+		params = &map[string]string{}
+	}
+	certs, cErr := client.ListCertificates(*params)
+	if cErr != nil {
+		log.Error().Err(cErr).Msg("Error fetching certificates from Keyfactor Command")
+		return nil, cErr
+	} else if len(certs) == 0 {
+		log.Warn().Msg("No certificates returned from Keyfactor Command")
+		return nil, nil
+	}
+
+	var certOpts []string
+	log.Trace().Interface("certificates", certs).Msg("Formatting certificate choices for prompt")
+	for _, c := range certs {
+		certName := fmt.Sprintf("%d: %s (%s) - %s", c.Id, c.IssuedCN, c.Thumbprint, c.NotBefore)
+		log.Trace().Str("certificate_name", certName).Msg("Adding certificate to options")
+		certOpts = append(certOpts, certName)
+		log.Trace().Strs("certificate_options", certOpts).Msg("Certificate options")
+	}
+	log.Debug().Int("certificates", len(certOpts)).Msg(fmt.Sprintf(DebugFuncExit, "menuCertificates"))
+	//sort certOps
+	sort.Strings(certOpts)
+	return certOpts, nil
+
+}
+
+func menuCertificateStores(client *api.Client, params *map[string]interface{}) ([]string, error) {
+	// fetch all stores from keyfactor command
+	log.Info().Msg("Fetching stores from Keyfactor Command")
+	log.Debug().Msg(fmt.Sprintf(DebugFuncCall, "kfClient.ListCertificateStores"))
+	stores, sErr := client.ListCertificateStores(params)
+	if sErr != nil {
+		log.Error().Err(sErr).Msg("Error fetching stores from Keyfactor Command")
+		fmt.Println("Error fetching stores from Keyfactor Command: ", sErr)
+		return nil, sErr
+	} else if stores == nil || len(*stores) == 0 {
+		log.Info().Msg("No stores returned from Keyfactor Command")
+		fmt.Println("No stores found")
+		return nil, nil
+	}
+
+	log.Trace().Interface("stores", stores).Msg("Formatting store choices for prompt")
+	var stNames []string
+	var storeTypesLookup = make(map[int]string)
+	for _, st := range *stores {
+		//lookup store type name
+		var stName = fmt.Sprintf("%d", st.CertStoreType)
+		if _, ok := storeTypesLookup[st.CertStoreType]; !ok {
+			log.Debug().Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetCertificateStoreType"))
+			storeType, stErr := client.GetCertificateStoreType(st.CertStoreType)
+			if stErr != nil {
+				log.Error().Err(stErr).Msg("Error fetching store type name from Keyfactor Command")
+			} else {
+				storeTypesLookup[st.CertStoreType] = storeType.Name
+				stName = storeType.Name
+			}
+		} else {
+			stName = storeTypesLookup[st.CertStoreType]
+		}
+
+		log.Trace().Interface("store", st).Msg("Adding store to options")
+		stMenuName := fmt.Sprintf(
+			"%s/%s [%s]: (%s)", st.ClientMachine,
+			st.StorePath, stName, st.Id,
+		)
+		log.Trace().Str("store_name", stMenuName).Msg("Adding store to options")
+		stNames = append(stNames, stMenuName)
+	}
+	sort.Strings(stNames)
+	return stNames, nil
 }
