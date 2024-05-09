@@ -276,6 +276,7 @@ func generateAuditReport(
 						StorePath:  store.Path,
 						AddCert:    true,
 						RemoveCert: false,
+						Deployed:   false,
 					},
 				)
 			}
@@ -383,7 +384,7 @@ func generateAuditReport(
 					store.Path,
 					"false", // Add to store
 					"true",  // Remove from store
-					"false", // Is Deployed
+					"true",  // Is Deployed
 					getCurrentTime(""),
 				}
 				log.Trace().
@@ -406,7 +407,7 @@ func generateAuditReport(
 				}
 				log.Debug().
 					Str("thumbprint", tp).
-					Msg("Adding 'add' action to actions map")
+					Msg("Adding 'remove' action to actions map")
 				actions[tp] = append(
 					actions[tp], ROTAction{
 						Thumbprint: tp,
@@ -416,6 +417,7 @@ func generateAuditReport(
 						StorePath:  store.Path,
 						AddCert:    false,
 						RemoveCert: true,
+						Deployed:   true,
 					},
 				)
 			}
@@ -560,11 +562,10 @@ func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, report
 					_, err := kfClient.AddCertificateToStores(&addReq)
 					if err != nil {
 						fmt.Printf(
-							"[ERROR] adding cert %s (%d) to store %s (%s): %s\n",
+							"ERROR adding cert %s(%d) to store %s: %s\n",
 							a.Thumbprint,
 							a.CertID,
 							a.StoreID,
-							a.StorePath,
 							err,
 						)
 						log.Error().Err(err).Str("thumbprint", thumbprint).Str(
@@ -587,7 +588,7 @@ func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, report
 					).Msg("Attempting to remove cert from store")
 					cStore := api.CertificateStore{
 						CertificateStoreId: a.StoreID,
-						Alias:              a.Thumbprint,
+						Alias:              a.Thumbprint, //todo: support non-thumbprint aliases
 					}
 					log.Trace().Interface("store_object", cStore).Msg("Converting store to slice of single store")
 					var stores []api.CertificateStore
@@ -620,6 +621,13 @@ func reconcileRoots(actions map[string][]ROTAction, kfClient *api.Client, report
 							"store_id",
 							a.StoreID,
 						).Str("store_path", a.StorePath).Msg("unable to remove cert from store")
+						fmt.Printf(
+							"ERROR removing cert %s(%d) from store %s: %s\n",
+							a.Thumbprint,
+							a.CertID,
+							a.StoreID,
+							err,
+						)
 					}
 				} else {
 					fmt.Printf(
