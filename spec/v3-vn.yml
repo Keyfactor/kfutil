@@ -1,0 +1,129 @@
+cli:
+  name: kfutil
+  description: Keyfactor command line interface
+  commands:
+    - name: get
+      description: Get operations
+      commands:
+        - name: certificates
+          description: Get a certificate by ID
+          flags:
+            - name: id
+              type: string
+              required: true
+              default: ""
+        - name: orchs
+          description: Get an orchestration by ID
+          flags:
+            - name: id
+              type: string
+              required: true
+              default: ""
+        - name: stores
+          description: Get a certificate store by ID
+          flags:
+            - name: id
+              type: string
+              required: true
+              default: ""
+    - name: list
+      description: List operations
+      commands:
+        - name: certificates
+          description: List certificates
+          flags:
+            - name: id
+              type: string
+              required: false
+              default: ""
+        - name: orchs
+          description: List orchestrations
+        - name: stores
+          description: List certificate stores
+        - name: store-types
+          description: List certificate store types
+    - name: delete
+      description: Delete operations
+      commands:
+        - name: certificates
+          description: Delete a certificate by ID
+          flags:
+            - name: id
+              type: string
+              required: true
+              default: ""
+        - name: orchs
+          description: Delete an orchestration by ID
+          flags:
+            - name: id
+              type: string
+              required: true
+              default: ""
+        - name: stores
+          description: Delete a certificate store by ID
+          flags:
+            - name: id
+              type: string
+              required: true
+              default: ""
+        - name: store-types
+          description: Delete a specific store type by name or ID
+          flags:
+            - name: id
+              type: int
+              required: false
+              default: -1
+            - name: name
+              type: string
+              required: false
+              default: ""
+    - name: create
+      description: Create operations
+      commands:
+        - name: pam
+          description: Create a PAM type
+          flags:
+            - name: from-file
+              type: string
+              required: true
+              default: ""
+            - name: name
+              type: string
+              required: true
+              default: ""
+            - name: repo
+              type: string
+              required: false
+              default: ""
+            - name: branch
+              type: string
+              required: false
+              default: "main"
+        - name: store-types
+          description: Create a new certificate store type in Keyfactor
+          flags:
+            - name: name
+              type: string
+              required: true
+              default: ""
+            - name: from-file
+              type: string
+              required: false
+              default: ""
+    - name: login
+      description: Login to Keyfactor
+      flags:
+        - name: username
+          type: string
+          required: true
+          default: ""
+        - name: password
+          type: string
+          required: true
+          default: ""
+    - name: logout
+      description: Logout from Keyfactor
+    - name: status
+      description: List the status of Keyfactor services
+    - name: version
+      description: Shows version of kfutil
