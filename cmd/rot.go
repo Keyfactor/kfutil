@@ -1050,7 +1050,7 @@ func validateCertsInput(addRootsFile string, removeRootsFile string, client *api
 	if addRootsFile == "" || removeRootsFile == "" {
 		if addRootsFile == "" && !noPrompt {
 			//prmpt := "Would you like to include a 'certs to add' CSV file?"
-			prmpt := "Provide certificates to add and/or that should be present in selected stores?"
+			prmpt := "Provide certificates to add to and/or that should be present in selected stores?"
 			provideAddFile := promptYesNo(prmpt)
 			if provideAddFile {
 				addSrcType := promptSelectFromAPIorFile("certificates")
@@ -1139,9 +1139,93 @@ func validateCertsInput(addRootsFile string, removeRootsFile string, client *api
 			}
 		}
 		if removeRootsFile == "" && !noPrompt {
-			provideRemoveFile := promptYesNo("Would you like to include a 'certs to remove' CSV file?")
+			prmpt := "Provide certificates to remove from and/or that should NOT be present in selected stores?"
+			provideRemoveFile := promptYesNo(prmpt)
 			if provideRemoveFile {
-				removeRootsFile = promptForFilePath("Input a file path for the 'certs to remove' CSV. ")
+				//removeRootsFile = promptForFilePath("Input a file path for the 'certs to remove' CSV. ")
+				remSrcType := promptSelectFromAPIorFile("certificates")
+				switch remSrcType {
+				case "API":
+					selectedCerts := promptSelectCerts(client)
+					if len(selectedCerts) == 0 {
+						return "", "", InvalidROTCertsInputErr
+					}
+					//create stores file
+					removeRootsFile = fmt.Sprintf("%s", DefaultROTAuditRemoveCertsOutfilePath)
+					// create file
+					f, ioErr := os.Create(removeRootsFile)
+					if ioErr != nil {
+						log.Error().Err(ioErr).Str(
+							"remove_certs_file",
+							removeRootsFile,
+						).Msg("Error creating certs to remove file")
+						return addRootsFile, removeRootsFile, ioErr
+					}
+					defer f.Close()
+					// create CSV writer
+					log.Debug().Str("remove_certs_file", removeRootsFile).Msg("Creating CSV writer")
+					writer := csv.NewWriter(f)
+					defer writer.Flush()
+					// write header
+					log.Debug().Str("remove_certs_file", removeRootsFile).Msg("Writing header to certs to remove file")
+					wErr := writer.Write(CertHeader)
+					if wErr != nil {
+						log.Error().Err(wErr).Str(
+							"stores_file",
+							removeRootsFile,
+						).Msg("Error writing header to stores file")
+						return addRootsFile, removeRootsFile, wErr
+					}
+					// write selected stores
+					for _, c := range selectedCerts {
+						log.Debug().Str("cert_id", c).Msg("Adding cert to certs file")
+
+						//parse certID, cn and thumbprint from selection `<id>: <cn> (<thumbprint>) - <issued_date>`
+
+						//parse id from selection `<id>: <cn> (<thumbprint>) <issued_date>`
+						certId := strings.Split(c, ":")[0]
+						//remove () and white spaces from storeId
+						certId = strings.Trim(certId, " ")
+						certIdInt, cIdErr := strconv.Atoi(certId)
+						if cIdErr != nil {
+							log.Error().Err(cIdErr).Str("cert_id", certId).Msg("Error converting cert ID to int")
+							certIdInt = -1
+						}
+
+						//parse the cn from the selection `<id>: <cn> (<thumbprint>) <issued_date>`
+						cn := strings.Split(c, "(")[0]
+						cn = strings.Split(cn, ":")[1]
+						cn = strings.Trim(cn, " ")
+
+						//parse thumbprint from selection `<id>: <cn> (<thumbprint>) <issued_date>`
+						thumbprint := strings.Split(c, "(")[1]
+						thumbprint = strings.Split(thumbprint, ")")[0]
+						thumbprint = strings.Trim(strings.Trim(thumbprint, " "), ")")
+
+						certInstance := ROTCert{
+							ID:         certIdInt,
+							ThumbPrint: thumbprint,
+							CN:         cn,
+							SANs:       []string{},
+							Alias:      "",
+							Locations:  []api.CertificateLocations{},
+						}
+						certLine := certInstance.toCSV()
+
+						wErr = writer.Write(strings.Split(certLine, ","))
+						if wErr != nil {
+							log.Error().Err(wErr).Str(
+								"remove_certs_file",
+								removeRootsFile,
+							).Msg("Error writing store to stores file")
+							continue
+						}
+					}
+					writer.Flush()
+					f.Close()
+				default:
+					removeRootsFile = promptForFilePath("Input a file path for the 'certs to remove' CSV.")
+				}
 			}
 		}
 		if addRootsFile == "" && removeRootsFile == "" {
