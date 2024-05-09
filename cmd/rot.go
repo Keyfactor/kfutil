@@ -281,54 +281,66 @@ func generateAuditReport(
 			}
 		}
 	}
-	for _, cert := range removeCerts {
-		log.Debug().Str("thumbprint", cert).Msg("Looking up certificate to remove")
-		certLookupReq := api.GetCertificateContextArgs{
-			IncludeMetadata:  boolToPointer(true),
-			IncludeLocations: boolToPointer(true),
-			CollectionId:     nil, //todo: add support for collection ID
-			Thumbprint:       cert,
-			Id:               0,
+	for tp, cId := range removeCerts {
+		log.Debug().Str("thumbprint", tp).
+			Str("cert_id", cId).
+			Msg("Looking up certificate")
+		certLookupReq := api.GetCertificateContextArgs{}
+		if cId != "" {
+			certIdInt, cErr := strconv.Atoi(cId)
+			if cErr != nil {
+				log.Error().
+					Err(cErr).
+					Str("thumbprint", tp).
+					Msg("Error converting cert ID to integer, skipping")
+				errs = append(errs, cErr)
+				continue
+			}
+			certLookupReq = api.GetCertificateContextArgs{
+				IncludeMetadata:  boolToPointer(true),
+				IncludeLocations: boolToPointer(true),
+				CollectionId:     nil, //todo: add CollectionID support
+				Thumbprint:       "",
+				Id:               certIdInt,
+			}
+		} else {
+			certLookupReq = api.GetCertificateContextArgs{
+				IncludeMetadata:  boolToPointer(true),
+				IncludeLocations: boolToPointer(true),
+				CollectionId:     nil, //todo: add CollectionID support
+				Thumbprint:       tp,
+				Id:               0, //todo: should also allow KFC ID
+			}
 		}
-		log.Debug().Str("thumbprint", cert).Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetCertificateContext"))
+
+		log.Debug().
+			Str("thumbprint", tp).
+			Msg(fmt.Sprintf(DebugFuncCall, "kfClient.GetCertificateContext"))
 		certLookup, err := kfClient.GetCertificateContext(&certLookupReq)
 		if err != nil {
 			log.Error().
 				Err(err).
-				Str("thumbprint", cert).
-				Msg("Error looking up certificate, unable to remove from store")
-			errs = append(errs, err)
-			continue
-		} else if certLookup == nil {
-			log.Error().
-				Err(ErrKfcEmptyResponse).
-				Str("thumbprint", cert).
-				Msg(fmt.Sprintf("%s when looking up certificate", ErrMsgEmptyResponse))
-			errs = append(errs, ErrKfcEmptyResponse)
+				Str("thumbprint", tp).
+				Msg("Error looking up certificate, skipping")
+			errMsg := fmt.Errorf(
+				"error recieved from Keyfactor Command when looking up thumbprint '%s':'%w'",
+				tp,
+				err,
+			)
+			errs = append(errs, errMsg)
 			continue
 		}
-
 		certID := certLookup.Id
-		log.Trace().
-			Str("thumbprint", cert).
-			Int("cert_id", certID).
-			Msg("Converting cert ID to string")
 		certIDStr := strconv.Itoa(certID)
+		log.Debug().Str("thumbprint", tp).Msg("Iterating over stores")
 		for _, store := range stores {
-			storeIdentifier := fmt.Sprintf("%s/%s", store.Machine, store.Path)
-			log.Debug().Str("thumbprint", cert).
-				Str("store_id", store.ID).
-				Str("store_name", storeIdentifier).
-				Msg("Checking if cert is deployed to store")
-			if _, ok := store.Thumbprints[cert]; ok {
-				// Cert is deployed to this store and will need to be removed
-				log.Info().
-					Str("thumbprint", cert).
-					Str("store_id", store.ID).
-					Str("store_name", storeIdentifier).
-					Msg("Cert is deployed to store")
+			log.Debug().Str("thumbprint", tp).Str("store_id", store.ID).Msg("Checking if cert is deployed to store")
+			if _, ok := store.Thumbprints[tp]; !ok {
+				// Cert is already in the store do nothing
+				log.Info().Str("thumbprint", tp).Str("store_id", store.ID).Msg("Cert is not deployed to store")
 				row := []string{
-					cert,
+					//todo: this should be a toCSV field on whatever object this is
+					tp,
 					certIDStr,
 					certLookup.IssuedDN,
 					certLookup.IssuerDN,
@@ -336,35 +348,68 @@ func generateAuditReport(
 					store.Type,
 					store.Machine,
 					store.Path,
-					"false",
-					"true",
-					"true",
+					"false", // Add to store
+					"false", // Remove from store
+					"false", // Is Deployed
+					getCurrentTime(""),
+				}
+				log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Appending data row")
+				data = append(data, row)
+				log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Writing data row to CSV")
+				wErr := csvWriter.Write(row)
+				if wErr != nil {
+					log.Error().
+						Err(wErr).
+						Str("thumbprint", tp).
+						Str("output_file", outputFilePath).
+						Strs("row", row).
+						Msg("Error writing row to CSV")
+				}
+			} else {
+				// Cert is deployed to this store and will need to be removed
+				log.Info().
+					Str("thumbprint", tp).
+					Str("store_id", store.ID).
+					Msg("Cert is deployed to store")
+				row := []string{
+					//todo: this should be a toCSV
+					tp,
+					certIDStr,
+					certLookup.IssuedDN,
+					certLookup.IssuerDN,
+					store.ID,
+					store.Type,
+					store.Machine,
+					store.Path,
+					"false", // Add to store
+					"true",  // Remove from store
+					"false", // Is Deployed
 					getCurrentTime(""),
 				}
 				log.Trace().
-					Str("thumbprint", cert).
+					Str("thumbprint", tp).
 					Strs("row", row).
 					Msg("Appending data row")
 				data = append(data, row)
 				log.Debug().
-					Str("thumbprint", cert).
+					Str("thumbprint", tp).
 					Strs("row", row).
 					Msg("Writing data row to CSV")
 				wErr := csvWriter.Write(row)
 				if wErr != nil {
 					log.Error().
 						Err(wErr).
-						Str("thumbprint", cert).
+						Str("thumbprint", tp).
 						Str("output_file", outputFilePath).
 						Strs("row", row).
 						Msg("Error writing row to CSV")
-					errs = append(errs, wErr)
-					//todo: continue?
 				}
-				log.Debug().Str("thumbprint", cert).Msg("Adding remove action to actions map")
-				actions[cert] = append(
-					actions[cert], ROTAction{
-						Thumbprint: cert,
+				log.Debug().
+					Str("thumbprint", tp).
+					Msg("Adding 'add' action to actions map")
+				actions[tp] = append(
+					actions[tp], ROTAction{
+						Thumbprint: tp,
 						CertID:     certID,
 						StoreID:    store.ID,
 						StoreType:  store.Type,
@@ -373,37 +418,6 @@ func generateAuditReport(
 						RemoveCert: true,
 					},
 				)
-			} else {
-				// Cert is not deployed to this store do nothing
-				log.Info().Str("thumbprint", cert).Str(
-					"store_id",
-					store.ID,
-				).Msg("Cert is not deployed to store, skipping")
-				row := []string{
-					cert,
-					certIDStr,
-					certLookup.IssuedDN,
-					certLookup.IssuerDN,
-					store.ID,
-					store.Type,
-					store.Machine,
-					store.Path,
-					"false",
-					"false",
-					"false",
-					getCurrentTime(""),
-				}
-				log.Trace().Str("thumbprint", cert).Strs("row", row).Msg("Appending data row")
-				data = append(data, row)
-				log.Debug().Str("thumbprint", cert).Strs("row", row).Msg("Writing data row to CSV")
-				wErr := csvWriter.Write(row)
-				if wErr != nil {
-					log.Error().Err(wErr).Str("thumbprint", cert).Str("output_file", outputFilePath).Strs(
-						"row",
-						row,
-					).Msg("Error writing row to CSV")
-					errs = append(errs, wErr)
-				}
 			}
 		}
 	}
