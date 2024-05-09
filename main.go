@@ -15,16 +15,24 @@
 package main
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	"kfutil/cmd"
 )
 
 func main() {
-	//var docsFlag bool
-	//flag.BoolVar(&docsFlag, "makedocs", false, "Create markdown docs.")
-	//flag.Parse()
-	//if docsFlag {
-	//	docs()
-	//	os.Exit(0)
-	//}
+	// Set up a signal channel for SIGINT
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT)
+
+	// Start a goroutine to listen for signals
+	go func() {
+		<-sigChan
+		// Handle SIGINT signal
+		os.Exit(1)
+	}()
+
 	cmd.Execute()
 }
