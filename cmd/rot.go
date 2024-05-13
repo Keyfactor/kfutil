@@ -411,6 +411,7 @@ func generateAuditReport(
 				actions[tp] = append(
 					actions[tp], ROTAction{
 						Thumbprint: tp,
+						StoreAlias: "", //TODO get this value
 						CertID:     certID,
 						StoreID:    store.ID,
 						StoreType:  store.Type,
@@ -1825,6 +1826,7 @@ func init() {
 		storeTypes      []string
 		containerNames  []string
 		subjectNames    []string
+		collections     []string
 	)
 
 	storesCmd.AddCommand(rotCmd)
@@ -1941,6 +1943,13 @@ func init() {
 		[]string{},
 		"Multi value flag. Attempt to pre-populate the stores template with the certificate stores matching specified container types. If not specified, the template will be empty.",
 	)
+	rotGenStoreTemplateCmd.Flags().StringSliceVar(
+		&collections,
+		"collection",
+		[]string{},
+		"Certificate collection name(s) to pre-populate the stores template with. If not specified, the template will be empty.",
+	)
+
 	rotGenStoreTemplateCmd.Flags().StringSliceVar(
 		&subjectNames,
 		"cn",

@@ -116,6 +116,7 @@ func (r *ROTCert) toCSV() string {
 
 type ROTAction struct {
 	Thumbprint string `json:"thumbprint" mapstructure:"Thumbprint"`
+	StoreAlias string `json:"alias" mapstructure:"Alias;omitempty"`
 	CertID     int    `json:"cert_id" mapstructure:"CertID"`
 	CertDN     string `json:"cert_dn" mapstructure:"SubjectName"`
 	CertSANs   string `json:"cert_sans,omitempty" mapstructure:"CertSANs,omitempty"`
