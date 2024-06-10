@@ -941,6 +941,65 @@ func validateStoresInput(storesFile *string, noPrompt *bool, kfClient *api.Clien
 		}
 		apiOrFile := promptSelectRotStores("certificate stores")
 		switch apiOrFile {
+		case "All":
+			selectedStores, sErr := kfClient.ListCertificateStores(nil)
+			if sErr != nil {
+				return "", sErr
+			}
+			if len(*selectedStores) == 0 {
+				return "", errors.New("no certificate stores selected, unable to continue")
+			}
+			//create stores file
+			storesFile = stringToPointer(fmt.Sprintf("%s", DefaultROTAuditStoresOutfilePath))
+			// create file
+			f, ioErr := os.Create(*storesFile)
+			if ioErr != nil {
+				log.Error().Err(ioErr).Str("stores_file", *storesFile).Msg("Error creating stores file")
+				return "", ioErr
+			}
+			defer f.Close()
+			// create CSV writer
+			log.Debug().Str("stores_file", *storesFile).Msg("Creating CSV writer")
+			writer := csv.NewWriter(f)
+			defer writer.Flush()
+			// write header
+			log.Debug().Str("stores_file", *storesFile).Msg("Writing header to stores file")
+			wErr := writer.Write(StoreHeader)
+			if wErr != nil {
+				log.Error().Err(wErr).Str("stores_file", *storesFile).Msg("Error writing header to stores file")
+				return "", wErr
+			}
+			// write selected stores
+			for _, store := range *selectedStores {
+				log.Debug().Str("store_id", store).Msg("Adding store to stores file")
+				//parse ID from selection `<id>: <name>`
+				storeId := strings.Split(store, ":")[1]
+				//remove () and white spaces from storeId
+				storeId = strings.Trim(strings.Trim(strings.Trim(storeId, " "), "("), ")")
+
+				storeInstance := ROTStore{
+					StoreID:       storeId,
+					StoreType:     "",
+					StoreMachine:  "",
+					StorePath:     "",
+					ContainerId:   "",
+					ContainerName: "",
+					LastQueried:   "",
+				}
+				storeLine := storeInstance.toCSV()
+
+				wErr = writer.Write(strings.Split(storeLine, ","))
+				if wErr != nil {
+					log.Error().Err(wErr).Str(
+						"stores_file",
+						*storesFile,
+					).Msg("Error writing store to stores file")
+					continue
+				}
+			}
+			writer.Flush()
+			f.Close()
+			return *storesFile, nil
 		case "Manual Select":
 			selectedStores := promptSelectStores(kfClient)
 			if len(selectedStores) == 0 {
