@@ -1099,9 +1099,6 @@
       "Style": "Default"
     },
     "PrivateKeyAllowed": "Required",
-    "JobProperties": [
-      "interfaces"
-    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": true,
@@ -1184,10 +1181,6 @@
       "Style": "Default"
     },
     "PrivateKeyAllowed": "Required",
-    "JobProperties": [
-      "virtualServerName",
-      "sniCert"
-    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
@@ -3078,11 +3071,6 @@
       "Style": "Default"
     },
     "PrivateKeyAllowed": "Optional",
-    "JobProperties": [
-      "TlsMinVersion",
-      "TLSMaxVersion",
-      "TlsProfileName"
-    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
@@ -3804,9 +3792,6 @@
     },
     "StorePathValue": "My",
     "PrivateKeyAllowed": "Optional",
-    "JobProperties": [
-      "InstanceName"
-    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": true,
