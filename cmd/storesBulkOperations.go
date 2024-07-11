@@ -19,14 +19,15 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/Jeffail/gabs"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"os"
-	"strconv"
-	"strings"
 )
 
 var (
@@ -231,7 +232,10 @@ var storesCreateFromCSVCmd = &cobra.Command{
 
 			if conversionError != nil {
 				//outputError(conversionError, true, outputFormat)
-				log.Error().Err(conversionError).Msgf("Unable to convert the json into the request parameters object.  %s", conversionError.Error())
+				log.Error().Err(conversionError).Msgf(
+					"Unable to convert the json into the request parameters object.  %s",
+					conversionError.Error(),
+				)
 				return conversionError
 			}
 
@@ -289,7 +293,8 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		//fmt.Printf("\nImport results written to %s\n\n", outPath)
 		outputResult(fmt.Sprintf("Import results written to %s", outPath), outputFormat)
 		return nil
-	}}
+	},
+}
 
 var storesCreateImportTemplateCmd = &cobra.Command{
 	Use:   "generate-template --store-type-id <store type id> --store-type-name <store-type-name> --outpath <output file path>",
@@ -322,7 +327,7 @@ Store type IDs can be found by running the "store-types" command.`,
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		kfClient, clientErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
 		if clientErr != nil {
-			log.Error().Err(clientErr).Msg("Error initializing client")
+			log.Error().Err(clientErr).Msg("Error initializing Client")
 			return clientErr
 		}
 
@@ -421,7 +426,10 @@ Store type IDs can be found by running the "store-types" command.`,
 			return csvWriteErr
 		}
 		log.Info().Str("filePath", filePath).Msg("Template file written")
-		outputResult(fmt.Sprintf("Template file for store type with id %d written to %s", intID, filePath), outputFormat)
+		outputResult(
+			fmt.Sprintf("Template file for store type with id %d written to %s", intID, filePath),
+			outputFormat,
+		)
 		return nil
 	},
 }
@@ -992,24 +1000,76 @@ func init() {
 	importStoresCmd.AddCommand(storesCreateImportTemplateCmd)
 	importStoresCmd.AddCommand(storesCreateFromCSVCmd)
 
-	storesCreateImportTemplateCmd.Flags().StringVarP(&storeTypeName, "store-type-name", "n", "", "The name of the cert store type for the template.  Use if store-type-id is unknown.")
-	storesCreateImportTemplateCmd.Flags().IntVarP(&storeTypeId, "store-type-id", "i", -1, "The ID of the cert store type for the template.")
-	storesCreateImportTemplateCmd.Flags().StringVarP(&outPath, "outpath", "o", "",
-		"Path and name of the template file to generate.. If not specified, the file will be written to the current directory.")
+	storesCreateImportTemplateCmd.Flags().StringVarP(
+		&storeTypeName,
+		"store-type-name",
+		"n",
+		"",
+		"The name of the cert store type for the template.  Use if store-type-id is unknown.",
+	)
+	storesCreateImportTemplateCmd.Flags().IntVarP(
+		&storeTypeId,
+		"store-type-id",
+		"i",
+		-1,
+		"The ID of the cert store type for the template.",
+	)
+	storesCreateImportTemplateCmd.Flags().StringVarP(
+		&outPath,
+		"outpath",
+		"o",
+		"",
+		"Path and name of the template file to generate.. If not specified, the file will be written to the current directory.",
+	)
 	storesCreateImportTemplateCmd.MarkFlagsMutuallyExclusive("store-type-name", "store-type-id")
 
-	storesCreateFromCSVCmd.Flags().StringVarP(&storeTypeName, "store-type-name", "n", "", "The name of the cert store type.  Use if store-type-id is unknown.")
-	storesCreateFromCSVCmd.Flags().IntVarP(&storeTypeId, "store-type-id", "i", -1, "The ID of the cert store type for the stores.")
+	storesCreateFromCSVCmd.Flags().StringVarP(
+		&storeTypeName,
+		"store-type-name",
+		"n",
+		"",
+		"The name of the cert store type.  Use if store-type-id is unknown.",
+	)
+	storesCreateFromCSVCmd.Flags().IntVarP(
+		&storeTypeId,
+		"store-type-id",
+		"i",
+		-1,
+		"The ID of the cert store type for the stores.",
+	)
 	storesCreateFromCSVCmd.Flags().StringVarP(&file, "file", "f", "", "CSV file containing cert stores to create.")
 	storesCreateFromCSVCmd.MarkFlagRequired("file")
 	storesCreateFromCSVCmd.Flags().BoolP("dry-run", "d", false, "Do not import, just check for necessary fields.")
-	storesCreateFromCSVCmd.Flags().StringVarP(&resultsPath, "results-path", "o", "", "CSV file containing cert stores to create. defaults to <imported file name>_results.csv")
+	storesCreateFromCSVCmd.Flags().StringVarP(
+		&resultsPath,
+		"results-path",
+		"o",
+		"",
+		"CSV file containing cert stores to create. defaults to <imported file name>_results.csv",
+	)
 
 	storesExportCmd.Flags().BoolVarP(&exportAll, "all", "a", false, "Export all stores grouped by store-type.")
-	storesExportCmd.Flags().StringVarP(&storeTypeName, "store-type-name", "n", "", "The name of the cert store type for the template.  Use if store-type-id is unknown.")
-	storesExportCmd.Flags().IntVarP(&storeTypeId, "store-type-id", "i", -1, "The ID of the cert store type for the template.")
-	storesExportCmd.Flags().StringVarP(&outPath, "outpath", "o", "",
-		"Path and name of the template file to generate.. If not specified, the file will be written to the current directory.")
+	storesExportCmd.Flags().StringVarP(
+		&storeTypeName,
+		"store-type-name",
+		"n",
+		"",
+		"The name of the cert store type for the template.  Use if store-type-id is unknown.",
+	)
+	storesExportCmd.Flags().IntVarP(
+		&storeTypeId,
+		"store-type-id",
+		"i",
+		-1,
+		"The ID of the cert store type for the template.",
+	)
+	storesExportCmd.Flags().StringVarP(
+		&outPath,
+		"outpath",
+		"o",
+		"",
+		"Path and name of the template file to generate.. If not specified, the file will be written to the current directory.",
+	)
 	storesExportCmd.MarkFlagsMutuallyExclusive("store-type-name", "store-type-id")
 
 }

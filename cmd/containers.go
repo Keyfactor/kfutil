@@ -120,7 +120,7 @@ var containersDeleteCmd = &cobra.Command{
 
 		// Authenticate
 		//authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//Client, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
 
 		// CLI Logic
 		return fmt.Errorf("delete store containers not implemented")

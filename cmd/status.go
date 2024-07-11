@@ -16,8 +16,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"log"
+
+	"github.com/spf13/cobra"
 )
 
 // statusCmd represents the status command
@@ -40,8 +41,8 @@ var statusCmd = &cobra.Command{
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
-		//kfClient, _ := initClient(configFile, profile, noPrompt)
-		//status, err := kfClient.GetStatus()
+		//Client, _ := initClient(configFile, profile, noPrompt)
+		//status, err := Client.GetStatus()
 		//if err != nil {
 		//	log.Printf("Error: %s", err)
 		//}

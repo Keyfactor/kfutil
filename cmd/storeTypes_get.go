@@ -19,6 +19,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/rs/zerolog/log"
@@ -65,9 +66,27 @@ func CreateStoreTypesGetFlags() *StoreTypesGetFlags {
 func (f *StoreTypesGetFlags) AddFlags(flags *pflag.FlagSet) {
 	flags.IntVarP(f.storeTypeID, "id", "i", -1, "ID of the certificate store type to get.")
 	flags.StringVarP(f.storeTypeName, "name", "n", "", "Name of the certificate store type to get.")
-	flags.BoolVarP(f.genericFormat, "generic", "g", false, "Output the store type in a generic format stripped of all fields specific to the Command instance.")
-	flags.StringVarP(f.gitRef, FlagGitRef, "b", "main", "The git branch or tag to reference when pulling store-types from the internet.")
-	flags.BoolVarP(f.outputToIntegrationManifest, "output-to-integration-manifest", "", false, "Update the integration manifest with the store type. It overrides the store type in the manifest if it already exists. If the integration manifest does not exist in the current directory, it will be created.")
+	flags.BoolVarP(
+		f.genericFormat,
+		"generic",
+		"g",
+		false,
+		"Output the store type in a generic format stripped of all fields specific to the Command instance.",
+	)
+	flags.StringVarP(
+		f.gitRef,
+		FlagGitRef,
+		"b",
+		"main",
+		"The git branch or tag to reference when pulling store-types from the internet.",
+	)
+	flags.BoolVarP(
+		f.outputToIntegrationManifest,
+		"output-to-integration-manifest",
+		"",
+		false,
+		"Update the integration manifest with the store type. It overrides the store type in the manifest if it already exists. If the integration manifest does not exist in the current directory, it will be created.",
+	)
 }
 
 func CreateCmdStoreTypesGet() *cobra.Command {
@@ -102,12 +121,17 @@ func CreateCmdStoreTypesGet() *cobra.Command {
 			kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
 
 			if kfClient == nil {
-				return fmt.Errorf("failed to initialize Keyfactor client")
+				return fmt.Errorf("failed to initialize Keyfactor Client")
 			}
 
 			storeTypes, err := kfClient.GetCertificateStoreType(options.storeTypeInterface)
 			if err != nil {
-				log.Error().Err(err).Msg(fmt.Sprintf("unable to get certificate store type %s", options.storeTypeInterface))
+				log.Error().Err(err).Msg(
+					fmt.Sprintf(
+						"unable to get certificate store type %s",
+						options.storeTypeInterface,
+					),
+				)
 				return err
 			}
 			log.Trace().Msg(fmt.Sprintf("storeTypes: %+v", storeTypes))
@@ -136,7 +160,12 @@ func CreateCmdStoreTypesGet() *cobra.Command {
 					return err
 				}
 
-				_, err = cmd.OutOrStdout().Write([]byte(fmt.Sprintf("Successfully updated integration manifest with store type %s\n", options.storeTypeInterface)))
+				_, err = cmd.OutOrStdout().Write(
+					[]byte(fmt.Sprintf(
+						"Successfully updated integration manifest with store type %s\n",
+						options.storeTypeInterface,
+					)),
+				)
 			} else {
 				_, err = cmd.OutOrStdout().Write([]byte(output))
 				if err != nil {
@@ -256,7 +285,10 @@ func (f *StoreTypesGetOptions) Validate() error {
 	return nil
 }
 
-func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat string, outputType string) (string, error) {
+func formatStoreTypeOutput(storeType *api.CertificateStoreType, outputFormat string, outputType string) (
+	string,
+	error,
+) {
 	var sOut interface{}
 	sOut = storeType
 	if outputType == "generic" {

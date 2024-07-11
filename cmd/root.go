@@ -224,9 +224,9 @@ func initClient(
 	if err != nil {
 		//fmt.Printf("Error connecting to Keyfactor: %s\n", err)
 		outputError(err, true, "text")
-		return nil, fmt.Errorf("unable to create Keyfactor Command client: %s", err)
+		return nil, fmt.Errorf("unable to create Keyfactor Command Client: %s", err)
 	}
-	log.Info().Msg("Keyfactor Command client created")
+	log.Info().Msg("Keyfactor Command Client created")
 	return c, nil
 }
 

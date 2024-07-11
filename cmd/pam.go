@@ -18,12 +18,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"io"
 	"net/http"
 	"os"
+
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
 )
 
 type JSONImportableObject interface {
@@ -136,7 +137,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 
 		// Authenticate
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//Client, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 
 		// Check required flags
@@ -230,7 +231,7 @@ var pamProvidersListCmd = &cobra.Command{
 
 		// Authenticate
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//Client, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 
 		// CLI Logic
@@ -282,12 +283,15 @@ var pamProvidersGetCmd = &cobra.Command{
 
 		// Authenticate
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//Client, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 
 		// CLI Logic
 		log.Debug().Msg("call: PAMProviderGetPamProvider()")
-		pamProvider, httpResponse, err := sdkClient.PAMProviderApi.PAMProviderGetPamProvider(context.Background(), pamProviderId).
+		pamProvider, httpResponse, err := sdkClient.PAMProviderApi.PAMProviderGetPamProvider(
+			context.Background(),
+			pamProviderId,
+		).
 			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
 			Execute()
 		log.Debug().Msg("returned: PAMProviderGetPamProvider()")
@@ -335,7 +339,7 @@ var pamProvidersCreateCmd = &cobra.Command{
 
 		// Authenticate
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		// kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		// Client, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 
 		// CLI Logic
@@ -399,7 +403,7 @@ var pamProvidersUpdateCmd = &cobra.Command{
 
 		// Authenticate
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//Client, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 
 		// CLI Logic
@@ -466,7 +470,7 @@ var pamProvidersDeleteCmd = &cobra.Command{
 
 		// Authenticate
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//Client, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
 		sdkClient, _ := initGenClient(configFile, profile, noPrompt, authConfig, false)
 
 		// CLI Logic
@@ -500,7 +504,11 @@ func GetPAMTypeInternet(providerName string, repo string, branch string) (interf
 		branch = "main"
 	}
 
-	providerUrl := fmt.Sprintf("https://raw.githubusercontent.com/Keyfactor/%s/%s/integration-manifest.json", repo, branch)
+	providerUrl := fmt.Sprintf(
+		"https://raw.githubusercontent.com/Keyfactor/%s/%s/integration-manifest.json",
+		repo,
+		branch,
+	)
 	log.Debug().Str("providerUrl", providerUrl).
 		Msg("Getting PAM Type from Internet")
 	response, err := http.Get(providerUrl)
@@ -558,7 +566,10 @@ func GetPAMTypeInternet(providerName string, repo string, branch string) (interf
 	return pamTypeJson, nil
 }
 
-func GetTypeFromInternet[T JSONImportableObject](providerName string, repo string, branch string, returnType *T) (*T, error) {
+func GetTypeFromInternet[T JSONImportableObject](providerName string, repo string, branch string, returnType *T) (
+	*T,
+	error,
+) {
 	log.Debug().Str("providerName", providerName).
 		Str("repo", repo).
 		Str("branch", branch).
@@ -629,10 +640,22 @@ func init() {
 
 	// PAM Provider Types Create
 	pamCmd.AddCommand(pamTypesCreateCmd)
-	pamTypesCreateCmd.Flags().StringVarP(&filePath, FlagFromFile, "f", "", "Path to a JSON file containing the PAM Type Object Data.")
+	pamTypesCreateCmd.Flags().StringVarP(
+		&filePath,
+		FlagFromFile,
+		"f",
+		"",
+		"Path to a JSON file containing the PAM Type Object Data.",
+	)
 	pamTypesCreateCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the PAM Provider Type.")
 	pamTypesCreateCmd.Flags().StringVarP(&repo, "repo", "r", "", "Keyfactor repository name of the PAM Provider Type.")
-	pamTypesCreateCmd.Flags().StringVarP(&branch, "branch", "b", "", "Branch name for the repository. Defaults to 'main'.")
+	pamTypesCreateCmd.Flags().StringVarP(
+		&branch,
+		"branch",
+		"b",
+		"",
+		"Branch name for the repository. Defaults to 'main'.",
+	)
 
 	// PAM Providers
 	pamCmd.AddCommand(pamProvidersListCmd)
@@ -641,11 +664,23 @@ func init() {
 	pamProvidersGetCmd.MarkFlagRequired("id")
 
 	pamCmd.AddCommand(pamProvidersCreateCmd)
-	pamProvidersCreateCmd.Flags().StringVarP(&filePath, FlagFromFile, "f", "", "Path to a JSON file containing the PAM Provider Object Data.")
+	pamProvidersCreateCmd.Flags().StringVarP(
+		&filePath,
+		FlagFromFile,
+		"f",
+		"",
+		"Path to a JSON file containing the PAM Provider Object Data.",
+	)
 	pamProvidersCreateCmd.MarkFlagRequired(FlagFromFile)
 
 	pamCmd.AddCommand(pamProvidersUpdateCmd)
-	pamProvidersUpdateCmd.Flags().StringVarP(&filePath, FlagFromFile, "f", "", "Path to a JSON file containing the PAM Provider Object Data.")
+	pamProvidersUpdateCmd.Flags().StringVarP(
+		&filePath,
+		FlagFromFile,
+		"f",
+		"",
+		"Path to a JSON file containing the PAM Provider Object Data.",
+	)
 	pamProvidersUpdateCmd.MarkFlagRequired(FlagFromFile)
 
 	pamCmd.AddCommand(pamProvidersDeleteCmd)
