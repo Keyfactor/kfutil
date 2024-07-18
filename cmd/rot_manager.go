@@ -14,12 +14,13 @@ import (
 )
 
 type RootOfTrustManager struct {
-	Client              *api.Client
-	OutputFilePath      string
-	addCerts            map[string]string      // map[alias]certId
-	removeCerts         map[string]string      // map[alias]certId
-	actions             map[string][]ROTAction // map[alias]ROTAction
-	stores              map[string]StoreCSVEntry
+	Client         *api.Client
+	OutputFilePath string
+	addCerts       map[string]string      // map[alias]certId
+	removeCerts    map[string]string      // map[alias]certId
+	actions        map[string][]ROTAction // map[alias]ROTAction
+	//stores              map[string]StoreCSVEntry
+	Stores              map[string]*TrustStore
 	data                [][]string
 	ReportFilePath      string
 	StoresFilePath      string
@@ -27,6 +28,143 @@ type RootOfTrustManager struct {
 	RemoveCertsFilePath string
 	IsDryRun            bool
 	TrustStoreCriteria  RootOfTrustCriteria
+}
+
+type TrustStore struct {
+	StoreID       string
+	StoreType     string
+	StoreMachine  string
+	StorePath     string
+	Inventory     []api.CertStoreInventory
+	ContainerName string
+	ContainerID   int
+	LeafCount     int
+	KeyCount      int
+	CertCount     int
+	ThumbPrints   map[string]bool
+	Serials       map[string]bool
+	Aliases       map[string]bool
+	CertIDs       map[int]bool
+}
+
+func (t *TrustStore) generateMaps() error {
+	// check if inventory is empty
+	log.Debug().Msg(fmt.Sprintf(DebugFuncEnter, "generateMaps"))
+	if len(t.Inventory) == 0 {
+		log.Warn().Msg("Inventory is empty, unable to generate maps")
+		log.Debug().Msg(fmt.Sprintf(DebugFuncExit, "generateMaps"))
+		return nil
+	}
+	log.Debug().Msg("Generating thumbprint, serial number, and certificate ID maps")
+	for _, cert := range t.Inventory {
+		log.Trace().Str("alias", cert.Name).Msg("Adding alias to map")
+		t.Aliases[cert.Name] = true
+		// Thumbprints
+		for _, thumbprint := range cert.Thumbprints {
+			log.Trace().Str("thumbprint", thumbprint).Msg("Adding thumbprint to map")
+			t.ThumbPrints[thumbprint] = true
+		}
+		// Serials
+		for _, serial := range cert.Serials {
+			log.Trace().Str("serial", serial).Msg("Adding serial number to map")
+			t.Serials[serial] = true
+		}
+		// Cert IDs
+		for _, id := range cert.Ids {
+			log.Trace().Int("cert_id", id).Msg("Adding certificate ID to map")
+			t.CertIDs[id] = true
+		}
+	}
+	return nil
+}
+
+func (t *TrustStore) InventoryCSV(includeHeader bool) string {
+	// order CSV col based InventoryHeader
+	InventoryHeader := []string{
+		"Thumbprint",
+		"SerialNumber",
+		"CertificateID",
+	}
+	var output [][]string
+
+	// add header
+	if includeHeader {
+		output = append(output, InventoryHeader)
+	}
+
+	for _, h := range t.Inventory {
+		row := make([]string, len(InventoryHeader))
+		for i, header := range InventoryHeader {
+			switch header {
+			case "Alias":
+				row[i] = h.Name
+			case "Thumbprint":
+				row[i] = strings.Join(h.Thumbprints, ",")
+				// escape any commas in the fields
+				row[i] = strings.ReplaceAll(row[i], ",", "\\,")
+			case "SerialNumbers":
+				row[i] = strings.Join(h.Serials, ",")
+				// escape any commas in the fields
+				row[i] = strings.ReplaceAll(row[i], ",", "\\,")
+			case "CertificateID":
+				// join int slice to string
+				var certIDs []string
+				for _, id := range h.Ids {
+					certIDs = append(certIDs, strconv.Itoa(id))
+				}
+				row[i] = strings.Join(certIDs, ",")
+				// escape any commas in the fields
+				row[i] = strings.ReplaceAll(row[i], ",", "\\,")
+			}
+		}
+		output = append(output, row)
+	}
+	// flatten into single string with newlines
+	var csvOutput []string
+	for _, o := range output {
+		//escape any commas in the fields
+		csvOutput = append(csvOutput, strings.Join(o, ","))
+	}
+	return strings.Join(csvOutput, "\n")
+}
+
+func (t *TrustStore) ToCSV() string {
+	// order CSV col based StoreHeader
+	output := make([]string, len(StoreHeader))
+	for i, h := range StoreHeader {
+		switch h {
+		case "StoreID":
+			output[i] = t.StoreID
+		case "StoreType":
+			output[i] = t.StoreType
+		case "StoreMachine":
+			output[i] = t.StoreMachine
+		case "StorePath":
+			output[i] = t.StorePath
+		case "Inventory":
+			output[i] = fmt.Sprintf("%v", len(t.Inventory))
+		case "ContainerName":
+			output[i] = t.ContainerName
+		case "ContainerID":
+			output[i] = fmt.Sprintf("%d", t.ContainerID)
+		}
+	}
+	//escape any commas in the fields
+	for i, o := range output {
+		output[i] = strings.ReplaceAll(o, ",", "\\,")
+	}
+	return strings.Join(output, ",")
+}
+
+func (t *TrustStore) String() string {
+	return fmt.Sprintf(
+		"StoreID: %s, StoreType: %s, StoreMachine: %s, StorePath: %s, Inventory: %v",
+		t.StoreID,
+		t.StoreType,
+		t.StoreMachine,
+		t.StorePath,
+		len(t.Inventory),
+	)
 }
 
 type RootOfTrustCriteria struct {
@@ -224,96 +362,101 @@ func (r *RootOfTrustManager) processRemoveCerts(
 			continue
 		}
 		certID := certLookup.Id
-		certIDStr := strconv.Itoa(certID)
+		log.Debug().Int("certID", certID).Msg("Processing cert to remove")
+		//certIDStr := certLookup.Id
 		log.Debug().Str("thumbprint", tp).Msg("Iterating over stores")
-		for _, store := range r.stores {
-			log.Debug().Str("thumbprint", tp).Str("store_id", store.ID).Msg("Checking if cert is deployed to store")
-			if _, ok := store.Thumbprints[tp]; !ok {
-				// Cert is already in the store do nothing
-				log.Info().Str("thumbprint", tp).Str("store_id", store.ID).Msg("Cert is not deployed to store")
-				row := []string{
-					//todo: this should be a toCSV field on whatever object this is
-					tp,
-					certIDStr,
-					certLookup.IssuedDN,
-					certLookup.IssuerDN,
-					store.ID,
-					store.Type,
-					store.Machine,
-					store.Path,
-					"false", // Add to store
-					"false", // Remove from store
-					"false", // Is Deployed
-					getCurrentTime(""),
-				}
-				log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Appending data row")
-				data = append(data, row)
-				log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Writing data row to CSV")
-				wErr := csvWriter.Write(row)
-				if wErr != nil {
-					log.Error().
-						Err(wErr).
-						Str("thumbprint", tp).
-						Str("output_file", r.OutputFilePath).
-						Strs("row", row).
-						Msg("Error writing row to CSV")
-				}
-			} else {
-				// Cert is deployed to this store and will need to be removed
-				log.Info().
-					Str("thumbprint", tp).
-					Str("store_id", store.ID).
-					Msg("Cert is deployed to store")
-				row := []string{
-					//todo: this should be a toCSV
-					tp,
-					certIDStr,
-					certLookup.IssuedDN,
-					certLookup.IssuerDN,
-					store.ID,
-					store.Type,
-					store.Machine,
-					store.Path,
-					"false", // Add to store
-					"true",  // Remove from store
-					"true",  // Is Deployed
-					getCurrentTime(""),
-				}
-				log.Trace().
-					Str("thumbprint", tp).
-					Strs("row", row).
-					Msg("Appending data row")
-				data = append(data, row)
-				log.Debug().
-					Str("thumbprint", tp).
-					Strs("row", row).
-					Msg("Writing data row to CSV")
-				wErr := csvWriter.Write(row)
-				if wErr != nil {
-					log.Error().
-						Err(wErr).
-						Str("thumbprint", tp).
-						Str("output_file", r.OutputFilePath).
-						Strs("row", row).
-						Msg("Error writing row to CSV")
-				}
-				log.Debug().
-					Str("thumbprint", tp).
-					Msg("Adding 'remove' action to actions map")
-				actions[tp] = append(
-					actions[tp], ROTAction{
-						Thumbprint: tp,
-						StoreAlias: "", //TODO get this value
-						CertID:     certID,
-						StoreID:    store.ID,
-						StoreType:  store.Type,
-						StorePath:  store.Path,
-						AddCert:    false,
-						RemoveCert: true,
-						Deployed:   true,
-					},
-				)
-			}
+		for _, store := range r.Stores {
+			log.Debug().Str("thumbprint", tp).Str(
+				"store_id",
+				store.StoreID,
+			).Msg("Checking if cert is deployed to store")
+			//TODO: This logic should be replaced by receiver method on TrustStore
+			//if _, ok := store.Inventory; !ok {
+			//	// Cert is already in the store do nothing
+			//	log.Info().Str("thumbprint", tp).Str("store_id", store.ID).Msg("Cert is not deployed to store")
+			//	row := []string{
+			//		//todo: this should be a toCSV field on whatever object this is
+			//		tp,
+			//		certIDStr,
+			//		certLookup.IssuedDN,
+			//		certLookup.IssuerDN,
+			//		store.ID,
+			//		store.Type,
+			//		store.Machine,
+			//		store.Path,
+			//		"false", // Add to store
+			//		"false", // Remove from store
+			//		"false", // Is Deployed
+			//		getCurrentTime(""),
+			//	}
+			//	log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Appending data row")
+			//	data = append(data, row)
+			//	log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Writing data row to CSV")
+			//	wErr := csvWriter.Write(row)
+			//	if wErr != nil {
+			//		log.Error().
+			//			Err(wErr).
+			//			Str("thumbprint", tp).
+			//			Str("output_file", r.OutputFilePath).
+			//			Strs("row", row).
+			//			Msg("Error writing row to CSV")
+			//	}
+			//} else {
+			//	// Cert is deployed to this store and will need to be removed
+			//	log.Info().
+			//		Str("thumbprint", tp).
+			//		Str("store_id", store.ID).
+			//		Msg("Cert is deployed to store")
+			//	row := []string{
+			//		//todo: this should be a toCSV
+			//		tp,
+			//		certIDStr,
+			//		certLookup.IssuedDN,
+			//		certLookup.IssuerDN,
+			//		store.ID,
+			//		store.Type,
+			//		store.Machine,
+			//		store.Path,
+			//		"false", // Add to store
+			//		"true",  // Remove from store
+			//		"true",  // Is Deployed
+			//		getCurrentTime(""),
+			//	}
+			//	log.Trace().
+			//		Str("thumbprint", tp).
+			//		Strs("row", row).
+			//		Msg("Appending data row")
+			//	data = append(data, row)
+			//	log.Debug().
+			//		Str("thumbprint", tp).
+			//		Strs("row", row).
+			//		Msg("Writing data row to CSV")
+			//	wErr := csvWriter.Write(row)
+			//	if wErr != nil {
+			//		log.Error().
+			//			Err(wErr).
+			//			Str("thumbprint", tp).
+			//			Str("output_file", r.OutputFilePath).
+			//			Strs("row", row).
+			//			Msg("Error writing row to CSV")
+			//	}
+			//	log.Debug().
+			//		Str("thumbprint", tp).
+			//		Msg("Adding 'remove' action to actions map")
+			//	actions[tp] = append(
+			//		actions[tp], ROTAction{
+			//			Thumbprint: tp,
+			//			StoreAlias: "", //TODO get this value
+			//			CertID:     certID,
+			//			StoreID:    store.ID,
+			//			StoreType:  store.Type,
+			//			StorePath:  store.Path,
+			//			AddCert:    false,
+			//			RemoveCert: true,
+			//			Deployed:   true,
+			//		},
+			//	)
+			//}
 		}
 	}
 	return data, actions, errs
@@ -381,96 +524,100 @@ func (r *RootOfTrustManager) processAddCerts(
 			continue
 		}
 		certID := certLookup.Id
-		certIDStr := strconv.Itoa(certID)
+		log.Debug().Int("certID", certID).Msg("Processing cert to add")
 		log.Debug().Str("thumbprint", tp).Msg("Iterating over stores")
-		for _, store := range r.stores {
-			log.Debug().Str("thumbprint", tp).Str("store_id", store.ID).Msg("Checking if cert is deployed to store")
-			if _, ok := store.Thumbprints[tp]; ok {
-				// Cert is already in the store do nothing
-				log.Info().Str("thumbprint", tp).Str("store_id", store.ID).Msg("Cert is already deployed to store")
-				row := []string{
-					//todo: this should be a toCSV field on whatever object this is
-					tp,
-					certIDStr,
-					certLookup.IssuedDN,
-					certLookup.IssuerDN,
-					store.ID,
-					store.Type,
-					store.Machine,
-					store.Path,
-					"false",
-					"false",
-					"true",
-					getCurrentTime(""),
-				}
-				log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Appending data row")
-				data = append(data, row)
-				log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Writing data row to CSV")
-				wErr := csvWriter.Write(row)
-				if wErr != nil {
-					log.Error().
-						Err(wErr).
-						Str("thumbprint", tp).
-						Str("output_file", r.OutputFilePath).
-						Strs("row", row).
-						Msg("Error writing row to CSV")
-				}
-			} else {
-				// Cert is not deployed to this store and will need to be added
-				log.Info().
-					Str("thumbprint", tp).
-					Str("store_id", store.ID).
-					Msg("Cert is not deployed to store")
-				row := []string{
-					//todo: this should be a toCSV
-					tp,
-					certIDStr,
-					certLookup.IssuedDN,
-					certLookup.IssuerDN,
-					store.ID,
-					store.Type,
-					store.Machine,
-					store.Path,
-					"true",
-					"false",
-					"false",
-					getCurrentTime(""),
-				}
-				log.Trace().
-					Str("thumbprint", tp).
-					Strs("row", row).
-					Msg("Appending data row")
-				data = append(data, row)
-				log.Debug().
-					Str("thumbprint", tp).
-					Strs("row", row).
-					Msg("Writing data row to CSV")
-				wErr := csvWriter.Write(row)
-				if wErr != nil {
-					log.Error().
-						Err(wErr).
-						Str("thumbprint", tp).
-						Str("output_file", r.OutputFilePath).
-						Strs("row", row).
-						Msg("Error writing row to CSV")
-				}
-				log.Debug().
-					Str("thumbprint", tp).
-					Msg("Adding 'add' action to actions map")
-				actions[tp] = append(
-					actions[tp], ROTAction{
-						Thumbprint: tp,
-						CertID:     certID,
-						StoreID:    store.ID,
-						StoreType:  store.Type,
-						StorePath:  store.Path,
-						StoreAlias: "", //TODO get this value
-						AddCert:    true,
-						RemoveCert: false,
-						Deployed:   false,
-					},
-				)
-			}
+		for _, store := range r.Stores {
+			log.Debug().Str("thumbprint", tp).Str(
+				"store_id",
+				store.StoreID,
+			).Msg("Checking if cert is deployed to store")
+			//TODO: this should all be handled by a receiver function on TrustStore
+			//if _, ok := store.Thumbprints[tp]; ok {
+			//	// Cert is already in the store do nothing
+			//	log.Info().Str("thumbprint", tp).Str("store_id", store.ID).Msg("Cert is already deployed to store")
+			//	row := []string{
+			//		//todo: this should be a toCSV field on whatever object this is
+			//		tp,
+			//		certIDStr,
+			//		certLookup.IssuedDN,
+			//		certLookup.IssuerDN,
+			//		store.ID,
+			//		store.Type,
+			//		store.Machine,
+			//		store.Path,
+			//		"false",
+			//		"false",
+			//		"true",
+			//		getCurrentTime(""),
+			//	}
+			//	log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Appending data row")
+			//	data = append(data, row)
+			//	log.Trace().Str("thumbprint", tp).Strs("row", row).Msg("Writing data row to CSV")
+			//	wErr := csvWriter.Write(row)
+			//	if wErr != nil {
+			//		log.Error().
+			//			Err(wErr).
+			//			Str("thumbprint", tp).
+			//			Str("output_file", r.OutputFilePath).
+			//			Strs("row", row).
+			//			Msg("Error writing row to CSV")
+			//	}
+			//} else {
+			//	// Cert is not deployed to this store and will need to be added
+			//	log.Info().
+			//		Str("thumbprint", tp).
+			//		Str("store_id", store.ID).
+			//		Msg("Cert is not deployed to store")
+			//	row := []string{
+			//		//todo: this should be a toCSV
+			//		tp,
+			//		certIDStr,
+			//		certLookup.IssuedDN,
+			//		certLookup.IssuerDN,
+			//		store.ID,
+			//		store.Type,
+			//		store.Machine,
+			//		store.Path,
+			//		"true",
+			//		"false",
+			//		"false",
+			//		getCurrentTime(""),
+			//	}
+			//	log.Trace().
+			//		Str("thumbprint", tp).
+			//		Strs("row", row).
+			//		Msg("Appending data row")
+			//	data = append(data, row)
+			//	log.Debug().
+			//		Str("thumbprint", tp).
+			//		Strs("row", row).
+			//		Msg("Writing data row to CSV")
+			//	wErr := csvWriter.Write(row)
+			//	if wErr != nil {
+			//		log.Error().
+			//			Err(wErr).
+			//			Str("thumbprint", tp).
+			//			Str("output_file", r.OutputFilePath).
+			//			Strs("row", row).
+			//			Msg("Error writing row to CSV")
+			//	}
+			//	log.Debug().
+			//		Str("thumbprint", tp).
+			//		Msg("Adding 'add' action to actions map")
+			//	actions[tp] = append(
+			//		actions[tp], ROTAction{
+			//			Thumbprint: tp,
+			//			CertID:     certID,
+			//			StoreID:    store.ID,
+			//			StoreType:  store.Type,
+			//			StorePath:  store.Path,
+			//			StoreAlias: "", //TODO get this value
+			//			AddCert:    true,
+			//			RemoveCert: false,
+			//			Deployed:   false,
+			//		},
+			//	)
+			//}
 		}
 	}
 	return data, actions, errs
@@ -739,34 +886,21 @@ func (r *RootOfTrustManager) processStoresFile() error {
 			Thumbprints: make(map[string]bool),
 			Serials:     make(map[string]bool),
 			Ids:         make(map[int]bool),
+			Aliases:     make(map[string]bool),
 		}
 
 		log.Debug().Str("store_id", row[0]).Msg(
 			"Iterating over inventory for thumbprints, " +
 				"serial numbers and cert IDs",
 		)
-		for _, cert := range *inventory {
-			log.Trace().Str("store_id", row[0]).Interface("cert", cert).Msg("Processing inventory")
-			thumb := cert.Thumbprints
-			for t, v := range thumb {
-				log.Trace().Str("store_id", row[0]).
-					Str("value", v).
-					Int("thumbprint", t).Msg("Adding cert thumbprint to store object")
-				//stores[row[0]].Thumbprints[t] = v
-			}
-			for t, v := range cert.Serials {
-				log.Trace().Str("store_id", row[0]).
-					Str("value", v).
-					Int("serial", t).Msg("Adding cert serial to store object")
-				//stores[row[0]].Serials[t] = v
-			}
-			for t, v := range cert.Ids {
-				log.Trace().Str("store_id", row[0]).
-					Int("value", v).
-					Int("cert_id", t).Msg("Adding cert ID to store object")
-				//stores[row[0]].Ids[t] = v
-			}
+
+		if _, exists := r.Stores[row[0]]; !exists {
+			log.Trace().Str("store_id", row[0]).Msg("Store not found in TrustStore map")
+			return fmt.Errorf("unable to process stores file, store '%s' not found in TrustStore map", row[0])
 		}
+
+		// Directly modify the Inventory field without needing to reassign the struct
+		r.Stores[row[0]].Inventory = *inventory
 	}
 	if len(lookupFailures) > 0 {
 		errMsg := fmt.Errorf("The following stores were not found:\r\n%s", strings.Join(lookupFailures, ",\r\n"))
@@ -795,7 +929,7 @@ func (r *RootOfTrustManager) processStoresFile() error {
 		return fmt.Errorf(apiErrs)
 	}
 
-	r.stores = stores
+	//r.stores = stores
 	return nil
 }
 
@@ -803,7 +937,7 @@ func (r *RootOfTrustManager) processAddCertsFile() (map[string]string, error) {
 	var errs []error
 	log.Info().Str("add_certs_file", r.AddCertsFilePath).Msg("Reading certs to add file")
 	log.Debug().Str("add_certs_file", r.AddCertsFilePath).Msg(fmt.Sprintf(DebugFuncCall, "readCertsFile"))
-	certsToAdd, rErr := readCertsFile(r.AddCertsFilePath, r.Client)
+	certsToAdd, rErr := readCertsFile(r.AddCertsFilePath)
 	if rErr != nil {
 		log.Error().Err(rErr).Str("add_certs_file", r.AddCertsFilePath).Msg("Error reading certs to add file")
 		errs = append(errs, rErr)
@@ -822,7 +956,7 @@ func (r *RootOfTrustManager) processRemoveCertsFile() (map[string]string, error)
 	var errs []error
 	log.Info().Str("remove_certs_file", r.RemoveCertsFilePath).Msg("Reading certs to remove file")
 	log.Debug().Str("remove_certs_file", r.RemoveCertsFilePath).Msg(fmt.Sprintf(DebugFuncCall, "readCertsFile"))
-	certsToRemove, rErr := readCertsFile(r.RemoveCertsFilePath, r.Client)
+	certsToRemove, rErr := readCertsFile(r.RemoveCertsFilePath)
 	if rErr != nil {
 		log.Error().Err(rErr).Str("remove_certs_file", r.RemoveCertsFilePath).Msg("Error reading certs to remove file")
 		errs = append(errs, rErr)

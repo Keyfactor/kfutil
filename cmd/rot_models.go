@@ -9,6 +9,7 @@ import (
 
 var (
 	AuditHeader = []string{
+		"Alias",
 		"Thumbprint",
 		"CertID",
 		"SubjectName",
@@ -23,6 +24,7 @@ var (
 		"AuditDate",
 	}
 	ReconciledAuditHeader = []string{
+		"Alias",
 		"Thumbprint",
 		"CertID",
 		"SubjectName",
@@ -78,6 +80,7 @@ type StoreCSVEntry struct {
 	Path        string          `json:"path"`
 	Thumbprints map[string]bool `json:"thumbprints,omitempty"`
 	Serials     map[string]bool `json:"serials,omitempty"`
+	Aliases     map[string]bool `json:"aliases,omitempty"`
 	Ids         map[int]bool    `json:"ids,omitempty"`
 }
 type ROTCert struct {
@@ -125,7 +128,6 @@ type ROTAction struct {
 	StoreType  string `json:"store_type" mapstructure:"StoreType"`
 	Machine    string `json:"client_machine" mapstructure:"Machine"`
 	StorePath  string `json:"store_path" mapstructure:"Path"`
-	Alias      string `json:"alias" mapstructure:"Alias,omitempty"`
 	AddCert    bool   `json:"add" mapstructure:"AddCert"`
 	RemoveCert bool   `json:"remove"  mapstructure:"RemoveCert"`
 	Deployed   bool   `json:"deployed" mapstructure:"Deployed"`
