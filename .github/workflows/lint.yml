@@ -1,4 +1,4 @@
-name: Test EJBCA Vault PKI Engine
+name: Go Lint
 on: [workflow_dispatch, push, pull_request]
 jobs:
   build:
