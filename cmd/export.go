@@ -141,7 +141,7 @@ var exportCmd = &cobra.Command{
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 
 		if authConfig == nil {
-			log.Error().Msg("auth config is nil, invalid client configuration")
+			log.Error().Msg("auth config is nil, invalid Client configuration")
 			return fmt.Errorf(FailedAuthMsg)
 		}
 

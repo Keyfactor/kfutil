@@ -1,0 +1,33 @@
+name: Go Lint
+on: [workflow_dispatch, push, pull_request]
+jobs:
+  build:
+    name: Build and Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Checkout code
+      # https://github.com/actions/checkout
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Setup GoLang build environment
+      # https://github.com/actions/setup-go
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      # Download dependencies
+      - run: go mod download
+
+      # Build Go binary
+      - run: go build -v .
+
+      # Run Go linters
+      # https://github.com/golangci/golangci-lint-action
+      - name: Run linters
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest

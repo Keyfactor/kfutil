@@ -402,7 +402,7 @@ func createStoreFromFile(filename string, kfClient *api.Client) (*api.Certificat
 		return nil, err
 	}
 
-	// Use the Keyfactor client to create the store type
+	// Use the Keyfactor Client to create the store type
 	createResp, err := kfClient.CreateStoreType(&storeType)
 	if err != nil {
 		return nil, err
@@ -443,7 +443,7 @@ func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
 	return result2, nil
 }
 
-//func getStoreTypesFromCommand(kfClient *api.Client) (map[string]interface{}, error) {
+//func getStoreTypesFromCommand(Client *api.Client) (map[string]interface{}, error) {
 //
 //}
 
