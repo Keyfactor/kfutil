@@ -1,0 +1,111 @@
+name: Command V12 Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - name: Install dependencies
+        run: go mod download && go mod tidy
+      - name: Install Azure CLI
+        run: |
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          az --version
+
+  ### Store Type Tests
+  Test_StoreTypes:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    env:
+      SECRET_NAME: "command-config-1200-clean"
+      KEYFACTOR_HOSTNAME: "int1200-test-clean.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          export KFUTIL_DEBUG=1
+          go test -v ./cmd -run "^Test_StoreTypes*"
+
+  ### Store Tests
+  Test_Stores:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - Test_StoreTypes
+    env:
+      SECRET_NAME: "command-config-1200"
+      KEYFACTOR_HOSTNAME: "integrations1200-lab.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: go test -v ./cmd -run "^Test_Stores_*"
+
+  ### PAM Tests
+  Test_PAM:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+
+      - Test_StoreTypes
+    env:
+      SECRET_NAME: "command-config-1200"
+      KEYFACTOR_HOSTNAME: "integrations1200-lab.kfdelivery.com"
+      KEYFACTOR_DOMAIN: "command"
+      KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
+      KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Run tests
+        run: |
+          unset KFUTIL_DEBUG
+          go test -v ./cmd -run "^Test_PAM*"
+  
+
+  ### PAM Tests AKV Auth Provider
+  Test_AKV_PAM:
+    runs-on: self-hosted
+    needs:
+      - Test_PAM
+    env:
+      SECRET_NAME: "command-config-1200-az"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+      - name: Install dependencies
+        run: go mod download && go mod tidy
+      - name: Get secret from Azure Key Vault
+        run: |
+          . ./examples/auth/akv/akv_auth.sh
+          cat $HOME/.keyfactor/command_config.json
+      - name: Install kfutil
+        run: |
+          make install
+      - name: Run tests
+        run: |
+          go test -v ./cmd -run "^Test_PAM*"
+  
