@@ -81,7 +81,14 @@ func initClient(
 		return authViaProvider()
 	}
 
-	log.Debug().Msg("call: authEnvVars()")
+	log.Debug().
+		Str("flagConfigFile", flagConfigFile).
+		Str("flagProfile", flagProfile).
+		Str("flagAuthProviderType", flagAuthProviderType).
+		Str("flagAuthProviderProfile", flagAuthProviderProfile).
+		Bool("noPrompt", noPrompt).
+		Bool("saveConfig", saveConfig).
+		Msg("call: authEnvVars()")
 	commandConfig, _ = authEnvVars(flagConfigFile, flagProfile, saveConfig)
 
 	// check if commandConfig is empty
@@ -169,24 +176,33 @@ func initClient(
 	}
 
 	if !validConfigFileEntry(commandConfig, flagProfile) {
-		if !noPrompt {
-			// Auth user interactively
-			authConfigEntry := commandConfig.Servers[flagProfile]
-			commandConfig, _ = authInteractive(
-				authConfigEntry.Hostname,
-				authConfigEntry.Username,
-				authConfigEntry.Password,
-				authConfigEntry.Domain,
-				authConfigEntry.APIPath,
-				flagProfile,
-				false,
-				false,
-				flagConfigFile,
-			)
-		} else {
-			//log.Fatalf("[ERROR] auth config profile: %s", flagProfile)
-			log.Error().Str("flagProfile", flagProfile).Msg("invalid auth config profile")
-			return nil, fmt.Errorf("invalid auth config profile: %s", flagProfile)
+		commandConfigFile, _ := authConfigFile(flagConfigFile, flagProfile, "", noPrompt, false)
+		// add non empty entries from commandConfigFile to commandConfig
+		for k, v := range commandConfigFile.Servers {
+			if v.Hostname != "" || v.Username != "" || v.Password != "" || v.Domain != "" || v.APIPath != "" {
+				commandConfig.Servers[k] = v
+			}
+		}
+		if !validConfigFileEntry(commandConfig, flagProfile) {
+			if !noPrompt {
+				// Auth user interactively
+				authConfigEntry := commandConfig.Servers[flagProfile]
+				commandConfig, _ = authInteractive(
+					authConfigEntry.Hostname,
+					authConfigEntry.Username,
+					authConfigEntry.Password,
+					authConfigEntry.Domain,
+					authConfigEntry.APIPath,
+					flagProfile,
+					false,
+					false,
+					flagConfigFile,
+				)
+			} else {
+				//log.Fatalf("[ERROR] auth config profile: %s", flagProfile)
+				log.Error().Str("flagProfile", flagProfile).Msg("invalid auth config profile")
+				return nil, fmt.Errorf("invalid auth config profile: %s", flagProfile)
+			}
 		}
 	}
 

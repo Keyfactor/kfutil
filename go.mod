@@ -1,14 +1,14 @@
 module kfutil
 
-go 1.21
+go 1.22
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.2
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.4.0
 	github.com/Jeffail/gabs v1.4.0
-	github.com/Keyfactor/keyfactor-go-client-sdk v1.0.2
-	github.com/Keyfactor/keyfactor-go-client/v2 v2.2.10
+	github.com/Keyfactor/keyfactor-go-client-sdk v1.0.1
+	github.com/Keyfactor/keyfactor-go-client/v2 v2.2.10-rc.1
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/creack/pty v1.1.21
 	github.com/google/go-cmp v0.6.0
