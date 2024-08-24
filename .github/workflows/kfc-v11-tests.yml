@@ -29,8 +29,8 @@ jobs:
     needs:
       - build
     env:
-      SECRET_NAME: "command-config-1050-clean"
-      KEYFACTOR_HOSTNAME: "int1050-test-clean.kfdelivery.com"
+      SECRET_NAME: "command-config-1112-clean"
+      KEYFACTOR_HOSTNAME: "int1112-test-clean.kfdelivery.com"
       KEYFACTOR_DOMAIN: "command"
       KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
       KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
@@ -49,8 +49,8 @@ jobs:
       - build
       - Test_StoreTypes
     env:
-      SECRET_NAME: "command-config-1050"
-      KEYFACTOR_HOSTNAME: "integrations1050-lab.kfdelivery.com"
+      SECRET_NAME: "command-config-1112"
+      KEYFACTOR_HOSTNAME: "integrations1112-lab.kfdelivery.com"
       KEYFACTOR_DOMAIN: "command"
       KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
       KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
@@ -68,8 +68,8 @@ jobs:
 
       - Test_StoreTypes
     env:
-      SECRET_NAME: "command-config-1050"
-      KEYFACTOR_HOSTNAME: "integrations1050-lab.kfdelivery.com"
+      SECRET_NAME: "command-config-1112"
+      KEYFACTOR_HOSTNAME: "integrations1112-lab.kfdelivery.com"
       KEYFACTOR_DOMAIN: "command"
       KEYFACTOR_USERNAME: ${{ secrets.LAB_USERNAME }}
       KEYFACTOR_PASSWORD: ${{ secrets.LAB_PASSWORD }}
@@ -88,7 +88,7 @@ jobs:
     needs:
       - Test_PAM
     env:
-      SECRET_NAME: "command-config-1050-az"
+      SECRET_NAME: "command-config-1112-az"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
