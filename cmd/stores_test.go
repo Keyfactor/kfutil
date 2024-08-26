@@ -17,11 +17,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_Stores_HelpCmd(t *testing.T) {
@@ -51,11 +52,13 @@ func Test_Stores_HelpCmd(t *testing.T) {
 func Test_Stores_ListCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
-	testCmd.SetArgs([]string{"stores", "list", "--exp"})
-	output := captureOutput(func() {
-		err := testCmd.Execute()
-		assert.NoError(t, err)
-	})
+	testCmd.SetArgs([]string{"stores", "list"})
+	output := captureOutput(
+		func() {
+			err := testCmd.Execute()
+			assert.NoError(t, err)
+		},
+	)
 	var stores []interface{}
 	if err := json.Unmarshal([]byte(output), &stores); err != nil {
 		t.Fatalf("Error unmarshalling JSON: %v", err)
@@ -80,10 +83,12 @@ func Test_Stores_GetCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
 	testCmd.SetArgs([]string{"stores", "list", "--exp"})
-	output := captureOutput(func() {
-		err := testCmd.Execute()
-		assert.NoError(t, err)
-	})
+	output := captureOutput(
+		func() {
+			err := testCmd.Execute()
+			assert.NoError(t, err)
+		},
+	)
 	var stores []interface{}
 	if err := json.Unmarshal([]byte(output), &stores); err != nil {
 		t.Fatalf("Error unmarshalling JSON: %v", err)
@@ -102,10 +107,12 @@ func Test_Stores_GetCmd(t *testing.T) {
 			assert.NotEmpty(t, store.(map[string]interface{})["CertStoreType"])
 
 			testCmd.SetArgs([]string{"stores", "get", "--id", store.(map[string]interface{})["Id"].(string)})
-			output = captureOutput(func() {
-				err := testCmd.Execute()
-				assert.NoError(t, err)
-			})
+			output = captureOutput(
+				func() {
+					err := testCmd.Execute()
+					assert.NoError(t, err)
+				},
+			)
 
 			var store map[string]interface{}
 			if err := json.Unmarshal([]byte(output), &store); err != nil {
@@ -183,11 +190,24 @@ func Test_Stores_ImportCmd(t *testing.T) {
 
 		testCmd := RootCmd
 		// test
-		testCmd.SetArgs([]string{"stores", "import", "csv", "--file", outFileName, "--store-type-name", "k8ssecret", "--exp"})
-		output := captureOutput(func() {
-			err := testCmd.Execute()
-			assert.NoError(t, err)
-		})
+		testCmd.SetArgs(
+			[]string{
+				"stores",
+				"import",
+				"csv",
+				"--file",
+				outFileName,
+				"--store-type-name",
+				"k8ssecret",
+				"--exp",
+			},
+		)
+		output := captureOutput(
+			func() {
+				err := testCmd.Execute()
+				assert.NoError(t, err)
+			},
+		)
 
 		assert.Contains(t, output, "records processed")
 		assert.Contains(t, output, "results written to")
@@ -234,14 +254,16 @@ func Test_Stores_GenerateImportTemplateCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
 	testCmd.SetArgs([]string{"stores", "import", "generate-template", "--store-type-name", "k8ssecret"})
-	output := captureOutput(func() {
-		err := testCmd.Execute()
-		assert.NoError(t, err)
-		if err != nil {
-			t.Errorf("Error: %v", err)
-			return
-		}
-	})
+	output := captureOutput(
+		func() {
+			err := testCmd.Execute()
+			assert.NoError(t, err)
+			if err != nil {
+				t.Errorf("Error: %v", err)
+				return
+			}
+		},
+	)
 
 	assert.Contains(t, output, "Template file for store type with id")
 	assert.Contains(t, output, "csv")
@@ -312,105 +334,117 @@ func testExportStore(t *testing.T, storeTypeName string) (string, []string) {
 		files  []string
 		err    error
 	)
-	t.Run(fmt.Sprintf("Export Stores of type %s", storeTypeName), func(t *testing.T) {
-		testCmd := RootCmd
-		testCmd.SetArgs([]string{"stores", "export", "--store-type-name", storeTypeName})
-		output = captureOutput(func() {
-			err := testCmd.Execute()
-			assert.NoError(t, err)
-		})
+	t.Run(
+		fmt.Sprintf("Export Stores of type %s", storeTypeName), func(t *testing.T) {
+			testCmd := RootCmd
+			testCmd.SetArgs([]string{"stores", "export", "--store-type-name", storeTypeName})
+			output = captureOutput(
+				func() {
+					err := testCmd.Execute()
+					assert.NoError(t, err)
+				},
+			)
 
-		// assert that output is not empty
-		assert.NotEmpty(t, output)
+			// assert that output is not empty
+			assert.NotEmpty(t, output)
 
-		// assert that output is a string
-		assert.IsType(t, "", output)
+			// assert that output is a string
+			assert.IsType(t, "", output)
 
-		// assert that output does not contain 'error'
-		assert.NotContains(t, output, "error")
+			// assert that output does not contain 'error'
+			assert.NotContains(t, output, "error")
 
-		// assert that output does not contain 'Error'
-		assert.NotContains(t, output, "Error")
+			// assert that output does not contain 'Error'
+			assert.NotContains(t, output, "Error")
 
-		// assert that output does not contain 'ERROR'
-		assert.NotContains(t, output, "ERROR")
+			// assert that output does not contain 'ERROR'
+			assert.NotContains(t, output, "ERROR")
 
-		// assert that contains "exported for store type with id"
-		assert.Contains(t, output, "exported for store type with id")
+			// assert that contains "exported for store type with id"
+			assert.Contains(t, output, "exported for store type with id")
 
-		// assert that contains .csv
-		assert.Contains(t, output, ".csv")
+			// assert that contains .csv
+			assert.Contains(t, output, ".csv")
 
-		// assert that a csv file was created in current working directory with a filename that contains 'export_store_*.csv'
-		files, err = findMatchingFiles("*stores_export*.csv")
-		assert.Nil(t, err)
-		assert.NotEmpty(t, files)
-	})
+			// assert that a csv file was created in current working directory with a filename that contains 'export_store_*.csv'
+			files, err = findMatchingFiles("*stores_export*.csv")
+			assert.Nil(t, err)
+			assert.NotEmpty(t, files)
+		},
+	)
 	return output, files
 }
 
 func deleteStoreTest(t *testing.T, storeID string, allowFail bool) {
-	t.Run(fmt.Sprintf("Delete Store %s", storeID), func(t *testing.T) {
-		testCmd := RootCmd
-		testCmd.SetArgs([]string{"stores", "delete", "--id", storeID})
-		deleteStoreOutput := captureOutput(func() {
-			err := testCmd.Execute()
+	t.Run(
+		fmt.Sprintf("Delete Store %s", storeID), func(t *testing.T) {
+			testCmd := RootCmd
+			testCmd.SetArgs([]string{"stores", "delete", "--id", storeID})
+			deleteStoreOutput := captureOutput(
+				func() {
+					err := testCmd.Execute()
+					if !allowFail {
+						assert.NoError(t, err)
+					}
+				},
+			)
 			if !allowFail {
-				assert.NoError(t, err)
+				if strings.Contains(deleteStoreOutput, "does not exist") {
+					t.Errorf("Store %s does not exist", storeID)
+				}
+				if strings.Contains(deleteStoreOutput, "cannot be deleted") {
+					assert.Fail(t, fmt.Sprintf("Store %s already exists", storeID))
+				}
+				if strings.Contains(deleteStoreOutput, "error processing the request") {
+					assert.Fail(t, fmt.Sprintf("Store %s was not deleted: %s", storeID, deleteStoreOutput))
+				}
+				assert.Contains(t, deleteStoreOutput, "deleted")
+				assert.Contains(t, deleteStoreOutput, storeID)
 			}
-		})
-		if !allowFail {
-			if strings.Contains(deleteStoreOutput, "does not exist") {
-				t.Errorf("Store %s does not exist", storeID)
-			}
-			if strings.Contains(deleteStoreOutput, "cannot be deleted") {
-				assert.Fail(t, fmt.Sprintf("Store %s already exists", storeID))
-			}
-			if strings.Contains(deleteStoreOutput, "error processing the request") {
-				assert.Fail(t, fmt.Sprintf("Store %s was not deleted: %s", storeID, deleteStoreOutput))
-			}
-			assert.Contains(t, deleteStoreOutput, "deleted")
-			assert.Contains(t, deleteStoreOutput, storeID)
-		}
-	})
+		},
+	)
 }
 
 func testValidateCSVHeader(t *testing.T, filename string, header []string, expected []string) {
 	// iterate bulkStoreImportCSVHeader and verify that each header is in the csv header
-	t.Run(fmt.Sprintf("Validate CSV header %s", filename), func(t *testing.T) {
-		// Check that first col isn't empty
-		assert.NotEmpty(t, header[0], "First column of CSV is empty")
+	t.Run(
+		fmt.Sprintf("Validate CSV header %s", filename), func(t *testing.T) {
+			// Check that first col isn't empty
+			assert.NotEmpty(t, header[0], "First column of CSV is empty")
 
-		for _, h := range expected {
-			if h != "Properties" {
-				assert.Contains(t, header, h)
+			for _, h := range expected {
+				if h != "Properties" {
+					assert.Contains(t, header, h)
+				}
 			}
-		}
 
-		var props []string
-		for _, h := range header {
-			if strings.Contains(h, "Properties") {
-				props = append(props, h)
+			var props []string
+			for _, h := range header {
+				if strings.Contains(h, "Properties") {
+					props = append(props, h)
+				}
 			}
-		}
-		assert.NotEmpty(t, props)
-	})
+			assert.NotEmpty(t, props)
+		},
+	)
 }
 
 func testDeleteImportResults(t *testing.T, fileName string) {
 	// get filename from path
 	fName := filepath.Base(fileName)
-	t.Run(fmt.Sprintf("Deleting imported stores %s", fName), func(t *testing.T) {
-		csvData, err := csvToMap(fileName)
-		assert.NoError(t, err)
+	t.Run(
+		fmt.Sprintf("Deleting imported stores %s", fName), func(t *testing.T) {
+			csvData, err := csvToMap(fileName)
+			assert.NoError(t, err)
 
-		for _, row := range csvData {
-			// assert that each row has an ID
-			//assert.NotEmpty(t, row[""])
-			// delete store
-			if row["Id"] != "" && row["Id"] != "error" && row["Id"] != "Id" {
-				deleteStoreTest(t, row["Id"], false)
+			for _, row := range csvData {
+				// assert that each row has an ID
+				//assert.NotEmpty(t, row[""])
+				// delete store
+				if row["Id"] != "" && row["Id"] != "error" && row["Id"] != "Id" {
+					deleteStoreTest(t, row["Id"], false)
+				}
 			}
-		}
-	})
+		},
+	)
 }

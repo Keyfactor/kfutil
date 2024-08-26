@@ -21,17 +21,39 @@ import (
 )
 
 func captureOutput(f func()) string {
+	// Save the original os.Stdout
 	old := os.Stdout
+	// Create a pipe
 	r, w, _ := os.Pipe()
+	// Set os.Stdout to the write end of the pipe
 	os.Stdout = w
 
+	// Create a channel to signal when f() has completed
+	done := make(chan bool)
+
+	// Buffer to store the output
+	var buf bytes.Buffer
+
+	// Start a goroutine to copy from the read end of the pipe to the buffer
+	go func() {
+		io.Copy(&buf, r)
+		// Signal that the copying is done
+		done <- true
+	}()
+
+	// Run the provided function f
 	f()
 
+	// Close the write end of the pipe to signal EOF to the reader
 	w.Close()
+
+	// Wait for the goroutine to finish copying
+	<-done
+
+	// Restore the original os.Stdout
 	os.Stdout = old
 
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	// Return the captured output as a string
 	return buf.String()
 }
 
