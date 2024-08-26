@@ -339,6 +339,11 @@ func outputResult(result interface{}, format string) {
 	}
 
 	if format == "json" {
+		if jerr != nil {
+			output = fmt.Sprintf("{\"message\": \"%s\"}", result)
+			fmt.Println(output)
+			return
+		}
 		jsonOutput, err := json.MarshalIndent(output, "", "  ")
 		if err != nil {
 			//then output a { "message": "result" } json

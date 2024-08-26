@@ -18,10 +18,11 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // storesCmd represents the stores command
@@ -60,6 +61,11 @@ var storesListCmd = &cobra.Command{
 		if err != nil {
 			log.Error().Err(err).Send()
 			return err
+		}
+		if stores == nil || *stores == nil {
+			log.Info().Msg("No certificate stores found")
+			outputResult("No certificate stores found", outputFormat)
+			return nil
 		}
 		output, jErr := json.Marshal(stores)
 		if jErr != nil {
@@ -298,7 +304,13 @@ func init() {
 
 	// delete cmd
 	storesDeleteCmd.Flags().StringVarP(&storeID, "id", "i", "", "ID of the certificate store to delete.")
-	storesDeleteCmd.Flags().StringVarP(&inputFile, "file", "f", "", "The path to a CSV file containing the Ids of the stores to delete.")
+	storesDeleteCmd.Flags().StringVarP(
+		&inputFile,
+		"file",
+		"f",
+		"",
+		"The path to a CSV file containing the Ids of the stores to delete.",
+	)
 	storesDeleteCmd.Flags().BoolVarP(&deleteAll, "all", "a", false, "Attempt to delete ALL stores.")
 	storesDeleteCmd.MarkFlagsMutuallyExclusive("id", "all")
 
