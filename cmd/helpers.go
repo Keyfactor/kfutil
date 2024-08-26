@@ -19,16 +19,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
 )
 
 func boolToPointer(b bool) *bool {
@@ -328,11 +329,31 @@ func outputError(err error, isFatal bool, format string) {
 }
 
 func outputResult(result interface{}, format string) {
-	if format == "json" {
-		fmt.Println(result)
-	} else {
-		fmt.Println(fmt.Sprintf("%s", result))
+	output := fmt.Sprintf("%s", result)
+
+	// test if output is a JSON string
+	var jsonMap map[string]interface{}
+	jerr := json.Unmarshal([]byte(output), &jsonMap)
+	if jerr == nil {
+		format = "json"
 	}
+
+	if format == "json" {
+		jsonOutput, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			//then output a { "message": "result" } json
+			output = fmt.Sprintf("{\"message\": \"%s\"}", result)
+			fmt.Println(output)
+			return
+		}
+		output = fmt.Sprintf("%s", jsonOutput)
+		fmt.Println(output)
+		return
+	}
+
+	fmt.Println(output)
+	return
+
 }
 
 func readCSVHeader(filename string) ([]string, error) {

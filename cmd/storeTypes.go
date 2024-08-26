@@ -120,11 +120,11 @@ var storesTypeCreateCmd = &cobra.Command{
 		if storeTypeConfigFile != "" {
 			createdStore, err := createStoreFromFile(storeTypeConfigFile, kfClient)
 			if err != nil {
-				fmt.Printf("Failed to create store type from file \"%s\"", err)
+				log.Error().Err(err).Msg("unable to create store type from file")
 				return err
 			}
 
-			fmt.Printf("Created store type called \"%s\"\n", createdStore.Name)
+			outputResult(fmt.Sprintf("Created store type called \"%s\"", createdStore.Name), outputFormat)
 			return nil
 		}
 
@@ -362,7 +362,7 @@ var fetchStoreTypesCmd = &cobra.Command{
 			log.Error().Err(jErr).Msg("unable to marshal store types to JSON")
 			return jErr
 		}
-		fmt.Println(string(output))
+		outputResult(output, outputFormat)
 		return nil
 	},
 }
@@ -450,8 +450,7 @@ func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
 func getValidStoreTypes(fp string, gitRef string) []string {
 	validStoreTypes, rErr := readStoreTypesConfig(fp, gitRef)
 	if rErr != nil {
-		log.Printf("Error: %s", rErr)
-		fmt.Printf("Error: %s\n", rErr)
+		log.Error().Err(rErr).Msg("unable to read store types")
 		return nil
 	}
 	validStoreTypesList := make([]string, 0, len(validStoreTypes))
