@@ -15,17 +15,22 @@
 package cmd
 
 import (
+	_ "embed"
 	"fmt"
+	"io"
+	stdlog "log"
+	"os"
+
 	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 	"golang.org/x/crypto/bcrypt"
-	"io"
-	stdlog "log"
-	"os"
 )
+
+//go:embed store_types.json
+var EmbeddedStoreTypesJSON []byte
 
 var (
 	configFile      string
@@ -63,7 +68,15 @@ func hashSecretValue(secretValue string) string {
 	return string(hashedPassword)
 }
 
-func initClient(flagConfigFile string, flagProfile string, flagAuthProviderType string, flagAuthProviderProfile string, noPrompt bool, authConfig *api.AuthConfig, saveConfig bool) (*api.Client, error) {
+func initClient(
+	flagConfigFile string,
+	flagProfile string,
+	flagAuthProviderType string,
+	flagAuthProviderProfile string,
+	noPrompt bool,
+	authConfig *api.AuthConfig,
+	saveConfig bool,
+) (*api.Client, error) {
 	log.Debug().Msg("Enter initClient()")
 	var clientAuth api.AuthConfig
 	var commandConfig ConfigurationFile
@@ -163,7 +176,17 @@ func initClient(flagConfigFile string, flagProfile string, flagAuthProviderType 
 		if !noPrompt {
 			// Auth user interactively
 			authConfigEntry := commandConfig.Servers[flagProfile]
-			commandConfig, _ = authInteractive(authConfigEntry.Hostname, authConfigEntry.Username, authConfigEntry.Password, authConfigEntry.Domain, authConfigEntry.APIPath, flagProfile, false, false, flagConfigFile)
+			commandConfig, _ = authInteractive(
+				authConfigEntry.Hostname,
+				authConfigEntry.Username,
+				authConfigEntry.Password,
+				authConfigEntry.Domain,
+				authConfigEntry.APIPath,
+				flagProfile,
+				false,
+				false,
+				flagConfigFile,
+			)
 		} else {
 			//log.Fatalf("[ERROR] auth config profile: %s", flagProfile)
 			log.Error().Str("flagProfile", flagProfile).Msg("invalid auth config profile")
@@ -198,7 +221,13 @@ func initClient(flagConfigFile string, flagProfile string, flagAuthProviderType 
 	return c, nil
 }
 
-func initGenClient(flagConfig string, flagProfile string, noPrompt bool, authConfig *api.AuthConfig, saveConfig bool) (*keyfactor.APIClient, error) {
+func initGenClient(
+	flagConfig string,
+	flagProfile string,
+	noPrompt bool,
+	authConfig *api.AuthConfig,
+	saveConfig bool,
+) (*keyfactor.APIClient, error) {
 	var commandConfig ConfigurationFile
 
 	if providerType != "" {
@@ -246,7 +275,17 @@ func initGenClient(flagConfig string, flagProfile string, noPrompt bool, authCon
 		if !noPrompt {
 			// Auth user interactively
 			authConfigEntry := commandConfig.Servers[flagProfile]
-			commandConfig, _ = authInteractive(authConfigEntry.Hostname, authConfigEntry.Username, authConfigEntry.Password, authConfigEntry.Domain, authConfigEntry.APIPath, flagProfile, false, false, flagConfig)
+			commandConfig, _ = authInteractive(
+				authConfigEntry.Hostname,
+				authConfigEntry.Username,
+				authConfigEntry.Password,
+				authConfigEntry.Domain,
+				authConfigEntry.APIPath,
+				flagProfile,
+				false,
+				false,
+				flagConfig,
+			)
 		} else {
 			//log.Fatalf("[ERROR] auth config profile: %s", flagProfile)
 			log.Error().Str("flagProfile", flagProfile).Msg("invalid auth config profile")
@@ -306,24 +345,92 @@ func init() {
 
 	defaultConfigPath := fmt.Sprintf("$HOME/.keyfactor/%s", DefaultConfigFileName)
 
-	RootCmd.PersistentFlags().StringVarP(&configFile, "config", "", "", fmt.Sprintf("Full path to config file in JSON format. (default is %s)", defaultConfigPath))
-	RootCmd.PersistentFlags().BoolVar(&noPrompt, "no-prompt", false, "Do not prompt for any user input and assume defaults or environmental variables are set.")
-	RootCmd.PersistentFlags().BoolVar(&expEnabled, "exp", false, "Enable expEnabled features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)")
+	RootCmd.PersistentFlags().StringVarP(
+		&configFile,
+		"config",
+		"",
+		"",
+		fmt.Sprintf("Full path to config file in JSON format. (default is %s)", defaultConfigPath),
+	)
+	RootCmd.PersistentFlags().BoolVar(
+		&noPrompt,
+		"no-prompt",
+		false,
+		"Do not prompt for any user input and assume defaults or environmental variables are set.",
+	)
+	RootCmd.PersistentFlags().BoolVar(
+		&expEnabled,
+		"exp",
+		false,
+		"Enable expEnabled features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)",
+	)
 	RootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Enable debugFlag logging.")
-	RootCmd.PersistentFlags().BoolVar(&logInsecure, "log-insecure", false, "Log insecure API requests. (USE AT YOUR OWN RISK, this WILL log sensitive information to the console.)")
-	RootCmd.PersistentFlags().StringVarP(&profile, "profile", "", "", "Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.")
-	RootCmd.PersistentFlags().StringVar(&outputFormat, "format", "text", "How to format the CLI output. Currently only `text` is supported.")
+	RootCmd.PersistentFlags().BoolVar(
+		&logInsecure,
+		"log-insecure",
+		false,
+		"Log insecure API requests. (USE AT YOUR OWN RISK, this WILL log sensitive information to the console.)",
+	)
+	RootCmd.PersistentFlags().StringVarP(
+		&profile,
+		"profile",
+		"",
+		"",
+		"Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.",
+	)
+	RootCmd.PersistentFlags().StringVar(
+		&outputFormat,
+		"format",
+		"text",
+		"How to format the CLI output. Currently only `text` is supported.",
+	)
 
 	RootCmd.PersistentFlags().StringVar(&providerType, "auth-provider-type", "", "Provider type choices: (azid)")
 	// Validating the provider-type flag against the predefined choices
 	RootCmd.PersistentFlags().SetAnnotation("auth-provider-type", cobra.BashCompCustom, ProviderTypeChoices)
-	RootCmd.PersistentFlags().StringVarP(&providerProfile, "auth-provider-profile", "", "default", "The profile to use defined in the securely stored config. If not specified the config named 'default' will be used if it exists.")
+	RootCmd.PersistentFlags().StringVarP(
+		&providerProfile,
+		"auth-provider-profile",
+		"",
+		"default",
+		"The profile to use defined in the securely stored config. If not specified the config named 'default' will be used if it exists.",
+	)
 
-	RootCmd.PersistentFlags().StringVarP(&kfcUsername, "username", "", "", "Username to use for authenticating to Keyfactor Command.")
-	RootCmd.PersistentFlags().StringVarP(&kfcHostName, "hostname", "", "", "Hostname to use for authenticating to Keyfactor Command.")
-	RootCmd.PersistentFlags().StringVarP(&kfcPassword, "password", "", "", "Password to use for authenticating to Keyfactor Command. WARNING: Remember to delete your console history if providing kfcPassword here in plain text.")
-	RootCmd.PersistentFlags().StringVarP(&kfcDomain, "domain", "", "", "Domain to use for authenticating to Keyfactor Command.")
-	RootCmd.PersistentFlags().StringVarP(&kfcAPIPath, "api-path", "", "KeyfactorAPI", "API Path to use for authenticating to Keyfactor Command. (default is KeyfactorAPI)")
+	RootCmd.PersistentFlags().StringVarP(
+		&kfcUsername,
+		"username",
+		"",
+		"",
+		"Username to use for authenticating to Keyfactor Command.",
+	)
+	RootCmd.PersistentFlags().StringVarP(
+		&kfcHostName,
+		"hostname",
+		"",
+		"",
+		"Hostname to use for authenticating to Keyfactor Command.",
+	)
+	RootCmd.PersistentFlags().StringVarP(
+		&kfcPassword,
+		"password",
+		"",
+		"",
+		"Password to use for authenticating to Keyfactor Command. WARNING: Remember to delete your console history if providing kfcPassword here in plain text.",
+	)
+	RootCmd.PersistentFlags().StringVarP(
+		&kfcDomain,
+		"domain",
+		"",
+		"",
+		"Domain to use for authenticating to Keyfactor Command.",
+	)
+	RootCmd.PersistentFlags().StringVarP(
+		&kfcAPIPath,
+		"api-path",
+		"",
+		"KeyfactorAPI",
+		"API Path to use for authenticating to Keyfactor Command. (default is KeyfactorAPI)",
+	)
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
