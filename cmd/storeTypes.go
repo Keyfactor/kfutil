@@ -17,15 +17,16 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/AlecAivazis/survey/v2"
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"io"
 	"net/http"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
 )
 
 var storeTypesCmd = &cobra.Command{
@@ -102,6 +103,14 @@ var storesTypeCreateCmd = &cobra.Command{
 		}
 		storeTypeIsValid := false
 
+		log.Debug().Str("storeType", storeType).
+			Bool("listTypes", listTypes).
+			Str("storeTypeConfigFile", storeTypeConfigFile).
+			Bool("creatAll", creatAll).
+			Str("gitRef", gitRef).
+			Strs("validStoreTypes", validStoreTypes).
+			Msg("create command flags")
+
 		if listTypes {
 			fmt.Println("Available store types:")
 			sort.Strings(validStoreTypes)
@@ -138,12 +147,16 @@ var storesTypeCreateCmd = &cobra.Command{
 		}
 		for _, v := range validStoreTypes {
 			if strings.EqualFold(v, strings.ToUpper(storeType)) || creatAll {
-				log.Printf("[DEBUG] Valid store type: %s", storeType)
+				log.Debug().Str("storeType", storeType).Msg("Store type is valid")
 				storeTypeIsValid = true
 				break
 			}
 		}
 		if !storeTypeIsValid {
+			log.Error().
+				Str("storeType", storeType).
+				Bool("isValid", storeTypeIsValid).
+				Msg("Invalid store type")
 			fmt.Printf("ERROR: Invalid store type: %s\nValid types are:\n", storeType)
 			for _, st := range validStoreTypes {
 				fmt.Println(fmt.Sprintf("\t%s", st))
@@ -292,7 +305,10 @@ var storesTypeDeleteCmd = &cobra.Command{
 			}
 
 			if dryRun {
-				outputResult(fmt.Sprintf("dry run delete called on certificate store type (%v) with ID: %d", st, id), outputFormat)
+				outputResult(
+					fmt.Sprintf("dry run delete called on certificate store type (%v) with ID: %d", st, id),
+					outputFormat,
+				)
 			} else {
 				log.Debug().Interface("storeType", st).
 					Int("id", id).
@@ -410,7 +426,12 @@ func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfutil/main/store_types.json")
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfctl/master/storetypes/storetypes.json")
 
-	resp, rErr := http.Get(fmt.Sprintf("https://raw.githubusercontent.com/Keyfactor/kfutil/%s/store_types.json", gitRef))
+	resp, rErr := http.Get(
+		fmt.Sprintf(
+			"https://raw.githubusercontent.com/Keyfactor/kfutil/%s/store_types.json",
+			gitRef,
+		),
+	)
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -489,7 +510,13 @@ func init() {
 
 	// GET store type templates
 	storeTypesCmd.AddCommand(fetchStoreTypesCmd)
-	fetchStoreTypesCmd.Flags().StringVarP(&gitRef, FlagGitRef, "b", "main", "The git branch or tag to reference when pulling store-types from the internet.")
+	fetchStoreTypesCmd.Flags().StringVarP(
+		&gitRef,
+		FlagGitRef,
+		"b",
+		"main",
+		"The git branch or tag to reference when pulling store-types from the internet.",
+	)
 
 	// LIST command
 	storeTypesCmd.AddCommand(storesTypesListCmd)
@@ -504,10 +531,28 @@ func init() {
 	var storeTypeName string
 	var storeTypeID int
 	storeTypesCmd.AddCommand(storesTypeCreateCmd)
-	storesTypeCreateCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Short name of the certificate store type to get. Valid choices are: "+validTypesString)
+	storesTypeCreateCmd.Flags().StringVarP(
+		&storeTypeName,
+		"name",
+		"n",
+		"",
+		"Short name of the certificate store type to get. Valid choices are: "+validTypesString,
+	)
 	storesTypeCreateCmd.Flags().BoolVarP(&listValidStoreTypes, "list", "l", false, "List valid store types.")
-	storesTypeCreateCmd.Flags().StringVarP(&filePath, "from-file", "f", "", "Path to a JSON file containing certificate store type data for a single store.")
-	storesTypeCreateCmd.Flags().StringVarP(&gitRef, FlagGitRef, "b", "main", "The git branch or tag to reference when pulling store-types from the internet.")
+	storesTypeCreateCmd.Flags().StringVarP(
+		&filePath,
+		"from-file",
+		"f",
+		"",
+		"Path to a JSON file containing certificate store type data for a single store.",
+	)
+	storesTypeCreateCmd.Flags().StringVarP(
+		&gitRef,
+		FlagGitRef,
+		"b",
+		"main",
+		"The git branch or tag to reference when pulling store-types from the internet.",
+	)
 	storesTypeCreateCmd.Flags().BoolVarP(&createAll, "all", "a", false, "Create all store types.")
 
 	// UPDATE command
@@ -519,7 +564,13 @@ func init() {
 	var dryRun bool
 	storeTypesCmd.AddCommand(storesTypeDeleteCmd)
 	storesTypeDeleteCmd.Flags().IntVarP(&storeTypeID, "id", "i", -1, "ID of the certificate store type to delete.")
-	storesTypeDeleteCmd.Flags().StringVarP(&storeTypeName, "name", "n", "", "Name of the certificate store type to delete.")
+	storesTypeDeleteCmd.Flags().StringVarP(
+		&storeTypeName,
+		"name",
+		"n",
+		"",
+		"Name of the certificate store type to delete.",
+	)
 	storesTypeDeleteCmd.Flags().BoolVarP(&dryRun, "dry-run", "t", false, "Specifies whether to perform a dry run.")
 	storesTypeDeleteCmd.MarkFlagsMutuallyExclusive("id", "name")
 	storesTypeDeleteCmd.Flags().BoolVarP(&deleteAll, "all", "a", false, "Delete all store types.")
