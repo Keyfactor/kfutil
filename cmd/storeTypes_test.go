@@ -17,6 +17,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -161,7 +162,9 @@ func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 	if isGhAction == "true" {
 		ghBranch := os.Getenv("GITHUB_REF")
 		ghBranch = strings.Replace(ghBranch, "refs/heads/", "", 1)
-		testArgs = append(testArgs, "--git-ref", ghBranch)
+		// url escape the branch name
+		ghBranch = url.QueryEscape(ghBranch)
+		testArgs = append(testArgs, "--git-ref", fmt.Sprintf("'%s'", ghBranch))
 		t.Log("GITHUB_REF: ", ghBranch)
 	}
 	t.Log("testArgs: ", testArgs)
