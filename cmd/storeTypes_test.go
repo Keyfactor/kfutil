@@ -230,13 +230,15 @@ func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 
 					if err != nil {
 						eMsg := err.Error()
+						eMsg = strings.Replace(eMsg, "while creating store types:", "", -1)
 						for _, exception := range UndeleteableExceptions {
 							eMsg = strings.Replace(eMsg, exception, "", -1)
 						}
+						eMsg = strings.TrimSpace(eMsg)
 						if eMsg == "" {
 							return
 						}
-						t.Error(eMsg)
+						t.Error("Emsg: ", eMsg)
 						assert.NoError(t, err)
 					}
 					assert.NoError(t, err)
