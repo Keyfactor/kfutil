@@ -103,19 +103,41 @@ definition JSON file.
 1. From an online machine download the latest version of [kfutil](https://github.com/Keyfactor/kfutil/releases/latest)
 2. Download the `integration-manifest.json` from
    the [Keyfactor Universal Orchestrator extension](https://github.com/Keyfactor/bosch-ipcamera-orchestrator/blob/main/integration-manifest.json)
-   , or use `store-types templates-fetch` to get the latest templates from GitHub.
-
+   , or use `store-types templates-fetch` to get the latest templates from GitHub.  
+BASH:
 ```bash
 kfutil store-types templates-fetch | jq -r ."BIPCamera" > "BIPCamera.json"
+```
+PowerShell:
+```powershell
+$kfutilResult = kfutil store-types templates-fetch
+$parsedJson = $kfutilResult | ConvertFrom-Json
+$parsedJson.BIPCamera | ConvertTo-Json | Set-Content -Path "BIPCamera.json"
 ```
 
 3. Copy the `kfutil` and `integration-manifest.json`/`BIPCamera.json` files to an offline machine.
 4. If using Pull the store type definition from the `integration-manifest.json` file either manually or using
 
+BASH:
 ```bash
 jq --arg shortname \
   "BIPCamera" '.about.orchestrator.store_types[] | select(.ShortName == BIPCamera)' \
   integration-manifest.json > "BIPCamera.json" 
+```
+
+PowerShell:
+```powershell
+# Read the JSON content from the file
+$jsonContent = Get-Content -Path "integration-manifest.json" -Raw | ConvertFrom-Json
+
+# Define the short name
+$shortName = "BIPCamera"
+
+# Filter the JSON data based on the condition
+$filteredResult = $jsonContent.about.orchestrator.store_types | Where-Object { $_.ShortName -eq $shortName }
+
+# Convert the filtered result back to JSON and save it to a file
+$filteredResult | ConvertTo-Json -Depth 10 | Set-Content -Path "BIPCamera.json"
 ```
 
 5. Create the store type using the `kfutil store-types create --from-file BIPCamera.json` command.
