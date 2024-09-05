@@ -227,7 +227,7 @@ func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 			output := captureOutput(
 				func() {
 					err := testCmd.Execute()
-					assert.NoError(t, err)
+
 					if err != nil {
 						eMsg := err.Error()
 						for _, exception := range UndeleteableExceptions {
@@ -239,6 +239,7 @@ func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 						t.Error(eMsg)
 						assert.NoError(t, err)
 					}
+					assert.NoError(t, err)
 				},
 			)
 			assert.NotNil(t, output, "No output returned from create all command")
