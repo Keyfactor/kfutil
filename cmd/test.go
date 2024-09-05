@@ -16,8 +16,11 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"io"
 	"os"
+	"regexp"
 )
 
 func captureOutput(f func()) string {
@@ -94,4 +97,26 @@ func getTestEnv() (testEnv, error) {
 
 	return testEnv, nil
 
+}
+
+// findLastJSON attempts to find the last valid JSON object or array in a string.
+func findLastJSON(input string) (string, error) {
+	// Regular expression to match JSON objects and arrays
+	// This regex looks for the most complex JSON objects and arrays, allowing nested structures
+	re := regexp.MustCompile(`(\{(?:[^{}]*|\{[^{}]*\})*\}|\[(?:[^\[\]]*|\[[^\[\]]*\])*\])`)
+	matches := re.FindAllString(input, -1)
+
+	// If no match is found, return an empty string
+	if len(matches) == 0 {
+		return "", errors.New("no JSON object or array found")
+	}
+
+	// Validate that the last match is a valid JSON object or array
+	lastMatch := matches[len(matches)-1]
+	var js json.RawMessage
+	if err := json.Unmarshal([]byte(lastMatch), &js); err != nil {
+		return "", errors.New("invalid JSON object or array found")
+	}
+
+	return lastMatch, nil
 }
