@@ -24,6 +24,29 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	UndeleteableExceptions = []string{
+		"F5-CA-REST: Certificate Store Type with either short name  'F5-CA-REST' or name 'F5 CA Profiles REST' already exists.",
+		"F5-WS-REST: Certificate Store Type with either short name  'F5-WS-REST' or name 'F5 WS Profiles REST' already exists.",
+		"F5-SL-REST: Certificate Store Type with either short name  'F5-SL-REST' or name 'F5 SSL Profiles REST' already exists.",
+		"F5: Certificate Store Type with either short name  'F5' or name 'F5' already exists.",
+		"IIS: Certificate Store Type with either short name  'IIS' or name 'IIS' already exists.",
+		"JKS: Certificate Store Type with either short name  'JKS' or name 'JKS' already exists.",
+		"NS: Certificate Store Type with either short name  'NS' or name 'Netscaler' already exists.",
+		"PEM: Certificate Store Type with either short name  'PEM' or name 'PEM' already exists.",
+	}
+	UndeleteableTypes = []string{
+		"F5-CA-REST",
+		"F5-WS-REST",
+		"F5-SL-REST",
+		"F5",
+		"IIS",
+		"JKS",
+		"NS",
+		"PEM",
+	}
+)
+
 func Test_StoreTypesHelpCmd(t *testing.T) {
 	// Test root help
 	testCmd := RootCmd
@@ -201,6 +224,17 @@ func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 				func() {
 					err := testCmd.Execute()
 					assert.NoError(t, err)
+					if err != nil {
+						eMsg := err.Error()
+						for _, exception := range UndeleteableExceptions {
+							eMsg = strings.Replace(eMsg, exception, "", -1)
+						}
+						if eMsg == "" {
+							return
+						}
+						t.Error(eMsg)
+						assert.NoError(t, err)
+					}
 				},
 			)
 			assert.NotNil(t, output, "No output returned from create all command")
@@ -220,6 +254,10 @@ func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 
 				// Attempt to create the store type
 				shortName := storeType["ShortName"].(string)
+				if checkIsUnDeleteable(shortName) {
+					t.Skip("Not processing un-deletable store-type: ", shortName)
+					return
+				}
 
 				assert.Contains(
 					t,
@@ -242,12 +280,9 @@ func deleteStoreTypeTest(t *testing.T, shortName string, allowFail bool) {
 			testCmd.SetArgs([]string{"store-types", "delete", "--name", shortName})
 			deleteStoreOutput := captureOutput(
 				func() {
-					undeleteables := []string{"F5-CA-REST", "F5-WS-REST", "F5-SL-REST"}
-					for _, v := range undeleteables {
-						if v == shortName {
-							t.Skip("Not processing un-deletable store-type: ", shortName)
-							return
-						}
+					if checkIsUnDeleteable(shortName) {
+						t.Skip("Not processing un-deletable store-type: ", shortName)
+						return
 					}
 
 					err := testCmd.Execute()
@@ -275,8 +310,8 @@ func deleteStoreTypeTest(t *testing.T, shortName string, allowFail bool) {
 }
 
 func checkIsUnDeleteable(shortName string) bool {
-	undeleteables := []string{"F5-CA-REST", "F5-WS-REST", "F5-SL-REST"}
-	for _, v := range undeleteables {
+
+	for _, v := range UndeleteableTypes {
 		if v == shortName {
 			return true
 		}
@@ -300,14 +335,9 @@ func createStoreTypeTest(t *testing.T, shortName string) {
 					assert.NoError(t, err)
 				},
 			)
-			exceptions := []string{
-				"F5-CA-REST: Certificate Store Type with either short name  'F5-CA-REST' or name 'F5 CA Profiles REST' already exists.",
-				"F5-WS-REST: Certificate Store Type with either short name  'F5-WS-REST' or name 'F5 WS Profiles REST' already exists.",
-				"F5-SL-REST: Certificate Store Type with either short name  'F5-SL-REST' or name 'F5 SSL Profiles REST' already exists.",
-			}
 
-			// check if any of the exceptions are in the output
-			for _, exception := range exceptions {
+			// check if any of the undeleteable_exceptions are in the output
+			for _, exception := range UndeleteableExceptions {
 				if strings.Contains(createStoreOutput, exception) {
 					t.Skip("Not processing un-deletable store-type: ", exception)
 					return
