@@ -15,6 +15,8 @@
 package main
 
 import (
+	_ "embed"
+
 	"kfutil/cmd"
 )
 
@@ -26,5 +28,6 @@ func main() {
 	//	docs()
 	//	os.Exit(0)
 	//}
+
 	cmd.Execute()
 }
