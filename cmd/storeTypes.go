@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,6 +29,9 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
+
+//go:embed store_types.json
+var EmbeddedStoreTypesJSON []byte
 
 var storeTypesCmd = &cobra.Command{
 	Use:   "store-types",

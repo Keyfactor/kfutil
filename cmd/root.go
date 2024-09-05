@@ -29,9 +29,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-//go:embed store_types.json
-var EmbeddedStoreTypesJSON []byte
-
 var (
 	configFile      string
 	profile         string
