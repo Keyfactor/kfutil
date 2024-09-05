@@ -430,12 +430,16 @@ func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfutil/main/store_types.json")
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfctl/master/storetypes/storetypes.json")
 
-	resp, rErr := http.Get(
-		fmt.Sprintf(
-			"https://raw.githubusercontent.com/Keyfactor/kfutil/%s/store_types.json",
-			gitRef,
-		),
-	)
+	baseUrl := "https://raw.githubusercontent.com/Keyfactor/kfutil/%s/store_types.json"
+	if gitRef == "" {
+		gitRef = "main"
+	}
+	url := fmt.Sprintf(baseUrl, gitRef)
+	log.Debug().
+		Str("url", url).
+		Msg("Getting store types from internet")
+
+	resp, rErr := http.Get(url)
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -483,6 +487,15 @@ func getValidStoreTypes(fp string, gitRef string) []string {
 }
 
 func readStoreTypesConfig(fp string, gitRef string) (map[string]interface{}, error) {
+	log.Debug().
+		Str("file", fp).
+		Str("gitRef", gitRef).
+		Msg(fmt.Sprintf(DebugFuncEnter, "readStoreTypesConfig"))
+
+	log.Debug().
+		Str("file", fp).
+		Str("gitRef", gitRef).
+		Msg(fmt.Sprintf(DebugFuncCall, "getStoreTypesInternet"))
 	sTypes, stErr := getStoreTypesInternet(gitRef)
 	if stErr != nil {
 		log.Error().Err(stErr).Msg("unable to read store types from internet, attempting to reference embedded definitions")
