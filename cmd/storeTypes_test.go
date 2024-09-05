@@ -242,6 +242,14 @@ func deleteStoreTypeTest(t *testing.T, shortName string, allowFail bool) {
 			testCmd.SetArgs([]string{"store-types", "delete", "--name", shortName})
 			deleteStoreOutput := captureOutput(
 				func() {
+					undeleteables := []string{"F5-CA-REST", "F5-WS-REST", "F5-SL-REST"}
+					for _, v := range undeleteables {
+						if v == shortName {
+							t.Skip("Not processing un-deletable store-type: ", shortName)
+							return
+						}
+					}
+
 					err := testCmd.Execute()
 					if !allowFail {
 						assert.NoError(t, err)
@@ -266,10 +274,24 @@ func deleteStoreTypeTest(t *testing.T, shortName string, allowFail bool) {
 	)
 }
 
+func checkIsUnDeleteable(shortName string) bool {
+	undeleteables := []string{"F5-CA-REST", "F5-WS-REST", "F5-SL-REST"}
+	for _, v := range undeleteables {
+		if v == shortName {
+			return true
+		}
+	}
+	return false
+}
+
 func createStoreTypeTest(t *testing.T, shortName string) {
 	t.Run(
 		fmt.Sprintf("CreateStore %s", shortName), func(t *testing.T) {
 			testCmd := RootCmd
+			if checkIsUnDeleteable(shortName) {
+				t.Skip("Not processing un-deletable store-type: ", shortName)
+				return
+			}
 			deleteStoreTypeTest(t, shortName, true)
 			testCmd.SetArgs([]string{"store-types", "create", "--name", shortName})
 			createStoreOutput := captureOutput(
@@ -278,6 +300,19 @@ func createStoreTypeTest(t *testing.T, shortName string) {
 					assert.NoError(t, err)
 				},
 			)
+			exceptions := []string{
+				"F5-CA-REST: Certificate Store Type with either short name  'F5-CA-REST' or name 'F5 CA Profiles REST' already exists.",
+				"F5-WS-REST: Certificate Store Type with either short name  'F5-WS-REST' or name 'F5 WS Profiles REST' already exists.",
+				"F5-SL-REST: Certificate Store Type with either short name  'F5-SL-REST' or name 'F5 SSL Profiles REST' already exists.",
+			}
+
+			// check if any of the exceptions are in the output
+			for _, exception := range exceptions {
+				if strings.Contains(createStoreOutput, exception) {
+					t.Skip("Not processing un-deletable store-type: ", exception)
+					return
+				}
+			}
 
 			if strings.Contains(createStoreOutput, "already exists") {
 				assert.Fail(t, fmt.Sprintf("Store type %s already exists", shortName))
