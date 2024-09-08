@@ -221,7 +221,7 @@ func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 				t.Log("GITHUB_REF: ", ghBranch)
 			}
 			t.Log("testArgs: ", testArgs)
-
+			allowFail := false
 			// Attempt to get the AWS store type because it comes with the product
 			testCmd.SetArgs(testArgs)
 			output := captureOutput(
@@ -239,12 +239,19 @@ func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 							return
 						}
 						t.Error("Emsg: ", eMsg)
+						if !allowFail {
+							assert.NoError(t, err)
+						}
+					}
+					if !allowFail {
 						assert.NoError(t, err)
 					}
-					assert.NoError(t, err)
 				},
 			)
-			assert.NotNil(t, output, "No output returned from create all command")
+
+			if !allowFail {
+				assert.NotNil(t, output, "No output returned from create all command")
+			}
 
 			// iterate over the store types and verify that each has a name shortname and storetype
 			for sType := range storeTypes {
@@ -261,20 +268,23 @@ func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 
 				// Attempt to create the store type
 				shortName := storeType["ShortName"].(string)
+				allowStoreTypeFail := false
 				if checkIsUnDeleteable(shortName) {
-					t.Skip("Not processing un-deletable store-type: ", shortName)
-					return
+					t.Logf("WARNING: Skipping check for un-deletable store-type: %s", shortName)
+					allowStoreTypeFail = true
 				}
 
-				assert.Contains(
-					t,
-					output,
-					fmt.Sprintf("Certificate store type %s created with ID", shortName),
-					"Expected output to contain store type created message",
-				)
+				if !allowStoreTypeFail {
+					assert.Contains(
+						t,
+						output,
+						fmt.Sprintf("Certificate store type %s created with ID", shortName),
+						"Expected output to contain store type created message",
+					)
+				}
 
 				// Delete again after create
-				deleteStoreTypeTest(t, shortName, true)
+				deleteStoreTypeTest(t, shortName, allowStoreTypeFail)
 			}
 		},
 	)
