@@ -199,7 +199,7 @@ func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 
 		// Attempt to create the store type
 		shortName := storeType["ShortName"].(string)
-		createStoreTypeTest(t, shortName)
+		createStoreTypeTest(t, shortName, false)
 	}
 	createAllStoreTypes(t, storeTypes)
 }
@@ -288,8 +288,9 @@ func deleteStoreTypeTest(t *testing.T, shortName string, allowFail bool) {
 			deleteStoreOutput := captureOutput(
 				func() {
 					if checkIsUnDeleteable(shortName) {
-						t.Skip("Not processing un-deletable store-type: ", shortName)
-						return
+						allowFail = true
+						//t.Skip("Not processing un-deletable store-type: ", shortName)
+						//return
 					}
 
 					err := testCmd.Execute()
@@ -326,38 +327,45 @@ func checkIsUnDeleteable(shortName string) bool {
 	return false
 }
 
-func createStoreTypeTest(t *testing.T, shortName string) {
+func createStoreTypeTest(t *testing.T, shortName string, allowFail bool) {
 	t.Run(
 		fmt.Sprintf("CreateStore %s", shortName), func(t *testing.T) {
 			testCmd := RootCmd
 			if checkIsUnDeleteable(shortName) {
-				t.Skip("Not processing un-deletable store-type: ", shortName)
-				return
+				t.Logf("WARNING: Allowing un-deletable store-type: %s to FAIL", shortName)
+				allowFail = true
 			}
 			deleteStoreTypeTest(t, shortName, true)
 			testCmd.SetArgs([]string{"store-types", "create", "--name", shortName})
 			createStoreOutput := captureOutput(
 				func() {
 					err := testCmd.Execute()
-					assert.NoError(t, err)
+					if !allowFail {
+						assert.NoError(t, err)
+					}
 				},
 			)
 
 			// check if any of the undeleteable_exceptions are in the output
 			for _, exception := range UndeleteableExceptions {
 				if strings.Contains(createStoreOutput, exception) {
-					t.Skip("Not processing un-deletable store-type: ", exception)
-					return
+					t.Logf(
+						"WARNING: wxpected error encountered '%s' allowing un-deletable store-type: %s to FAIL",
+						exception, shortName,
+					)
+					allowFail = true
 				}
 			}
 
-			if strings.Contains(createStoreOutput, "already exists") {
-				assert.Fail(t, fmt.Sprintf("Store type %s already exists", shortName))
-			} else if !strings.Contains(createStoreOutput, "created with ID") {
-				assert.Fail(t, fmt.Sprintf("Store type %s was not created: %s", shortName, createStoreOutput))
+			if !allowFail {
+				if strings.Contains(createStoreOutput, "already exists") {
+					assert.Fail(t, fmt.Sprintf("Store type %s already exists", shortName))
+				} else if !strings.Contains(createStoreOutput, "created with ID") {
+					assert.Fail(t, fmt.Sprintf("Store type %s was not created: %s", shortName, createStoreOutput))
+				}
 			}
 			// Delete again after create
-			deleteStoreTypeTest(t, shortName, false)
+			deleteStoreTypeTest(t, shortName, allowFail)
 		},
 	)
 }
