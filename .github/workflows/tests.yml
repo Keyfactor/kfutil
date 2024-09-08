@@ -1,14 +1,14 @@
 name: go tests
 
 on:
-#  workflow_dispatch:
-#  workflow_run:
-#    workflows:
-#      - "Check and Update Package Version"
-#    types:
-#      - completed
-#    branches:
-#      - "*"
+  #  workflow_dispatch:
+  #  workflow_run:
+  #    workflows:
+  #      - "Check and Update Package Version"
+  #    types:
+  #      - completed
+  #    branches:
+  #      - "*"
   push:
     branches:
       - '*'
@@ -325,16 +325,16 @@ jobs:
 
 
   # Tester Install Script
-Test_Install_Script:
-  runs-on: ubuntu-latest
-  steps:
-    - name: Test Quick Install Script
-      run: |
-        sudo apt update && sudo apt upgrade -y && sudo apt install -y curl wget unzip jq openssl && sudo apt clean
-        bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME}/install.sh)
-        which kfutil
-        kfutil version
-        rm $(which kfutil)
+  Test_Install_Script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test Quick Install Script
+        run: |
+          sudo apt update && sudo apt upgrade -y && sudo apt install -y curl wget unzip jq openssl && sudo apt clean
+          bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME}/install.sh)
+          which kfutil
+          kfutil version
+          rm $(which kfutil)
 
   # Package Tests
   Test_Kfutil_pkg:
