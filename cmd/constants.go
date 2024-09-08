@@ -16,19 +16,20 @@ package cmd
 import "fmt"
 
 const (
-	ColorRed                = "\033[31m"
-	ColorWhite              = "\033[37m"
-	DefaultAPIPath          = "KeyfactorAPI"
-	DefaultConfigFileName   = "command_config.json"
-	FailedAuthMsg           = "Login failed!"
-	SuccessfulAuthMsg       = "Login successful!"
-	XKeyfactorRequestedWith = "APIClient"
-	XKeyfactorApiVersion    = "1"
-	FlagGitRef              = "git-ref"
-	FlagFromFile            = "from-file"
-	DebugFuncEnter          = "entered: %s"
-	DebugFuncExit           = "exiting: %s"
-	DebugFuncCall           = "calling: %s"
+	ColorRed                  = "\033[31m"
+	ColorWhite                = "\033[37m"
+	DefaultAPIPath            = "KeyfactorAPI"
+	DefaultConfigFileName     = "command_config.json"
+	DefaultStoreTypesFileName = "store_types.json"
+	FailedAuthMsg             = "Login failed!"
+	SuccessfulAuthMsg         = "Login successful!"
+	XKeyfactorRequestedWith   = "APIClient"
+	XKeyfactorApiVersion      = "1"
+	FlagGitRef                = "git-ref"
+	FlagFromFile              = "from-file"
+	DebugFuncEnter            = "entered: %s"
+	DebugFuncExit             = "exiting: %s"
+	DebugFuncCall             = "calling: %s"
 )
 
 var ProviderTypeChoices = []string{
