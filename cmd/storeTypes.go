@@ -498,7 +498,17 @@ func readStoreTypesConfig(fp string, gitRef string) (map[string]interface{}, err
 		Msg(fmt.Sprintf(DebugFuncCall, "getStoreTypesInternet"))
 	sTypes, stErr := getStoreTypesInternet(gitRef)
 	if stErr != nil {
-		log.Error().Err(stErr).Msg("unable to read store types from internet, attempting to reference embedded definitions")
+		log.Warn().
+			Err(stErr).
+			Msg("unable to read store types from internet, attempting to reference embedded definitions")
+		if err := json.Unmarshal(EmbeddedStoreTypesJSON, &sTypes); err != nil {
+			log.Error().Err(err).Msg("unable to unmarshal embedded store type definitions")
+			return nil, err
+		}
+	} else if sTypes == nil || len(sTypes) == 0 {
+		log.Warn().Err(fmt.Errorf("empty store valid store types list")).Msg(
+			"0 store types found from internet, attempting to reference embedded definitions",
+		)
 		if err := json.Unmarshal(EmbeddedStoreTypesJSON, &sTypes); err != nil {
 			log.Error().Err(err).Msg("unable to unmarshal embedded store type definitions")
 			return nil, err
@@ -509,7 +519,7 @@ func readStoreTypesConfig(fp string, gitRef string) (map[string]interface{}, err
 	var err error
 	if sTypes == nil {
 		if fp == "" {
-			fp = "store_types.json"
+			fp = DefaultStoreTypesFileName
 		}
 		content, err = os.ReadFile(fp)
 		if err != nil {
