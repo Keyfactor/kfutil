@@ -426,6 +426,21 @@ func createStoreFromFile(filename string, kfClient *api.Client) (*api.Certificat
 	return createResp, nil
 }
 
+func formatStoreTypes(sTypesList *[]interface{}) (map[string]interface{}, error) {
+
+	if sTypesList == nil || len(*sTypesList) == 0 {
+		return nil, fmt.Errorf("empty store types list")
+	}
+
+	output := make(map[string]interface{})
+	for _, v := range *sTypesList {
+		v2 := v.(map[string]interface{})
+		output[v2["ShortName"].(string)] = v2
+	}
+
+	return output, nil
+}
+
 func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfutil/main/store_types.json")
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfctl/master/storetypes/storetypes.json")
@@ -450,17 +465,18 @@ func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
 	}
 	// read as list of interfaces
 	var result []interface{}
-	json.Unmarshal(body, &result)
-
-	// convert to map
-	var result2 map[string]interface{}
-	result2 = make(map[string]interface{})
-	for _, v := range result {
-		v2 := v.(map[string]interface{})
-		result2[v2["ShortName"].(string)] = v2
+	jErr := json.Unmarshal(body, &result)
+	if jErr != nil {
+		return nil, jErr
 	}
+	output, sErr := formatStoreTypes(&result)
+	if sErr != nil {
+		return nil, err
+	} else if output == nil {
+		return nil, fmt.Errorf("unable to fetch store types from %s", url)
+	}
+	return output, nil
 
-	return result2, nil
 }
 
 func getValidStoreTypes(fp string, gitRef string) []string {
@@ -486,32 +502,21 @@ func getValidStoreTypes(fp string, gitRef string) []string {
 	return validStoreTypesList
 }
 
-func readStoreTypesConfig(fp string, gitRef string) (map[string]interface{}, error) {
-	log.Debug().
-		Str("file", fp).
-		Str("gitRef", gitRef).
-		Msg(fmt.Sprintf(DebugFuncEnter, "readStoreTypesConfig"))
+func readStoreTypesConfig(fp, gitRef string) (map[string]interface{}, error) {
+	log.Debug().Str("file", fp).Str("gitRef", gitRef).Msg("Entering readStoreTypesConfig")
 
-	log.Debug().
-		Str("file", fp).
-		Str("gitRef", gitRef).
-		Msg(fmt.Sprintf(DebugFuncCall, "getStoreTypesInternet"))
 	sTypes, stErr := getStoreTypesInternet(gitRef)
-	if stErr != nil {
-		log.Warn().
-			Err(stErr).
-			Msg("unable to read store types from internet, attempting to reference embedded definitions")
-		if err := json.Unmarshal(EmbeddedStoreTypesJSON, &sTypes); err != nil {
-			log.Error().Err(err).Msg("unable to unmarshal embedded store type definitions")
+	if stErr != nil || sTypes == nil || len(sTypes) == 0 {
+		log.Warn().Err(stErr).Msg("Unable to read store types from internet, using embedded definitions")
+		var emStoreTypes []interface{}
+		if err := json.Unmarshal(EmbeddedStoreTypesJSON, &emStoreTypes); err != nil {
+			log.Error().Err(err).Msg("Unable to unmarshal embedded store type definitions")
 			return nil, err
 		}
-	} else if sTypes == nil || len(sTypes) == 0 {
-		log.Warn().Err(fmt.Errorf("empty store valid store types list")).Msg(
-			"0 store types found from internet, attempting to reference embedded definitions",
-		)
-		if err := json.Unmarshal(EmbeddedStoreTypesJSON, &sTypes); err != nil {
-			log.Error().Err(err).Msg("unable to unmarshal embedded store type definitions")
-			return nil, err
+		sTypes, stErr = formatStoreTypes(&emStoreTypes)
+		if stErr != nil {
+			log.Error().Err(stErr).Msg("Unable to format store types")
+			return nil, stErr
 		}
 	}
 
@@ -522,20 +527,16 @@ func readStoreTypesConfig(fp string, gitRef string) (map[string]interface{}, err
 			fp = DefaultStoreTypesFileName
 		}
 		content, err = os.ReadFile(fp)
-		if err != nil {
-			return nil, err
-		}
 	} else {
 		content, err = json.Marshal(sTypes)
-		if err != nil {
-			return nil, err
-		}
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	var d map[string]interface{}
-	err = json.Unmarshal(content, &d)
-	if err != nil {
-		log.Error().Err(err).Msg("unable to unmarshal store types")
+	if err = json.Unmarshal(content, &d); err != nil {
+		log.Error().Err(err).Msg("Unable to unmarshal store types")
 		return nil, err
 	}
 	return d, nil

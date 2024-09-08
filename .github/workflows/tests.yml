@@ -331,7 +331,8 @@ jobs:
       - name: Test Quick Install Script
         run: |
           sudo apt update && sudo apt upgrade -y && sudo apt install -y curl wget unzip jq openssl && sudo apt clean
-          bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME}/install.sh)
+          echo curl -s "https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME}/install.sh"
+          bash <(curl -s "https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME}/install.sh")
           which kfutil
           kfutil version
           rm $(which kfutil)
