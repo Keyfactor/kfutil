@@ -30,6 +30,7 @@ const (
 	DebugFuncEnter            = "entered: %s"
 	DebugFuncExit             = "exiting: %s"
 	DebugFuncCall             = "calling: %s"
+	MinHttpTimeout            = 3
 )
 
 var ProviderTypeChoices = []string{

@@ -23,6 +23,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
@@ -174,7 +175,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		} else {
 			typesToCreate = validStoreTypes
 		}
-		storeTypeConfig, stErr := readStoreTypesConfig("", gitRef)
+		storeTypeConfig, stErr := readStoreTypesConfig("", gitRef, offline)
 		if stErr != nil {
 			log.Error().Err(stErr).Send()
 			return stErr
@@ -364,7 +365,7 @@ var fetchStoreTypesCmd = &cobra.Command{
 		if gitRef == "" {
 			gitRef = "main"
 		}
-		templates, err := readStoreTypesConfig("", gitRef)
+		templates, err := readStoreTypesConfig("", gitRef, offline)
 		if err != nil {
 			log.Error().Err(err).Send()
 			return err
@@ -454,7 +455,14 @@ func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
 		Str("url", url).
 		Msg("Getting store types from internet")
 
-	resp, rErr := http.Get(url)
+	// Define the timeout duration
+	timeout := MinHttpTimeout * time.Second
+
+	// Create a custom http.Client with the timeout
+	client := &http.Client{
+		Timeout: timeout,
+	}
+	resp, rErr := client.Get(url)
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -489,7 +497,7 @@ func getValidStoreTypes(fp string, gitRef string) []string {
 		Str("file", fp).
 		Str("gitRef", gitRef).
 		Msg("Reading store types config.")
-	validStoreTypes, rErr := readStoreTypesConfig(fp, gitRef)
+	validStoreTypes, rErr := readStoreTypesConfig(fp, gitRef, offline)
 	if rErr != nil {
 		log.Error().Err(rErr).Msg("unable to read store types")
 		return nil
@@ -502,12 +510,22 @@ func getValidStoreTypes(fp string, gitRef string) []string {
 	return validStoreTypesList
 }
 
-func readStoreTypesConfig(fp, gitRef string) (map[string]interface{}, error) {
+func readStoreTypesConfig(fp, gitRef string, offline bool) (map[string]interface{}, error) {
 	log.Debug().Str("file", fp).Str("gitRef", gitRef).Msg("Entering readStoreTypesConfig")
 
-	sTypes, stErr := getStoreTypesInternet(gitRef)
+	var (
+		sTypes map[string]interface{}
+		stErr  error
+	)
+	if offline {
+		log.Debug().Msg("Reading store types config from file")
+	} else {
+		log.Debug().Msg("Reading store types config from internet")
+		sTypes, stErr = getStoreTypesInternet(gitRef)
+	}
+
 	if stErr != nil || sTypes == nil || len(sTypes) == 0 {
-		log.Warn().Err(stErr).Msg("Unable to read store types from internet, using embedded definitions")
+		log.Warn().Err(stErr).Msg("Using embedded store-type definitions")
 		var emStoreTypes []interface{}
 		if err := json.Unmarshal(EmbeddedStoreTypesJSON, &emStoreTypes); err != nil {
 			log.Error().Err(err).Msg("Unable to unmarshal embedded store type definitions")

@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -204,88 +205,107 @@ func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 	createAllStoreTypes(t, storeTypes)
 }
 
+func testCreateStoreType(
+	t *testing.T,
+	testCmd *cobra.Command,
+	testArgs []string,
+	storeTypes map[string]interface{},
+) error {
+	isGhAction := os.Getenv("GITHUB_ACTIONS")
+	t.Log("GITHUB_ACTIONS: ", isGhAction)
+	if isGhAction == "true" {
+		ghBranch := os.Getenv("GITHUB_REF")
+		ghBranch = strings.Replace(ghBranch, "refs/heads/", "", 1)
+		// url escape the branch name
+		ghBranch = url.QueryEscape(ghBranch)
+		testArgs = append(testArgs, "--git-ref", fmt.Sprintf("%s", ghBranch))
+		t.Log("GITHUB_REF: ", ghBranch)
+	}
+	t.Log("testArgs: ", testArgs)
+	allowFail := false
+	// Attempt to get the AWS store type because it comes with the product
+	testCmd.SetArgs(testArgs)
+	output := captureOutput(
+		func() {
+			err := testCmd.Execute()
+
+			if err != nil {
+				eMsg := err.Error()
+				eMsg = strings.Replace(eMsg, "while creating store types:", "", -1)
+				for _, exception := range UndeleteableExceptions {
+					eMsg = strings.Replace(eMsg, exception, "", -1)
+				}
+				eMsg = strings.TrimSpace(eMsg)
+				if eMsg == "" {
+					return
+				}
+				t.Error("Emsg: ", eMsg)
+				if !allowFail {
+					assert.NoError(t, err)
+				}
+			}
+			if !allowFail {
+				assert.NoError(t, err)
+			}
+		},
+	)
+
+	if !allowFail {
+		assert.NotNil(t, output, "No output returned from create all command")
+	}
+
+	// iterate over the store types and verify that each has a name shortname and storetype
+	for sType := range storeTypes {
+		storeType := storeTypes[sType].(map[string]interface{})
+		assert.NotNil(t, storeType["Name"], "Expected store type to have a name")
+		assert.NotNil(t, storeType["ShortName"], "Expected store type to have short name")
+
+		// verify short name is a string
+		_, ok := storeType["ShortName"].(string)
+		assert.True(t, ok, "Expected short name to be a string")
+		// verify name is a string
+		_, ok = storeType["Name"].(string)
+		assert.True(t, ok, "Expected name to be a string")
+
+		// Attempt to create the store type
+		shortName := storeType["ShortName"].(string)
+		allowStoreTypeFail := false
+		if checkIsUnDeleteable(shortName) {
+			t.Logf("WARNING: Skipping check for un-deletable store-type: %s", shortName)
+			allowStoreTypeFail = true
+		}
+
+		if !allowStoreTypeFail {
+			assert.Contains(
+				t,
+				output,
+				fmt.Sprintf("Certificate store type %s created with ID", shortName),
+				"Expected output to contain store type created message",
+			)
+		}
+
+		// Delete again after create
+		deleteStoreTypeTest(t, shortName, allowStoreTypeFail)
+	}
+	return nil
+}
+
 func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 	t.Run(
-		fmt.Sprintf("Create ALL StoreTypes"), func(t *testing.T) {
+		fmt.Sprintf("ONLINE Create ALL StoreTypes"), func(t *testing.T) {
 			testCmd := RootCmd
 			// check if I'm running inside a GitHub Action
 			testArgs := []string{"store-types", "create", "--all"}
-			isGhAction := os.Getenv("GITHUB_ACTIONS")
-			t.Log("GITHUB_ACTIONS: ", isGhAction)
-			if isGhAction == "true" {
-				ghBranch := os.Getenv("GITHUB_REF")
-				ghBranch = strings.Replace(ghBranch, "refs/heads/", "", 1)
-				// url escape the branch name
-				ghBranch = url.QueryEscape(ghBranch)
-				testArgs = append(testArgs, "--git-ref", fmt.Sprintf("%s", ghBranch))
-				t.Log("GITHUB_REF: ", ghBranch)
-			}
-			t.Log("testArgs: ", testArgs)
-			allowFail := false
-			// Attempt to get the AWS store type because it comes with the product
-			testCmd.SetArgs(testArgs)
-			output := captureOutput(
-				func() {
-					err := testCmd.Execute()
+			testCreateStoreType(t, testCmd, testArgs, storeTypes)
 
-					if err != nil {
-						eMsg := err.Error()
-						eMsg = strings.Replace(eMsg, "while creating store types:", "", -1)
-						for _, exception := range UndeleteableExceptions {
-							eMsg = strings.Replace(eMsg, exception, "", -1)
-						}
-						eMsg = strings.TrimSpace(eMsg)
-						if eMsg == "" {
-							return
-						}
-						t.Error("Emsg: ", eMsg)
-						if !allowFail {
-							assert.NoError(t, err)
-						}
-					}
-					if !allowFail {
-						assert.NoError(t, err)
-					}
-				},
-			)
-
-			if !allowFail {
-				assert.NotNil(t, output, "No output returned from create all command")
-			}
-
-			// iterate over the store types and verify that each has a name shortname and storetype
-			for sType := range storeTypes {
-				storeType := storeTypes[sType].(map[string]interface{})
-				assert.NotNil(t, storeType["Name"], "Expected store type to have a name")
-				assert.NotNil(t, storeType["ShortName"], "Expected store type to have short name")
-
-				// verify short name is a string
-				_, ok := storeType["ShortName"].(string)
-				assert.True(t, ok, "Expected short name to be a string")
-				// verify name is a string
-				_, ok = storeType["Name"].(string)
-				assert.True(t, ok, "Expected name to be a string")
-
-				// Attempt to create the store type
-				shortName := storeType["ShortName"].(string)
-				allowStoreTypeFail := false
-				if checkIsUnDeleteable(shortName) {
-					t.Logf("WARNING: Skipping check for un-deletable store-type: %s", shortName)
-					allowStoreTypeFail = true
-				}
-
-				if !allowStoreTypeFail {
-					assert.Contains(
-						t,
-						output,
-						fmt.Sprintf("Certificate store type %s created with ID", shortName),
-						"Expected output to contain store type created message",
-					)
-				}
-
-				// Delete again after create
-				deleteStoreTypeTest(t, shortName, allowStoreTypeFail)
-			}
+		},
+	)
+	t.Run(
+		fmt.Sprintf("OFFLINE Create ALL StoreTypes"), func(t *testing.T) {
+			testCmd := RootCmd
+			// check if I'm running inside a GitHub Action
+			testArgs := []string{"store-types", "create", "--all", "--offline"}
+			testCreateStoreType(t, testCmd, testArgs, storeTypes)
 		},
 	)
 }

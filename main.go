@@ -17,6 +17,7 @@ package main
 import (
 	_ "embed"
 
+	"github.com/spf13/cobra/doc"
 	"kfutil/cmd"
 )
 
@@ -30,4 +31,8 @@ func main() {
 	//}
 
 	cmd.Execute()
+}
+
+func docs() {
+	doc.GenMarkdownTree(cmd.RootCmd, "./docs")
 }

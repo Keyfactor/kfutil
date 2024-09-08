@@ -45,6 +45,7 @@ var (
 	kfcAPIPath   string
 	logInsecure  bool
 	outputFormat string
+	offline      bool
 )
 
 func hashSecretValue(secretValue string) string {
@@ -360,6 +361,12 @@ func init() {
 		"exp",
 		false,
 		"Enable expEnabled features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)",
+	)
+	RootCmd.PersistentFlags().BoolVar(
+		&offline,
+		"offline",
+		false,
+		"Will not attempt to connect to GitHub for latest release information and resources.",
 	)
 	RootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Enable debugFlag logging.")
 	RootCmd.PersistentFlags().BoolVar(
