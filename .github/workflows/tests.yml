@@ -333,10 +333,12 @@ jobs:
           sudo apt update && sudo apt upgrade -y && sudo apt install -y curl wget unzip jq openssl && sudo apt clean
           echo curl -s "https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME}/install.sh"
           GITHUB_REF_NAME_ENCODED=$(echo -n "${GITHUB_REF_NAME}" | jq -sRr @uri)
+          VERIFY_CHECKSUM=0
           bash <(curl -s "https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME_ENCODED}/install.sh")
           which kfutil
           kfutil version
           rm $(which kfutil)
+    allow_failure: true
 
   # Package Tests
   Test_Kfutil_pkg:

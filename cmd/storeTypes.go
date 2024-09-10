@@ -491,6 +491,7 @@ func getValidStoreTypes(fp string, gitRef string) []string {
 	log.Debug().
 		Str("file", fp).
 		Str("gitRef", gitRef).
+		Bool("offline", offline).
 		Msg(DebugFuncEnter)
 
 	log.Debug().
@@ -562,8 +563,11 @@ func readStoreTypesConfig(fp, gitRef string, offline bool) (map[string]interface
 
 func init() {
 	defaultGitRef := "main"
+	offline = true    // temporarily set to true as it runs before the flag is set
+	debugFlag = false // temporarily set to false as it runs before the flag is set
 	var gitRef string
 	validTypesString := strings.Join(getValidStoreTypes("", defaultGitRef), ", ")
+	offline = false //revert this so that flag is not set to true by default
 	RootCmd.AddCommand(storeTypesCmd)
 
 	// GET store type templates
