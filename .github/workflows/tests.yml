@@ -338,7 +338,6 @@ jobs:
           which kfutil
           kfutil version
           rm $(which kfutil)
-    allow_failure: true
 
   # Package Tests
   Test_Kfutil_pkg:
