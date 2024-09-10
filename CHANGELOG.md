@@ -1,3 +1,23 @@
+# v1.5.0
+
+## Features
+
+### CLI
+
+- The CLI will now embed the store_type definitions for each release of `kfutil`.
+- Add global flag `--offline` to allow for offline mode. This will prevent the CLI from making requests to GitHub for
+  store types and store type templates and will use embedded store types and templates instead.
+
+## Fixes
+
+### Stores
+
+- `stores export --all`: Correctly paginates through all stores when exporting.
+
+### CLI
+
+- No longer log before the `--debug` flag is evaluated.
+
 # v1.4.0
 ## Features
 

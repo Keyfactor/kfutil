@@ -16,22 +16,47 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"io"
 	"os"
+	"regexp"
 )
 
 func captureOutput(f func()) string {
+	// Save the original os.Stdout
 	old := os.Stdout
+	// Create a pipe
 	r, w, _ := os.Pipe()
+	// Set os.Stdout to the write end of the pipe
 	os.Stdout = w
 
+	// Create a channel to signal when f() has completed
+	done := make(chan bool)
+
+	// Buffer to store the output
+	var buf bytes.Buffer
+
+	// Start a goroutine to copy from the read end of the pipe to the buffer
+	go func() {
+		io.Copy(&buf, r)
+		// Signal that the copying is done
+		done <- true
+	}()
+
+	// Run the provided function f
 	f()
 
+	// Close the write end of the pipe to signal EOF to the reader
 	w.Close()
+
+	// Wait for the goroutine to finish copying
+	<-done
+
+	// Restore the original os.Stdout
 	os.Stdout = old
 
-	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	// Return the captured output as a string
 	return buf.String()
 }
 
@@ -72,4 +97,26 @@ func getTestEnv() (testEnv, error) {
 
 	return testEnv, nil
 
+}
+
+// findLastJSON attempts to find the last valid JSON object or array in a string.
+func findLastJSON(input string) (string, error) {
+	// Regular expression to match JSON objects and arrays
+	// This regex looks for the most complex JSON objects and arrays, allowing nested structures
+	re := regexp.MustCompile(`(\{(?:[^{}]*|\{[^{}]*\})*\}|\[(?:[^\[\]]*|\[[^\[\]]*\])*\])`)
+	matches := re.FindAllString(input, -1)
+
+	// If no match is found, return an empty string
+	if len(matches) == 0 {
+		return "", errors.New("no JSON object or array found")
+	}
+
+	// Validate that the last match is a valid JSON object or array
+	lastMatch := matches[len(matches)-1]
+	var js json.RawMessage
+	if err := json.Unmarshal([]byte(lastMatch), &js); err != nil {
+		return "", errors.New("invalid JSON object or array found")
+	}
+
+	return lastMatch, nil
 }
