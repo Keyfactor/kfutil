@@ -146,6 +146,7 @@ getVersion() {
             printf "Could not retrieve the latest release tag information from %s: %s\n" "${remote_release_url}" "${releases_response}"
             exit 1
         fi
+        echo "Latest release version is $VERSION"
     else
         # Clean up version if prefixed with 'v'
         VERSION=$(echo "$VERSION" | tr -d 'v')

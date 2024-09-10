@@ -1,3 +1,7 @@
+# v1.4.1
+## Fixes
+- `stores export --all`: Now properly exports all stores where previously it would only export the first page of stores.
+
 # v1.4.0
 ## Features
 
