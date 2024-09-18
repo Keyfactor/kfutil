@@ -19,16 +19,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
 )
 
 func boolToPointer(b bool) *bool {
@@ -180,7 +181,6 @@ func getCurrentTime(f string) string {
 
 func informDebug(debugFlag bool) {
 	debugModeEnabled := checkDebug(debugFlag)
-	zerolog.SetGlobalLevel(zerolog.Disabled)
 	if debugModeEnabled {
 		//zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
@@ -189,8 +189,10 @@ func informDebug(debugFlag bool) {
 
 func initLogger() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.SetGlobalLevel(zerolog.Disabled) // default to disabled
 	log.Logger = log.With().Caller().Logger()
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
+
 }
 
 func intToPointer(i int) *int {

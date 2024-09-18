@@ -17,13 +17,14 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_PAMHelpCmd(t *testing.T) {
@@ -70,10 +71,12 @@ func Test_PAMTypesListCmd(t *testing.T) {
 	// test
 	var err error
 	testCmd.SetArgs([]string{"pam", "types-list"})
-	output := captureOutput(func() {
-		err = testCmd.Execute()
-		assert.NoError(t, err)
-	})
+	output := captureOutput(
+		func() {
+			err = testCmd.Execute()
+			assert.NoError(t, err)
+		},
+	)
 
 	if err != nil {
 		t.Errorf("failed to list PAM provider types: %v", err)
@@ -157,10 +160,12 @@ func Test_PAMGetCmd(t *testing.T) {
 			idInt := int(providerConfig["Id"].(float64))
 			idStr := strconv.Itoa(idInt)
 			testCmd.SetArgs([]string{"pam", "get", "--id", idStr})
-			output := captureOutput(func() {
-				err := testCmd.Execute()
-				assert.NoError(t, err)
-			})
+			output := captureOutput(
+				func() {
+					err := testCmd.Execute()
+					assert.NoError(t, err)
+				},
+			)
 			var pamProvider interface{}
 			if err := json.Unmarshal([]byte(output), &pamProvider); err != nil {
 				t.Fatalf("Error unmarshalling JSON: %v", err)
@@ -184,10 +189,12 @@ func Test_PAMTypesCreateCmd(t *testing.T) {
 	randomName := generateRandomUUID()
 	t.Logf("randomName: %s", randomName)
 	testCmd.SetArgs([]string{"pam", "types-create", "--repo", "hashicorp-vault-pam", "--name", randomName})
-	output := captureOutput(func() {
-		err := testCmd.Execute()
-		assert.NoError(t, err)
-	})
+	output := captureOutput(
+		func() {
+			err := testCmd.Execute()
+			assert.NoError(t, err)
+		},
+	)
 	var createResponse interface{}
 	if err := json.Unmarshal([]byte(output), &createResponse); err != nil {
 		t.Log(output)
@@ -291,10 +298,12 @@ func Test_PAMUpdateCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
 	testCmd.SetArgs([]string{"pam", "update", "--from-file", updatedFileName})
-	output := captureOutput(func() {
-		err := testCmd.Execute()
-		assert.NoError(t, err)
-	})
+	output := captureOutput(
+		func() {
+			err := testCmd.Execute()
+			assert.NoError(t, err)
+		},
+	)
 
 	var updateResponse interface{}
 	if err := json.Unmarshal([]byte(output), &updateResponse); err != nil {
@@ -386,51 +395,59 @@ func testListPamProviders(t *testing.T) ([]interface{}, error) {
 	var pamProviders []interface{}
 	var err error
 
-	t.Run("Listing PAM provider instances", func(t *testing.T) {
-		testCmd := RootCmd
-		// test
-		testCmd.SetArgs([]string{"pam", "list"})
-		output = captureOutput(func() {
-			err = testCmd.Execute()
-			assert.NoError(t, err)
-		})
+	t.Run(
+		"Listing PAM provider instances", func(t *testing.T) {
+			testCmd := RootCmd
+			// test
+			testCmd.SetArgs([]string{"pam", "list"})
+			output = captureOutput(
+				func() {
+					err = testCmd.Execute()
+					assert.NoError(t, err)
+				},
+			)
 
-		if err != nil {
-			t.Errorf("failed to list PAM providers: %v", err)
-			return
-		}
+			if err != nil {
+				t.Errorf("failed to list PAM providers: %v", err)
+				return
+			}
 
-		if err = json.Unmarshal([]byte(output), &pamProviders); err != nil {
-			t.Fatalf("Error unmarshalling JSON: %v", err)
-		}
+			if err = json.Unmarshal([]byte(output), &pamProviders); err != nil {
+				t.Fatalf("Error unmarshalling JSON: %v", err)
+			}
 
-		// assert slice is len >= 0
-		assert.GreaterOrEqual(t, len(pamProviders), 0)
+			// assert slice is len >= 0
+			assert.GreaterOrEqual(t, len(pamProviders), 0)
 
-		if len(pamProviders) > 0 {
-			for _, p := range pamProviders {
-				providerConfig := p.(map[string]interface{})
-				// assert that each p has a name
-				assert.NotEmpty(t, providerConfig["Name"])
-				// assert that each p has an ID
-				assert.NotEmpty(t, providerConfig["Id"])
-				// assert that each p has a type
-				assert.NotEmpty(t, providerConfig["ProviderType"])
+			if len(pamProviders) > 0 {
+				for _, p := range pamProviders {
+					providerConfig := p.(map[string]interface{})
+					// assert that each p has a name
+					assert.NotEmpty(t, providerConfig["Name"])
+					// assert that each p has an ID
+					assert.NotEmpty(t, providerConfig["Id"])
+					// assert that each p has a type
+					assert.NotEmpty(t, providerConfig["ProviderType"])
 
-				// Check params is a list of maps
-				pTypeParams := providerConfig["ProviderType"].(map[string]interface{})["ProviderTypeParams"].([]interface{})
-				assert.NotEmpty(t, pTypeParams)
-				assert.GreaterOrEqual(t, len(pTypeParams), 0)
-				if len(pTypeParams) > 0 {
-					for _, param := range pTypeParams {
-						assert.NotEmpty(t, param.(map[string]interface{})["Id"])
-						assert.NotEmpty(t, param.(map[string]interface{})["Name"])
-						assert.NotEmpty(t, param.(map[string]interface{})["DataType"])
+					// Check params is a list of maps
+					pTypeParams := providerConfig["ProviderType"].(map[string]interface{})["ProviderTypeParams"].([]interface{})
+					assert.NotEmpty(t, pTypeParams)
+					assert.GreaterOrEqual(t, len(pTypeParams), 0)
+					if len(pTypeParams) > 0 {
+						for _, param := range pTypeParams {
+							assert.NotEmpty(t, param.(map[string]interface{})["Id"])
+							assert.NotEmpty(t, param.(map[string]interface{})["Name"])
+							assert.NotEmpty(t, param.(map[string]interface{})["DataType"])
+						}
 					}
 				}
+			} else {
+				t.Errorf("0 PAM providers found, cannot test list")
+				t.Fail()
 			}
-		}
-	})
+
+		},
+	)
 	if err != nil {
 		t.Log(output)
 		return nil, err
@@ -447,36 +464,40 @@ func testCreatePamProvider(t *testing.T, fileName string, providerName string, a
 	} else {
 		testName = fmt.Sprintf("Create PAM provider '%s'", providerName)
 	}
-	t.Run(testName, func(t *testing.T) {
-		testCmd := RootCmd
+	t.Run(
+		testName, func(t *testing.T) {
+			testCmd := RootCmd
 
-		args := []string{"pam", "create", "--from-file", fileName}
-		// log the args as a string
-		t.Logf("args: %s", args)
-		testCmd.SetArgs(args)
-		t.Logf("fileName: %s", fileName)
-		output := captureOutput(func() {
-			err = testCmd.Execute()
+			args := []string{"pam", "create", "--from-file", fileName}
+			// log the args as a string
+			t.Logf("args: %s", args)
+			testCmd.SetArgs(args)
+			t.Logf("fileName: %s", fileName)
+			output := captureOutput(
+				func() {
+					err = testCmd.Execute()
+					if !allowFail {
+						assert.NoError(t, err)
+					}
+				},
+			)
+			if err = json.Unmarshal([]byte(output), &createResponse); err != nil {
+				if allowFail {
+					t.Logf("Error unmarshalling JSON: %v", err)
+				} else {
+					t.Errorf("failed to create a PAM provider: %v", err)
+				}
+				return
+			}
+
 			if !allowFail {
-				assert.NoError(t, err)
+				assert.NotEmpty(t, createResponse.(map[string]interface{})["Id"])
+				assert.NotEmpty(t, createResponse.(map[string]interface{})["Name"])
+				assert.Equal(t, createResponse.(map[string]interface{})["Name"], providerName)
+				assert.NotEmpty(t, createResponse.(map[string]interface{})["ProviderType"])
 			}
-		})
-		if err = json.Unmarshal([]byte(output), &createResponse); err != nil {
-			if allowFail {
-				t.Logf("Error unmarshalling JSON: %v", err)
-			} else {
-				t.Errorf("failed to create a PAM provider: %v", err)
-			}
-			return
-		}
-
-		if !allowFail {
-			assert.NotEmpty(t, createResponse.(map[string]interface{})["Id"])
-			assert.NotEmpty(t, createResponse.(map[string]interface{})["Name"])
-			assert.Equal(t, createResponse.(map[string]interface{})["Name"], providerName)
-			assert.NotEmpty(t, createResponse.(map[string]interface{})["ProviderType"])
-		}
-	})
+		},
+	)
 
 	return createResponse, err
 }
@@ -484,20 +505,24 @@ func testCreatePamProvider(t *testing.T, fileName string, providerName string, a
 func testDeletePamProvider(t *testing.T, pID int, allowFail bool) error {
 	var err error
 	var output string
-	t.Run(fmt.Sprintf("Deleting PAM provider %d", pID), func(t *testing.T) {
-		testCmd := RootCmd
+	t.Run(
+		fmt.Sprintf("Deleting PAM provider %d", pID), func(t *testing.T) {
+			testCmd := RootCmd
 
-		testCmd.SetArgs([]string{"pam", "delete", "--id", strconv.Itoa(pID)})
-		output = captureOutput(func() {
-			err = testCmd.Execute()
+			testCmd.SetArgs([]string{"pam", "delete", "--id", strconv.Itoa(pID)})
+			output = captureOutput(
+				func() {
+					err = testCmd.Execute()
+					if !allowFail {
+						assert.NoError(t, err)
+					}
+				},
+			)
 			if !allowFail {
-				assert.NoError(t, err)
+				assert.Contains(t, output, fmt.Sprintf("Deleted PAM provider with ID %d", pID))
 			}
-		})
-		if !allowFail {
-			assert.Contains(t, output, fmt.Sprintf("Deleted PAM provider with ID %d", pID))
-		}
-	})
+		},
+	)
 	if err != nil && !allowFail {
 		t.Log(output)
 		return err
@@ -513,12 +538,14 @@ func testListPamProviderTypes(t *testing.T, name string, allowFail bool, allowEm
 	testCmd := RootCmd
 	// test
 	testCmd.SetArgs([]string{"pam", "types-list"})
-	output = captureOutput(func() {
-		err = testCmd.Execute()
-		if !allowFail {
-			assert.NoError(t, err)
-		}
-	})
+	output = captureOutput(
+		func() {
+			err = testCmd.Execute()
+			if !allowFail {
+				assert.NoError(t, err)
+			}
+		},
+	)
 	var pTypes []interface{}
 	if err = json.Unmarshal([]byte(output), &pTypes); err != nil && !allowFail {
 		t.Errorf("Error unmarshalling JSON: %v", err)
@@ -632,7 +659,11 @@ func testFormatPamCreateConfig(t *testing.T, inputFileName string, providerName 
 		if oErr == nil {
 			oErr = fmt.Errorf("failed to find PAM provider type '%s' unable to create PAM provider", cProviderTypeName)
 		} else {
-			oErr = fmt.Errorf("failed to find PAM provider type '%s' unable to create PAM provider: %v", cProviderTypeName, oErr)
+			oErr = fmt.Errorf(
+				"failed to find PAM provider type '%s' unable to create PAM provider: %v",
+				cProviderTypeName,
+				oErr,
+			)
 		}
 		t.Error(oErr)
 		return "", oErr
