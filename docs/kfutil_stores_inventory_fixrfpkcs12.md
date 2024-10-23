@@ -15,11 +15,11 @@ kfutil stores inventory fixrfpkcs12 [flags]
 ```
 
 # The below will create a CSV file that can be reviewed and modified before running the command with the --file option.
-kfutil stores inventory fixrfpkcs12
+kfutil stores inventory fixrfpkcs12 --exp
 
 # The below will read the CSV file and schedule remove jobs as specified in the file where the 'Action' col is "REMOVE".
 # The --force flag is *required* to actually schedule the remove jobs for the certificates.
-kfutil stores inventory fixrfpkcs12 --file rfpkcs12_fix.csv --force
+kfutil stores inventory fixrfpkcs12 --file rfpkcs12_fix.csv --force --exp
 
 ```
 
@@ -45,6 +45,7 @@ kfutil stores inventory fixrfpkcs12 --file rfpkcs12_fix.csv --force
       --hostname string                Hostname to use for authenticating to Keyfactor Command.
       --log-insecure                   Log insecure API requests. (USE AT YOUR OWN RISK, this WILL log sensitive information to the console.)
       --no-prompt                      Do not prompt for any user input and assume defaults or environmental variables are set.
+      --offline                        Will not attempt to connect to GitHub for latest release information and resources.
       --password string                Password to use for authenticating to Keyfactor Command. WARNING: Remember to delete your console history if providing kfcPassword here in plain text.
       --profile string                 Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.
       --username string                Username to use for authenticating to Keyfactor Command.
