@@ -18,12 +18,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"os"
 	"strconv"
+
+	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
 )
 
 var exportPath string
@@ -137,7 +138,17 @@ var exportCmd = &cobra.Command{
 		}
 
 		log.Debug().Msgf("%s: createAuthConfigFromParams", DebugFuncCall)
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		//authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		authConfig := createAuthConfigFromParams(
+			kfcHostName,
+			kfcUsername,
+			kfcPassword,
+			kfcDomain,
+			kfcAPIPath,
+			kfcClientId,
+			kfcClientSecret,
+			kfcTokenUrl,
+		)
 
 		if authConfig == nil {
 			log.Error().Msg("auth config is nil, invalid client configuration")
@@ -371,8 +382,10 @@ func getIssuedAlerts(kfClient *keyfactor.APIClient) []keyfactor.KeyfactorApiMode
 func getDeniedAlerts(kfClient *keyfactor.APIClient) []keyfactor.KeyfactorApiModelsAlertsDeniedDeniedAlertCreationRequest {
 
 	alerts, _, reqErr := kfClient.DeniedAlertApi.DeniedAlertGetDeniedAlerts(
-		context.Background()).XKeyfactorRequestedWith(
-		XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
+		context.Background(),
+	).XKeyfactorRequestedWith(
+		XKeyfactorRequestedWith,
+	).XKeyfactorApiVersion(XKeyfactorApiVersion).Execute()
 	if reqErr != nil {
 		fmt.Printf("%s Error! Unable to get denied cert alerts %s%s\n", ColorRed, reqErr, ColorWhite)
 	}
@@ -575,7 +588,13 @@ func init() {
 	exportCmd.Flags().Lookup("collections").NoOptDefVal = "true"
 	exportCmd.Flags().BoolVarP(&fMetadata, "metadata", "m", false, "export metadata to JSON file")
 	exportCmd.Flags().Lookup("metadata").NoOptDefVal = "true"
-	exportCmd.Flags().BoolVarP(&fExpirationAlerts, "expiration-alerts", "e", false, "export expiration cert alerts to JSON file")
+	exportCmd.Flags().BoolVarP(
+		&fExpirationAlerts,
+		"expiration-alerts",
+		"e",
+		false,
+		"export expiration cert alerts to JSON file",
+	)
 	exportCmd.Flags().Lookup("expiration-alerts").NoOptDefVal = "true"
 	exportCmd.Flags().BoolVarP(&fIssuedAlerts, "issued-alerts", "i", false, "export issued cert alerts to JSON file")
 	exportCmd.Flags().Lookup("issued-alerts").NoOptDefVal = "true"
@@ -585,7 +604,13 @@ func init() {
 	exportCmd.Flags().Lookup("pending-alerts").NoOptDefVal = "true"
 	exportCmd.Flags().BoolVarP(&fNetworks, "networks", "n", false, "export SSL networks to JSON file")
 	exportCmd.Flags().Lookup("networks").NoOptDefVal = "true"
-	exportCmd.Flags().BoolVarP(&fWorkflowDefinitions, "workflow-definitions", "w", false, "export workflow definitions to JSON file")
+	exportCmd.Flags().BoolVarP(
+		&fWorkflowDefinitions,
+		"workflow-definitions",
+		"w",
+		false,
+		"export workflow definitions to JSON file",
+	)
 	exportCmd.Flags().Lookup("workflow-definitions").NoOptDefVal = "true"
 	exportCmd.Flags().BoolVarP(&fReports, "reports", "r", false, "export reports to JSON file")
 	exportCmd.Flags().Lookup("reports").NoOptDefVal = "true"

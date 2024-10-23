@@ -60,9 +60,7 @@ var containersGetCmd = &cobra.Command{
 			return debugErr
 		}
 
-		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, false)
 
 		agents, aErr := kfClient.GetStoreContainer(id)
 		if aErr != nil {
