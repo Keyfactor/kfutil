@@ -15,11 +15,17 @@
 package cmd
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+	"reflect"
+	"strconv"
+	"time"
+
 	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 // inventoryCmd represents the inventory command
@@ -133,7 +139,11 @@ var inventoryClearCmd = &cobra.Command{
 			}
 
 			if !force {
-				fmt.Printf("This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you sure?! Press 'y' to continue? (y/n) ", store.ClientMachine, store.StorePath)
+				fmt.Printf(
+					"This will clear the inventory of ALL certificates in the store %s:%s. Are you sure you sure?! Press 'y' to continue? (y/n) ",
+					store.ClientMachine,
+					store.StorePath,
+				)
 				var answer string
 				fmt.Scanln(&answer)
 				if answer != "y" {
@@ -145,7 +155,8 @@ var inventoryClearCmd = &cobra.Command{
 			for _, inv := range *sInvs {
 				certs := inv.Certificates
 				for _, cert := range certs {
-					st := api.CertificateStore{ //TODO: This conversion is a bit weird to have to do.  Should be able to pass the store directly.
+					st := api.CertificateStore{
+						//TODO: This conversion is a bit weird to have to do.  Should be able to pass the store directly.
 						CertificateStoreId: store.Id,
 						Alias:              cert.Thumbprint,
 						Overwrite:          true,
@@ -163,12 +174,23 @@ var inventoryClearCmd = &cobra.Command{
 					if !dryRun {
 						_, err := kfClient.RemoveCertificateFromStores(&removeReq)
 						if err != nil {
-							fmt.Printf("Error removing certificate %s(%d) from store %s: %s\n", cert.IssuedDN, cert.Id, st.CertificateStoreId, err)
+							fmt.Printf(
+								"Error removing certificate %s(%d) from store %s: %s\n",
+								cert.IssuedDN,
+								cert.Id,
+								st.CertificateStoreId,
+								err,
+							)
 							log.Printf("[ERROR] %s", err)
 							continue
 						}
 					} else {
-						fmt.Printf("Dry run: Would have removed certificate %s(%d) from store %s\n", cert.IssuedDN, cert.Id, st.CertificateStoreId)
+						fmt.Printf(
+							"Dry run: Would have removed certificate %s(%d) from store %s\n",
+							cert.IssuedDN,
+							cert.Id,
+							st.CertificateStoreId,
+						)
 					}
 				}
 
@@ -264,9 +286,11 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 		var filteredCerts []api.GetCertificateResponse
 
 		for _, cn := range subjects {
-			cert, err := kfClient.ListCertificates(map[string]string{
-				"subject": cn,
-			})
+			cert, err := kfClient.ListCertificates(
+				map[string]string{
+					"subject": cn,
+				},
+			)
 			if err != nil {
 				fmt.Printf("Unable to find certificate with subject: %s\n", cn)
 				continue
@@ -274,9 +298,11 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 			filteredCerts = append(filteredCerts, cert...)
 		}
 		for _, thumbprint := range thumbprints {
-			cert, err := kfClient.ListCertificates(map[string]string{
-				"thumbprint": thumbprint,
-			})
+			cert, err := kfClient.ListCertificates(
+				map[string]string{
+					"thumbprint": thumbprint,
+				},
+			)
 			if err != nil {
 				fmt.Printf("Unable to find certificate with thumbprint: %s\n", thumbprint)
 				continue
@@ -284,9 +310,11 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 			filteredCerts = append(filteredCerts, cert...)
 		}
 		for _, certID := range certIDs {
-			cert, err := kfClient.ListCertificates(map[string]string{
-				"id": certID,
-			})
+			cert, err := kfClient.ListCertificates(
+				map[string]string{
+					"id": certID,
+				},
+			)
 			if err != nil {
 				fmt.Printf("Unable to find certificate with ID: %s\n", certID)
 				continue
@@ -323,7 +351,8 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 				Immediate: boolToPointer(true),
 			}
 			for _, cert := range filteredCerts {
-				st := api.CertificateStore{ //TODO: This conversion is weird. Should be able to use the store directly.
+				st := api.CertificateStore{
+					//TODO: This conversion is weird. Should be able to use the store directly.
 					CertificateStoreId: store.Id,
 					Alias:              cert.Thumbprint,
 					Overwrite:          true,
@@ -340,7 +369,13 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 				}
 				if !dryRun {
 					if !force {
-						fmt.Printf("This will add the certificate %s(%d) to certificate store %s%s's inventory. Are you sure you shouldPass to continue? (y/n) ", cert.IssuedCN, cert.Id, store.ClientMachine, store.StorePath)
+						fmt.Printf(
+							"This will add the certificate %s(%d) to certificate store %s%s's inventory. Are you sure you shouldPass to continue? (y/n) ",
+							cert.IssuedCN,
+							cert.Id,
+							store.ClientMachine,
+							store.StorePath,
+						)
 						var answer string
 						fmt.Scanln(&answer)
 						if answer != "y" {
@@ -350,12 +385,23 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 					}
 					_, err := kfClient.AddCertificateToStores(&addReq)
 					if err != nil {
-						fmt.Printf("Error adding certificate %s(%d) to store %s: %s\n", cert.IssuedCN, cert.Id, st.CertificateStoreId, err)
+						fmt.Printf(
+							"Error adding certificate %s(%d) to store %s: %s\n",
+							cert.IssuedCN,
+							cert.Id,
+							st.CertificateStoreId,
+							err,
+						)
 						log.Printf("[ERROR]  %s", err)
 						continue
 					}
 				} else {
-					fmt.Printf("Dry run: Would have added certificate %s(%d) from store %s", cert.IssuedDN, cert.Id, st.CertificateStoreId)
+					fmt.Printf(
+						"Dry run: Would have added certificate %s(%d) from store %s",
+						cert.IssuedDN,
+						cert.Id,
+						st.CertificateStoreId,
+					)
 				}
 			}
 
@@ -430,9 +476,11 @@ var inventoryRemoveCmd = &cobra.Command{
 		var filteredCerts []api.GetCertificateResponse
 
 		for _, cn := range subjects {
-			cert, err := kfClient.ListCertificates(map[string]string{
-				"subject": cn,
-			})
+			cert, err := kfClient.ListCertificates(
+				map[string]string{
+					"subject": cn,
+				},
+			)
 			if err != nil {
 				fmt.Printf("Unable to find certificate with subject: %s\n", cn)
 				continue
@@ -440,9 +488,11 @@ var inventoryRemoveCmd = &cobra.Command{
 			filteredCerts = append(filteredCerts, cert...)
 		}
 		for _, thumbprint := range thumbprints {
-			cert, err := kfClient.ListCertificates(map[string]string{
-				"thumbprint": thumbprint,
-			})
+			cert, err := kfClient.ListCertificates(
+				map[string]string{
+					"thumbprint": thumbprint,
+				},
+			)
 			if err != nil {
 				fmt.Printf("Unable to find certificate with thumbprint: %s\n", thumbprint)
 				continue
@@ -450,9 +500,11 @@ var inventoryRemoveCmd = &cobra.Command{
 			filteredCerts = append(filteredCerts, cert...)
 		}
 		for _, certID := range certIDs {
-			cert, err := kfClient.ListCertificates(map[string]string{
-				"id": certID,
-			})
+			cert, err := kfClient.ListCertificates(
+				map[string]string{
+					"id": certID,
+				},
+			)
 			if err != nil {
 				fmt.Printf("Unable to find certificate with ID: %s\n", certID)
 				continue
@@ -490,7 +542,8 @@ var inventoryRemoveCmd = &cobra.Command{
 				Immediate: boolToPointer(true),
 			}
 			for _, cert := range filteredCerts {
-				st := api.CertificateStore{ //TODO: This conversion is weird. Should be able to use the store directly.
+				st := api.CertificateStore{
+					//TODO: This conversion is weird. Should be able to use the store directly.
 					CertificateStoreId: store.Id,
 					Alias:              cert.Thumbprint,
 					Overwrite:          true,
@@ -507,7 +560,12 @@ var inventoryRemoveCmd = &cobra.Command{
 				}
 				if !dryRun {
 					if !force {
-						fmt.Printf("This will remove the certificate %s from certificate store %s%s's inventory. Are you sure you shouldPass to continue? (y/n) ", certToString(&cert), store.ClientMachine, store.StorePath)
+						fmt.Printf(
+							"This will remove the certificate %s from certificate store %s%s's inventory. Are you sure you shouldPass to continue? (y/n) ",
+							certToString(&cert),
+							store.ClientMachine,
+							store.StorePath,
+						)
 						var answer string
 						fmt.Scanln(&answer)
 						if answer != "y" {
@@ -517,18 +575,347 @@ var inventoryRemoveCmd = &cobra.Command{
 					}
 					_, err := kfClient.RemoveCertificateFromStores(&removeReq)
 					if err != nil {
-						fmt.Printf("Error removing certificate %s to store %s: %s\n", certToString(&cert), st.CertificateStoreId, err)
+						fmt.Printf(
+							"Error removing certificate %s to store %s: %s\n",
+							certToString(&cert),
+							st.CertificateStoreId,
+							err,
+						)
 						log.Printf("[ERROR] %s", err)
 						continue
 					}
 				} else {
-					fmt.Printf("Dry run: Would have removed certificate %s from store %s\n", certToString(&cert), st.CertificateStoreId)
+					fmt.Printf(
+						"Dry run: Would have removed certificate %s from store %s\n",
+						certToString(&cert),
+						st.CertificateStoreId,
+					)
 				}
 			}
 
 		}
 		fmt.Println("Inventory updated successfully")
 	},
+}
+
+var inventoryFixRFPKCS12 = &cobra.Command{
+	Use:                    "fixrfpkcs12",
+	Aliases:                nil,
+	SuggestFor:             nil,
+	Short:                  "Fix RFPKCS12 stores that contain 2 or more leaf certificates, by removing the certificate with the earliest issued date.",
+	GroupID:                "",
+	Long:                   `Fix RFPKCS12 stores that contain 2 or more leaf certificates, by removing the certificate with the earliest issued date.`,
+	Example:                "",
+	ValidArgs:              nil,
+	ValidArgsFunction:      nil,
+	Args:                   nil,
+	ArgAliases:             nil,
+	BashCompletionFunction: "",
+	Deprecated:             "",
+	Annotations:            nil,
+	Version:                "",
+	PersistentPreRun:       nil,
+	PersistentPreRunE:      nil,
+	PreRun:                 nil,
+	PreRunE:                nil,
+	Run: func(cmd *cobra.Command, args []string) {
+		force, _ := cmd.Flags().GetBool("force")
+		//dryRun, _ := cmd.Flags().GetBool("dry-run")
+		importFile, _ := cmd.Flags().GetString("file")
+		//csvHeader := "Alias,Issued Date,Store Path,Client Machine,StoreId"
+
+		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		isExperimental := true
+
+		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
+		if expErr != nil {
+			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			log.Fatalf("[ERROR]: %s", expErr)
+		}
+
+		debugModeEnabled := checkDebug(debugFlag)
+		log.Println("Debug mode enabled: ", debugModeEnabled)
+		rfpkcs12StoreType := "RFPKCS12"
+
+		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		rfpkcs12StoreTypeResponse, sTypeErr := kfClient.GetCertificateStoreTypeByName(rfpkcs12StoreType)
+		if sTypeErr != nil {
+			fmt.Printf("Error getting store type id for store type %s: %s\n", rfpkcs12StoreType, sTypeErr)
+			log.Fatal(sTypeErr)
+			return
+		}
+
+		type CSVLine struct {
+			StoreId    string
+			StorePath  string
+			Action     string
+			Alias      string
+			IssuedDN   string
+			Thumbprint string
+			IssuedDate time.Time
+			ExpiryDate time.Time
+			CertId     int
+		}
+		outputFileName := "rfpkcs12_fix.csv"
+		var outputCSV []CSVLine
+
+		stId := rfpkcs12StoreTypeResponse.StoreType
+
+		if importFile != "" {
+			fmt.Println("Importing CSV file")
+			//Read CSV file into outputCSV
+			csvFile, csvErr := os.Open(importFile)
+			if csvErr != nil {
+				fmt.Printf("Error opening CSV file: %s\n", csvErr)
+				log.Fatal(csvErr)
+				return
+			}
+			defer csvFile.Close()
+			//Read CSV file
+			reader := csv.NewReader(csvFile)
+
+			// Read the first line (header)
+			header, err := reader.Read()
+			if err != nil {
+				fmt.Printf("Error reading CSV header: %s\n", err)
+				log.Fatal(err)
+				return
+			}
+
+			// Read the rest of the lines
+			records, err := reader.ReadAll()
+			if err != nil {
+				fmt.Println("Error reading records:", err)
+				return
+			}
+
+			for _, record := range records {
+				var line CSVLine
+				// Use reflection to map CSV values to struct fields based on header
+				v := reflect.ValueOf(&line).Elem()
+				t := v.Type()
+
+				for i, fieldName := range header {
+					for j := 0; j < t.NumField(); j++ {
+						field := t.Field(j)
+						if fieldName == field.Name {
+							// Convert and set the value based on the field type
+							switch field.Type.Kind() {
+							case reflect.String:
+								v.Field(j).SetString(record[i])
+							case reflect.Int:
+								val, _ := strconv.Atoi(record[i])
+								v.Field(j).SetInt(int64(val))
+							case reflect.Struct:
+								if field.Type == reflect.TypeOf(time.Time{}) {
+									layout := "2006-01-02" // assuming the date format in the CSV is YYYY-MM-DD
+									parsedTime, _ := time.Parse(layout, record[i])
+									v.Field(j).Set(reflect.ValueOf(parsedTime))
+								}
+							}
+						}
+					}
+				}
+				outputCSV = append(outputCSV, line)
+			}
+		} else {
+			log.Println("No import file specified.  Listing all RFPKCS12 stores.")
+			params := map[string]interface{}{
+				"ClientMachine": []string{},
+				"ContainerId":   []int{},
+				"Storepath":     []string{},
+				"CertStoreType": []string{},
+				"AgentId":       []string{},
+				"ContainerName": []string{},
+				"Id":            []string{},
+			}
+			params["CertStoreType"] = append(params["CertStoreType"].([]string), fmt.Sprintf("%d", stId))
+			stResp, err := kfClient.ListCertificateStores(&params)
+			if err != nil {
+				fmt.Println("Error, unable to list certificate stores. ", err)
+				log.Printf("[ERROR] Unable to list certificate stores: %s\n", err)
+				return
+			}
+
+			for _, cStore := range *stResp {
+				inv, iErr := kfClient.GetCertStoreInventory(cStore.Id)
+				if iErr != nil {
+					fmt.Printf("Error, unable to retrieve certificate store inventory from %v: %s\n", cStore, err)
+				}
+				if inv != nil && len(*inv) > 1 {
+					certs := make(map[string]string)
+					newestAlias := ""
+					var newestDate time.Time
+					for _, cert := range *inv {
+						alias := cert.Name
+						issuedDate := cert.Certificates[0].NotBefore
+						certs[alias] = issuedDate
+						issuedDateTime, _ := time.Parse(time.RFC3339, issuedDate)
+						expiresDate := cert.Certificates[0].NotAfter
+						expiresDateTime, _ := time.Parse(time.RFC3339, expiresDate)
+
+						newLine := CSVLine{
+							StoreId:    cStore.Id,
+							StorePath:  fmt.Sprintf("%s/%s", cStore.ClientMachine, cStore.StorePath),
+							Action:     "",
+							Alias:      alias,
+							IssuedDN:   cert.Certificates[0].IssuedDN,
+							Thumbprint: cert.Certificates[0].Thumbprint,
+							IssuedDate: issuedDateTime,
+							ExpiryDate: expiresDateTime,
+							CertId:     cert.Certificates[0].Id,
+						}
+						outputCSV = append(outputCSV, newLine)
+						if newestAlias == "" {
+							newestAlias = alias
+							newestDate, _ = time.Parse(time.RFC3339, issuedDate)
+						} else {
+							issuedDate, _ := time.Parse(time.RFC3339, issuedDate)
+							if issuedDate.After(newestDate) {
+								newestAlias = alias
+								newestDate = issuedDate
+							}
+						}
+					}
+
+					//convert outputCSV to CSV file
+
+					csvFile, csvErr := os.Create(outputFileName)
+					if csvErr != nil {
+						fmt.Printf("Error creating CSV file: %s\n", csvErr)
+						log.Fatal(csvErr)
+					}
+					defer csvFile.Close()
+
+					csvWriter := csv.NewWriter(csvFile)
+					defer csvWriter.Flush()
+
+					// Write the header
+					header := []string{
+						"StoreId",
+						"StorePath",
+						"Action",
+						"Alias",
+						"IssuedDN",
+						"Thumbprint",
+						"IssuedDate",
+						"ExpiryDate",
+						"CertId",
+					}
+					if err := csvWriter.Write(header); err != nil {
+						fmt.Println("Error writing header:", err)
+						return
+					}
+
+					for _, line := range outputCSV {
+						if line.Alias != newestAlias {
+							line.Action = "REMOVE"
+						}
+						record := []string{
+							line.StoreId,
+							line.StorePath,
+							line.Action,
+							line.Alias,
+							line.IssuedDN,
+							line.Thumbprint,
+							line.IssuedDate.Format(time.RFC3339), // Format date as string (adjust format as needed)
+							line.ExpiryDate.Format(time.RFC3339), // Format date as string (adjust format as needed)
+							strconv.Itoa(line.CertId),            // Convert CertId (int) to string
+						}
+						if err := csvWriter.Write(record); err != nil {
+							fmt.Println("Error writing record:", err)
+							continue
+						}
+
+					}
+				}
+				//invData := make(map[string]interface{})
+				//invData["StoreId"] = cStore.Id
+				//invData["Storepath"] = cStore.StorePath
+				//invData["StoreType"] = cStore.CertStoreType
+				//invData["ContainerName"] = cStore.ContainerName
+				//invData["ClientMachine"] = cStore.ClientMachine
+				//invData["Inventory"] = inv
+				//if _, ok := lkup[cStore.Id]; !ok {
+				//	output = append(output, invData)
+				//}
+				//lkup[cStore.Id] = invData
+			}
+		}
+		for _, line := range outputCSV {
+			if line.Action == "REMOVE" {
+				st := api.CertificateStore{
+					CertificateStoreId: line.StoreId,
+					Alias:              line.Alias,
+					Overwrite:          true,
+					EntryPassword:      nil,
+					PfxPassword:        "",
+					IncludePrivateKey:  true,
+				}
+				var stores []api.CertificateStore
+				stores = append(stores, st)
+				schedule := &api.InventorySchedule{
+					Immediate: boolToPointer(true),
+				}
+				removeReq := api.RemoveCertificateFromStore{
+					CertificateId:     line.CertId,
+					Alias:             line.Alias,
+					CertificateStores: &stores,
+					InventorySchedule: schedule,
+				}
+				if force {
+					fmt.Printf(
+						"Force flag specified scheduling immediate removal of certificate '%s'(%s) from store '%s'\n",
+						line.Alias,
+						line.IssuedDN,
+						line.StorePath,
+					)
+					remResp, err := kfClient.RemoveCertificateFromStores(&removeReq)
+					if err != nil {
+						fmt.Printf(
+							"Error removing certificate '%s'(%s) from store %s: %s\n",
+							line.Alias,
+							line.IssuedDN,
+							line.StorePath,
+							err,
+						)
+						continue
+					}
+					fmt.Printf(
+						"Job %s scheduled for immediate removal of certificate %s from store %s\n", remResp,
+						line.Alias, line.StorePath,
+					)
+				} else {
+					fmt.Println("Dry run:")
+					fmt.Printf(
+						"Would have removed certificate '%s'(%s) from store '%s'\n",
+						line.Alias,
+						line.IssuedDN,
+						line.StorePath,
+					)
+					fmt.Println("To execute the removal, re-run the command with the --force flag")
+				}
+
+			}
+		}
+
+	},
+	RunE:                       nil,
+	PostRun:                    nil,
+	PostRunE:                   nil,
+	PersistentPostRun:          nil,
+	PersistentPostRunE:         nil,
+	FParseErrWhitelist:         cobra.FParseErrWhitelist{},
+	CompletionOptions:          cobra.CompletionOptions{},
+	TraverseChildren:           false,
+	Hidden:                     false,
+	SilenceErrors:              false,
+	SilenceUsage:               false,
+	DisableFlagParsing:         false,
+	DisableAutoGenTag:          false,
+	DisableFlagsInUseLine:      false,
+	DisableSuggestions:         false,
+	SuggestionsMinimumDistance: 0,
 }
 
 var inventoryShowCmd = &cobra.Command{
@@ -664,47 +1051,202 @@ func init() {
 		dryRun       bool
 		cIDs         []string
 		subjectNames []string
+		importFile   string
 	)
 
 	storesCmd.AddCommand(inventoryCmd)
 
+	inventoryCmd.AddCommand(inventoryFixRFPKCS12)
+	inventoryFixRFPKCS12.Flags().BoolVar(
+		&force,
+		"force",
+		false,
+		"Force the removal of the certificate(s) without prompting for confirmation.",
+	)
+	inventoryFixRFPKCS12.Flags().StringVar(
+		&importFile,
+		"file",
+		"",
+		"CSV file to import for RFPKCS12 store fix.",
+	)
+
 	inventoryCmd.AddCommand(inventoryClearCmd)
-	inventoryClearCmd.Flags().StringSliceVar(&ids, "sid", []string{}, "The Keyfactor Command ID of the certificate store(s) remove all inventory from.")
-	inventoryClearCmd.Flags().StringSliceVar(&clients, "client", []string{}, "Remove all inventory from store(s) of specific client machine(s).")
-	inventoryClearCmd.Flags().StringSliceVar(&types, "store-type", []string{}, "Remove all inventory from store(s) of specific store type(s).")
-	inventoryClearCmd.Flags().StringSliceVar(&containers, "container", []string{}, "Remove all inventory from store(s) of specific container type(s).")
+	inventoryClearCmd.Flags().StringSliceVar(
+		&ids,
+		"sid",
+		[]string{},
+		"The Keyfactor Command ID of the certificate store(s) remove all inventory from.",
+	)
+	inventoryClearCmd.Flags().StringSliceVar(
+		&clients,
+		"client",
+		[]string{},
+		"Remove all inventory from store(s) of specific client machine(s).",
+	)
+	inventoryClearCmd.Flags().StringSliceVar(
+		&types,
+		"store-type",
+		[]string{},
+		"Remove all inventory from store(s) of specific store type(s).",
+	)
+	inventoryClearCmd.Flags().StringSliceVar(
+		&containers,
+		"container",
+		[]string{},
+		"Remove all inventory from store(s) of specific container type(s).",
+	)
 	inventoryClearCmd.Flags().BoolVar(&all, "all", false, "Remove all inventory from all certificate stores.")
-	inventoryClearCmd.Flags().BoolVar(&force, "force", false, "Force removal of inventory without prompting for confirmation.")
-	inventoryClearCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Do not remove inventory, only show what would be removed.")
+	inventoryClearCmd.Flags().BoolVar(
+		&force,
+		"force",
+		false,
+		"Force removal of inventory without prompting for confirmation.",
+	)
+	inventoryClearCmd.Flags().BoolVar(
+		&dryRun,
+		"dry-run",
+		false,
+		"Do not remove inventory, only show what would be removed.",
+	)
 
 	inventoryCmd.AddCommand(inventoryAddCmd)
-	inventoryAddCmd.Flags().StringSliceVar(&ids, "sid", []string{}, "The Keyfactor Command ID of the certificate store(s) to add inventory to.")
-	inventoryAddCmd.Flags().StringSliceVar(&clients, "client", []string{}, "Add a certificate to all stores of specific client machine(s).")
-	inventoryAddCmd.Flags().StringSliceVar(&types, "store-type", []string{}, "Add a certificate to all stores of specific store type(s).")
-	inventoryAddCmd.Flags().StringSliceVar(&containers, "container", []string{}, "Add a certificate to all stores of specific container type(s).")
-	inventoryAddCmd.Flags().StringSliceVar(&thumbprints, "thumbprint", []string{}, "The thumbprint of the certificate(s) to add to the store(s).")
-	inventoryAddCmd.Flags().StringSliceVar(&cIDs, "cid", []string{}, "The Keyfactor command certificate ID(s) of the certificate to add to the store(s).")
-	inventoryAddCmd.Flags().StringSliceVar(&subjectNames, "cn", []string{}, "Subject name(s) of the certificate(s) to add to the store(s).")
+	inventoryAddCmd.Flags().StringSliceVar(
+		&ids,
+		"sid",
+		[]string{},
+		"The Keyfactor Command ID of the certificate store(s) to add inventory to.",
+	)
+	inventoryAddCmd.Flags().StringSliceVar(
+		&clients,
+		"client",
+		[]string{},
+		"Add a certificate to all stores of specific client machine(s).",
+	)
+	inventoryAddCmd.Flags().StringSliceVar(
+		&types,
+		"store-type",
+		[]string{},
+		"Add a certificate to all stores of specific store type(s).",
+	)
+	inventoryAddCmd.Flags().StringSliceVar(
+		&containers,
+		"container",
+		[]string{},
+		"Add a certificate to all stores of specific container type(s).",
+	)
+	inventoryAddCmd.Flags().StringSliceVar(
+		&thumbprints,
+		"thumbprint",
+		[]string{},
+		"The thumbprint of the certificate(s) to add to the store(s).",
+	)
+	inventoryAddCmd.Flags().StringSliceVar(
+		&cIDs,
+		"cid",
+		[]string{},
+		"The Keyfactor command certificate ID(s) of the certificate to add to the store(s).",
+	)
+	inventoryAddCmd.Flags().StringSliceVar(
+		&subjectNames,
+		"cn",
+		[]string{},
+		"Subject name(s) of the certificate(s) to add to the store(s).",
+	)
 	inventoryAddCmd.Flags().BoolVar(&all, "all-stores", false, "Add the certificate(s) to all certificate stores.")
-	inventoryAddCmd.Flags().BoolVar(&force, "force", false, "Force addition of inventory without prompting for confirmation.")
+	inventoryAddCmd.Flags().BoolVar(
+		&force,
+		"force",
+		false,
+		"Force addition of inventory without prompting for confirmation.",
+	)
 	inventoryAddCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Do not add inventory, only show what would be added.")
 
 	inventoryCmd.AddCommand(inventoryRemoveCmd)
-	inventoryRemoveCmd.Flags().StringSliceVar(&ids, "sid", []string{}, "The Keyfactor Command ID of the certificate store(s) to remove inventory from.")
-	inventoryRemoveCmd.Flags().StringSliceVar(&clients, "client", []string{}, "Remove certificate(s) from all stores of specific client machine(s).")
-	inventoryRemoveCmd.Flags().StringSliceVar(&types, "store-type", []string{}, "Remove certificate(s) from all stores of specific store type(s).")
-	inventoryRemoveCmd.Flags().StringSliceVar(&containers, "container", []string{}, "Remove certificate(s) from all stores of specific container type(s).")
-	inventoryRemoveCmd.Flags().StringSliceVar(&thumbprints, "thumbprint", []string{}, "The thumbprint of the certificate(s) to remove from the store(s).")
-	inventoryRemoveCmd.Flags().StringSliceVar(&cIDs, "cid", []string{}, "The Keyfactor command certificate ID(s) of the certificate to remove from the store(s).")
-	inventoryRemoveCmd.Flags().StringSliceVar(&subjectNames, "cn", []string{}, "Subject name(s) of the certificate(s) to remove from the store(s).")
-	inventoryRemoveCmd.Flags().BoolVar(&all, "all-stores", false, "Remove the certificate(s) from all certificate stores.")
-	inventoryRemoveCmd.Flags().BoolVar(&force, "force", false, "Force removal of inventory without prompting for confirmation.")
-	inventoryRemoveCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Do not remove inventory, only show what would be removed.")
+	inventoryRemoveCmd.Flags().StringSliceVar(
+		&ids,
+		"sid",
+		[]string{},
+		"The Keyfactor Command ID of the certificate store(s) to remove inventory from.",
+	)
+	inventoryRemoveCmd.Flags().StringSliceVar(
+		&clients,
+		"client",
+		[]string{},
+		"Remove certificate(s) from all stores of specific client machine(s).",
+	)
+	inventoryRemoveCmd.Flags().StringSliceVar(
+		&types,
+		"store-type",
+		[]string{},
+		"Remove certificate(s) from all stores of specific store type(s).",
+	)
+	inventoryRemoveCmd.Flags().StringSliceVar(
+		&containers,
+		"container",
+		[]string{},
+		"Remove certificate(s) from all stores of specific container type(s).",
+	)
+	inventoryRemoveCmd.Flags().StringSliceVar(
+		&thumbprints,
+		"thumbprint",
+		[]string{},
+		"The thumbprint of the certificate(s) to remove from the store(s).",
+	)
+	inventoryRemoveCmd.Flags().StringSliceVar(
+		&cIDs,
+		"cid",
+		[]string{},
+		"The Keyfactor command certificate ID(s) of the certificate to remove from the store(s).",
+	)
+	inventoryRemoveCmd.Flags().StringSliceVar(
+		&subjectNames,
+		"cn",
+		[]string{},
+		"Subject name(s) of the certificate(s) to remove from the store(s).",
+	)
+	inventoryRemoveCmd.Flags().BoolVar(
+		&all,
+		"all-stores",
+		false,
+		"Remove the certificate(s) from all certificate stores.",
+	)
+	inventoryRemoveCmd.Flags().BoolVar(
+		&force,
+		"force",
+		false,
+		"Force removal of inventory without prompting for confirmation.",
+	)
+	inventoryRemoveCmd.Flags().BoolVar(
+		&dryRun,
+		"dry-run",
+		false,
+		"Do not remove inventory, only show what would be removed.",
+	)
 
 	inventoryCmd.AddCommand(inventoryShowCmd)
-	inventoryShowCmd.Flags().StringSliceVar(&ids, "sid", []string{}, "The Keyfactor Command ID of the certificate store(s) to retrieve inventory from.")
-	inventoryShowCmd.Flags().StringSliceVar(&clients, "client", []string{}, "Show certificate inventories for stores of specific client machine(s).")
-	inventoryShowCmd.Flags().StringSliceVar(&types, "store-type", []string{}, "Show certificate inventories for stores of specific store type(s).")
-	inventoryShowCmd.Flags().StringSliceVar(&containers, "container", []string{}, "Show certificate inventories for stores of specific container type(s).")
+	inventoryShowCmd.Flags().StringSliceVar(
+		&ids,
+		"sid",
+		[]string{},
+		"The Keyfactor Command ID of the certificate store(s) to retrieve inventory from.",
+	)
+	inventoryShowCmd.Flags().StringSliceVar(
+		&clients,
+		"client",
+		[]string{},
+		"Show certificate inventories for stores of specific client machine(s).",
+	)
+	inventoryShowCmd.Flags().StringSliceVar(
+		&types,
+		"store-type",
+		[]string{},
+		"Show certificate inventories for stores of specific store type(s).",
+	)
+	inventoryShowCmd.Flags().StringSliceVar(
+		&containers,
+		"container",
+		[]string{},
+		"Show certificate inventories for stores of specific container type(s).",
+	)
 
 }
