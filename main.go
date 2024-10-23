@@ -28,3 +28,7 @@ func main() {
 	//}
 	cmd.Execute()
 }
+
+//func docs() {
+//	doc.GenMarkdownTree(cmd.RootCmd, "./docs")
+//}

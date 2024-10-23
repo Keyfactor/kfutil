@@ -599,13 +599,20 @@ var inventoryRemoveCmd = &cobra.Command{
 }
 
 var inventoryFixRFPKCS12 = &cobra.Command{
-	Use:                    "fixrfpkcs12",
-	Aliases:                nil,
-	SuggestFor:             nil,
-	Short:                  "Fix RFPKCS12 stores that contain 2 or more leaf certificates, by removing the certificate with the earliest issued date.",
-	GroupID:                "",
-	Long:                   `Fix RFPKCS12 stores that contain 2 or more leaf certificates, by removing the certificate with the earliest issued date.`,
-	Example:                "",
+	Use:        "fixrfpkcs12",
+	Aliases:    nil,
+	SuggestFor: nil,
+	Short:      "Fix RFPKCS12 stores that contain 2 or more leaf certificates, by removing the certificate with the earliest issued date.",
+	GroupID:    "",
+	Long:       `Fix RFPKCS12 stores that contain 2 or more leaf certificates, by removing the certificate with the earliest issued date.`,
+	Example: `
+# The below will create a CSV file that can be reviewed and modified before running the command with the --file option.
+kfutil stores inventory fixrfpkcs12
+
+# The below will read the CSV file and schedule remove jobs as specified in the file where the 'Action' col is "REMOVE".
+# The --force flag is *required* to actually schedule the remove jobs for the certificates.
+kfutil stores inventory fixrfpkcs12 --file rfpkcs12_fix.csv --force
+`,
 	ValidArgs:              nil,
 	ValidArgsFunction:      nil,
 	Args:                   nil,
