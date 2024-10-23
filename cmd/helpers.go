@@ -181,6 +181,7 @@ func getCurrentTime(f string) string {
 
 func informDebug(debugFlag bool) {
 	debugModeEnabled := checkDebug(debugFlag)
+	zerolog.SetGlobalLevel(zerolog.Disabled)
 	if debugModeEnabled {
 		//zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
