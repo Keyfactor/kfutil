@@ -190,9 +190,10 @@ func informDebug(debugFlag bool) {
 
 func initLogger() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.SetGlobalLevel(zerolog.Disabled) // default to disabled
 	log.Logger = log.With().Caller().Logger()
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
-	zerolog.SetGlobalLevel(zerolog.Disabled)
+
 }
 
 func intToPointer(i int) *int {

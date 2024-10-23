@@ -15,6 +15,9 @@
 package main
 
 import (
+	_ "embed"
+
+	"github.com/spf13/cobra/doc"
 	"kfutil/cmd"
 )
 
@@ -26,6 +29,7 @@ func main() {
 	//	docs()
 	//	os.Exit(0)
 	//}
+
 	cmd.Execute()
 }
 
