@@ -69,12 +69,6 @@ var importCmd = &cobra.Command{
 
 		log.Info().Msg("Running import...")
 
-		log.Debug().Msgf("%s: createAuthConfigFromParams", DebugFuncCall)
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		if authConfig == nil {
-			return fmt.Errorf("Error: %s", FailedAuthMsg)
-		}
-
 		exportPath := cmd.Flag("file").Value.String()
 		log.Debug().Str("exportPath", exportPath).Msg("exportPath")
 
@@ -107,9 +101,9 @@ var importCmd = &cobra.Command{
 			return jErr
 		}
 		log.Debug().Msgf("%s: initGenClient", DebugFuncCall)
-		kfClient, clientErr := initGenClient(configFile, profile, noPrompt, authConfig, false)
+		kfClient, clientErr := initGenClient(false)
 		log.Debug().Msgf("%s: initClient", DebugFuncExit)
-		oldkfClient, oldClientErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		oldkfClient, oldClientErr := initClient(false)
 
 		if clientErr != nil {
 			log.Error().Err(clientErr).Send()

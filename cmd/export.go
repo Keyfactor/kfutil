@@ -137,31 +137,13 @@ var exportCmd = &cobra.Command{
 			SecurityRoles:       []api.CreateSecurityRoleArg{},
 		}
 
-		log.Debug().Msgf("%s: createAuthConfigFromParams", DebugFuncCall)
-		//authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		authConfig := createAuthConfigFromParams(
-			kfcHostName,
-			kfcUsername,
-			kfcPassword,
-			kfcDomain,
-			kfcAPIPath,
-			kfcClientId,
-			kfcClientSecret,
-			kfcTokenUrl,
-		)
-
-		if authConfig == nil {
-			log.Error().Msg("auth config is nil, invalid client configuration")
-			return fmt.Errorf(FailedAuthMsg)
-		}
-
 		exportPath := cmd.Flag("file").Value.String()
 		log.Debug().Str("exportPath", exportPath).Msg("exportPath")
 
 		log.Debug().Msgf("%s: initGenClient", DebugFuncCall)
-		kfClient, clientErr := initGenClient(configFile, profile, noPrompt, authConfig, false)
+		kfClient, clientErr := initGenClient(false)
 		log.Debug().Msgf("%s: initClient", DebugFuncCall)
-		oldkfClient, oldClientErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		oldkfClient, oldClientErr := initClient(false)
 
 		if clientErr != nil {
 			log.Error().Err(clientErr).Send()

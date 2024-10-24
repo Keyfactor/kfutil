@@ -51,8 +51,6 @@ var inventoryClearCmd = &cobra.Command{
 	PreRun:                 nil,
 	PreRunE:                nil,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -72,7 +70,7 @@ var inventoryClearCmd = &cobra.Command{
 		containerType, _ := cmd.Flags().GetStringSlice("container")
 		allStores, _ := cmd.Flags().GetBool("all")
 
-		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		if storeID == nil && machineName == nil && storeType == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -220,8 +218,6 @@ specified by Keyfactor command store ID, client machine name, store type, or con
 and one or more certificates must be specified. If multiple stores and/or certificates are specified, the command will
 attempt to add all the certificate(s) meeting the specified criteria to all stores meeting the specified criteria.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -254,7 +250,7 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 			log.Fatalf("At least one certificate must be specified")
 		}
 
-		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		if storeIDs == nil && machineNames == nil && storeTypes == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -411,7 +407,6 @@ var inventoryRemoveCmd = &cobra.Command{
 	Long:  `Removes a certificate from the certificate store inventory.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -444,7 +439,7 @@ var inventoryRemoveCmd = &cobra.Command{
 			log.Fatalf("At least one certificate must be specified")
 		}
 
-		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		if storeIDs == nil && machineNames == nil && storeTypes == nil && containerType == nil && !allStores {
 			fmt.Println("You must specify at least one of the following options: --sid, --client, --store-type, --container, --all")
@@ -614,8 +609,6 @@ var inventoryShowCmd = &cobra.Command{
 	PreRun:                 nil,
 	PreRunE:                nil,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -631,7 +624,7 @@ var inventoryShowCmd = &cobra.Command{
 		storeTypes, _ := cmd.Flags().GetStringSlice("store-type")
 		containers, _ := cmd.Flags().GetStringSlice("container")
 
-		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		if len(storeIDs) == 0 && len(clientMachineNames) == 0 && len(storeTypes) == 0 && len(containers) == 0 {
 			fmt.Println("No filters specified. Unable to show inventory. Please specify at least one filter: [--sid, --client, --store-type, --container]")

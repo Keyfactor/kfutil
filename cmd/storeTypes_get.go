@@ -117,8 +117,7 @@ func CreateCmdStoreTypesGet() *cobra.Command {
 			}
 
 			// Authenticate
-			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-			kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+			kfClient, _ := initClient(false)
 
 			if kfClient == nil {
 				return fmt.Errorf("failed to initialize Keyfactor client")

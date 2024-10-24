@@ -22,7 +22,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/Keyfactor/keyfactor-auth-client-go/auth_config"
+	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
 	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/google/go-cmp/cmp"
 	"github.com/rs/zerolog/log"
@@ -540,7 +540,7 @@ func loadConfigFileData(
 
 func authViaProvider() (*api.Client, error) {
 	var clientAuth api.AuthConfig
-	var commandConfig auth_config.Config
+	var commandConfig auth_providers.Config
 	if providerType != "" {
 		log.Info().Str("providerType", providerType).Msg("attempting to auth via auth provider")
 		var providerConfig AuthProvider
@@ -1202,19 +1202,4 @@ func loadConfigurationFile(filePath string, silent bool) (ConfigurationFile, err
 	}
 
 	return data, nil
-}
-
-func createAuthConfigFromParams(
-	hostname string,
-	username string,
-	password string,
-	domain string,
-	apiPath string,
-	clientId string,
-	clientSecret string,
-	tokenUrl string,
-) *api.AuthConfig {
-
-	serverConfig := auth_config.Server{}
-	return &output
 }

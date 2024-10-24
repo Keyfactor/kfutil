@@ -55,8 +55,7 @@ var storesTypesListCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		// CLI Logic
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
@@ -99,8 +98,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		// CLI Logic
 		if gitRef == "" {
@@ -244,11 +242,10 @@ var storesTypeDeleteCmd = &cobra.Command{
 			Msg("delete command flags")
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		if gitRef == "" {
 			gitRef = "main"
 		}
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		var validStoreTypes []string
 		var removeStoreTypes []interface{}

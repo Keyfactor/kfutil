@@ -521,12 +521,12 @@ package cmd
 //			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
 //			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 //
-//			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+//
 //
 //			debugModeEnabled := checkDebug(debugFlag)
 //			log.Println("Debug mode enabled: ", debugModeEnabled)
 //			var lookupFailures []string
-//			kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+//			kfClient, _ := initClient(false)
 //			storesFile, _ := cmd.Flags().GetString("stores")
 //			addRootsFile, _ := cmd.Flags().GetString("add-certs")
 //			removeRootsFile, _ := cmd.Flags().GetString("remove-certs")
@@ -687,14 +687,14 @@ package cmd
 //			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
 //			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 //
-//			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+//
 //
 //			debugModeEnabled := checkDebug(debugFlag)
 //
 //			log.Println("Debug mode enabled: ", debugModeEnabled)
 //
 //			var lookupFailures []string
-//			kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+//			kfClient, _ := initClient(false)
 //			storesFile, _ := cmd.Flags().GetString("stores")
 //			addRootsFile, _ := cmd.Flags().GetString("add-certs")
 //			isCSV, _ := cmd.Flags().GetBool("import-csv")
@@ -998,7 +998,7 @@ package cmd
 //			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
 //			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
 //
-//			authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+//
 //
 //			debugModeEnabled := checkDebug(debugFlag)
 //			log.Println("Debug mode enabled: ", debugModeEnabled)
@@ -1015,7 +1015,7 @@ package cmd
 //			var csvStoreData [][]string
 //			var csvCertData [][]string
 //			var rowLookup = make(map[string]bool)
-//			kfClient, cErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+//			kfClient, cErr := initClient(false)
 //			if len(storeType) != 0 {
 //				for _, s := range storeType {
 //					if cErr != nil {

@@ -60,7 +60,7 @@ var containersGetCmd = &cobra.Command{
 			return debugErr
 		}
 
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, false)
+		kfClient, _ := initClient(false)
 
 		agents, aErr := kfClient.GetStoreContainer(id)
 		if aErr != nil {
@@ -93,7 +93,7 @@ var containersUpdateCmd = &cobra.Command{
 		}
 
 		// Authenticate
-		//authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		//
 
 		// CLI Logic
 		return fmt.Errorf("update store containers not implemented")
@@ -117,7 +117,7 @@ var containersDeleteCmd = &cobra.Command{
 		}
 
 		// Authenticate
-		//authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
+		//
 		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
 
 		// CLI Logic
@@ -142,8 +142,8 @@ var containersListCmd = &cobra.Command{
 		}
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//
+		kfClient, _ := initClient(false)
 
 		// CLI Logic
 		agents, aErr := kfClient.GetStoreContainers()

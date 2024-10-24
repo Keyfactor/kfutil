@@ -132,8 +132,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		// CLI Logic
 		log.Info().Msg("Importing certificate stores")
@@ -376,8 +375,7 @@ Store type IDs can be found by running the "store-types" command.`,
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, clientErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, clientErr := initClient(false)
 		if clientErr != nil {
 			log.Error().Err(clientErr).Msg("Error initializing client")
 			return clientErr
@@ -516,8 +514,8 @@ var storesExportCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+
+		kfClient, _ := initClient(false)
 
 		// CLI Logic
 		log.Info().
