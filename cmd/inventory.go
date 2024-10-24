@@ -602,9 +602,30 @@ var inventoryFixRFPKCS12 = &cobra.Command{
 	Use:        "fixrfpkcs12",
 	Aliases:    nil,
 	SuggestFor: nil,
-	Short:      "Fix RFPKCS12 stores that contain 2 or more leaf certificates, by removing the certificate with the earliest issued date.",
-	GroupID:    "",
-	Long:       `Fix RFPKCS12 stores that contain 2 or more leaf certificates, by removing the certificate with the earliest issued date.`,
+	Short: "Fix RFPKCS12 stores that contain 2 or more leaf certificates. " +
+		"This will remove all but the most recently issued certificate based on certificate `NotBefore` information.",
+	GroupID: "",
+	Long: `Fix RFPKCS12 stores that contain 2 or more leaf certificates. 
+This will *remove all but the most recently issued certificate* based on certificate 'NotBefore' information.
+The command will output a CSV file with the following columns:
+- StoreId
+- StorePath
+- Action
+- Alias
+- IssuedDN
+- Thumbprint
+- IssuedDate
+- ExpiryDate
+- CertId  
+
+The 'Action' column will be set to 'REMOVE' for all certificates except the most recently issued certificate.
+The CSV file can be reviewed and modified and can be passed to the command with the --file option. 
+The command will read the CSV file and schedule remove jobs as specified in the file where the 'Action' column is "REMOVE".
+
+Alternatively the command can be run without the '--file' option if desired. 
+
+In both cases the '--force' flag is required to actually schedule the remove jobs for the certificates from the
+stores. This *cannot* be undone and should be used with caution.`,
 	Example: `
 # The below will create a CSV file that can be reviewed and modified before running the command with the --file option.
 kfutil stores inventory fixrfpkcs12 --exp
@@ -627,9 +648,7 @@ kfutil stores inventory fixrfpkcs12 --file rfpkcs12_fix.csv --force --exp
 	PreRunE:                nil,
 	Run: func(cmd *cobra.Command, args []string) {
 		force, _ := cmd.Flags().GetBool("force")
-		//dryRun, _ := cmd.Flags().GetBool("dry-run")
 		importFile, _ := cmd.Flags().GetString("file")
-		//csvHeader := "Alias,Issued Date,Store Path,Client Machine,StoreId"
 
 		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
