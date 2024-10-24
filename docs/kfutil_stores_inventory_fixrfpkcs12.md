@@ -1,10 +1,33 @@
 ## kfutil stores inventory fixrfpkcs12
 
-Fix RFPKCS12 stores that contain 2 or more leaf certificates, by removing the certificate with the earliest issued date.
+Fix RFPKCS12 stores that contain 2 or more leaf certificates. This will remove all but the most recently issued
+certificate based on certificate `NotBefore` information.
 
 ### Synopsis
 
-Fix RFPKCS12 stores that contain 2 or more leaf certificates, by removing the certificate with the earliest issued date.
+Fix RFPKCS12 stores that contain 2 or more leaf certificates.
+This will *remove all but the most recently issued certificate* based on certificate 'NotBefore' information.
+The command will output a CSV file with the following columns:
+
+- StoreId
+- StorePath
+- Action
+- Alias
+- IssuedDN
+- Thumbprint
+- IssuedDate
+- ExpiryDate
+- CertId
+
+The 'Action' column will be set to 'REMOVE' for all certificates except the most recently issued certificate.
+The CSV file can be reviewed and modified and can be passed to the command with the --file option.
+The command will read the CSV file and schedule remove jobs as specified in the file where the 'Action' column is "
+REMOVE".
+
+Alternatively the command can be run without the '--file' option if desired.
+
+In both cases the '--force' flag is required to actually schedule the remove jobs for the certificates from the
+stores. This *cannot* be undone and should be used with caution.
 
 ```
 kfutil stores inventory fixrfpkcs12 [flags]
