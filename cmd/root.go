@@ -118,25 +118,86 @@ func getServerConfigFromEnv() (*auth_providers.Server, error) {
 	oAuthNoParamsConfig := &auth_providers.CommandConfigOauth{}
 	basicAuthNoParamsConfig := &auth_providers.CommandAuthConfigBasic{}
 
-	log.Debug().Msg("call: basicAuthNoParamsConfig.Authenticate()")
-	bErr := basicAuthNoParamsConfig.Authenticate()
-	log.Debug().Msg("complete: basicAuthNoParamsConfig.Authenticate()")
-	if bErr == nil {
-		log.Debug().Msg("return: getServerConfigFromEnv()")
-		return basicAuthNoParamsConfig.GetServerConfig(), nil
+	username, uOk := os.LookupEnv(auth_providers.EnvKeyfactorUsername)
+	password, pOk := os.LookupEnv(auth_providers.EnvKeyfactorPassword)
+	domain, dOk := os.LookupEnv(auth_providers.EnvKeyfactorDomain)
+	hostname, hOk := os.LookupEnv(auth_providers.EnvKeyfactorHostName)
+	apiPath, aOk := os.LookupEnv(auth_providers.EnvKeyfactorAPIPath)
+	clientId, cOk := os.LookupEnv(auth_providers.EnvKeyfactorClientID)
+	clientSecret, csOk := os.LookupEnv(auth_providers.EnvKeyfactorClientSecret)
+	tokenUrl, tOk := os.LookupEnv(auth_providers.EnvKeyfactorAuthTokenURL)
+	skipVerify, svOk := os.LookupEnv(auth_providers.EnvKeyfactorSkipVerify)
+	var skipVerifyBool bool
+
+	isBasicAuth := uOk && pOk
+	isOAuth := cOk && csOk && tOk
+
+	if svOk {
+		//convert to bool
+		skipVerify = strings.ToLower(skipVerify)
+		skipVerifyBool = skipVerify == "true" || skipVerify == "1" || skipVerify == "yes" || skipVerify == "y" || skipVerify == "t"
+		log.Debug().Bool("skipVerifyBool", skipVerifyBool).Msg("skipVerifyBool")
+	}
+	if dOk {
+		log.Debug().Str("domain", domain).Msg("domain found in environment")
+	}
+	if hOk {
+		log.Debug().Str("hostname", hostname).Msg("hostname found in environment")
+	}
+	if aOk {
+		log.Debug().Str("apiPath", apiPath).Msg("apiPath found in environment")
 	}
 
-	oErr := oAuthNoParamsConfig.Authenticate()
-	if oErr == nil {
+	if isBasicAuth {
+		log.Debug().
+			Str("username", username).
+			Str("password", hashSecretValue(password)).
+			Str("domain", domain).
+			Str("hostname", hostname).
+			Str("apiPath", apiPath).
+			Bool("skipVerify", skipVerifyBool).
+			Msg("call: basicAuthNoParamsConfig.Authenticate()")
+		bErr := basicAuthNoParamsConfig.
+			WithUsername(username).
+			WithPassword(password).
+			WithDomain(domain).
+			WithCommandHostName(hostname).
+			WithCommandAPIPath(apiPath).
+			WithSkipVerify(skipVerifyBool).
+			Authenticate()
+		log.Debug().Msg("complete: basicAuthNoParamsConfig.Authenticate()")
+		if bErr != nil {
+			log.Error().Err(bErr).Msg("unable to authenticate with provided credentials")
+			return nil, bErr
+		}
+		log.Debug().Msg("return: getServerConfigFromEnv()")
+		return basicAuthNoParamsConfig.GetServerConfig(), nil
+	} else if isOAuth {
+		log.Debug().
+			Str("clientId", clientId).
+			Str("clientSecret", hashSecretValue(clientSecret)).
+			Str("tokenUrl", tokenUrl).
+			Str("hostname", hostname).
+			Str("apiPath", apiPath).
+			Bool("skipVerify", skipVerifyBool).
+			Msg("call: oAuthNoParamsConfig.Authenticate()")
+		_ = oAuthNoParamsConfig.CommandAuthConfig.WithCommandHostName(hostname).
+			WithCommandAPIPath(apiPath).
+			WithSkipVerify(skipVerifyBool)
+		oErr := oAuthNoParamsConfig.Authenticate()
+		log.Debug().Msg("complete: oAuthNoParamsConfig.Authenticate()")
+		if oErr != nil {
+			log.Error().Err(oErr).Msg("unable to authenticate with provided credentials")
+			return nil, oErr
+		}
+
 		log.Debug().Msg("return: getServerConfigFromEnv()")
 		return oAuthNoParamsConfig.GetServerConfig(), nil
+
 	}
 
 	log.Error().Msg("unable to authenticate with provided credentials")
-	if bErr != nil {
-		return nil, bErr
-	}
-	return nil, oErr
+	return nil, fmt.Errorf("incomplete environment variable configuration")
 
 }
 
@@ -336,6 +397,18 @@ func initClient(saveConfig bool) (*api.Client, error) {
 		log.Debug().Msg("returned: authViaEnvVars()")
 		if cErr == nil {
 			log.Info().Msg("Authenticated via environment variables")
+			authenticated = true
+		}
+	}
+
+	if !authenticated {
+		log.Debug().Msg("call: authViaConfigFile()")
+		c, cErr = authViaConfigFile("", "")
+		if cErr == nil {
+			log.Info().
+				Str("configFile", configFile).
+				Str("profile", profile).
+				Msgf("Authenticated via config file %s using profile %s", configFile, profile)
 			authenticated = true
 		}
 	}
