@@ -55,6 +55,13 @@ jobs:
     environment: "KFC_10_5_0_CLEAN"
     env:
       GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN}}
+      KEYFACTOR_PASSWORD: ${{ secrets.KEYFACTOR_PASSWORD }}
+      KEYFACTOR_USERNAME: ${{ secrets.KEYFACTOR_USERNAME }}
+      KEYFACTOR_AUTH_CONFIG_B64: ${{ secrets.KEYFACTOR_AUTH_CONFIG_B64 }}
+      KEYFACTOR_HOSTNAME: ${{ vars.KEYFACTOR_HOSTNAME }}
+      KEYFACTOR_AUTH_HOSTNAME: ${{ vars.KEYFACTOR_AUTH_HOSTNAME }}
+      KEYFACTOR_SKIP_VERIFY: ${{ vars.KEYFACTOR_SKIP_VERIFY }}
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -86,6 +93,12 @@ jobs:
     environment: "KFC_10_5_0"
     env:
       GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN}}
+      KEYFACTOR_PASSWORD: ${{ secrets.KEYFACTOR_PASSWORD }}
+      KEYFACTOR_USERNAME: ${{ secrets.KEYFACTOR_USERNAME }}
+      KEYFACTOR_AUTH_CONFIG_B64: ${{ secrets.KEYFACTOR_AUTH_CONFIG_B64 }}
+      KEYFACTOR_HOSTNAME: ${{ vars.KEYFACTOR_HOSTNAME }}
+      KEYFACTOR_AUTH_HOSTNAME: ${{ vars.KEYFACTOR_AUTH_HOSTNAME }}
+      KEYFACTOR_SKIP_VERIFY: ${{ vars.KEYFACTOR_SKIP_VERIFY }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4

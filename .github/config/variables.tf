@@ -58,7 +58,7 @@ variable "keyfactor_hostname_12_3_0_OAUTH" {
 variable "keyfactor_hostname_12_3_0_OAUTH_CLEAN" {
   description = "The hostname of the Keyfactor instance"
   type        = string
-  default     = "int1230-oauth-test-clean.eastus2.cloudapp.azure.com"
+  default = "int-oidc-lab.eastus2.cloudapp.azure.com"
 }
 
 // Authentication
