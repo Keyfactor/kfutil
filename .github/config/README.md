@@ -47,7 +47,6 @@ module "keyfactor_github_test_environment_12_3_0_kc" {
 ```
 
 <!-- BEGIN_TF_DOCS -->
-
 ## Requirements
 
 | Name                                                                      | Version |

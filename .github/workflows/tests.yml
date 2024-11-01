@@ -56,11 +56,21 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN}}
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Run tests
         run: |
           export KFUTIL_DEBUG=1
@@ -77,11 +87,21 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN}}
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Run tests
         run: go test -v ./cmd -run "^Test_Stores_*"
 
@@ -102,11 +122,21 @@ jobs:
       KEYFACTOR_AUTH_HOSTNAME: ${{ vars.KEYFACTOR_AUTH_HOSTNAME }}
       KEYFACTOR_SKIP_VERIFY: ${{ vars.KEYFACTOR_SKIP_VERIFY }}
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Run tests
         run: |
           unset KFUTIL_DEBUG
@@ -121,24 +151,33 @@ jobs:
     env:
       SECRET_NAME: "command-config-1050-az"
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Install dependencies
         run: go mod download && go mod tidy
+
       - name: Get secret from Azure Key Vault
         run: |
           . ./examples/auth/akv/akv_auth.sh
           cat $HOME/.keyfactor/command_config.json
+
       - name: Install kfutil
         run: |
           make install
+
       - name: Run tests
         run: |
           go test -v ./cmd -run "^Test_PAM*"
@@ -262,8 +301,21 @@ jobs:
     needs:
       - build
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
+      - name: Set up private repo access for go get
+        run: |
+          git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Run tests
         run: echo "Running tests for KF 12.x.x"
 
@@ -282,11 +334,21 @@ jobs:
       KEYFACTOR_HOSTNAME: ${{ vars.KEYFACTOR_HOSTNAME }}
       KEYFACTOR_SKIP_VERIFY: ${{ vars.KEYFACTOR_SKIP_VERIFY }}
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Run tests
         run: |
           unset KFUTIL_DEBUG
@@ -308,11 +370,21 @@ jobs:
       KEYFACTOR_AUTH_HOSTNAME: ${{ vars.KEYFACTOR_AUTH_HOSTNAME }}
       KEYFACTOR_SKIP_VERIFY: ${{ vars.KEYFACTOR_SKIP_VERIFY }}
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Run tests
         run: |
           unset KFUTIL_DEBUG
@@ -334,11 +406,21 @@ jobs:
       KEYFACTOR_HOSTNAME: ${{ vars.KEYFACTOR_HOSTNAME }}
       KEYFACTOR_SKIP_VERIFY: ${{ vars.KEYFACTOR_SKIP_VERIFY }}
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Run tests
         run: go test -v ./cmd -run "^Test_Stores_*"
   Test_Stores_KFC_12_3_0_OAUTH:
@@ -358,11 +440,21 @@ jobs:
       KEYFACTOR_AUTH_HOSTNAME: ${{ vars.KEYFACTOR_AUTH_HOSTNAME }}
       KEYFACTOR_SKIP_VERIFY: ${{ vars.KEYFACTOR_SKIP_VERIFY }}
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Run tests
         run: go test -v ./cmd -run "^Test_Stores_*"
 
@@ -382,11 +474,21 @@ jobs:
       KEYFACTOR_HOSTNAME: ${{ vars.KEYFACTOR_HOSTNAME }}
       KEYFACTOR_SKIP_VERIFY: ${{ vars.KEYFACTOR_SKIP_VERIFY }}
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Run tests
         run: |
           unset KFUTIL_DEBUG
@@ -409,11 +511,21 @@ jobs:
       KEYFACTOR_AUTH_HOSTNAME: ${{ vars.KEYFACTOR_AUTH_HOSTNAME }}
       KEYFACTOR_SKIP_VERIFY: ${{ vars.KEYFACTOR_SKIP_VERIFY }}
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Run tests
         run: |
           unset KFUTIL_DEBUG
@@ -429,21 +541,29 @@ jobs:
     env:
       SECRET_NAME: "command-config-1230-az"
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Install dependencies
         run: go mod download && go mod tidy
+
       - name: Get secret from Azure Key Vault
         run: |
           . ./examples/auth/akv/akv_auth.sh
           cat $HOME/.keyfactor/command_config.json
+
       - name: Install kfutil
         run: |
           make install
@@ -459,24 +579,33 @@ jobs:
     env:
       SECRET_NAME: "command-config-1230-oauth-az"
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v4
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: 1.23
+
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Install dependencies
         run: go mod download && go mod tidy
+
       - name: Get secret from Azure Key Vault
         run: |
           . ./examples/auth/akv/akv_auth.sh
           cat $HOME/.keyfactor/command_config.json
+
       - name: Install kfutil
         run: |
           make install
+
       - name: Run tests
         run: |
           go test -v ./cmd -run "^Test_PAM*"
@@ -504,22 +633,23 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      # Checkout code
-      # https://github.com/actions/checkout
-      - name: Checkout code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - name: Check out code
+        uses: actions/checkout@v4
 
-      # Setup GoLang build environment
-      # https://github.com/actions/setup-go
-      - name: Set up Go 1.x
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
-          cache: true
+          go-version: 1.23
 
-      # Install dependencies
+      - name: Get Public IP
+        run: curl -s https://api.ipify.org
+
+      - name: Set up private repo access for go get
+        run: |
+          git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Install dependencies
-        run: go mod download
+        run: go mod download && go mod tidy
 
       # Run the tests with coverage found in the pkg directory
       - name: Run tests
