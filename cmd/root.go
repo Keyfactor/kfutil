@@ -157,13 +157,14 @@ func getServerConfigFromEnv() (*auth_providers.Server, error) {
 			Str("apiPath", apiPath).
 			Bool("skipVerify", skipVerifyBool).
 			Msg("call: basicAuthNoParamsConfig.Authenticate()")
+		basicAuthNoParamsConfig.WithCommandHostName(hostname).
+			WithCommandAPIPath(apiPath).
+			WithSkipVerify(skipVerifyBool)
+
 		bErr := basicAuthNoParamsConfig.
 			WithUsername(username).
 			WithPassword(password).
 			WithDomain(domain).
-			WithCommandHostName(hostname).
-			WithCommandAPIPath(apiPath).
-			WithSkipVerify(skipVerifyBool).
 			Authenticate()
 		log.Debug().Msg("complete: basicAuthNoParamsConfig.Authenticate()")
 		if bErr != nil {

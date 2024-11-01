@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	stdlog "log"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/rs/zerolog/log"
@@ -52,12 +54,14 @@ var storesTypesListCmd = &cobra.Command{
 		if debugErr != nil {
 			return debugErr
 		}
+		stdlog.SetOutput(io.Discard)
 		informDebug(debugFlag)
 
 		// Authenticate
 		kfClient, _ := initClient(false)
 
 		// CLI Logic
+
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
 		if err != nil {
 
