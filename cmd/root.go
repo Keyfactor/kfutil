@@ -20,9 +20,11 @@ import (
 	"io"
 	stdlog "log"
 	"os"
+	"strings"
 
+	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
 	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
@@ -35,17 +37,20 @@ var (
 	providerType    string
 	providerProfile string
 	//providerConfig  string
-	noPrompt     bool
-	expEnabled   bool
-	debugFlag    bool
-	kfcUsername  string
-	kfcHostName  string
-	kfcPassword  string
-	kfcDomain    string
-	kfcAPIPath   string
-	logInsecure  bool
-	outputFormat string
-	offline      bool
+	noPrompt        bool
+	expEnabled      bool
+	debugFlag       bool
+	kfcUsername     string
+	kfcHostName     string
+	kfcPassword     string
+	kfcDomain       string
+	kfcClientId     string
+	kfcClientSecret string
+	kfcTokenUrl     string
+	kfcAPIPath      string
+	logInsecure     bool
+	outputFormat    string
+	offline         bool
 )
 
 func hashSecretValue(secretValue string) string {
@@ -66,241 +71,507 @@ func hashSecretValue(secretValue string) string {
 	return string(hashedPassword)
 }
 
-func initClient(
-	flagConfigFile string,
-	flagProfile string,
-	flagAuthProviderType string,
-	flagAuthProviderProfile string,
-	noPrompt bool,
-	authConfig *api.AuthConfig,
-	saveConfig bool,
-) (*api.Client, error) {
-	log.Debug().Msg("Enter initClient()")
-	var clientAuth api.AuthConfig
-	var commandConfig ConfigurationFile
+func getServerConfigFromFile(configFile string, profile string) (*auth_providers.Server, error) {
+	var commandConfig *auth_providers.Config
+	var serverConfig auth_providers.Server
+
+	log.Debug().
+		Str("configFile", configFile).
+		Str("profile", profile).
+		Msg("configFile or profile is not empty attempting to authenticate via config file")
+	if profile == "" {
+		profile = "default"
+	}
+	if configFile == "" {
+		homeDir, _ := os.UserHomeDir()
+		configFile = fmt.Sprintf("%s/%s", homeDir, auth_providers.DefaultConfigFilePath)
+	}
+	var cfgReadErr error
+	if strings.HasSuffix(configFile, ".yaml") || strings.HasSuffix(configFile, ".yml") {
+		log.Debug().Msg("call: auth_providers.ReadConfigFromYAML()")
+		//commandConfig, cfgReadErr = auth_providers.ReadConfigFromYAML(configFile)
+		commandConfig, cfgReadErr = auth_providers.ReadConfigFromJSON(configFile)
+	} else {
+		log.Debug().Msg("call: auth_providers.ReadConfigFromJSON()")
+		commandConfig, cfgReadErr = auth_providers.ReadConfigFromJSON(configFile)
+	}
+
+	if cfgReadErr != nil {
+		log.Error().Err(cfgReadErr).Msg("unable to read config file")
+		return nil, fmt.Errorf("unable to read config file: %s", cfgReadErr)
+	}
+
+	// check if the profile exists in the config file
+	var ok bool
+	if serverConfig, ok = commandConfig.Servers[profile]; !ok {
+		log.Error().Str("profile", profile).Msg("invalid profile")
+		return nil, fmt.Errorf("invalid profile: %s", profile)
+	}
+
+	log.Debug().Msg("return: getServerConfigFromFile()")
+	return &serverConfig, nil
+}
+
+func getServerConfigFromEnv() (*auth_providers.Server, error) {
+	log.Debug().Msg("Enter getServerConfigFromEnv()")
+
+	oAuthNoParamsConfig := &auth_providers.CommandConfigOauth{}
+	basicAuthNoParamsConfig := &auth_providers.CommandAuthConfigBasic{}
+
+	username, uOk := os.LookupEnv(auth_providers.EnvKeyfactorUsername)
+	password, pOk := os.LookupEnv(auth_providers.EnvKeyfactorPassword)
+	domain, dOk := os.LookupEnv(auth_providers.EnvKeyfactorDomain)
+	hostname, hOk := os.LookupEnv(auth_providers.EnvKeyfactorHostName)
+	apiPath, aOk := os.LookupEnv(auth_providers.EnvKeyfactorAPIPath)
+	clientId, cOk := os.LookupEnv(auth_providers.EnvKeyfactorClientID)
+	clientSecret, csOk := os.LookupEnv(auth_providers.EnvKeyfactorClientSecret)
+	tokenUrl, tOk := os.LookupEnv(auth_providers.EnvKeyfactorAuthTokenURL)
+	skipVerify, svOk := os.LookupEnv(auth_providers.EnvKeyfactorSkipVerify)
+	var skipVerifyBool bool
+
+	isBasicAuth := uOk && pOk
+	isOAuth := cOk && csOk && tOk
+
+	if svOk {
+		//convert to bool
+		skipVerify = strings.ToLower(skipVerify)
+		skipVerifyBool = skipVerify == "true" || skipVerify == "1" || skipVerify == "yes" || skipVerify == "y" || skipVerify == "t"
+		log.Debug().Bool("skipVerifyBool", skipVerifyBool).Msg("skipVerifyBool")
+	}
+	if dOk {
+		log.Debug().Str("domain", domain).Msg("domain found in environment")
+	}
+	if hOk {
+		log.Debug().Str("hostname", hostname).Msg("hostname found in environment")
+	}
+	if aOk {
+		log.Debug().Str("apiPath", apiPath).Msg("apiPath found in environment")
+	}
+
+	if isBasicAuth {
+		log.Debug().
+			Str("username", username).
+			Str("password", hashSecretValue(password)).
+			Str("domain", domain).
+			Str("hostname", hostname).
+			Str("apiPath", apiPath).
+			Bool("skipVerify", skipVerifyBool).
+			Msg("call: basicAuthNoParamsConfig.Authenticate()")
+		basicAuthNoParamsConfig.WithCommandHostName(hostname).
+			WithCommandAPIPath(apiPath).
+			WithSkipVerify(skipVerifyBool)
+
+		bErr := basicAuthNoParamsConfig.
+			WithUsername(username).
+			WithPassword(password).
+			WithDomain(domain).
+			Authenticate()
+		log.Debug().Msg("complete: basicAuthNoParamsConfig.Authenticate()")
+		if bErr != nil {
+			log.Error().Err(bErr).Msg("unable to authenticate with provided credentials")
+			return nil, bErr
+		}
+		log.Debug().Msg("return: getServerConfigFromEnv()")
+		return basicAuthNoParamsConfig.GetServerConfig(), nil
+	} else if isOAuth {
+		log.Debug().
+			Str("clientId", clientId).
+			Str("clientSecret", hashSecretValue(clientSecret)).
+			Str("tokenUrl", tokenUrl).
+			Str("hostname", hostname).
+			Str("apiPath", apiPath).
+			Bool("skipVerify", skipVerifyBool).
+			Msg("call: oAuthNoParamsConfig.Authenticate()")
+		_ = oAuthNoParamsConfig.CommandAuthConfig.WithCommandHostName(hostname).
+			WithCommandAPIPath(apiPath).
+			WithSkipVerify(skipVerifyBool)
+		oErr := oAuthNoParamsConfig.Authenticate()
+		log.Debug().Msg("complete: oAuthNoParamsConfig.Authenticate()")
+		if oErr != nil {
+			log.Error().Err(oErr).Msg("unable to authenticate with provided credentials")
+			return nil, oErr
+		}
+
+		log.Debug().Msg("return: getServerConfigFromEnv()")
+		return oAuthNoParamsConfig.GetServerConfig(), nil
+
+	}
+
+	log.Error().Msg("unable to authenticate with provided credentials")
+	return nil, fmt.Errorf("incomplete environment variable configuration")
+
+}
+
+func authViaConfigFile(cfgFile string, cfgProfile string) (*api.Client, error) {
+	var (
+		c    *api.Client
+		cErr error
+	)
+	log.Debug().Msg("call: getServerConfigFromFile()")
+	conf, err := getServerConfigFromFile(cfgFile, cfgProfile)
+	log.Debug().Msg("complete: getServerConfigFromFile()")
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("unable to get server config from file")
+		return nil, err
+	}
+	if conf != nil {
+		log.Debug().Msg("call: api.NewKeyfactorClient()")
+		c, cErr = api.NewKeyfactorClient(conf, nil)
+		log.Debug().Msg("complete: api.NewKeyfactorClient()")
+		if cErr != nil {
+			log.Error().
+				Err(cErr).
+				Msg("unable to create Keyfactor client")
+			return nil, cErr
+		}
+		log.Debug().Msg("call: c.AuthClient.Authenticate()")
+		authErr := c.AuthClient.Authenticate()
+		log.Debug().Msg("complete: c.AuthClient.Authenticate()")
+		if authErr == nil {
+			return c, nil
+		}
+
+	}
+	log.Error().Msg("unable to authenticate via config file")
+	return nil, fmt.Errorf("unable to authenticate via config file '%s' using profile '%s'", cfgFile, cfgProfile)
+}
+func authSdkViaConfigFile(cfgFile string, cfgProfile string) (*keyfactor.APIClient, error) {
+	var (
+		c    *keyfactor.APIClient
+		cErr error
+	)
+	log.Debug().Msg("call: getServerConfigFromFile()")
+	conf, err := getServerConfigFromFile(cfgFile, cfgProfile)
+	log.Debug().Msg("complete: getServerConfigFromFile()")
+	if err != nil {
+		log.Error().
+			Err(err).
+			Msg("unable to get server config from file")
+		return nil, err
+	}
+	if conf != nil {
+		log.Debug().Msg("call: keyfactor.NewAPIClient()")
+		c = keyfactor.NewAPIClient(conf)
+		log.Debug().Msg("complete: keyfactor.NewAPIClient()")
+		if cErr != nil {
+			log.Error().
+				Err(cErr).
+				Msg("unable to create Keyfactor client")
+			return nil, cErr
+		}
+		log.Debug().Msg("call: c.AuthClient.Authenticate()")
+		authErr := c.AuthClient.Authenticate()
+		log.Debug().Msg("complete: c.AuthClient.Authenticate()")
+		if authErr == nil {
+			return c, nil
+		}
+
+	}
+	log.Error().Msg("unable to authenticate via config file")
+	return nil, fmt.Errorf("unable to authenticate via config file '%s' using profile '%s'", cfgFile, cfgProfile)
+}
+
+func authViaEnvVars() (*api.Client, error) {
+	var (
+		c    *api.Client
+		cErr error
+	)
+	log.Debug().Msg("enter: authViaEnvVars()")
+	log.Debug().Msg("call: getServerConfigFromEnv()")
+	conf, err := getServerConfigFromEnv()
+	log.Debug().Msg("complete: getServerConfigFromEnv()")
+	if err != nil {
+		log.Error().Err(err).Msg("unable to authenticate via environment variables")
+		log.Debug().Msg("return: authViaEnvVars()")
+		return nil, err
+	}
+	if conf != nil {
+		log.Debug().Msg("call: api.NewKeyfactorClient()")
+		c, cErr = api.NewKeyfactorClient(conf, nil)
+		log.Debug().Msg("complete: api.NewKeyfactorClient()")
+		if cErr != nil {
+			log.Error().Err(cErr).Msg("unable to create Keyfactor client")
+			log.Debug().Msg("return: authViaEnvVars()")
+			return nil, cErr
+		}
+		log.Debug().Msg("call: c.AuthClient.Authenticate()")
+		authErr := c.AuthClient.Authenticate()
+		log.Debug().Msg("complete: c.AuthClient.Authenticate()")
+		if authErr != nil {
+			log.Error().Err(authErr).Msg("unable to authenticate via environment variables")
+			return nil, authErr
+		}
+		log.Debug().Msg("return: authViaEnvVars()")
+		return c, nil
+	}
+	log.Error().Msg("unable to authenticate via environment variables")
+	log.Debug().Msg("return: authViaEnvVars()")
+	return nil, fmt.Errorf("unable to authenticate via environment variables")
+}
+func authSdkViaEnvVars() (*keyfactor.APIClient, error) {
+	var (
+		c    *keyfactor.APIClient
+		cErr error
+	)
+	log.Debug().Msg("enter: authViaEnvVars()")
+	log.Debug().Msg("call: getServerConfigFromEnv()")
+	conf, err := getServerConfigFromEnv()
+	log.Debug().Msg("complete: getServerConfigFromEnv()")
+	if err != nil {
+		log.Error().Err(err).Msg("unable to authenticate via environment variables")
+		log.Debug().Msg("return: authViaEnvVars()")
+		return nil, err
+	}
+	if conf != nil {
+		log.Debug().Msg("call: api.NewKeyfactorClient()")
+		c = keyfactor.NewAPIClient(conf)
+		log.Debug().Msg("complete: api.NewKeyfactorClient()")
+		if cErr != nil {
+			log.Error().Err(cErr).Msg("unable to create Keyfactor client")
+			log.Debug().Msg("return: authViaEnvVars()")
+			return nil, cErr
+		}
+		log.Debug().Msg("call: c.AuthClient.Authenticate()")
+		authErr := c.AuthClient.Authenticate()
+		log.Debug().Msg("complete: c.AuthClient.Authenticate()")
+		if authErr != nil {
+			log.Error().Err(authErr).Msg("unable to authenticate via environment variables")
+			return nil, authErr
+		}
+		log.Debug().Msg("return: authViaEnvVars()")
+		return c, nil
+	}
+	log.Error().Msg("unable to authenticate via environment variables")
+	log.Debug().Msg("return: authViaEnvVars()")
+	return nil, fmt.Errorf("unable to authenticate via environment variables")
+}
+
+func initClient(saveConfig bool) (*api.Client, error) {
+	log.Debug().
+		Str("configFile", configFile).
+		Str("profile", profile).
+		Str("providerType", providerType).
+		Str("providerProfile", providerProfile).
+		Bool("noPrompt", noPrompt).
+		Bool("saveConfig", saveConfig).
+		Str("hostname", kfcHostName).
+		Str("username", kfcUsername).
+		Str("password", hashSecretValue(kfcPassword)).
+		Str("domain", kfcDomain).
+		Str("clientId", kfcClientId).
+		Str("clientSecret", hashSecretValue(kfcClientSecret)).
+		Str("apiPath", kfcAPIPath).
+		Str("providerType", providerType).
+		Str("providerProfile", providerProfile).
+		Msg("enter: initClient()")
+	var (
+		authenticated bool
+		c             *api.Client
+		cErr          error
+	)
 
 	if providerType != "" {
+		log.Debug().
+			Str("providerType", providerType).
+			Msg("call: authViaProvider()")
 		return authViaProvider()
 	}
+	log.Debug().
+		Msg("providerType is empty attempting to authenticate via params")
 
-	log.Debug().Msg("call: authEnvVars()")
-	commandConfig, _ = authEnvVars(flagConfigFile, flagProfile, saveConfig)
-
-	// check if commandConfig is empty
-	if commandConfig.Servers == nil || len(commandConfig.Servers) == 0 {
-		log.Debug().Msg("commandConfig is empty")
-		if flagConfigFile != "" || !validConfigFileEntry(commandConfig, flagProfile) {
-			log.Debug().
-				Str("flagConfigFile", flagConfigFile).
-				Str("flagProfile", flagProfile).
-				Bool("noPrompt", noPrompt).
-				Bool("saveConfig", saveConfig).
-				Msg("call: authConfigFile()")
-			commandConfig, _ = authConfigFile(flagConfigFile, flagProfile, "", noPrompt, saveConfig)
-			log.Debug().Msg("complete: authConfigFile()")
-		}
-	} else {
-		log.Debug().Msg("commandConfig is not empty and is valid")
-		authProviderProfile, _ := os.LookupEnv("KUTIL_AUTH_PROVIDER_PROFILE")
-		log.Debug().Str("authProviderProfile", authProviderProfile).Send()
-		if authProviderProfile != "" {
-			flagProfile = authProviderProfile
-		} else if flagAuthProviderProfile != "" {
-			flagProfile = flagAuthProviderProfile
-		}
-	}
-	log.Debug().Str("flagProfile", flagProfile).Send()
-
-	if flagProfile == "" {
-		flagProfile = "default"
-	}
-
-	//Params from authConfig take precedence over everything else
-	if authConfig != nil {
-		// replace commandConfig with authConfig params that aren't null or empty
-		log.Debug().Str("flagProfile", flagProfile).Msg("Loading profile from authConfig")
-		configEntry := commandConfig.Servers[flagProfile]
-		if authConfig.Hostname != "" {
-			log.Debug().Str("authConfig.Hostname", authConfig.Hostname).
-				Str("configEntry.Hostname", configEntry.Hostname).
-				Str("flagProfile", flagProfile).
-				Msg("Config file profile file hostname is set")
-			configEntry.Hostname = authConfig.Hostname
-		}
-		if authConfig.Username != "" {
-			log.Debug().Str("authConfig.Username", authConfig.Username).
-				Str("configEntry.Username", configEntry.Username).
-				Str("flagProfile", flagProfile).
-				Msg("Config file profile file username is set")
-			configEntry.Username = authConfig.Username
-		}
-		if authConfig.Password != "" {
-			log.Debug().Str("authConfig.Password", hashSecretValue(authConfig.Password)).
-				Str("configEntry.Password", hashSecretValue(configEntry.Password)).
-				Str("flagProfile", flagProfile).
-				Msg("Config file profile file password is set")
-			configEntry.Password = authConfig.Password
-		}
-		if authConfig.Domain != "" {
-			log.Debug().Str("authConfig.Domain", authConfig.Domain).
-				Str("configEntry.Domain", configEntry.Domain).
-				Str("flagProfile", flagProfile).
-				Msg("Config file profile file domain is set")
-			configEntry.Domain = authConfig.Domain
-		} else if authConfig.Username != "" {
-			log.Debug().Str("authConfig.Username", authConfig.Username).
-				Str("configEntry.Username", configEntry.Username).
-				Str("flagProfile", flagProfile).
-				Msg("Attempting to get domain from username")
-			tDomain := getDomainFromUsername(authConfig.Username)
-			if tDomain != "" {
-				log.Debug().Str("configEntry.Domain", tDomain).
-					Msg("domain set from username")
-				configEntry.Domain = tDomain
-			}
-		}
-		if authConfig.APIPath != "" && configEntry.APIPath == "" {
-			log.Debug().Str("authConfig.APIPath", authConfig.APIPath).
-				Str("configEntry.APIPath", configEntry.APIPath).
-				Str("flagProfile", flagProfile).
-				Msg("Config file profile file APIPath is set")
-			configEntry.APIPath = authConfig.APIPath
-		}
-		log.Debug().Str("flagProfile", flagProfile).Msg("Setting configEntry")
-		commandConfig.Servers[flagProfile] = configEntry
-	}
-
-	if !validConfigFileEntry(commandConfig, flagProfile) {
-		if !noPrompt {
-			// Auth user interactively
-			authConfigEntry := commandConfig.Servers[flagProfile]
-			commandConfig, _ = authInteractive(
-				authConfigEntry.Hostname,
-				authConfigEntry.Username,
-				authConfigEntry.Password,
-				authConfigEntry.Domain,
-				authConfigEntry.APIPath,
-				flagProfile,
-				false,
-				false,
-				flagConfigFile,
-			)
-		} else {
-			//log.Fatalf("[ERROR] auth config profile: %s", flagProfile)
-			log.Error().Str("flagProfile", flagProfile).Msg("invalid auth config profile")
-			return nil, fmt.Errorf("invalid auth config profile: %s", flagProfile)
+	if configFile != "" || profile != "" {
+		c, cErr = authViaConfigFile(configFile, profile)
+		if cErr == nil {
+			log.Info().
+				Str("configFile", configFile).
+				Str("profile", profile).
+				Msgf("Authenticated via config file %s using profile %s", configFile, profile)
+			authenticated = true
 		}
 	}
 
-	clientAuth.Username = commandConfig.Servers[flagProfile].Username
-	clientAuth.Password = commandConfig.Servers[flagProfile].Password
-	clientAuth.Domain = commandConfig.Servers[flagProfile].Domain
-	clientAuth.Hostname = commandConfig.Servers[flagProfile].Hostname
-	clientAuth.APIPath = commandConfig.Servers[flagProfile].APIPath
-
-	log.Debug().Str("clientAuth.Username", clientAuth.Username).
-		Str("clientAuth.Password", hashSecretValue(clientAuth.Password)).
-		Str("clientAuth.Domain", clientAuth.Domain).
-		Str("clientAuth.Hostname", clientAuth.Hostname).
-		Str("clientAuth.APIPath", clientAuth.APIPath).
-		Msg("Client authentication params")
-
-	log.Debug().Msg("call: api.NewKeyfactorClient()")
-	c, err := api.NewKeyfactorClient(&clientAuth)
-	log.Debug().Msg("complete: api.NewKeyfactorClient()")
-
-	if err != nil {
-		//fmt.Printf("Error connecting to Keyfactor: %s\n", err)
-		outputError(err, true, "text")
-		//log.Fatalf("[ERROR] creating Keyfactor client: %s", err)
-		return nil, fmt.Errorf("unable to create Keyfactor Command client: %s", err)
+	if !authenticated {
+		log.Debug().Msg("call: authViaEnvVars()")
+		c, cErr = authViaEnvVars()
+		log.Debug().Msg("returned: authViaEnvVars()")
+		if cErr == nil {
+			log.Info().Msg("Authenticated via environment variables")
+			authenticated = true
+		}
 	}
+
+	if !authenticated {
+		log.Debug().Msg("call: authViaConfigFile()")
+		c, cErr = authViaConfigFile("", "")
+		if cErr == nil {
+			log.Info().
+				Str("configFile", configFile).
+				Str("profile", profile).
+				Msgf("Authenticated via config file %s using profile %s", configFile, profile)
+			authenticated = true
+		}
+	}
+
+	if !authenticated {
+		log.Error().Msg("unable to authenticate")
+		if cErr != nil {
+			log.Debug().Err(cErr).Msg("return: initClient()")
+			return nil, cErr
+		}
+		log.Debug().Msg("return: initClient()")
+		return nil, fmt.Errorf("unable to authenticate to Keyfactor Command")
+	}
+
 	log.Info().Msg("Keyfactor Command client created")
 	return c, nil
 }
 
 func initGenClient(
-	flagConfig string,
-	flagProfile string,
-	noPrompt bool,
-	authConfig *api.AuthConfig,
 	saveConfig bool,
 ) (*keyfactor.APIClient, error) {
-	var commandConfig ConfigurationFile
+	log.Debug().
+		Str("configFile", configFile).
+		Str("profile", profile).
+		Str("providerType", providerType).
+		Str("providerProfile", providerProfile).
+		Bool("noPrompt", noPrompt).
+		Bool("saveConfig", saveConfig).
+		Str("hostname", kfcHostName).
+		Str("username", kfcUsername).
+		Str("password", hashSecretValue(kfcPassword)).
+		Str("domain", kfcDomain).
+		Str("clientId", kfcClientId).
+		Str("clientSecret", hashSecretValue(kfcClientSecret)).
+		Str("apiPath", kfcAPIPath).
+		Str("providerType", providerType).
+		Str("providerProfile", providerProfile).
+		Msg("enter: initGenClient()")
+
+	var (
+		authenticated bool
+		c             *keyfactor.APIClient
+		cErr          error
+	)
 
 	if providerType != "" {
-		return authViaProviderGenClient()
+		log.Debug().
+			Str("providerType", providerType).
+			Msg("call: authViaProvider()")
+		//return authViaProvider()
+		return nil, fmt.Errorf("provider auth not supported using Keyfactor Command SDK")
 	}
+	log.Debug().
+		Msg("providerType is empty attempting to authenticate via params")
 
-	commandConfig, _ = authEnvVars(flagConfig, "", saveConfig)
-
-	if flagConfig != "" || !validConfigFileEntry(commandConfig, flagProfile) {
-		commandConfig, _ = authConfigFile(flagConfig, flagProfile, "", noPrompt, saveConfig)
-	}
-
-	if flagProfile == "" {
-		flagProfile = "default"
-	}
-
-	//Params from authConfig take precedence over everything else
-	if authConfig != nil {
-		// replace commandConfig with authConfig params that aren't null or empty
-		configEntry := commandConfig.Servers[flagProfile]
-		if authConfig.Hostname != "" {
-			configEntry.Hostname = authConfig.Hostname
-		}
-		if authConfig.Username != "" {
-			configEntry.Username = authConfig.Username
-		}
-		if authConfig.Password != "" {
-			configEntry.Password = authConfig.Password
-		}
-		if authConfig.Domain != "" {
-			configEntry.Domain = authConfig.Domain
-		} else if authConfig.Username != "" {
-			tDomain := getDomainFromUsername(authConfig.Username)
-			if tDomain != "" {
-				configEntry.Domain = tDomain
-			}
-		}
-		if authConfig.APIPath != "" {
-			configEntry.APIPath = authConfig.APIPath
-		}
-		commandConfig.Servers[flagProfile] = configEntry
-	}
-
-	if !validConfigFileEntry(commandConfig, flagProfile) {
-		if !noPrompt {
-			// Auth user interactively
-			authConfigEntry := commandConfig.Servers[flagProfile]
-			commandConfig, _ = authInteractive(
-				authConfigEntry.Hostname,
-				authConfigEntry.Username,
-				authConfigEntry.Password,
-				authConfigEntry.Domain,
-				authConfigEntry.APIPath,
-				flagProfile,
-				false,
-				false,
-				flagConfig,
-			)
-		} else {
-			//log.Fatalf("[ERROR] auth config profile: %s", flagProfile)
-			log.Error().Str("flagProfile", flagProfile).Msg("invalid auth config profile")
-			return nil, fmt.Errorf("auth config profile: %s", flagProfile)
+	if configFile != "" || profile != "" {
+		c, cErr = authSdkViaConfigFile(configFile, profile)
+		if cErr == nil {
+			log.Info().
+				Str("configFile", configFile).
+				Str("profile", profile).
+				Msgf("Authenticated via config file %s using profile %s", configFile, profile)
+			authenticated = true
 		}
 	}
 
-	sdkClientConfig := make(map[string]string)
-	sdkClientConfig["host"] = commandConfig.Servers[flagProfile].Hostname
-	sdkClientConfig["username"] = commandConfig.Servers[flagProfile].Username
-	sdkClientConfig["password"] = commandConfig.Servers[flagProfile].Password
-	sdkClientConfig["domain"] = commandConfig.Servers[flagProfile].Domain
+	if !authenticated {
+		log.Debug().Msg("call: authViaEnvVars()")
+		c, cErr = authSdkViaEnvVars()
+		log.Debug().Msg("returned: authViaEnvVars()")
+		if cErr == nil {
+			log.Info().Msg("Authenticated via environment variables")
+			authenticated = true
+		}
+	}
 
-	configuration := keyfactor.NewConfiguration(sdkClientConfig)
-	c := keyfactor.NewAPIClient(configuration)
+	log.Info().Msg("Keyfactor Command client created")
 	return c, nil
 }
+
+//func initGenClientV1(
+//	flagConfig string,
+//	flagProfile string,
+//	noPrompt bool,
+//	authConfig *api.AuthConfig,
+//	saveConfig bool,
+//) (*keyfactor.APIClient, error) {
+//	var commandConfig ConfigurationFile
+//
+//	if providerType != "" {
+//		return authViaProviderGenClient()
+//	}
+//
+//	commandConfig, _ = authEnvVars(flagConfig, "", saveConfig)
+//
+//	if flagConfig != "" || !validConfigFileEntry(commandConfig, flagProfile) {
+//		commandConfig, _ = authConfigFile(flagConfig, flagProfile, "", noPrompt, saveConfig)
+//	}
+//
+//	if flagProfile == "" {
+//		flagProfile = "default"
+//	}
+//
+//	//Params from authConfig take precedence over everything else
+//	if authConfig != nil {
+//		// replace commandConfig with authConfig params that aren't null or empty
+//		configEntry := commandConfig.Servers[flagProfile]
+//		if authConfig.Hostname != "" {
+//			configEntry.Hostname = authConfig.Hostname
+//		}
+//		if authConfig.Username != "" {
+//			configEntry.Username = authConfig.Username
+//		}
+//		if authConfig.Password != "" {
+//			configEntry.Password = authConfig.Password
+//		}
+//		if authConfig.Domain != "" {
+//			configEntry.Domain = authConfig.Domain
+//		} else if authConfig.Username != "" {
+//			tDomain := getDomainFromUsername(authConfig.Username)
+//			if tDomain != "" {
+//				configEntry.Domain = tDomain
+//			}
+//		}
+//		if authConfig.APIPath != "" {
+//			configEntry.APIPath = authConfig.APIPath
+//		}
+//		commandConfig.Servers[flagProfile] = configEntry
+//	}
+//
+//	if !validConfigFileEntry(commandConfig, flagProfile) {
+//		if !noPrompt {
+//			// Auth user interactively
+//			authConfigEntry := commandConfig.Servers[flagProfile]
+//			commandConfig, _ = authInteractive(
+//				authConfigEntry.Hostname,
+//				authConfigEntry.Username,
+//				authConfigEntry.Password,
+//				authConfigEntry.Domain,
+//				authConfigEntry.APIPath,
+//				flagProfile,
+//				false,
+//				false,
+//				flagConfig,
+//			)
+//		} else {
+//			//log.Fatalf("[ERROR] auth config profile: %s", flagProfile)
+//			log.Error().Str("flagProfile", flagProfile).Msg("invalid auth config profile")
+//			return nil, fmt.Errorf("auth config profile: %s", flagProfile)
+//		}
+//	}
+//
+//	sdkClientConfig := make(map[string]string)
+//	sdkClientConfig["host"] = commandConfig.Servers[flagProfile].Hostname
+//	sdkClientConfig["username"] = commandConfig.Servers[flagProfile].Username
+//	sdkClientConfig["password"] = commandConfig.Servers[flagProfile].Password
+//	sdkClientConfig["domain"] = commandConfig.Servers[flagProfile].Domain
+//
+//	configuration := keyfactor.NewConfiguration(sdkClientConfig)
+//	c := keyfactor.NewAPIClient(configuration)
+//	return c, nil
+//}
 
 var makeDocsCmd = &cobra.Command{
 	Use:    "makedocs",

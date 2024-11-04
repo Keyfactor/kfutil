@@ -25,8 +25,10 @@ import (
 	"strings"
 	"time"
 
+	stdlog "log"
+
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -52,13 +54,14 @@ var storesTypesListCmd = &cobra.Command{
 		if debugErr != nil {
 			return debugErr
 		}
+		stdlog.SetOutput(io.Discard)
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		// CLI Logic
+
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
 		if err != nil {
 
@@ -99,8 +102,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		// CLI Logic
 		if gitRef == "" {
@@ -244,11 +246,10 @@ var storesTypeDeleteCmd = &cobra.Command{
 			Msg("delete command flags")
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		if gitRef == "" {
 			gitRef = "main"
 		}
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		var validStoreTypes []string
 		var removeStoreTypes []interface{}
