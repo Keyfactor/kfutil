@@ -58,7 +58,11 @@ var storesTypesListCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		kfClient, _ := initClient(false)
+		kfClient, cErr := initClient(false)
+		if cErr != nil {
+			log.Error().Err(cErr).Msg("unable to authenticate")
+			return cErr
+		}
 
 		// CLI Logic
 

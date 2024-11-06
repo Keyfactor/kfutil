@@ -678,6 +678,31 @@ func init() {
 		"",
 		"Username to use for authenticating to Keyfactor Command.",
 	)
+
+	RootCmd.PersistentFlags().StringVarP(
+		&kfcClientId,
+		"client-id",
+		"",
+		"",
+		"OAuth2 client-id to use for authenticating to Keyfactor Command.",
+	)
+
+	RootCmd.PersistentFlags().StringVarP(
+		&kfcClientSecret,
+		"client-secret",
+		"",
+		"",
+		"OAuth2 client-secret to use for authenticating to Keyfactor Command.",
+	)
+
+	RootCmd.PersistentFlags().StringVarP(
+		&kfcClientId,
+		"token-url",
+		"",
+		"",
+		"OAuth2 token endpoint full URL to use for authenticating to Keyfactor Command.",
+	)
+
 	RootCmd.PersistentFlags().StringVarP(
 		&kfcHostName,
 		"hostname",
