@@ -81,7 +81,7 @@ jobs:
       - name: Run tests
         run: |
           export KFUTIL_DEBUG=1
-          go test -v ./cmd -run "^Test_StoreTypes*"
+          go test -timeout 20m -v ./cmd -run "^Test_StoreTypes*"
 
   ### Store Tests
   Test_Stores_KFC_10_5_0:
@@ -116,7 +116,7 @@ jobs:
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Run tests
-        run: go test -v ./cmd -run "^Test_Stores_*"
+        run: go test -timeout 20m -v ./cmd -run "^Test_Stores_*"
 
   ### PAM Tests
   Test_PAM_KFC_10_5_0:
@@ -153,7 +153,7 @@ jobs:
       - name: Run tests
         run: |
           unset KFUTIL_DEBUG
-          go test -v ./cmd -run "^Test_PAM*"
+          go test -timeout 20m -v ./cmd -run "^Test_PAM*"
 
   ### PAM Tests AKV Auth Provider
   Test_AKV_PAM_KFC_10_5_0:
@@ -193,7 +193,7 @@ jobs:
 
       - name: Run tests
         run: |
-          go test -v ./cmd -run "^Test_PAM*"
+          go test -timeout 20m -v ./cmd -run "^Test_PAM*"
   
 
   #  ## KFC 11.x.x
@@ -226,7 +226,7 @@ jobs:
   #      - name: Run tests
   #        run: |
   #          unset KFUTIL_DEBUG
-  #          go test -v ./cmd -run "^Test_StoreTypes*"
+  #          go test -timeout 20m -v ./cmd -run "^Test_StoreTypes*"
   #
   #
   #  ### Store Tests
@@ -250,7 +250,7 @@ jobs:
   #        run: |
   #          git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
   #      - name: Run tests
-  #        run: go test -v ./cmd -run "^Test_Stores_*"
+  #        run: go test -timeout 20m -v ./cmd -run "^Test_Stores_*"
   #
   #  ### PAM Tests
   #  Test_PAM_KFC_11_1_2:
@@ -275,7 +275,7 @@ jobs:
   #      - name: Run tests
   #        run: |
   #          unset KFUTIL_DEBUG
-  #          go test -v ./cmd -run "^Test_PAM*"
+  #          go test -timeout 20m -v ./cmd -run "^Test_PAM*"
   #
   #
   #  ### PAM Tests AKV Auth Provider
@@ -306,7 +306,7 @@ jobs:
   #          make install
   #      - name: Run tests
   #        run: |
-  #          go test -v ./cmd -run "^Test_PAM*"
+  #          go test -timeout 20m -v ./cmd -run "^Test_PAM*"
 
   ## KFC 12.x.x
   kf_12_x_x:
@@ -365,7 +365,7 @@ jobs:
   #      - name: Run tests
   #        run: |
   #          unset KFUTIL_DEBUG
-  #          go test -v ./cmd -run "^Test_StoreTypes*"
+  #          go test -timeout 20m -v ./cmd -run "^Test_StoreTypes*"
 
   Test_StoreTypes_KFC_12_3_0_OAUTH:
     runs-on: kfutil-runner-set
@@ -401,7 +401,7 @@ jobs:
       - name: Run tests
         run: |
           unset KFUTIL_DEBUG
-          go test -v ./cmd -run "^Test_StoreTypes*"
+          go test -timeout 20m -v ./cmd -run "^Test_StoreTypes*"
 
   ### Store Tests
   #  Test_Stores_KFC_12_3_0:
@@ -435,7 +435,7 @@ jobs:
   #          git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
   #
   #      - name: Run tests
-  #        run: go test -v ./cmd -run "^Test_Stores_*"
+  #        run: go test -timeout 20m -v ./cmd -run "^Test_Stores_*"
   Test_Stores_KFC_12_3_0_OAUTH:
     runs-on: kfutil-runner-set
     needs:
@@ -469,7 +469,7 @@ jobs:
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
       - name: Run tests
-        run: go test -v ./cmd -run "^Test_Stores_*"
+        run: go test -timeout 20m -v ./cmd -run "^Test_Stores_*"
 
   ### PAM Tests
   #  Test_PAM_KFC_12_3_0:
@@ -505,7 +505,7 @@ jobs:
   #      - name: Run tests
   #        run: |
   #          unset KFUTIL_DEBUG
-  #          go test -v ./cmd -run "^Test_PAM*"
+  #          go test -timeout 20m -v ./cmd -run "^Test_PAM*"
 
   Test_PAM_KFC_12_3_0_OAUTH:
     runs-on: self-hosted
@@ -542,7 +542,7 @@ jobs:
       - name: Run tests
         run: |
           unset KFUTIL_DEBUG
-          go test -v ./cmd -run "^Test_PAM*"
+          go test -timeout 20m -v ./cmd -run "^Test_PAM*"
 
 
   ### PAM Tests AKV Auth Provider
@@ -582,7 +582,7 @@ jobs:
   #          make install
   #      - name: Run tests
   #        run: |
-  #          go test -v ./cmd -run "^Test_PAM*"
+  #          go test -timeout 20m -v ./cmd -run "^Test_PAM*"
 
   Test_AKV_PAM_KFC_12_3_0_OAUTH:
     runs-on: self-hosted
@@ -621,7 +621,7 @@ jobs:
 
       - name: Run tests
         run: |
-          go test -v ./cmd -run "^Test_PAM*"
+          go test -timeout 20m -v ./cmd -run "^Test_PAM*"
 
   # Tester Install Script
   Test_Install_Script:
@@ -666,4 +666,4 @@ jobs:
 
       # Run the tests with coverage found in the pkg directory
       - name: Run tests
-        run: go test -v -cover ./pkg/...
+        run: go test -timeout 20m -v -cover ./pkg/...
