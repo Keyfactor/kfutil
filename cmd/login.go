@@ -402,7 +402,9 @@ func promptForInteractivePassword(parameterName string, defaultValue string) str
 	}
 
 	// Trim newline and check if password is empty; if so, return default
-	password = password[:len(password)-1]
+	if len(password) > 0 {
+		password = password[:len(password)-1]
+	}
 	if password == "" {
 		return defaultValue
 	}

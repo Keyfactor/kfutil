@@ -52,19 +52,79 @@ func Test_LoginHelpCmd(t *testing.T) {
 	}
 }
 
-func Test_LoginCmdNoPrompt(t *testing.T) {
-
+func Test_LoginCmdEnvOnly(t *testing.T) {
 	homeDir, _ := os.UserHomeDir()
 	// Define the path to the file in the user's home directory
 	configFilePath := filepath.Join(homeDir, auth_providers.DefaultConfigFilePath)
 	testEnvCredsOnly(t, configFilePath, false)
-	testLoginNoPrompt(t, configFilePath)
+
+}
+
+func Test_LoginFileNoPrompt(t *testing.T) {
+	homeDir, _ := os.UserHomeDir()
+	configFilePath := filepath.Join(homeDir, auth_providers.DefaultConfigFilePath)
+	// Test logging in w/o args and w/o prompt
+	username, password, domain := exportBasicEnvVariables()
+	clientId, clientSecret, tokenUrl := exportOAuthEnvVariables()
+	envUsername, envPassword, envDomain := exportBasicEnvVariables()
+	envClientId, envClientSecret, envTokenUrl := exportOAuthEnvVariables()
+	os.Setenv(auth_providers.EnvKeyfactorSkipVerify, "true")
+	if (envUsername == "" || envPassword == "" || envDomain == "") && (envClientId == "" || envClientSecret == "" || envTokenUrl == "") {
+		t.Errorf("Environment variables are not set")
+		t.FailNow()
+	}
+	existingConfig, exErr := auth_providers.ReadConfigFromJSON(configFilePath)
+	if exErr != nil {
+		t.Errorf("Error reading existing config: %s", exErr)
+		t.FailNow()
+	}
+	defer func() {
+		//restore config file
+		if existingConfig != nil {
+			wErr := auth_providers.WriteConfigToJSON(configFilePath, existingConfig)
+			if wErr != nil {
+				t.Errorf("Error writing existing config: %s", wErr)
+				t.FailNow()
+			}
+		}
+	}()
+	t.Run(
+		fmt.Sprintf("login no prompt from file"), func(t *testing.T) {
+			unsetOAuthEnvVariables()
+			unsetBasicEnvVariables()
+			defer setOAuthEnvVariables(clientId, clientSecret, tokenUrl)
+			defer setBasicEnvVariables(username, password, domain)
+
+			npfCmd := RootCmd
+			npfCmd.SetArgs([]string{"login", "--no-prompt"})
+
+			output := captureOutput(
+				func() {
+					noPromptErr := npfCmd.Execute()
+					if noPromptErr != nil {
+						t.Errorf(noPromptErr.Error())
+						t.FailNow()
+					}
+				},
+			)
+			t.Logf("output: %s", output)
+			assert.Contains(t, output, "Login successful to")
+			testConfigExists(t, configFilePath, true)
+			testConfigValid(t)
+			//testLogout(t)
+		},
+	)
 }
 
 func Test_LoginCmdConfigParams(t *testing.T) {
 	testCmd := RootCmd
 	// test
-	testCmd.SetArgs([]string{"stores", "list", "--exp", "--config", "$HOME/.keyfactor/extra_config.json"})
+	testCmd.SetArgs(
+		[]string{
+			"stores", "list", "--exp", "--config", "$HOME/.keyfactor/extra_config.json", "--profile",
+			"oauth",
+		},
+	)
 	output := captureOutput(
 		func() {
 			err := testCmd.Execute()
@@ -72,7 +132,7 @@ func Test_LoginCmdConfigParams(t *testing.T) {
 		},
 	)
 	t.Logf("output: %s", output)
-	var stores []string
+	var stores []map[string]interface{}
 	if err := json.Unmarshal([]byte(output), &stores); err != nil {
 		t.Fatalf("Error unmarshalling JSON: %v", err)
 	}
@@ -270,88 +330,6 @@ func testEnvCredsToFile(t *testing.T, filePath string, allowExist bool) {
 			testLogout(t, filePath, false)
 			testConfigExists(t, filePath, false)
 			testConfigValid(t)
-		},
-	)
-}
-
-func testLoginNoPrompt(t *testing.T, configFilePath string) {
-	// Test logging in w/o args and w/o prompt
-	username, password, domain := exportBasicEnvVariables()
-	clientId, clientSecret, tokenUrl := exportOAuthEnvVariables()
-	envUsername, envPassword, envDomain := exportBasicEnvVariables()
-	envClientId, envClientSecret, envTokenUrl := exportOAuthEnvVariables()
-	os.Setenv(auth_providers.EnvKeyfactorSkipVerify, "true")
-	if (envUsername == "" || envPassword == "" || envDomain == "") && (envClientId == "" || envClientSecret == "" || envTokenUrl == "") {
-		t.Errorf("Environment variables are not set")
-		t.FailNow()
-	}
-	if configFilePath == "" {
-		homeDir, _ := os.UserHomeDir()
-		configFilePath = path.Join(homeDir, auth_providers.DefaultConfigFilePath)
-	}
-	existingConfig, exErr := auth_providers.ReadConfigFromJSON(configFilePath)
-	if exErr != nil {
-		t.Errorf("Error reading existing config: %s", exErr)
-		t.FailNow()
-	}
-	defer func() {
-		//restore config file
-		if existingConfig != nil {
-			wErr := auth_providers.WriteConfigToJSON(configFilePath, existingConfig)
-			if wErr != nil {
-				t.Errorf("Error writing existing config: %s", wErr)
-				t.FailNow()
-			}
-		}
-	}()
-	t.Run(
-		fmt.Sprintf("login no prompt from file"), func(t *testing.T) {
-			unsetOAuthEnvVariables()
-			unsetBasicEnvVariables()
-			defer setOAuthEnvVariables(clientId, clientSecret, tokenUrl)
-			defer setBasicEnvVariables(username, password, domain)
-
-			npfCmd := RootCmd
-			npfCmd.SetArgs([]string{"login", "--no-prompt"})
-
-			output := captureOutput(
-				func() {
-					noPromptErr := npfCmd.Execute()
-					if noPromptErr != nil {
-						t.Errorf("RootCmd() = %v, should pass %v", noPromptErr, true)
-						t.FailNow()
-					}
-				},
-			)
-			t.Logf("output: %s", output)
-			assert.Contains(t, output, "Login successful to")
-			testConfigExists(t, configFilePath, true)
-			testConfigValid(t)
-			//testLogout(t)
-		},
-	)
-	t.Run(
-		fmt.Sprintf("login no prompt from env"), func(t *testing.T) {
-			testLogout(t, configFilePath, false)
-
-			setOAuthEnvVariables(clientId, clientSecret, tokenUrl)
-			setBasicEnvVariables(username, password, domain)
-			npeCmd := RootCmd
-			npeCmd.SetArgs([]string{"login", " --no-prompt"})
-			output := captureOutput(
-				func() {
-					noPromptErr := npeCmd.Execute()
-					if noPromptErr != nil {
-						t.Errorf("RootCmd() = %v, should pass %v", noPromptErr, true)
-						t.FailNow()
-					}
-				},
-			)
-			t.Logf("output: %s", output)
-			assert.Contains(t, output, "Login successful via environment variables")
-			testConfigExists(t, configFilePath, true)
-			testConfigValid(t)
-			//testLogout(t)
 		},
 	)
 }
