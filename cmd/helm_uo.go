@@ -18,12 +18,13 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"kfutil/pkg/cmdutil"
 	"kfutil/pkg/cmdutil/flags"
 	"kfutil/pkg/helm"
-	"log"
 )
 
 // DefaultValuesLocation TODO when Helm is ready, set this to the default values.yaml location in Git
@@ -68,9 +69,27 @@ func (f *HelmUoFlags) AddFlags(flags *pflag.FlagSet) {
 	f.FilenameFlags.AddFlags(flags)
 
 	// Add custom flags
-	flags.StringVarP(f.GithubToken, "token", "t", *f.GithubToken, "Token used for related authentication - required for private repositories")
-	flags.StringVarP(f.OutPath, "out", "o", *f.OutPath, "Path to output the modified values.yaml file. This file can then be used with helm install -f <file> to override the default values.")
-	flags.StringSliceVarP(f.Extensions, "extension", "e", *f.Extensions, "List of extensions to install. Should be in the format <extension name>@<version>. If no version is specified, the latest version will be downloaded.")
+	flags.StringVarP(
+		f.GithubToken,
+		"token",
+		"t",
+		*f.GithubToken,
+		"Token used for related authentication - required for private repositories",
+	)
+	flags.StringVarP(
+		f.OutPath,
+		"out",
+		"o",
+		*f.OutPath,
+		"Path to output the modified values.yaml file. This file can then be used with helm install -f <file> to override the default values.",
+	)
+	flags.StringSliceVarP(
+		f.Extensions,
+		"extension",
+		"e",
+		*f.Extensions,
+		"List of extensions to install. Should be in the format <extension name>@<version>. If no version is specified, the latest version will be downloaded.",
+	)
 }
 
 func NewCmdHelmUo() *cobra.Command {
