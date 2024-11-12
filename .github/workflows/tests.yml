@@ -163,6 +163,7 @@ jobs:
     environment: "KFC_10_5_0"
     env:
       SECRET_NAME: "command-config-1050-az"
+      GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN}}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
