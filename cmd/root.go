@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/v2/api/keyfactor"
 	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -253,7 +253,7 @@ func authSdkViaConfigFile(cfgFile string, cfgProfile string) (*keyfactor.APIClie
 	}
 	if conf != nil {
 		log.Debug().Msg("call: keyfactor.NewAPIClient()")
-		c = keyfactor.NewAPIClient(conf)
+		c, cErr = keyfactor.NewAPIClient(conf)
 		log.Debug().Msg("complete: keyfactor.NewAPIClient()")
 		if cErr != nil {
 			log.Error().
@@ -326,7 +326,7 @@ func authSdkViaEnvVars() (*keyfactor.APIClient, error) {
 	}
 	if conf != nil {
 		log.Debug().Msg("call: api.NewKeyfactorClient()")
-		c = keyfactor.NewAPIClient(conf)
+		c, cErr = keyfactor.NewAPIClient(conf)
 		log.Debug().Msg("complete: api.NewKeyfactorClient()")
 		if cErr != nil {
 			log.Error().Err(cErr).Msg("unable to create Keyfactor client")
@@ -367,9 +367,9 @@ func initClient(saveConfig bool) (*api.Client, error) {
 		Str("providerProfile", providerProfile).
 		Msg("enter: initClient()")
 	var (
-		authenticated bool
-		c             *api.Client
-		cErr          error
+		c         *api.Client
+		envCfgErr error
+		cfgErr    error
 	)
 
 	if providerType != "" {
@@ -382,50 +382,49 @@ func initClient(saveConfig bool) (*api.Client, error) {
 		Msg("providerType is empty attempting to authenticate via params")
 
 	if configFile != "" || profile != "" {
-		c, cErr = authViaConfigFile(configFile, profile)
-		if cErr == nil {
+		log.Info().
+			Str("configFile", configFile).
+			Str("profile", profile).
+			Msg("authenticating via config file")
+		c, cfgErr = authViaConfigFile(configFile, profile)
+		if cfgErr == nil {
 			log.Info().
 				Str("configFile", configFile).
 				Str("profile", profile).
 				Msgf("Authenticated via config file %s using profile %s", configFile, profile)
-			authenticated = true
+			return c, nil
 		}
 	}
 
-	if !authenticated {
-		log.Debug().Msg("call: authViaEnvVars()")
-		c, cErr = authViaEnvVars()
-		log.Debug().Msg("returned: authViaEnvVars()")
-		if cErr == nil {
-			log.Info().Msg("Authenticated via environment variables")
-			authenticated = true
-		}
+	log.Info().Msg("authenticating via environment variables")
+	log.Debug().Msg("call: authViaEnvVars()")
+	c, envCfgErr = authViaEnvVars()
+	log.Debug().Msg("returned: authViaEnvVars()")
+	if envCfgErr == nil {
+		log.Info().Msg("Authenticated via environment variables")
+		return c, nil
 	}
 
-	if !authenticated {
-		log.Debug().Msg("call: authViaConfigFile()")
-		c, cErr = authViaConfigFile("", "")
-		if cErr == nil {
-			log.Info().
-				Str("configFile", configFile).
-				Str("profile", profile).
-				Msgf("Authenticated via config file %s using profile %s", configFile, profile)
-			authenticated = true
-		}
+	log.Info().
+		Str("configFile", DefaultConfigFileName).
+		Str("profile", "default").
+		Msg("implicit authenticating via config file using default profile")
+	log.Debug().Msg("call: authViaConfigFile()")
+	c, cfgErr = authViaConfigFile("", "")
+	if cfgErr == nil {
+		log.Info().
+			Str("configFile", DefaultConfigFileName).
+			Str("profile", "default").
+			Msgf("authenticated implictly via config file '%s' using 'default' profile", DefaultConfigFileName)
+		return c, nil
 	}
 
-	if !authenticated {
-		log.Error().Msg("unable to authenticate")
-		if cErr != nil {
-			log.Debug().Err(cErr).Msg("return: initClient()")
-			return nil, cErr
-		}
-		log.Debug().Msg("return: initClient()")
-		return nil, fmt.Errorf("unable to authenticate to Keyfactor Command")
-	}
-
-	log.Info().Msg("Keyfactor Command client created")
-	return c, nil
+	log.Error().
+		Err(cfgErr).
+		Err(envCfgErr).
+		Msg("unable to authenticate to Keyfactor Command")
+	log.Debug().Msg("return: initClient()")
+	return nil, fmt.Errorf("unable to authenticate to Keyfactor Command")
 }
 
 func initGenClient(
@@ -450,9 +449,9 @@ func initGenClient(
 		Msg("enter: initGenClient()")
 
 	var (
-		authenticated bool
-		c             *keyfactor.APIClient
-		cErr          error
+		c       *keyfactor.APIClient
+		envCErr error
+		cfErr   error
 	)
 
 	if providerType != "" {
@@ -466,28 +465,48 @@ func initGenClient(
 		Msg("providerType is empty attempting to authenticate via params")
 
 	if configFile != "" || profile != "" {
-		c, cErr = authSdkViaConfigFile(configFile, profile)
-		if cErr == nil {
+		log.Info().
+			Str("configFile", configFile).
+			Str("profile", profile).
+			Msg("authenticating via config file")
+		c, cfErr = authSdkViaConfigFile(configFile, profile)
+		if cfErr == nil {
 			log.Info().
 				Str("configFile", configFile).
 				Str("profile", profile).
 				Msgf("Authenticated via config file %s using profile %s", configFile, profile)
-			authenticated = true
+			return c, nil
 		}
 	}
 
-	if !authenticated {
-		log.Debug().Msg("call: authViaEnvVars()")
-		c, cErr = authSdkViaEnvVars()
-		log.Debug().Msg("returned: authViaEnvVars()")
-		if cErr == nil {
-			log.Info().Msg("Authenticated via environment variables")
-			authenticated = true
-		}
+	log.Info().Msg("authenticating via environment variables")
+	log.Debug().Msg("call: authViaEnvVars()")
+	c, envCErr = authSdkViaEnvVars()
+	log.Debug().Msg("returned: authViaEnvVars()")
+	if envCErr == nil {
+		log.Info().Msg("authenticated via environment variables")
+		return c, nil
 	}
 
-	log.Info().Msg("Keyfactor Command client created")
-	return c, nil
+	log.Info().
+		Str("configFile", DefaultConfigFileName).
+		Str("profile", "default").
+		Msg("implicit authenticating via config file using default profile")
+	log.Debug().Msg("call: authViaConfigFile()")
+	c, cfErr = authSdkViaConfigFile("", "")
+	if cfErr == nil {
+		log.Info().
+			Str("configFile", DefaultConfigFileName).
+			Str("profile", "default").
+			Msgf("authenticated implictly via config file '%s' using 'default' profile", DefaultConfigFileName)
+		return c, nil
+	}
+
+	log.Error().
+		Err(cfErr).
+		Err(envCErr).
+		Msg("unable to authenticate")
+	return nil, fmt.Errorf("unable to authenticate to Keyfactor Command with provided credentials, please check your configuration")
 }
 
 //func initGenClientV1(

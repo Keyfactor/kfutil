@@ -22,7 +22,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/v2/api/keyfactor"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -136,7 +136,10 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 
 		// Authenticate
 		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
-		sdkClient, _ := initGenClient(false)
+		sdkClient, cErr := initGenClient(false)
+		if cErr != nil {
+			return cErr
+		}
 
 		// Check required flags
 		if pamConfigFile == "" && repoName == "" {
@@ -229,7 +232,10 @@ var pamProvidersListCmd = &cobra.Command{
 
 		// Authenticate
 		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
-		sdkClient, _ := initGenClient(false)
+		sdkClient, cErr := initGenClient(false)
+		if cErr != nil {
+			return cErr
+		}
 
 		// CLI Logic
 		log.Debug().Msg("call: PAMProviderGetPamProviders()")
@@ -280,7 +286,10 @@ var pamProvidersGetCmd = &cobra.Command{
 
 		// Authenticate
 		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
-		sdkClient, _ := initGenClient(false)
+		sdkClient, cErr := initGenClient(false)
+		if cErr != nil {
+			return cErr
+		}
 
 		// CLI Logic
 		log.Debug().Msg("call: PAMProviderGetPamProvider()")
@@ -335,7 +344,10 @@ var pamProvidersCreateCmd = &cobra.Command{
 
 		// Authenticate
 		// kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
-		sdkClient, _ := initGenClient(false)
+		sdkClient, cErr := initGenClient(false)
+		if cErr != nil {
+			return cErr
+		}
 
 		// CLI Logic
 		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
@@ -398,7 +410,10 @@ var pamProvidersUpdateCmd = &cobra.Command{
 
 		// Authenticate
 		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
-		sdkClient, _ := initGenClient(false)
+		sdkClient, cErr := initGenClient(false)
+		if cErr != nil {
+			return cErr
+		}
 
 		// CLI Logic
 		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
@@ -464,7 +479,10 @@ var pamProvidersDeleteCmd = &cobra.Command{
 
 		// Authenticate
 		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
-		sdkClient, _ := initGenClient(false)
+		sdkClient, cErr := initGenClient(false)
+		if cErr != nil {
+			return cErr
+		}
 
 		// CLI Logic
 		log.Debug().

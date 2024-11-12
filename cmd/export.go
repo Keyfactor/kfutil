@@ -21,7 +21,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/Keyfactor/keyfactor-go-client-sdk/api/keyfactor"
+	"github.com/Keyfactor/keyfactor-go-client-sdk/v2/api/keyfactor"
 	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
