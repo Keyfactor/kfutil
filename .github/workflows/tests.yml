@@ -509,7 +509,7 @@ jobs:
   #          go test -timeout 20m -v ./cmd -run "^Test_PAM*"
 
   Test_PAM_KFC_12_3_0_OAUTH:
-    runs-on: self-hosted
+    runs-on: kfutil-runner-set
     needs:
       - build
       - kf_12_x_x
