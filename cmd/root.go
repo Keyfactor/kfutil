@@ -55,10 +55,12 @@ var (
 
 func hashSecretValue(secretValue string) string {
 	log.Debug().Msg("Enter hashSecretValue()")
-	if logInsecure {
+	if secretValue == "" {
 		return secretValue
 	}
-	log.Trace().Str("secretValue", secretValue).Send()
+	if !logInsecure {
+		return "*****************************"
+	}
 	cost := 12
 	log.Debug().Int("cost", cost).Msg("call: bcrypt.GenerateFromPassword()")
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(secretValue), cost)
@@ -659,12 +661,12 @@ func init() {
 		"Will not attempt to connect to GitHub for latest release information and resources.",
 	)
 	RootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Enable debugFlag logging.")
-	RootCmd.PersistentFlags().BoolVar(
-		&logInsecure,
-		"log-insecure",
-		false,
-		"Log insecure API requests. (USE AT YOUR OWN RISK, this WILL log sensitive information to the console.)",
-	)
+	//RootCmd.PersistentFlags().BoolVar(
+	//	&logInsecure,
+	//	"log-insecure",
+	//	false,
+	//	"Log insecure API requests. (USE AT YOUR OWN RISK, this WILL log sensitive information to the console.)",
+	//)
 	RootCmd.PersistentFlags().StringVarP(
 		&profile,
 		"profile",
