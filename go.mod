@@ -9,7 +9,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
 	github.com/Jeffail/gabs v1.4.0
-	github.com/Keyfactor/keyfactor-auth-client-go v1.0.0-rc.8
+	github.com/Keyfactor/keyfactor-auth-client-go v1.0.0-rc.18
 	github.com/Keyfactor/keyfactor-go-client-sdk/v2 v2.0.0-rc.2
 	github.com/Keyfactor/keyfactor-go-client/v3 v3.0.0-rc.11
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
