@@ -187,16 +187,18 @@ jobs:
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
 
+
       - name: Install dependencies
         run: go mod download && go mod tidy
 
       - name: Get secret from Azure Key Vault
         run: |
-          . ./examples/auth/akv/akv_auth.sh
+          . ./examples/auth/akv/akv_auth_v2.sh
           cat $HOME/.keyfactor/command_config.json
 
       - name: Install kfutil
         run: |
+          echo "Installing kfutil on self-hosted runner"
           make install
 
       - name: Run tests
