@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -217,9 +218,9 @@ func Test_PAMCreateCmd(t *testing.T) {
 
 	providerName := "Delinea-SecretServer-test"
 	t.Logf("providerName: %s", providerName)
-	inputFileName := path.Join(cwd, "artifacts/pam/pam-create-template.json")
+	inputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-template.json")
 	t.Logf("inputFileName: %s", inputFileName)
-	invalidInputFileName := path.Join(cwd, "artifacts/pam/pam-create-invalid.json")
+	invalidInputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-invalid.json")
 	t.Logf("invalidInputFileName: %s", invalidInputFileName)
 
 	updatedFileName, fErr := testFormatPamCreateConfig(t, inputFileName, "", false)
@@ -281,9 +282,9 @@ func Test_PAMUpdateCmd(t *testing.T) {
 
 	providerName := "Delinea-SecretServer-test"
 	t.Logf("providerName: %s", providerName)
-	inputFileName := path.Join(cwd, "artifacts/pam/pam-create-template.json")
+	inputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-template.json")
 	t.Logf("inputFileName: %s", inputFileName)
-	invalidInputFileName := path.Join(cwd, "artifacts/pam/pam-create-invalid.json")
+	invalidInputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-invalid.json")
 	t.Logf("invalidInputFileName: %s", invalidInputFileName)
 
 	// read input file into a map[string]interface{}
@@ -359,9 +360,9 @@ func Test_PAMDeleteCmd(t *testing.T) {
 
 	providerName := "Delinea-SecretServer-test"
 	t.Logf("providerName: %s", providerName)
-	inputFileName := path.Join(cwd, "artifacts/pam/pam-create-template.json")
+	inputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-template.json")
 	t.Logf("inputFileName: %s", inputFileName)
-	invalidInputFileName := path.Join(cwd, "artifacts/pam/pam-create-invalid.json")
+	invalidInputFileName := path.Join(filepath.Dir(cwd), "artifacts/pam/pam-create-invalid.json")
 	t.Logf("invalidInputFileName: %s", invalidInputFileName)
 
 	//cProviderTypeName := "Delinea-SecretServer"

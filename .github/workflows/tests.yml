@@ -89,7 +89,7 @@ jobs:
     needs:
       - build
       - kf_10_x_x
-      - Test_StoreTypes_KFC_10_5_0
+    #      - Test_StoreTypes_KFC_10_5_0
     environment: "KFC_10_5_0"
     env:
       GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN}}
@@ -449,7 +449,7 @@ jobs:
     needs:
       - build
       - kf_12_x_x
-      - Test_StoreTypes_KFC_12_3_0_OAUTH
+    #      - Test_StoreTypes_KFC_12_3_0_OAUTH
     environment: "KFC_12_3_0_OAUTH"
     env:
       GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN}}
