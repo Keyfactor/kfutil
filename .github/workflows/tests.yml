@@ -124,7 +124,7 @@ jobs:
     needs:
       - build
       - kf_10_x_x
-      - Test_StoreTypes_KFC_10_5_0
+    #      - Test_StoreTypes_KFC_10_5_0
     environment: "KFC_10_5_0"
     env:
       GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN}}
@@ -149,6 +149,13 @@ jobs:
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+
+      - name: Display working directory
+        run: |
+          pwd
+          ls -ltr
+          ls -ltr ./artifacts/pam
 
       - name: Run tests
         run: |
@@ -513,7 +520,7 @@ jobs:
     needs:
       - build
       - kf_12_x_x
-      - Test_StoreTypes_KFC_12_3_0_OAUTH
+    #      - Test_StoreTypes_KFC_12_3_0_OAUTH
     environment: "KFC_12_3_0_OAUTH"
     env:
       GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN}}
@@ -539,6 +546,12 @@ jobs:
       - name: Set up private repo access for go get
         run: |
           git config --global url."https://$GITHUB_TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Display working directory
+        run: |
+          pwd
+          ls -ltr
+          ls -ltr ./artifacts/pam
 
       - name: Run tests
         run: |
