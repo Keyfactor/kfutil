@@ -21,6 +21,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/Keyfactor/keyfactor-go-client-sdk/v2/api/keyfactor"
 	"github.com/rs/zerolog/log"
@@ -320,6 +322,30 @@ var pamProvidersGetCmd = &cobra.Command{
 	},
 }
 
+func checkBug63171(cmdResp *http.Response, operation string) error {
+	if cmdResp != nil && cmdResp.StatusCode == 200 {
+		defer cmdResp.Body.Close()
+		// .\Admin
+		productVersion := cmdResp.Header.Get("X-Keyfactor-Product-Version")
+		log.Debug().Str("productVersion", productVersion).Msg("Keyfactor Command Version")
+		majorVersionStr := strings.Split(productVersion, ".")[0]
+		// Try to convert to int
+		majorVersion, err := strconv.Atoi(majorVersionStr)
+		if err == nil && majorVersion >= 12 {
+			// TODO: Pending resolution of this bug: https://dev.azure.com/Keyfactor/Engineering/_workitems/edit/63171
+			errMsg := fmt.Sprintf(
+				"PAM Provider %s is not supported in Keyfactor Command version 12 and later, "+
+					"please use the Keyfactor Command UI to create PAM Providers", operation,
+			)
+			oErr := fmt.Errorf(errMsg)
+			log.Error().Err(oErr).Send()
+			outputError(oErr, true, outputFormat)
+			return oErr
+		}
+	}
+	return nil
+}
+
 var pamProvidersCreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new PAM Provider, currently only supported from file.",
@@ -345,6 +371,17 @@ var pamProvidersCreateCmd = &cobra.Command{
 		// Authenticate
 		// kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
 		sdkClient, cErr := initGenClient(false)
+
+		_, cmdResp, sErr := sdkClient.StatusApi.StatusGetEndpoints(context.Background()).Execute()
+		if sErr != nil {
+			log.Error().Err(sErr).Msg("failed to get Keyfactor Command version")
+		} else {
+			bug63171 := checkBug63171(cmdResp, "CREATE")
+			if bug63171 != nil {
+				return bug63171
+			}
+		}
+
 		if cErr != nil {
 			return cErr
 		}
@@ -415,6 +452,16 @@ var pamProvidersUpdateCmd = &cobra.Command{
 			return cErr
 		}
 
+		_, cmdResp, sErr := sdkClient.StatusApi.StatusGetEndpoints(context.Background()).Execute()
+		if sErr != nil {
+			log.Error().Err(sErr).Msg("failed to get Keyfactor Command version")
+		} else {
+			bug63171 := checkBug63171(cmdResp, "UPDATE")
+			if bug63171 != nil {
+				return bug63171
+			}
+		}
+
 		// CLI Logic
 		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
 		log.Debug().Str("file", pamConfigFile).
@@ -435,7 +482,7 @@ var pamProvidersUpdateCmd = &cobra.Command{
 		log.Debug().Msg("returned: PAMProviderUpdatePamProvider()")
 		log.Trace().Interface("httpResponse", httpResponse).Msg("PAMProviderUpdatePamProvider")
 		if err != nil {
-			returnHttpErr(httpResponse, err)
+			return returnHttpErr(httpResponse, err)
 		}
 
 		log.Debug().Msg(convertResponseMsg)
