@@ -1,7 +1,9 @@
 ## Quickstart
 
 ### Linux/MacOS
+
 #### Prerequisites:
+
 - [jq](https://stedolan.github.io/jq/download/) CLI tool, used to parse JSON output.
 - Either
   - [curl](https://curl.se/download.html) CLI tool, used to download the release files.
@@ -11,15 +13,19 @@
 - `$HOME/.local/bin` in your `$PATH` and exists if not running as root, else `/usr/local/bin` if running as root.
 
 #### Installation:
+
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.sh)
 ````
 
 ### Windows
+
 #### Prerequisites:
+
 - Powershell 5.1 or later
 
 #### Installation:
+
 ```powershell
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Keyfactor/kfutil/main/install.ps1" -OutFile "install.ps1"
 # Install kfutil to $HOME/AppData/Local/Microsoft/WindowsApps.
@@ -27,31 +33,74 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Keyfactor/kfutil/main/
 .\install.ps1
 ```
 
-## Environmental Variables
+## Environment Variables
+
+### Global
+
+| Name                          | Description                                                                                                     | Default                                |
+|-------------------------------|-----------------------------------------------------------------------------------------------------------------|----------------------------------------|
+| KEYFACTOR_HOSTNAME            | Keyfactor Command hostname without protocol and port                                                            |                                        |
+| KEYFACTOR_PORT                | Keyfactor Command port                                                                                          | `443`                                  |
+| KEYFACTOR_API_PATH            | Keyfactor Command API Path                                                                                      | `KeyfactorAPI`                         |
+| KEYFACTOR_SKIP_VERIFY         | Skip TLS verification when connecting to Keyfactor Command                                                      | `false`                                |
+| KEYFACTOR_CA_CERT             | Either a file path or PEM encoded string to a CA certificate to trust when communicating with Keyfactor Command |                                        |
+| KEYFACTOR_CLIENT_TIMEOUT      | Timeout for HTTP client requests to Keyfactor Command                                                           | `60s`                                  |
+| KEYFACTOR_AUTH_CONFIG_FILE    | Path to a JSON file containing the authentication configuration                                                 | `$HOME/.keyfactor/command_config.json` |
+| KEYFACTOR_AUTH_CONFIG_PROFILE | Profile to use from the authentication configuration file                                                       | `default`                              |
+
+### Basic Auth
+
+Currently `Basic Authentication` via `Active Directory` is the *ONLY* supported method of `Basic Authentication`.
+
+| Name               | Description                                                                                 | Default |
+|--------------------|---------------------------------------------------------------------------------------------|---------|
+| KEYFACTOR_USERNAME | Active Directory username to authenticate to Keyfactor Command API                          |         |
+| KEYFACTOR_PASSWORD | Password associated with Active Directory username to authenticate to Keyfactor Command API |         |
+| KEYFACTOR_DOMAIN   | Active Directory domain of user. Can be implied from username if it contains `@` or `\\`    |         |
+
+### oAuth Client Credentials
+
+| Name                         | Description                                                                                                                     | Default  |
+|------------------------------|---------------------------------------------------------------------------------------------------------------------------------|----------|
+| KEYFACTOR_AUTH_CLIENT_ID     | Keyfactor Auth Client ID                                                                                                        |          |
+| KEYFACTOR_AUTH_CLIENT_SECRET | Keyfactor Auth Client Secret                                                                                                    |          |
+| KEYFACTOR_AUTH_TOKEN_URL     | URL to request an access token from Keyfactor Auth                                                                              |          |
+| KEYFACTOR_AUTH_SCOPES        | Scopes to request when authenticating to Keyfactor Command API. Each scope MUST be separated by `,`                             | `openid` |
+| KEYFACTOR_AUTH_AUDIENCE      | Audience to request when authenticating to Keyfactor Command API                                                                |          |
+| KEYFACTOR_AUTH_ACCESS_TOKEN  | Access token to use to authenticate to Keyfactor Command API. This can be supplied directly or generated via client credentials |          |
+| KEYFACTOR_AUTH_CA_CERT       | Either a file path or PEM encoded string to a CA certificate to use when connecting to Keyfactor Auth                           |          |
+
+### kfutil specific
 
 All the variables listed below need to be set in your environment. The `kfutil` command will look for these variables
-and use them if they are set. If they are not set, the utility will fail to connect to Keyfactor.
+and use them if they are set.
 
-| Variable Name      | Description                                                                              |
-|--------------------|------------------------------------------------------------------------------------------|
-| KEYFACTOR_HOSTNAME | The hostname of your Keyfactor instance. ex: `my.domain.com`                             |
-| KEYFACTOR_USERNAME | The username to use to connect to Keyfactor. Do not include the domain. ex: `myusername` |
-| KEYFACTOR_PASSWORD | The password to use to connect to Keyfactor. ex: `mypassword`                            |
-| KEYFACTOR_DOMAIN   | The domain to use to connect to Keyfactor. ex: `mydomain`                                |
-| KEYFACTOR_API_PATH | The path to the Keyfactor API. Defaults to `/KeyfactorAPI`.                              |
-| KFUTIL_EXP         | Set to `1` or `true` to enable experimental features.                                    |
-| KFUTIL_DEBUG       | Set to `1` or `true` to enable debug logging.                                            |
+| Variable Name | Description                                           |
+|---------------|-------------------------------------------------------|
+| KFUTIL_EXP    | Set to `1` or `true` to enable experimental features. |
+| KFUTIL_DEBUG  | Set to `1` or `true` to enable debug logging.         |
 
 ### Linux/MacOS:
 
+#### Active Directory Basic Authentication
+
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
-export KEYFACTOR_USERNAME="<myusername>" # Do not include domain
+export KEYFACTOR_USERNAME="<myusername>"
 export KEYFACTOR_PASSWORD="<mypassword>"
-export KEYFACTOR_DOMAIN="<mykeyfactordomain>"
+export KEYFACTOR_DOMAIN="<mykeyfactordomain>" # Optional if username contains domain
 ```
 
-Additional variables:
+#### oAuth Client Credentials
+
+```bash
+export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
+export KEYFACTOR_AUTH_CLIENT_ID="<my-oauth2-client-id"
+export KEYFACTOR_AUTH_CLIENT_SECRET="<my-oauth2-client-secret>"
+export KEYFACTOR_AUTH_TOKEN_URL="<mykeyfactorhost.mydomain.com>/protocol/openid-connect/token"
+```
+
+#### Additional variables
 
 ```bash
 export KEYFACTOR_API_PATH="/KeyfactorAPI" # Defaults to /KeyfactorAPI if not set ex. my.domain.com/KeyfactorAPI
@@ -61,6 +110,8 @@ export KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
 
 ### Windows Powershell:
 
+#### Active Directory Basic Authentication
+
 ```powershell
 $env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"
 $env:KEYFACTOR_USERNAME = "<myusername>" # Do not include domain
@@ -68,7 +119,16 @@ $env:KEYFACTOR_PASSWORD = "<mypassword>"
 $env:KEYFACTOR_DOMAIN = "<mykeyfactordomain>"
 ```
 
-Additional variables:
+#### oAuth Client Credentials
+
+```powershell
+$env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"
+$env:KEYFACTOR_AUTH_CLIENT_ID = "<my-oauth2-client>"
+$env:KEYFACTOR_AUTH_CLIENT_SECRET = "<my-oauth2-client-secret>"
+$env:KEYFACTOR_AUTH_TOKEN_URL = "<mykeyfactorhost.mydomain.com>/protocol/openid-connect/token"
+```
+
+#### Additional variables:
 
 ```bash
 $env:KEYFACTOR_API_PATH="/KeyfactorAPI" # Defaults to /KeyfactorAPI if not set ex. my.domain.com/KeyfactorAPI
@@ -110,8 +170,6 @@ For full documentation on the `logout` command, see the [logout](docs/kfutil_log
 ```bash
 kfutil logout
 ```
-
-## Commands
 
 ### Bulk operations
 
