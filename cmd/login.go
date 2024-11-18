@@ -460,6 +460,19 @@ func authInteractive(
 				serverConf.OAuthTokenUrl,
 			)
 		}
+		if len(serverConf.Scopes) == 0 || forcePrompt {
+			scopesCsv := promptForInteractiveParameter(
+				"OAuth Scopes",
+				strings.Join(serverConf.Scopes, ","),
+			)
+			serverConf.Scopes = strings.Split(scopesCsv, ",")
+		}
+		if serverConf.Audience == "" || forcePrompt {
+			serverConf.Audience = promptForInteractiveParameter(
+				"OAuth Audience",
+				serverConf.Audience,
+			)
+		}
 	}
 
 	if serverConf.APIPath == "" || forcePrompt {
