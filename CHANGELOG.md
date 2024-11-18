@@ -1,3 +1,9 @@
+# v1.5.1
+
+## Fixes
+
+- fix(pkg): Bump module version to `v1.5.1` to fix an issue with the `1.5.0` release.
+
 # v1.5.0
 
 ## Features
