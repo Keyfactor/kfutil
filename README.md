@@ -80,7 +80,7 @@ Currently `Basic Authentication` via `Active Directory` is the *ONLY* supported 
 | KEYFACTOR_PASSWORD | Password associated with Active Directory username to authenticate to Keyfactor Command API |         |
 | KEYFACTOR_DOMAIN   | Active Directory domain of user. Can be implied from username if it contains `@` or `\\`    |         |
 
-### oAuth Client Credentials
+### oAuth Credentials
 
 | Name                         | Description                                                                                                                     | Default  |
 |------------------------------|---------------------------------------------------------------------------------------------------------------------------------|----------|
@@ -104,8 +104,12 @@ and use them if they are set.
 
 ### Linux/MacOS:
 
+Below are examples of setting the environment variables in Linux/MacOS to be used with `kfutil`.
+
 #### Active Directory Basic Authentication
 
+This is the minimum required configuration to authenticate to Keyfactor Command using Active Directory username,
+password auth.
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 export KEYFACTOR_USERNAME="<myusername>"
@@ -115,6 +119,7 @@ export KEYFACTOR_DOMAIN="<mykeyfactordomain>" # Optional if username contains do
 
 #### oAuth Client Credentials
 
+This is the minimum required configuration to authenticate to Keyfactor Command using oAuth client credentials.
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 export KEYFACTOR_AUTH_CLIENT_ID="<my-oauth2-client-id"
@@ -122,17 +127,33 @@ export KEYFACTOR_AUTH_CLIENT_SECRET="<my-oauth2-client-secret>"
 export KEYFACTOR_AUTH_TOKEN_URL="<mykeyfactorhost.mydomain.com>/protocol/openid-connect/token"
 ```
 
+#### oAuth Access Token
+
+This is the minimum required configuration to authenticate to Keyfactor Command using an access token.
+
+```bash
+export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
+export KEYFACTOR_AUTH_ACCESS_TOKEN="<my-access-token>"
+```
+
 #### Additional variables
 
 ```bash
 export KEYFACTOR_API_PATH="/KeyfactorAPI" # Defaults to /KeyfactorAPI if not set ex. my.domain.com/KeyfactorAPI
-export KFUTIL_EXP=0 # Set to 1 or true to enable experimental features
-export KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging
+export KEYFACTOR_CA_CERT="/path/to/ca.crt" # Optional
+export KEYFACTOR_SKIP_VERIFY=0 # Set to 1 or true to skip TLS certificate verification. This is NOT recommended for production.
+export KFUTIL_EXP=0 # Set to 1 or true to enable experimental features. This is NOT recommended for production.
+export KFUTIL_DEBUG=0 # Set to 1 or true to enable debug logging. This is NOT recommended for production.
 ```
 
 ### Windows Powershell:
 
+Below are examples of setting the environment variables in Windows Powershell to be used with `kfutil`.
+
 #### Active Directory Basic Authentication
+
+This is the minimum required configuration to authenticate to Keyfactor Command using Active Directory username,
+password auth.
 
 ```powershell
 $env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"
@@ -143,11 +164,22 @@ $env:KEYFACTOR_DOMAIN = "<mykeyfactordomain>"
 
 #### oAuth Client Credentials
 
+This is the minimum required configuration to authenticate to Keyfactor Command using client credentials.
+
 ```powershell
 $env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"
 $env:KEYFACTOR_AUTH_CLIENT_ID = "<my-oauth2-client>"
 $env:KEYFACTOR_AUTH_CLIENT_SECRET = "<my-oauth2-client-secret>"
 $env:KEYFACTOR_AUTH_TOKEN_URL = "<mykeyfactorhost.mydomain.com>/protocol/openid-connect/token"
+```
+
+#### oAuth Access Token
+
+This is the minimum required configuration to authenticate to Keyfactor Command using an access token.
+
+```powershell
+$env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"
+$env:KEYFACTOR_AUTH_ACCESS_TOKEN = "<my-access-token>"
 ```
 
 #### Additional variables:
