@@ -1,3 +1,9 @@
+# v1.6.0
+
+## Features
+
+- Auth: Added support for authenticating to Keyfactor Command using a oAuth Client Credentials grant type.
+
 # v1.5.1
 
 ## Fixes
