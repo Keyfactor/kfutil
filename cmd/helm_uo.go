@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"kfutil/pkg/cmdutil"
@@ -171,13 +172,13 @@ func (f *HelmUoFlags) ToOptions(cmd *cobra.Command, args []string) (*HelmUoOptio
 	}
 
 	// Get the command config entry from global flags
-	commandConfig, _ := authConfigFile(configFile, profile, "", noPrompt, false)
+	commandConfig, _ := auth_providers.ReadConfigFromJSON(configFile)
 
 	// Get the hostname from the command config
 	entry, ok := commandConfig.Servers[profile]
 	if ok {
-		if entry.Hostname != "" {
-			options.CommandHostname = commandConfig.Servers[profile].Hostname
+		if entry.Host != "" {
+			options.CommandHostname = commandConfig.Servers[profile].Host
 		}
 	}
 
