@@ -379,7 +379,7 @@ func promptForInteractivePassword(parameterName string, defaultValue string) str
 
 	// Trim newline and check if password is empty; if so, return default
 	if len(password) > 0 {
-		password = password[:len(password)-1]
+		password = strings.Trim(password, "\n")
 	}
 	if password == "" {
 		return defaultValue
@@ -442,51 +442,93 @@ func authInteractive(
 			}
 		}
 	} else if serverConf.AuthType == "oauth" {
-		if serverConf.ClientID == "" || forcePrompt {
-			serverConf.ClientID = promptForInteractiveParameter(
-				"Keyfactor Command OAuth Client ID",
-				serverConf.ClientID,
+		if serverConf.AccessToken == "" || forcePrompt {
+			log.Debug().Msg("prompting for OAuth access token")
+			serverConf.AccessToken = promptForInteractiveParameter(
+				"Keyfactor Command OAuth Access Token (to use client ID and secret, leave blank)",
+				serverConf.AccessToken,
 			)
 		}
-		if serverConf.ClientSecret == "" || forcePrompt {
-			serverConf.ClientSecret = promptForInteractivePassword(
-				"Keyfactor Command OAuth Client Secret",
-				serverConf.ClientSecret,
-			)
-		}
-		if serverConf.OAuthTokenUrl == "" || forcePrompt {
-			serverConf.OAuthTokenUrl = promptForInteractiveParameter(
-				"Keyfactor Command OAuth Token URL",
-				serverConf.OAuthTokenUrl,
-			)
-		}
-		if len(serverConf.Scopes) == 0 || forcePrompt {
-			scopesCsv := promptForInteractiveParameter(
-				"OAuth Scopes",
-				strings.Join(serverConf.Scopes, ","),
-			)
-			serverConf.Scopes = strings.Split(scopesCsv, ",")
-		}
-		if serverConf.Audience == "" || forcePrompt {
-			serverConf.Audience = promptForInteractiveParameter(
-				"OAuth Audience",
-				serverConf.Audience,
-			)
+		if serverConf.AccessToken == "" {
+			log.Debug().Msg("no oauth access token provided")
+			if serverConf.ClientID == "" || forcePrompt {
+				log.Debug().
+					Str("serverConf.ClientID", serverConf.ClientID).
+					Msg("prompting for OAuth client ID")
+				serverConf.ClientID = promptForInteractiveParameter(
+					"Keyfactor Command OAuth Client ID",
+					serverConf.ClientID,
+				)
+			}
+			if serverConf.ClientSecret == "" || forcePrompt {
+				log.Debug().Msg("prompting for OAuth client secret")
+				serverConf.ClientSecret = promptForInteractivePassword(
+					"Keyfactor Command OAuth Client Secret",
+					serverConf.ClientSecret,
+				)
+			}
+
+			if serverConf.OAuthTokenUrl == "" || forcePrompt {
+				log.Debug().
+					Str("serverConf.OAuthTokenUrl", serverConf.OAuthTokenUrl).
+					Msg("prompting for OAuth token URL")
+				serverConf.OAuthTokenUrl = promptForInteractiveParameter(
+					"Keyfactor Command OAuth Token URL",
+					serverConf.OAuthTokenUrl,
+				)
+			}
+			if len(serverConf.Scopes) == 0 || forcePrompt {
+				log.Debug().
+					Strs("serverConf.Scopes", serverConf.Scopes).
+					Msg("prompting for OAuth scopes")
+				scopesCsv := promptForInteractiveParameter(
+					"OAuth Scopes",
+					strings.Join(serverConf.Scopes, ","),
+				)
+				serverConf.Scopes = strings.Split(scopesCsv, ",")
+			}
+			if serverConf.Audience == "" || forcePrompt {
+				log.Debug().Msg("prompting for OAuth audience")
+				serverConf.Audience = promptForInteractiveParameter(
+					"OAuth Audience",
+					serverConf.Audience,
+				)
+			}
+		} else {
+			log.Debug().
+				Str("serverConf.AccessToken", hashSecretValue(serverConf.AccessToken)).
+				Msg("using provided OAuth access token")
 		}
 	}
 
 	if serverConf.APIPath == "" || forcePrompt {
+		log.Debug().
+			Str("serverConf.APIPath", serverConf.APIPath).
+			Msg("prompting for API path")
 		serverConf.APIPath = promptForInteractiveParameter("Keyfactor Command API path", serverConf.APIPath)
 	}
 
 	if serverConf.CACertPath == "" || forcePrompt {
+		log.Debug().
+			Str("serverConf.CACertPath", serverConf.CACertPath).
+			Msg("prompting for CA cert path")
 		serverConf.CACertPath = promptForInteractiveParameter("Keyfactor Command CA Cert Path", serverConf.CACertPath)
+	}
+	if !serverConf.SkipTLSVerify || forcePrompt {
+		log.Debug().
+			Bool("serverConf.SkipTLSVerify", serverConf.SkipTLSVerify).
+			Msg("prompting for Skip TLS Verify")
+		serverConf.SkipTLSVerify = promptForInteractiveParameter(
+			"Keyfactor Command Skip TLS Verify [true,false]",
+			fmt.Sprintf("%t", serverConf.SkipTLSVerify),
+		) == "true"
 	}
 
 	if profileName == "" {
-		profileName = "default"
+		profileName = auth_providers.DefaultConfigProfile
 	}
 	if configPath == "" {
+		log.Debug().Msg("configPath is empty, calling prepHomeDir()")
 		userHomeDir, hErr := prepHomeDir()
 		if hErr != nil {
 			//log.Println("[ERROR] Unable to create home directory: ", hErr)
@@ -502,6 +544,7 @@ func authInteractive(
 	confFile.Servers[profileName] = *serverConf
 
 	if saveConfig {
+		log.Debug().Bool("saveConfig", saveConfig).Msg("calling writeConfigFile()")
 		saveErr := writeConfigFile(&confFile, configPath)
 		if saveErr != nil {
 			//log.Println("[ERROR] Unable to save configuration file to disk: ", saveErr)
@@ -509,6 +552,7 @@ func authInteractive(
 			return confFile, saveErr
 		}
 	}
+	log.Debug().Msg("authInteractive() returning")
 	return confFile, nil
 }
 
