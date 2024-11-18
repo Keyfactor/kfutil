@@ -485,7 +485,9 @@ func authInteractive(
 					"OAuth Scopes",
 					strings.Join(serverConf.Scopes, ","),
 				)
-				serverConf.Scopes = strings.Split(scopesCsv, ",")
+				if scopesCsv != "" && scopesCsv != "," {
+					serverConf.Scopes = strings.Split(scopesCsv, ",")
+				}
 			}
 			if serverConf.Audience == "" || forcePrompt {
 				log.Debug().Msg("prompting for OAuth audience")
