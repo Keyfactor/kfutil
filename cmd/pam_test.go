@@ -210,7 +210,10 @@ func Test_PAMCreateCmd(t *testing.T) {
 	// test
 
 	// get current working dir
-	cwd, _ := os.Getwd()
+	cwd, wdErr := os.Getwd()
+	if wdErr != nil {
+		cwd = "./"
+	}
 	t.Logf("cwd: %s", cwd)
 
 	providerName := "Delinea-SecretServer-test"
@@ -230,6 +233,9 @@ func Test_PAMCreateCmd(t *testing.T) {
 
 	// Test valid config file
 	createResponse, err := testCreatePamProvider(t, updatedFileName, providerName, false)
+	if err != nil && testCheckBug63171(err) {
+		t.Skip("PAM Provider creation is not supported in Keyfactor Command version 12 and later")
+	}
 	assert.NoError(t, err)
 	assert.NotNil(t, createResponse)
 	if err != nil {
@@ -268,7 +274,10 @@ func Test_PAMCreateCmd(t *testing.T) {
 func Test_PAMUpdateCmd(t *testing.T) {
 	// test
 	// get current working dir
-	cwd, _ := os.Getwd()
+	cwd, wdErr := os.Getwd()
+	if wdErr != nil {
+		cwd = "./"
+	}
 	t.Logf("cwd: %s", cwd)
 
 	providerName := "Delinea-SecretServer-test"
@@ -301,6 +310,12 @@ func Test_PAMUpdateCmd(t *testing.T) {
 	output := captureOutput(
 		func() {
 			err := testCmd.Execute()
+			if err != nil && testCheckBug63171(err) {
+				t.Skip("Updating PAM Providers is not supported in Keyfactor Command version 12 and later")
+			} else if err != nil {
+				t.Errorf("failed to update a PAM provider: %v", err)
+				t.FailNow()
+			}
 			assert.NoError(t, err)
 		},
 	)
@@ -337,7 +352,10 @@ func Test_PAMUpdateCmd(t *testing.T) {
 func Test_PAMDeleteCmd(t *testing.T) {
 	// test
 	// get current working dir
-	cwd, _ := os.Getwd()
+	cwd, wdErr := os.Getwd()
+	if wdErr != nil {
+		cwd = "./"
+	}
 	t.Logf("cwd: %s", cwd)
 
 	providerName := "Delinea-SecretServer-test"
@@ -357,7 +375,10 @@ func Test_PAMDeleteCmd(t *testing.T) {
 		return
 	}
 	// Create a provider to delete, doesn't matter if it fails, assume it exists then delete it
-	testCreatePamProvider(t, updatedFileName, providerName, true)
+	_, cErr := testCreatePamProvider(t, updatedFileName, providerName, true)
+	if cErr != nil && testCheckBug63171(cErr) {
+		t.Skip("PAM Provider creation is not supported in Keyfactor Command version 12 and later")
+	}
 
 	// list providers
 	providersList, err := testListPamProviders(t)
@@ -464,6 +485,7 @@ func testCreatePamProvider(t *testing.T, fileName string, providerName string, a
 	} else {
 		testName = fmt.Sprintf("Create PAM provider '%s'", providerName)
 	}
+	var bug63171 error
 	t.Run(
 		testName, func(t *testing.T) {
 			testCmd := RootCmd
@@ -473,19 +495,28 @@ func testCreatePamProvider(t *testing.T, fileName string, providerName string, a
 			t.Logf("args: %s", args)
 			testCmd.SetArgs(args)
 			t.Logf("fileName: %s", fileName)
+
 			output := captureOutput(
 				func() {
 					err = testCmd.Execute()
 					if !allowFail {
+						if err != nil && testCheckBug63171(err) {
+							bug63171 = err
+							t.Skip("PAM Provider creation is not supported in Keyfactor Command version 12 and later")
+						}
 						assert.NoError(t, err)
+					} else if err != nil && !testCheckBug63171(err) {
+						bug63171 = err
 					}
 				},
 			)
-			if err = json.Unmarshal([]byte(output), &createResponse); err != nil {
+
+			if jErr := json.Unmarshal([]byte(output), &createResponse); jErr != nil {
 				if allowFail {
-					t.Logf("Error unmarshalling JSON: %v", err)
+					t.Logf("Error unmarshalling JSON: %v", jErr)
 				} else {
-					t.Errorf("failed to create a PAM provider: %v", err)
+					t.Errorf("failed to create a PAM provider: %v", jErr)
+					t.FailNow()
 				}
 				return
 			}
@@ -498,6 +529,10 @@ func testCreatePamProvider(t *testing.T, fileName string, providerName string, a
 			}
 		},
 	)
+
+	if bug63171 != nil {
+		return createResponse, bug63171
+	}
 
 	return createResponse, err
 }
@@ -721,4 +756,11 @@ func testFormatPamCreateConfig(t *testing.T, inputFileName string, providerName 
 		return "", wErr
 	}
 	return updatedFileName, nil
+}
+
+func testCheckBug63171(err error) bool {
+	if err != nil && strings.Contains(err.Error(), "not supported in Keyfactor Command version 12 and later") {
+		return true
+	}
+	return false
 }
