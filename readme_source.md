@@ -50,7 +50,7 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/Keyfactor/kfutil/main/
 
 ### Basic Auth
 
-Currently, only Active Directory `Basic` authentication is supported.
+Currently `Basic Authentication` via `Active Directory` is the *ONLY* supported method of `Basic Authentication`.
 
 | Name               | Description                                                                                 | Default |
 |--------------------|---------------------------------------------------------------------------------------------|---------|
@@ -65,8 +65,10 @@ Currently, only Active Directory `Basic` authentication is supported.
 | KEYFACTOR_AUTH_CLIENT_ID     | Keyfactor Auth Client ID                                                                                                        |          |
 | KEYFACTOR_AUTH_CLIENT_SECRET | Keyfactor Auth Client Secret                                                                                                    |          |
 | KEYFACTOR_AUTH_TOKEN_URL     | URL to request an access token from Keyfactor Auth                                                                              |          |
-| KEYFACTOR_AUTH_SCOPES        | Scopes to request when authenticating to Keyfactor Command API                                                                  | `openid` |
+| KEYFACTOR_AUTH_SCOPES        | Scopes to request when authenticating to Keyfactor Command API. Each scope MUST be separated by `,`                             | `openid` |
+| KEYFACTOR_AUTH_AUDIENCE      | Audience to request when authenticating to Keyfactor Command API                                                                |          |
 | KEYFACTOR_AUTH_ACCESS_TOKEN  | Access token to use to authenticate to Keyfactor Command API. This can be supplied directly or generated via client credentials |          |
+| KEYFACTOR_AUTH_CA_CERT       | Either a file path or PEM encoded string to a CA certificate to use when connecting to Keyfactor Auth                           |          |
 
 ### kfutil specific
 
