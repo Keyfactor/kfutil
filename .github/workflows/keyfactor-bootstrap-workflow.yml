@@ -126,7 +126,6 @@ jobs:
   # Tester Install Script
   Test_Install_Script:
     runs-on: kfutil-runner-set
-    if: startsWith(github.ref, 'refs/tags/')
     needs:
       - get-versions
     #      - call-starter-workflow
