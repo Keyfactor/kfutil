@@ -122,3 +122,25 @@ jobs:
       gpg_key: ${{ secrets.KF_GPG_PRIVATE_KEY }}
       gpg_pass: ${{ secrets.KF_GPG_PASSPHRASE }}
       scan_token: ${{ secrets.SAST_TOKEN }}
+
+  # Tester Install Script
+  Test_Install_Script:
+    runs-on: kfutil-runner-set
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - get-versions
+    #      - call-starter-workflow
+    steps:
+      - name: Test Quick Install Script
+        env:
+          VERSION: ${{ needs.get-versions.outputs.NEXT_VERSION }}
+        run: |
+          echo "Testing Install Script for version: $VERSION"
+          sudo apt update && sudo apt upgrade -y && sudo apt install -y curl wget unzip jq openssl && sudo apt clean
+          echo curl -s "https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME}/install.sh"
+          GITHUB_REF_NAME_ENCODED=$(echo -n "${GITHUB_REF_NAME}" | jq -sRr @uri)
+          VERIFY_CHECKSUM=0
+          bash <(curl -s "https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME_ENCODED}/install.sh")
+          which kfutil
+          kfutil version
+          rm $(which kfutil)
