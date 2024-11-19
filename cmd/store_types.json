@@ -187,34 +187,6 @@
     "CustomAliasAllowed": "Optional"
   },
   {
-    "Name": "Airlock Application Firewall Certificate",
-    "ShortName": "AirlockWAF",
-    "Capability": "AirlockWAF",
-    "LocalStore": false,
-    "SupportedOperations": {
-      "Add": true,
-      "Create": false,
-      "Discovery": true,
-      "Enrollment": false,
-      "Remove": true
-    },
-    "Properties": [],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": true,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "",
-    "PrivateKeyAllowed": "Required",
-    "JobProperties": [],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Allowed"
-  },
-  {
     "Name": "Akamai Certificate Provisioning Service",
     "ShortName": "Akamai",
     "Capability": "Akamai",
