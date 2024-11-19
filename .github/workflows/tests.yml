@@ -80,7 +80,7 @@ jobs:
 
       - name: Run tests
         run: |
-          export KFUTIL_DEBUG=1
+          unset KFUTIL_DEBUG
           go test -timeout 20m -v ./cmd -run "^Test_StoreTypes*"
 
   ### Store Tests
