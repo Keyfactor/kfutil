@@ -36,8 +36,6 @@ var getOrchestratorCmd = &cobra.Command{
 	Short: "Get orchestrator by machine/client name.",
 	Long:  `Get orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -49,7 +47,7 @@ var getOrchestratorCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 		agents, aErr := kfClient.GetAgent(client)
 		if aErr != nil {
 			fmt.Printf("Error, unable to get orchestrator %s. %s\n", client, aErr)
@@ -70,8 +68,6 @@ var approveOrchestratorCmd = &cobra.Command{
 	Short: "Approve orchestrator by machine/client name.",
 	Long:  `Approve orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -83,7 +79,7 @@ var approveOrchestratorCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, cErr := initClient(false)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -110,7 +106,6 @@ var disapproveOrchestratorCmd = &cobra.Command{
 	Long:  `Disapprove orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -122,7 +117,7 @@ var disapproveOrchestratorCmd = &cobra.Command{
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, cErr := initClient(false)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -158,8 +153,6 @@ var getLogsOrchestratorCmd = &cobra.Command{
 	Short: "Get orchestrator logs by machine/client name.",
 	Long:  `Get orchestrator logs by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -172,7 +165,7 @@ var getLogsOrchestratorCmd = &cobra.Command{
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 
 		client := cmd.Flag("client").Value.String()
-		kfClient, cErr := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, cErr := initClient(false)
 		if cErr != nil {
 			fmt.Println("Error, unable to connect to Keyfactor.")
 			log.Fatalf("Error: %s", cErr)
@@ -198,8 +191,6 @@ var listOrchestratorsCmd = &cobra.Command{
 	Short: "List orchestrators.",
 	Long:  `Returns a JSON list of Keyfactor orchestrators.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		isExperimental := true
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
@@ -210,7 +201,7 @@ var listOrchestratorsCmd = &cobra.Command{
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
-		kfClient, _ := initClient(configFile, profile, "", "", noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 		agents, aErr := kfClient.GetAgentList()
 		if aErr != nil {
 			fmt.Printf("Error, unable to get orchestrators list. %s\n", aErr)
@@ -237,7 +228,13 @@ func init() {
 	orchsCmd.AddCommand(listOrchestratorsCmd)
 	// GET orchestrator command
 	orchsCmd.AddCommand(getOrchestratorCmd)
-	getOrchestratorCmd.Flags().StringVarP(&client, "client", "c", "", "Get a specific orchestrator by machine or client name.")
+	getOrchestratorCmd.Flags().StringVarP(
+		&client,
+		"client",
+		"c",
+		"",
+		"Get a specific orchestrator by machine or client name.",
+	)
 	getOrchestratorCmd.MarkFlagRequired("client")
 	// CREATE orchestrator command
 	//orchsCmd.AddCommand(createOrchestratorCmd)
@@ -247,19 +244,43 @@ func init() {
 	//orchsCmd.AddCommand(deleteOrchestratorCmd)
 	// APPROVE orchestrator command
 	orchsCmd.AddCommand(approveOrchestratorCmd)
-	approveOrchestratorCmd.Flags().StringVarP(&client, "client", "c", "", "Approve a specific orchestrator by machine or client name.")
+	approveOrchestratorCmd.Flags().StringVarP(
+		&client,
+		"client",
+		"c",
+		"",
+		"Approve a specific orchestrator by machine or client name.",
+	)
 	approveOrchestratorCmd.MarkFlagRequired("client")
 	// DISAPPROVE orchestrator command
 	orchsCmd.AddCommand(disapproveOrchestratorCmd)
-	disapproveOrchestratorCmd.Flags().StringVarP(&client, "client", "c", "", "Disapprove a specific orchestrator by machine or client name.")
+	disapproveOrchestratorCmd.Flags().StringVarP(
+		&client,
+		"client",
+		"c",
+		"",
+		"Disapprove a specific orchestrator by machine or client name.",
+	)
 	disapproveOrchestratorCmd.MarkFlagRequired("client")
 	// RESET orchestrator command
 	orchsCmd.AddCommand(resetOrchestratorCmd)
-	resetOrchestratorCmd.Flags().StringVarP(&client, "client", "c", "", "Reset a specific orchestrator by machine or client name.")
+	resetOrchestratorCmd.Flags().StringVarP(
+		&client,
+		"client",
+		"c",
+		"",
+		"Reset a specific orchestrator by machine or client name.",
+	)
 	resetOrchestratorCmd.MarkFlagRequired("client")
 	// GET orchestrator logs command
 	orchsCmd.AddCommand(getLogsOrchestratorCmd)
-	getLogsOrchestratorCmd.Flags().StringVarP(&client, "client", "c", "", "Get logs for a specific orchestrator by machine or client name.")
+	getLogsOrchestratorCmd.Flags().StringVarP(
+		&client,
+		"client",
+		"c",
+		"",
+		"Get logs for a specific orchestrator by machine or client name.",
+	)
 	getLogsOrchestratorCmd.MarkFlagRequired("client")
 	// SET orchestrator auth certificate reenrollment command
 	//orchsCmd.AddCommand(setOrchestratorAuthCertReenrollCmd)

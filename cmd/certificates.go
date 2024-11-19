@@ -15,8 +15,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
 	"log"
+
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 
 	"github.com/spf13/cobra"
 )
@@ -61,5 +62,11 @@ func certToString(response *api.GetCertificateResponse) string {
 	if len(sansString) > 0 {
 		sansString = sansString[:len(sansString)-1]
 	}
-	return fmt.Sprintf("DN=(%s),SANs=(%s),TP=(%s),ID=(%d)", response.IssuedDN, sansString, response.Thumbprint, response.Id)
+	return fmt.Sprintf(
+		"DN=(%s),SANs=(%s),TP=(%s),ID=(%d)",
+		response.IssuedDN,
+		sansString,
+		response.Thumbprint,
+		response.Id,
+	)
 }
