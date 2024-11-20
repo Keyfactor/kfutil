@@ -38,13 +38,13 @@ var getOrchestratorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		isExperimental := true
 
-		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(flagEnableExp, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
+		debugModeEnabled := checkDebug(flagEnableDebug)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
 		kfClient, _ := initClient(false)
@@ -70,13 +70,13 @@ var approveOrchestratorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		isExperimental := true
 
-		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(flagEnableExp, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
+		debugModeEnabled := checkDebug(flagEnableDebug)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
 		kfClient, cErr := initClient(false)
@@ -108,13 +108,13 @@ var disapproveOrchestratorCmd = &cobra.Command{
 
 		isExperimental := true
 
-		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(flagEnableExp, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
+		debugModeEnabled := checkDebug(flagEnableDebug)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		client := cmd.Flag("client").Value.String()
 		kfClient, cErr := initClient(false)
@@ -155,13 +155,13 @@ var getLogsOrchestratorCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		isExperimental := true
 
-		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(flagEnableExp, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
+		debugModeEnabled := checkDebug(flagEnableDebug)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 
 		client := cmd.Flag("client").Value.String()
@@ -193,13 +193,13 @@ var listOrchestratorsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		isExperimental := true
 
-		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(flagEnableExp, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
+		debugModeEnabled := checkDebug(flagEnableDebug)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		kfClient, _ := initClient(false)
 		agents, aErr := kfClient.GetAgentList()

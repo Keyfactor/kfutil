@@ -54,8 +54,8 @@ var pamTypesListCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 		isExperimental := false
 
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		informDebug(flagEnableDebug)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
@@ -100,7 +100,7 @@ var pamTypesListCmd = &cobra.Command{
 		}
 		log.Info().
 			Msg("successfully listed PAM provider types")
-		outputResult(jsonString, outputFormat)
+		outputResult(jsonString, flagOutputFormat)
 		return nil
 	},
 }
@@ -123,9 +123,9 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 		repoName, _ := cmd.Flags().GetString("repo")
 		branchName, _ := cmd.Flags().GetString("branch")
 
-		// Debug + expEnabled checks
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		// Debug + flagEnableExp checks
+		informDebug(flagEnableDebug)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
@@ -137,7 +137,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 			Msg("create PAM Provider Type")
 
 		// Authenticate
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//kfClient, _ := initClient(flagConfigFile, flagProfile, flagProviderType, flagProviderProfile, flagNoPrompt, authConfig, false)
 		sdkClient, cErr := initGenClient(false)
 		if cErr != nil {
 			return cErr
@@ -207,7 +207,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 		}
 		log.Info().Str("output", string(jsonString)).
 			Msg("successfully created PAM provider type")
-		outputResult(jsonString, outputFormat)
+		outputResult(jsonString, flagOutputFormat)
 		return nil
 	},
 }
@@ -222,9 +222,9 @@ var pamProvidersListCmd = &cobra.Command{
 
 		// Specific flags
 
-		// Debug + expEnabled checks
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		// Debug + flagEnableExp checks
+		informDebug(flagEnableDebug)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
@@ -233,7 +233,7 @@ var pamProvidersListCmd = &cobra.Command{
 		log.Info().Msg("list PAM Providers")
 
 		// Authenticate
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//kfClient, _ := initClient(flagConfigFile, flagProfile, flagProviderType, flagProviderProfile, flagNoPrompt, authConfig, false)
 		sdkClient, cErr := initGenClient(false)
 		if cErr != nil {
 			return cErr
@@ -259,7 +259,7 @@ var pamProvidersListCmd = &cobra.Command{
 		}
 		log.Info().Str("output", string(jsonString)).
 			Msg("successfully listed PAM providers")
-		outputResult(jsonString, outputFormat)
+		outputResult(jsonString, flagOutputFormat)
 		return nil
 	},
 }
@@ -276,9 +276,9 @@ var pamProvidersGetCmd = &cobra.Command{
 		pamProviderId, _ := cmd.Flags().GetInt32("id")
 		pamProviderName, _ := cmd.Flags().GetString("name")
 
-		// Debug + expEnabled checks
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		// Debug + flagEnableExp checks
+		informDebug(flagEnableDebug)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
@@ -287,7 +287,7 @@ var pamProvidersGetCmd = &cobra.Command{
 			Msg("get PAM Provider")
 
 		// Authenticate
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//kfClient, _ := initClient(flagConfigFile, flagProfile, flagProviderType, flagProviderProfile, flagNoPrompt, authConfig, false)
 		sdkClient, cErr := initGenClient(false)
 		if cErr != nil {
 			return cErr
@@ -317,7 +317,7 @@ var pamProvidersGetCmd = &cobra.Command{
 		}
 		log.Info().Str("output", string(jsonString)).
 			Msg("successfully retrieved PAM provider")
-		outputResult(jsonString, outputFormat)
+		outputResult(jsonString, flagOutputFormat)
 		return nil
 	},
 }
@@ -339,7 +339,7 @@ func checkBug63171(cmdResp *http.Response, operation string) error {
 			)
 			oErr := fmt.Errorf(errMsg)
 			log.Error().Err(oErr).Send()
-			outputError(oErr, true, outputFormat)
+			outputError(oErr, true, flagOutputFormat)
 			return oErr
 		}
 	}
@@ -357,9 +357,9 @@ var pamProvidersCreateCmd = &cobra.Command{
 		// Specific flags
 		pamConfigFile, _ := cmd.Flags().GetString(FlagFromFile)
 
-		// Debug + expEnabled checks
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		// Debug + flagEnableExp checks
+		informDebug(flagEnableDebug)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
@@ -369,7 +369,7 @@ var pamProvidersCreateCmd = &cobra.Command{
 			Msg("create PAM Provider from file")
 
 		// Authenticate
-		// kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		// kfClient, _ := initClient(flagConfigFile, flagProfile, flagProviderType, flagProviderProfile, flagNoPrompt, authConfig, false)
 		sdkClient, cErr := initGenClient(false)
 
 		_, cmdResp, sErr := sdkClient.StatusApi.StatusGetEndpoints(context.Background()).Execute()
@@ -418,7 +418,7 @@ var pamProvidersCreateCmd = &cobra.Command{
 			return mErr
 		}
 		log.Info().Str("output", string(jsonString)).Msg("successfully created PAM provider")
-		outputResult(jsonString, outputFormat)
+		outputResult(jsonString, flagOutputFormat)
 		return nil
 	},
 }
@@ -434,9 +434,9 @@ var pamProvidersUpdateCmd = &cobra.Command{
 		// Specific flags
 		pamConfigFile, _ := cmd.Flags().GetString(FlagFromFile)
 
-		// Debug + expEnabled checks
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		// Debug + flagEnableExp checks
+		informDebug(flagEnableDebug)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
@@ -446,7 +446,7 @@ var pamProvidersUpdateCmd = &cobra.Command{
 			Msg("update PAM Provider from file")
 
 		// Authenticate
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//kfClient, _ := initClient(flagConfigFile, flagProfile, flagProviderType, flagProviderProfile, flagNoPrompt, authConfig, false)
 		sdkClient, cErr := initGenClient(false)
 		if cErr != nil {
 			return cErr
@@ -496,7 +496,7 @@ var pamProvidersUpdateCmd = &cobra.Command{
 			Str("pamConfigFile", pamConfigFile).
 			Str("output", string(jsonString)).
 			Msg("successfully updated PAM provider")
-		outputResult(jsonString, outputFormat)
+		outputResult(jsonString, flagOutputFormat)
 		return nil
 	},
 }
@@ -513,9 +513,9 @@ var pamProvidersDeleteCmd = &cobra.Command{
 		pamProviderId, _ := cmd.Flags().GetInt32("id")
 		// pamProviderName := cmd.Flags().GetString("name")
 
-		// Debug + expEnabled checks
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		// Debug + flagEnableExp checks
+		informDebug(flagEnableDebug)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
@@ -525,7 +525,7 @@ var pamProvidersDeleteCmd = &cobra.Command{
 			Msg("delete PAM Provider")
 
 		// Authenticate
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//kfClient, _ := initClient(flagConfigFile, flagProfile, flagProviderType, flagProviderProfile, flagNoPrompt, authConfig, false)
 		sdkClient, cErr := initGenClient(false)
 		if cErr != nil {
 			return cErr
@@ -546,7 +546,7 @@ var pamProvidersDeleteCmd = &cobra.Command{
 		}
 
 		log.Info().Int32("id", pamProviderId).Msg("successfully deleted PAM provider")
-		outputResult(fmt.Sprintf("Deleted PAM provider with ID %d", pamProviderId), outputFormat)
+		outputResult(fmt.Sprintf("Deleted PAM provider with ID %d", pamProviderId), flagOutputFormat)
 		return nil
 	},
 }

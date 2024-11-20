@@ -64,14 +64,14 @@ WARNING: This will write the environmental credentials to disk and will be store
 		log.Info().Msg("Running login command")
 
 		cmd.SilenceUsage = true
-		// expEnabled checks
+		// flagEnableExp checks
 		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
 		stdlog.SetOutput(io.Discard)
-		informDebug(debugFlag)
+		informDebug(flagEnableDebug)
 		logGlobals()
 
 		var authType string
@@ -89,23 +89,26 @@ WARNING: This will write the environmental credentials to disk and will be store
 				Str("host", envConfig.Host).
 				Str("authType", envConfig.AuthType).
 				Msg("Login successful via environment variables")
-			outputResult(fmt.Sprintf("Login successful via environment variables to %s", envConfig.Host), outputFormat)
-			if profile == "" {
-				profile = "default"
+			outputResult(
+				fmt.Sprintf("Login successful via environment variables to %s", envConfig.Host),
+				flagOutputFormat,
+			)
+			if flagProfile == "" {
+				flagProfile = "default"
 			}
-			if configFile == "" {
+			if flagConfigFile == "" {
 				userHomeDir, hErr := prepHomeDir()
 				if hErr != nil {
 					log.Error().Err(hErr)
 					return hErr
 				}
-				configFile = path.Join(userHomeDir, DefaultConfigFileName)
+				flagConfigFile = path.Join(userHomeDir, DefaultConfigFileName)
 			}
 			envConfigFile := auth_providers.Config{
 				Servers: map[string]auth_providers.Server{},
 			}
-			envConfigFile.Servers[profile] = *envConfig
-			wcErr := writeConfigFile(&envConfigFile, configFile)
+			envConfigFile.Servers[flagProfile] = *envConfig
+			wcErr := writeConfigFile(&envConfigFile, flagConfigFile)
 			if wcErr != nil {
 				return wcErr
 			}
@@ -114,23 +117,23 @@ WARNING: This will write the environmental credentials to disk and will be store
 
 		log.Error().Err(envErr).Msg("Unable to authenticate via environment variables")
 
-		if profile == "" {
-			profile = "default"
+		if flagProfile == "" {
+			flagProfile = "default"
 		}
-		if configFile == "" {
+		if flagConfigFile == "" {
 			userHomeDir, hErr := prepHomeDir()
 			if hErr != nil {
 				log.Error().Err(hErr)
 				return hErr
 			}
-			configFile = path.Join(userHomeDir, DefaultConfigFileName)
+			flagConfigFile = path.Join(userHomeDir, DefaultConfigFileName)
 		}
 
 		log.Debug().
-			Str("configFile", configFile).
-			Str("profile", profile).
+			Str("flagConfigFile", flagConfigFile).
+			Str("flagProfile", flagProfile).
 			Msg("call: auth_providers.ReadConfigFromJSON()")
-		aConfig, aErr := auth_providers.ReadConfigFromJSON(configFile)
+		aConfig, aErr := auth_providers.ReadConfigFromJSON(flagConfigFile)
 		if aErr != nil {
 			log.Error().Err(aErr)
 			//return aErr
@@ -141,7 +144,7 @@ WARNING: This will write the environmental credentials to disk and will be store
 
 		// Attempt to read existing configuration file
 		if aConfig != nil {
-			serverConfig, serverExists := aConfig.Servers[profile]
+			serverConfig, serverExists := aConfig.Servers[flagProfile]
 			if serverExists {
 				// validate the config and prompt for missing values
 				authType = serverConfig.GetAuthType()
@@ -189,21 +192,21 @@ WARNING: This will write the environmental credentials to disk and will be store
 				default:
 					log.Error().
 						Str("authType", authType).
-						Str("profile", profile).
-						Str("configFile", configFile).
+						Str("flagProfile", flagProfile).
+						Str("flagConfigFile", flagConfigFile).
 						Msg("unable to determine auth type from configuration")
 				}
 			}
 		}
 
-		if !noPrompt {
+		if !flagNoPrompt {
 			log.Debug().Msg("prompting for interactive login")
-			iConfig, iErr := authInteractive(outputServer, profile, !noPrompt, true, configFile)
+			iConfig, iErr := authInteractive(outputServer, flagProfile, !flagNoPrompt, true, flagConfigFile)
 			if iErr != nil {
 				log.Error().Err(iErr)
 				return iErr
 			}
-			iServer, iServerExists := iConfig.Servers[profile]
+			iServer, iServerExists := iConfig.Servers[flagProfile]
 			if iServerExists {
 				authType = iServer.GetAuthType()
 				switch authType {
@@ -248,18 +251,18 @@ WARNING: This will write the environmental credentials to disk and will be store
 			aErr := kfcBasicAuth.Authenticate()
 			if aErr != nil {
 				log.Error().Err(aErr)
-				//outputError(aErr, true, outputFormat)
+				//outputError(aErr, true, flagOutputFormat)
 				return aErr
 			}
 		}
 
 		log.Info().
-			Str("profile", profile).
-			Str("configFile", configFile).
+			Str("flagProfile", flagProfile).
+			Str("flagConfigFile", flagConfigFile).
 			Str("host", outputServer.Host).
 			Str("authType", authType).
 			Msg("Login successful")
-		outputResult(fmt.Sprintf("Login successful to %s", outputServer.Host), outputFormat)
+		outputResult(fmt.Sprintf("Login successful to %s", outputServer.Host), flagOutputFormat)
 		return nil
 	},
 	PostRun:                    nil,
@@ -567,7 +570,7 @@ func prepHomeDir() (string, error) {
 		//log.Println("[ERROR] Error getting user home directory: ", hErr)
 		log.Error().Err(hErr)
 		//fmt.Println("Error getting user home directory: ", hErr)
-		outputError(fmt.Errorf("error getting user home directory: %v", hErr), false, outputFormat)
+		outputError(fmt.Errorf("error getting user home directory: %v", hErr), false, flagOutputFormat)
 		fmt.Println("Using current directory to write config file '" + DefaultConfigFileName + "'")
 		userHomeDir = "." // Default to current directory
 	} else {

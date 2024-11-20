@@ -121,7 +121,7 @@ func Test_LoginCmdConfigParams(t *testing.T) {
 	// test
 	testCmd.SetArgs(
 		[]string{
-			"stores", "list", "--exp", "--config", "$HOME/.keyfactor/extra_config.json", "--profile",
+			"stores", "list", "--exp", "--config", "$HOME/.keyfactor/extra_config.json", "--flagProfile",
 			"oauth",
 		},
 	)
@@ -177,7 +177,7 @@ func testLogout(t *testing.T, configFilePath string, restoreConfig bool) {
 			assert.Contains(t, output, "Logged out successfully!")
 
 			// Test that the config file does not exist
-			if _, fErr := os.Stat(configFile); !os.IsNotExist(fErr) {
+			if _, fErr := os.Stat(flagConfigFile); !os.IsNotExist(fErr) {
 				t.Errorf("Config file %s still exists, please remove", configFilePath)
 				t.FailNow()
 			}

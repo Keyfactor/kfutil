@@ -248,35 +248,35 @@ func loadJSONFile(filename string) (map[string]interface{}, error) {
 
 func logGlobals() {
 
-	if !logInsecure {
-		log.Debug().Str("configFile", configFile).
-			Str("profile", profile).
-			Str("providerType", providerType).
-			Str("providerProfile", providerProfile).
+	if !flagLogInsecure {
+		log.Debug().Str("flagConfigFile", flagConfigFile).
+			Str("flagProfile", flagProfile).
+			Str("flagProviderType", flagProviderType).
+			Str("flagProviderProfile", flagProviderProfile).
 			//Str("providerConfig", providerConfig).
-			Bool("noPrompt", noPrompt).
-			Bool("expEnabled", expEnabled).
-			Bool("debugFlag", debugFlag).
-			Str("kfcUsername", kfcUsername).
-			Str("kfcHostName", kfcHostName).
-			Str("kfcPassword", hashSecretValue(kfcPassword)).
-			Str("kfcDomain", kfcDomain).
-			Str("kfcAPIPath", kfcAPIPath).
+			Bool("flagNoPrompt", flagNoPrompt).
+			Bool("flagEnableExp", flagEnableExp).
+			Bool("flagEnableDebug", flagEnableDebug).
+			Str("flagUsername", flagUsername).
+			Str("flagHostName", flagHostName).
+			Str("flagPassword", hashSecretValue(flagPassword)).
+			Str("flagDomain", flagDomain).
+			Str("flagAPIPath", flagAPIPath).
 			Msg("Global Flags")
 	} else {
-		log.Debug().Str("configFile", configFile).
-			Str("profile", profile).
-			Str("providerType", providerType).
-			Str("providerProfile", providerProfile).
+		log.Debug().Str("flagConfigFile", flagConfigFile).
+			Str("flagProfile", flagProfile).
+			Str("flagProviderType", flagProviderType).
+			Str("flagProviderProfile", flagProviderProfile).
 			//Str("providerConfig", providerConfig).
-			Bool("noPrompt", noPrompt).
-			Bool("expEnabled", expEnabled).
-			Bool("debugFlag", debugFlag).
-			Str("kfcUsername", kfcUsername).
-			Str("kfcHostName", kfcHostName).
-			Str("kfcPassword", kfcPassword).
-			Str("kfcDomain", kfcDomain).
-			Str("kfcAPIPath", kfcAPIPath).
+			Bool("flagNoPrompt", flagNoPrompt).
+			Bool("flagEnableExp", flagEnableExp).
+			Bool("flagEnableDebug", flagEnableDebug).
+			Str("flagUsername", flagUsername).
+			Str("flagHostName", flagHostName).
+			Str("flagPassword", flagPassword).
+			Str("flagDomain", flagDomain).
+			Str("flagAPIPath", flagAPIPath).
 			Msg("Global Flags")
 	}
 
@@ -379,7 +379,7 @@ func storeTypeIdentifierFlagCheck(cmd *cobra.Command) error {
 func warnExperimentalFeature(expEnabled bool, isExperimental bool) error {
 	_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 	if expErr != nil {
-		//fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+		//fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 		log.Error().Err(expErr)
 		return expErr
 	}

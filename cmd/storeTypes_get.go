@@ -100,12 +100,12 @@ func CreateCmdStoreTypesGet() *cobra.Command {
 			// Silence usage on error
 			cmd.SilenceUsage = true
 
-			// Debug + expEnabled checks
-			debugErr := warnExperimentalFeature(expEnabled, false)
+			// Debug + flagEnableExp checks
+			debugErr := warnExperimentalFeature(flagEnableExp, false)
 			if debugErr != nil {
 				return debugErr
 			}
-			informDebug(debugFlag)
+			informDebug(flagEnableDebug)
 
 			// Compute the runtime options from flags passed to the command
 			options, err := storeTypesGetFlags.ToOptions(cmd, args)
@@ -134,7 +134,7 @@ func CreateCmdStoreTypesGet() *cobra.Command {
 				return err
 			}
 			log.Trace().Msg(fmt.Sprintf("storeTypes: %+v", storeTypes))
-			output, jErr := formatStoreTypeOutput(storeTypes, outputFormat, options.outputType)
+			output, jErr := formatStoreTypeOutput(storeTypes, flagOutputFormat, options.outputType)
 			if jErr != nil {
 				log.Error().Err(jErr).Msg("unable to format certificate store type output")
 				return jErr

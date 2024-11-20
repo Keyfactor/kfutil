@@ -36,9 +36,9 @@ var containersCreateCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 		isExperimental := true
 
-		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(flagEnableExp, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 		fmt.Println("Create store containers not implemented.")
@@ -55,7 +55,7 @@ var containersGetCmd = &cobra.Command{
 		id := cmd.Flag("id").Value.String()
 
 		isExperimental := true
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
@@ -86,8 +86,8 @@ var containersUpdateCmd = &cobra.Command{
 		// Specific flags
 
 		isExperimental := true
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		informDebug(flagEnableDebug)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
@@ -108,17 +108,17 @@ var containersDeleteCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 		// Specific flags
 
-		// Debug + expEnabled checks
+		// Debug + flagEnableExp checks
 		isExperimental := true
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		informDebug(flagEnableDebug)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
 
 		// Authenticate
 		//
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		//kfClient, _ := initClient(flagConfigFile, flagProfile, flagProviderType, flagProviderProfile, flagNoPrompt, authConfig, false)
 
 		// CLI Logic
 		return fmt.Errorf("delete store containers not implemented")
@@ -133,10 +133,10 @@ var containersListCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 		// Specific flags
 
-		// Debug + expEnabled checks
+		// Debug + flagEnableExp checks
 		isExperimental := true
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		informDebug(flagEnableDebug)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}

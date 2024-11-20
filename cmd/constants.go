@@ -30,6 +30,7 @@ const (
 	DebugFuncEnter            = "entered: %s"
 	DebugFuncExit             = "exiting: %s"
 	DebugFuncCall             = "calling: %s"
+	DebugFuncReturn           = "returned: %s"
 	MinHttpTimeout            = 3
 )
 

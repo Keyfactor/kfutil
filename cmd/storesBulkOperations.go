@@ -77,7 +77,7 @@ func formatProperties(json *gabs.Container, reqPropertiesForStoreType []string) 
 
 func serializeStoreFromTypeDef(storeTypeName string, input string) (string, error) {
 	// check if storetypename is an integer
-	storeTypes, _ := readStoreTypesConfig("", "", offline)
+	storeTypes, _ := readStoreTypesConfig("", "", flagOffline)
 	log.Debug().
 		Str("storeTypeName", storeTypeName).
 		Msg("checking if storeTypeName is an integer")
@@ -123,13 +123,13 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		//	return inputErr
 		//}
 
-		// expEnabled checks
+		// flagEnableExp checks
 		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
-		informDebug(debugFlag)
+		informDebug(flagEnableDebug)
 
 		// Authenticate
 		kfClient, _ := initClient(false)
@@ -143,9 +143,9 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			Bool("dryRun", dryRun).Msg("Specific flags")
 
 		// Check inputs
-		st, stErr := validateStoreTypeInputs(storeTypeID, storeTypeName, outputFormat)
+		st, stErr := validateStoreTypeInputs(storeTypeID, storeTypeName, flagOutputFormat)
 		if stErr != nil {
-			if noPrompt {
+			if flagNoPrompt {
 				log.Error().Err(stErr).Msg("Error validating store type inputs")
 				return stErr
 			}
@@ -188,7 +188,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		csvFile, err := os.Open(filePath)
 		if err != nil {
 			log.Error().Err(err).Msgf("unable to open file: '%s'", filePath)
-			//outputError(err, true, outputFormat)
+			//outputError(err, true, flagOutputFormat)
 			cmd.SilenceUsage = true
 			return err
 		}
@@ -201,7 +201,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			log.Error().Err(cErr).
 				Str("filePath", filePath).
 				Msg("unable to read file")
-			//outputError(cErr, true, outputFormat)
+			//outputError(cErr, true, flagOutputFormat)
 			cmd.SilenceUsage = true
 			return cErr
 		}
@@ -236,7 +236,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			missingFieldsError := fmt.Errorf("missing required fields in headers: '%v'", missingFields)
 			//fmt.Printf("Missing Required Fields in headers: %v", missingFields)
 			log.Error().Err(missingFieldsError).Send()
-			//outputError(missingFieldsError, true, outputFormat)
+			//outputError(missingFieldsError, true, flagOutputFormat)
 			cmd.SilenceUsage = true
 			return missingFieldsError
 		}
@@ -282,7 +282,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			conversionError := json.Unmarshal([]byte(mJSON), &createStoreReqParameters)
 
 			if conversionError != nil {
-				//outputError(conversionError, true, outputFormat)
+				//outputError(conversionError, true, flagOutputFormat)
 				log.Error().Err(conversionError).Msgf(
 					"Unable to convert the json into the request parameters object.  %s",
 					conversionError.Error(),
@@ -332,17 +332,17 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			Int("totalSuccesses", totalSuccess).
 			Int("errorCount", errorCount).
 			Msgf("Wrote results to file '%s'", outPath)
-		outputResult(fmt.Sprintf("%d records processed.", totalRows), outputFormat)
+		outputResult(fmt.Sprintf("%d records processed.", totalRows), flagOutputFormat)
 		if totalSuccess > 0 {
 			//fmt.Printf("\n%d certificate stores successfully created.", totalSuccess)
-			outputResult(fmt.Sprintf("%d certificate stores successfully created.", totalSuccess), outputFormat)
+			outputResult(fmt.Sprintf("%d certificate stores successfully created.", totalSuccess), flagOutputFormat)
 		}
 		if errorCount > 0 {
 			//fmt.Printf("\n%d rows had errors.", errorCount)
-			outputResult(fmt.Sprintf("%d rows had errors.", errorCount), outputFormat)
+			outputResult(fmt.Sprintf("%d rows had errors.", errorCount), flagOutputFormat)
 		}
 		//fmt.Printf("\nImport results written to %s\n\n", outPath)
-		outputResult(fmt.Sprintf("Import results written to %s", outPath), outputFormat)
+		outputResult(fmt.Sprintf("Import results written to %s", outPath), flagOutputFormat)
 		return nil
 	},
 }
@@ -366,13 +366,13 @@ Store type IDs can be found by running the "store-types" command.`,
 		//	return inputErr
 		//}
 
-		// expEnabled checks
+		// flagEnableExp checks
 		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
-		informDebug(debugFlag)
+		informDebug(flagEnableDebug)
 
 		// Authenticate
 		kfClient, clientErr := initClient(false)
@@ -394,7 +394,7 @@ Store type IDs can be found by running the "store-types" command.`,
 		)
 		var validStoreTypes []string
 		var removeStoreTypes []interface{}
-		if storeTypeID < 0 && storeTypeName == "" && !noPrompt {
+		if storeTypeID < 0 && storeTypeName == "" && !flagNoPrompt {
 			// prompt for store type
 			validStoreTypesResp, vstErr := kfClient.ListCertificateStoreTypes()
 			if vstErr != nil {
@@ -421,7 +421,7 @@ Store type IDs can be found by running the "store-types" command.`,
 			st = []interface{}{selected}
 		} else {
 			log.Debug().Msg("calling validateStoreTypeInputs()")
-			st, stErr = validateStoreTypeInputs(storeTypeID, storeTypeName, outputFormat)
+			st, stErr = validateStoreTypeInputs(storeTypeID, storeTypeName, flagOutputFormat)
 			log.Debug().Msg("returned from validateStoreTypeInputs()")
 			if stErr != nil {
 				log.Error().Err(stErr).Msg("Error validating store type inputs")
@@ -478,7 +478,7 @@ Store type IDs can be found by running the "store-types" command.`,
 		log.Info().Str("filePath", filePath).Msg("Template file written")
 		outputResult(
 			fmt.Sprintf("Template file for store type with id %d written to %s", intID, filePath),
-			outputFormat,
+			flagOutputFormat,
 		)
 		return nil
 	},
@@ -496,22 +496,22 @@ var storesExportCmd = &cobra.Command{
 		outpath, _ := cmd.Flags().GetString("outpath")
 		allStores, _ := cmd.Flags().GetBool("all")
 
-		if noPrompt && !allStores {
+		if flagNoPrompt && !allStores {
 			inputErr := storeTypeIdentifierFlagCheck(cmd)
-			if inputErr != nil && !noPrompt {
+			if inputErr != nil && !flagNoPrompt {
 				return inputErr
 			}
 		}
 
 		// Fetch a list of stores from
 
-		// expEnabled checks
+		// flagEnableExp checks
 		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
-		informDebug(debugFlag)
+		informDebug(flagEnableDebug)
 
 		// Authenticate
 
@@ -546,9 +546,9 @@ var storesExportCmd = &cobra.Command{
 			stInterfaces = stInts
 		} else {
 			// Check inputs
-			stInterfaces, stErr = validateStoreTypeInputs(storeTypeID, storeTypeName, outputFormat)
+			stInterfaces, stErr = validateStoreTypeInputs(storeTypeID, storeTypeName, flagOutputFormat)
 			if stErr != nil {
-				if noPrompt {
+				if flagNoPrompt {
 					log.Error().Err(stErr).Msg("validating store type inputs")
 					return stErr
 				}

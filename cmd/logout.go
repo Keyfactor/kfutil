@@ -29,10 +29,10 @@ var logoutCmd = &cobra.Command{
 	Long:  `Removes the credentials file '$HOME/.keyfactor/command_config.json'.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		debugFlag, _ := cmd.Flags().GetBool("debugFlag")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		//profile, _ := cmd.Flags().GetString("profile")
+		debugFlag, _ := cmd.Flags().GetBool("flagEnableDebug")
+		//flagConfigFile, _ := cmd.Flags().GetString("config")
+		//flagNoPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		//flagProfile, _ := cmd.Flags().GetString("flagProfile")
 
 		debugModeEnabled := checkDebug(debugFlag)
 		log.Println("Debug mode enabled: ", debugModeEnabled)

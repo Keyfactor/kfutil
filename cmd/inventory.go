@@ -53,13 +53,13 @@ var inventoryClearCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		isExperimental := true
 
-		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(flagEnableExp, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
+		debugModeEnabled := checkDebug(flagEnableDebug)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		force, _ := cmd.Flags().GetBool("force")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -220,13 +220,13 @@ attempt to add all the certificate(s) meeting the specified criteria to all stor
 	Run: func(cmd *cobra.Command, args []string) {
 		isExperimental := true
 
-		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(flagEnableExp, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
+		debugModeEnabled := checkDebug(flagEnableDebug)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		force, _ := cmd.Flags().GetBool("force")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -409,13 +409,13 @@ var inventoryRemoveCmd = &cobra.Command{
 
 		isExperimental := true
 
-		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(flagEnableExp, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
+		debugModeEnabled := checkDebug(flagEnableDebug)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		force, _ := cmd.Flags().GetBool("force")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
@@ -611,13 +611,13 @@ var inventoryShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		isExperimental := true
 
-		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
+		_, expErr := isExperimentalFeatureEnabled(flagEnableExp, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
-		debugModeEnabled := checkDebug(debugFlag)
+		debugModeEnabled := checkDebug(flagEnableDebug)
 		log.Println("Debug mode enabled: ", debugModeEnabled)
 		storeIDs, _ := cmd.Flags().GetStringSlice("sid")
 		clientMachineNames, _ := cmd.Flags().GetStringSlice("client")

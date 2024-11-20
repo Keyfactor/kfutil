@@ -21,7 +21,7 @@ import (
 
 type AuthProvider struct {
 	Type       string      `json:"type"`
-	Profile    string      `json:"profile"`
+	Profile    string      `json:"flagProfile"`
 	Parameters interface{} `json:"parameters"`
 }
 
@@ -38,7 +38,14 @@ type AuthProviderAzureIDParams struct {
 }
 
 func (apaz AuthProviderAzureIDParams) String() string {
-	return fmt.Sprintf("SecretName: %s, AzureVaultName: %s, TenantId: %s, SubscriptionId: %s, ResourceGroup: %s", apaz.SecretName, apaz.AzureVaultName, apaz.TenantID, apaz.SubscriptionID, apaz.ResourceGroup)
+	return fmt.Sprintf(
+		"SecretName: %s, AzureVaultName: %s, TenantId: %s, SubscriptionId: %s, ResourceGroup: %s",
+		apaz.SecretName,
+		apaz.AzureVaultName,
+		apaz.TenantID,
+		apaz.SubscriptionID,
+		apaz.ResourceGroup,
+	)
 }
 
 type ConfigurationFile struct {
@@ -67,10 +74,26 @@ type ConfigurationFileEntry struct {
 }
 
 func (c ConfigurationFileEntry) String() string {
-	if !logInsecure {
-		return fmt.Sprintf("\n\tHostname: %s,\n\tUsername: %s,\n\tPassword: %s,\n\tDomain: %s,\n\tAPIPath: %s,\n\tAuthProvider: %s", c.Hostname, c.Username, hashSecretValue(c.Password), c.Domain, c.APIPath, c.AuthProvider)
+	if !flagLogInsecure {
+		return fmt.Sprintf(
+			"\n\tHostname: %s,\n\tUsername: %s,\n\tPassword: %s,\n\tDomain: %s,\n\tAPIPath: %s,\n\tAuthProvider: %s",
+			c.Hostname,
+			c.Username,
+			hashSecretValue(c.Password),
+			c.Domain,
+			c.APIPath,
+			c.AuthProvider,
+		)
 	}
-	return fmt.Sprintf("\n\tHostname: %s,\n\tUsername: %s,\n\tPassword: %s,\n\tDomain: %s,\n\tAPIPath: %s,\n\tAuthProvider: %s", c.Hostname, c.Username, c.Password, c.Domain, c.APIPath, c.AuthProvider)
+	return fmt.Sprintf(
+		"\n\tHostname: %s,\n\tUsername: %s,\n\tPassword: %s,\n\tDomain: %s,\n\tAPIPath: %s,\n\tAuthProvider: %s",
+		c.Hostname,
+		c.Username,
+		c.Password,
+		c.Domain,
+		c.APIPath,
+		c.AuthProvider,
+	)
 }
 
 type NewStoreCSVEntry struct {
@@ -86,5 +109,16 @@ type NewStoreCSVEntry struct {
 }
 
 func (n NewStoreCSVEntry) String() string {
-	return fmt.Sprintf("Id: %s, CertStoreType: %s, ClientMachine: %s, Storepath: %s, Properties: %s, Approved: %t, CreateIfMissing: %t, AgentId: %s, InventorySchedule: %s", n.Id, n.CertStoreType, n.ClientMachine, n.Storepath, n.Properties, n.Approved, n.CreateIfMissing, n.AgentID, n.InventorySchedule)
+	return fmt.Sprintf(
+		"Id: %s, CertStoreType: %s, ClientMachine: %s, Storepath: %s, Properties: %s, Approved: %t, CreateIfMissing: %t, AgentId: %s, InventorySchedule: %s",
+		n.Id,
+		n.CertStoreType,
+		n.ClientMachine,
+		n.Storepath,
+		n.Properties,
+		n.Approved,
+		n.CreateIfMissing,
+		n.AgentID,
+		n.InventorySchedule,
+	)
 }

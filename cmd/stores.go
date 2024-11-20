@@ -42,13 +42,13 @@ var storesListCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
 
-		// Debug + expEnabled checks
+		// Debug + flagEnableExp checks
 		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
-		informDebug(debugFlag)
+		informDebug(flagEnableDebug)
 
 		// Authenticate
 		kfClient, _ := initClient(false)
@@ -70,7 +70,7 @@ var storesListCmd = &cobra.Command{
 			log.Error().Err(jErr).Send()
 			return jErr
 		}
-		outputResult(output, outputFormat)
+		outputResult(output, flagOutputFormat)
 		return nil
 	},
 }
@@ -84,13 +84,13 @@ var storesGetCmd = &cobra.Command{
 		// Specific flags
 		storeID, _ := cmd.Flags().GetString("id")
 
-		// Debug + expEnabled checks
+		// Debug + flagEnableExp checks
 		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
-		informDebug(debugFlag)
+		informDebug(flagEnableDebug)
 
 		// Authenticate
 		kfClient, _ := initClient(false)
@@ -106,7 +106,7 @@ var storesGetCmd = &cobra.Command{
 			log.Error().Err(jErr).Send()
 			return jErr
 		}
-		outputResult(output, outputFormat)
+		outputResult(output, flagOutputFormat)
 		return nil
 	},
 }
@@ -123,13 +123,13 @@ var storesDeleteCmd = &cobra.Command{
 		inputFile, _ := cmd.Flags().GetString("file")
 		//outPath, _ := cmd.Flags().GetString("outpath")
 
-		// Debug + expEnabled checks
+		// Debug + flagEnableExp checks
 		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
-		informDebug(debugFlag)
+		informDebug(flagEnableDebug)
 
 		// Authenticate
 		kfClient, _ := initClient(false)
@@ -142,7 +142,7 @@ var storesDeleteCmd = &cobra.Command{
 		)
 		if deleteAll {
 			isExperimental := true
-			debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+			debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 			if debugErr != nil {
 				return debugErr
 			}
@@ -164,7 +164,7 @@ var storesDeleteCmd = &cobra.Command{
 			csvFile, ioErr := os.Open(inputFile)
 			if ioErr != nil {
 				log.Error().Err(ioErr).Msgf("unable to open file: '%s'", inputFile)
-				//outputError(err, true, outputFormat)
+				//outputError(err, true, flagOutputFormat)
 				cmd.SilenceUsage = true
 				return ioErr
 			}
@@ -175,13 +175,13 @@ var storesDeleteCmd = &cobra.Command{
 				log.Error().Err(cErr).
 					Str("filePath", inputFile).
 					Msg("unable to read file")
-				//outputError(cErr, true, outputFormat)
+				//outputError(cErr, true, flagOutputFormat)
 				cmd.SilenceUsage = true
 				return cErr
 			}
 			if len(inFile) < 1 {
 				log.Error().Msg("No data in file")
-				//outputError(errors.New("no data in file"), true, outputFormat)
+				//outputError(errors.New("no data in file"), true, flagOutputFormat)
 				cmd.SilenceUsage = true
 				return fmt.Errorf("no data in file %s", inputFile)
 			}
@@ -196,7 +196,7 @@ var storesDeleteCmd = &cobra.Command{
 			}
 			if !containsID {
 				log.Error().Msg("File does not contain 'Id' column")
-				//outputError(errors.New("file does not contain 'Id' column"), true, outputFormat)
+				//outputError(errors.New("file does not contain 'Id' column"), true, flagOutputFormat)
 				cmd.SilenceUsage = true
 				return fmt.Errorf("file does not contain 'Id' column, unable to delete stores")
 			}
@@ -271,7 +271,7 @@ var storesDeleteCmd = &cobra.Command{
 				errs = append(errs, dErr)
 				continue
 			}
-			outputResult(fmt.Sprintf("successfully deleted store %s", st), outputFormat)
+			outputResult(fmt.Sprintf("successfully deleted store %s", st), flagOutputFormat)
 		}
 		if len(errs) > 0 {
 			errsStr := ""

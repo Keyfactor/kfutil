@@ -16,8 +16,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"log"
+
+	"github.com/spf13/cobra"
 )
 
 // statusCmd represents the status command
@@ -27,20 +28,20 @@ var statusCmd = &cobra.Command{
 	Long:  `Returns a list of all API endpoints.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Global flags
-		//debugFlag, _ := cmd.Flags().GetBool("debugFlag")
-		//configFile, _ := cmd.Flags().GetString("config")
-		//noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-		//profile, _ := cmd.Flags().GetString("profile")
+		//flagEnableDebug, _ := cmd.Flags().GetBool("flagEnableDebug")
+		//flagConfigFile, _ := cmd.Flags().GetString("config")
+		//flagNoPrompt, _ := cmd.Flags().GetBool("no-prompt")
+		//flagProfile, _ := cmd.Flags().GetString("flagProfile")
 		expEnabled, _ := cmd.Flags().GetBool("exp")
 		isExperimental := true
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
-			fmt.Println(fmt.Sprintf("WARNING this is an expEnabled feature, %s", expErr))
+			fmt.Println(fmt.Sprintf("WARNING this is an flagEnableExp feature, %s", expErr))
 			log.Fatalf("[ERROR]: %s", expErr)
 		}
 
-		//kfClient, _ := initClient(configFile, profile, noPrompt)
+		//kfClient, _ := initClient(flagConfigFile, flagProfile, flagNoPrompt)
 		//status, err := kfClient.GetStatus()
 		//if err != nil {
 		//	log.Printf("Error: %s", err)

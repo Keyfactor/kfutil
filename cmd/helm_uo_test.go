@@ -18,16 +18,20 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 	"kfutil/pkg/cmdtest"
 	"kfutil/pkg/cmdutil/extensions"
 	"kfutil/pkg/helm"
-	"os"
-	"testing"
 )
 
-var filename = fmt.Sprintf("https://raw.githubusercontent.com/Keyfactor/containerized-uo-deployment-dev/main/universal-orchestrator/values.yaml?token=%s", os.Getenv("TOKEN"))
+var filename = fmt.Sprintf(
+	"https://raw.githubusercontent.com/Keyfactor/containerized-uo-deployment-dev/main/universal-orchestrator/values.yaml?token=%s",
+	os.Getenv("TOKEN"),
+)
 
 func TestHelmUo_SaveAndExit(t *testing.T) {
 	t.Skip()
@@ -54,26 +58,30 @@ func TestHelmUo_SaveAndExit(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
-			var output []byte
-			var err error
+		t.Run(
+			test.Name, func(t *testing.T) {
+				var output []byte
+				var err error
 
-			cmdtest.RunTest(t, test.Procedure, func() error {
-				output, err = cmdtest.TestExecuteCommand(t, RootCmd, test.CommandArguments...)
-				if err != nil {
-					return err
+				cmdtest.RunTest(
+					t, test.Procedure, func() error {
+						output, err = cmdtest.TestExecuteCommand(t, RootCmd, test.CommandArguments...)
+						if err != nil {
+							return err
+						}
+
+						return nil
+					},
+				)
+
+				if test.CheckProcedure != nil {
+					err = test.CheckProcedure(output)
+					if err != nil {
+						t.Error(err)
+					}
 				}
-
-				return nil
-			})
-
-			if test.CheckProcedure != nil {
-				err = test.CheckProcedure(output)
-				if err != nil {
-					t.Error(err)
-				}
-			}
-		})
+			},
+		)
 	}
 }
 
@@ -83,7 +91,7 @@ func TestHelmUo(t *testing.T) {
 	var profile, config string
 	uoCmd.Flags().BoolVarP(&debug, "debug", "b", false, "debug")
 	uoCmd.Flags().BoolVarP(&noPrompt, "no-prompt", "y", false, "no-prompt")
-	uoCmd.Flags().StringVarP(&profile, "profile", "p", "", "profile")
+	uoCmd.Flags().StringVarP(&profile, "flagProfile", "p", "", "flagProfile")
 	uoCmd.Flags().StringVarP(&config, "config", "c", "", "config")
 	uoCmd.Flags().BoolVarP(&exp, "exp", "", false, "exp")
 

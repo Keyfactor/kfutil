@@ -165,20 +165,20 @@ func (f *HelmUoFlags) ToOptions(cmd *cobra.Command, args []string) (*HelmUoOptio
 	flags.GetDebugFlag(cmd)
 
 	// Determine if feature is enabled
-	expEnabled, _ = cmd.Flags().GetBool("exp")
-	_, err := isExperimentalFeatureEnabled(expEnabled, true)
+	flagEnableExp, _ = cmd.Flags().GetBool("exp")
+	_, err := isExperimentalFeatureEnabled(flagEnableExp, true)
 	if err != nil {
 		return nil, fmt.Errorf("feature gate check failed: %s", err)
 	}
 
 	// Get the command config entry from global flags
-	commandConfig, _ := auth_providers.ReadConfigFromJSON(configFile)
+	commandConfig, _ := auth_providers.ReadConfigFromJSON(flagConfigFile)
 
 	// Get the hostname from the command config
-	entry, ok := commandConfig.Servers[profile]
+	entry, ok := commandConfig.Servers[flagProfile]
 	if ok {
 		if entry.Host != "" {
-			options.CommandHostname = commandConfig.Servers[profile].Host
+			options.CommandHostname = commandConfig.Servers[flagProfile].Host
 		}
 	}
 

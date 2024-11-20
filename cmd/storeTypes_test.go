@@ -304,7 +304,7 @@ func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
 		fmt.Sprintf("OFFLINE Create ALL StoreTypes"), func(t *testing.T) {
 			testCmd := RootCmd
 			// check if I'm running inside a GitHub Action
-			testArgs := []string{"store-types", "create", "--all", "--offline"}
+			testArgs := []string{"store-types", "create", "--all", "--flagOffline"}
 			testCreateStoreType(t, testCmd, testArgs, storeTypes)
 		},
 	)

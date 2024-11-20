@@ -512,18 +512,18 @@ package cmd
 //		PreRunE:                nil,
 //		Run: func(cmd *cobra.Command, args []string) {
 //			// Global flags
-//			debugFlag, _ := cmd.Flags().GetBool("debugFlag")
-//			configFile, _ := cmd.Flags().GetString("config")
-//			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-//			profile, _ := cmd.Flags().GetString("profile")
+//			flagEnableDebug, _ := cmd.Flags().GetBool("flagEnableDebug")
+//			flagConfigFile, _ := cmd.Flags().GetString("config")
+//			flagNoPrompt, _ := cmd.Flags().GetBool("no-prompt")
+//			flagProfile, _ := cmd.Flags().GetString("flagProfile")
 //
-//			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
-//			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
-//			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
+//			flagUsername, _ := cmd.Flags().GetString("flagUsername")
+//			flagPassword, _ := cmd.Flags().GetString("flagPassword")
+//			flagDomain, _ := cmd.Flags().GetString("flagDomain")
 //
 //
 //
-//			debugModeEnabled := checkDebug(debugFlag)
+//			debugModeEnabled := checkDebug(flagEnableDebug)
 //			log.Println("Debug mode enabled: ", debugModeEnabled)
 //			var lookupFailures []string
 //			kfClient, _ := initClient(false)
@@ -678,18 +678,18 @@ package cmd
 //		PreRunE:                nil,
 //		Run: func(cmd *cobra.Command, args []string) {
 //			// Global flags
-//			debugFlag, _ := cmd.Flags().GetBool("debugFlag")
-//			configFile, _ := cmd.Flags().GetString("config")
-//			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-//			profile, _ := cmd.Flags().GetString("profile")
+//			flagEnableDebug, _ := cmd.Flags().GetBool("flagEnableDebug")
+//			flagConfigFile, _ := cmd.Flags().GetString("config")
+//			flagNoPrompt, _ := cmd.Flags().GetBool("no-prompt")
+//			flagProfile, _ := cmd.Flags().GetString("flagProfile")
 //
-//			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
-//			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
-//			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
+//			flagUsername, _ := cmd.Flags().GetString("flagUsername")
+//			flagPassword, _ := cmd.Flags().GetString("flagPassword")
+//			flagDomain, _ := cmd.Flags().GetString("flagDomain")
 //
 //
 //
-//			debugModeEnabled := checkDebug(debugFlag)
+//			debugModeEnabled := checkDebug(flagEnableDebug)
 //
 //			log.Println("Debug mode enabled: ", debugModeEnabled)
 //
@@ -706,7 +706,7 @@ package cmd
 //			dryRun, _ := cmd.Flags().GetBool("dry-run")
 //			outpath, _ := cmd.Flags().GetString("outpath")
 //
-//			log.Printf("[DEBUG] configFile: %s", configFile)
+//			log.Printf("[DEBUG] flagConfigFile: %s", flagConfigFile)
 //			log.Printf("[DEBUG] storesFile: %s", storesFile)
 //			log.Printf("[DEBUG] addRootsFile: %s", addRootsFile)
 //			log.Printf("[DEBUG] removeRootsFile: %s", removeRootsFile)
@@ -989,18 +989,18 @@ package cmd
 //		PreRunE:                nil,
 //		Run: func(cmd *cobra.Command, args []string) {
 //			// Global flags
-//			debugFlag, _ := cmd.Flags().GetBool("debugFlag")
-//			configFile, _ := cmd.Flags().GetString("config")
-//			noPrompt, _ := cmd.Flags().GetBool("no-prompt")
-//			profile, _ := cmd.Flags().GetString("profile")
+//			flagEnableDebug, _ := cmd.Flags().GetBool("flagEnableDebug")
+//			flagConfigFile, _ := cmd.Flags().GetString("config")
+//			flagNoPrompt, _ := cmd.Flags().GetBool("no-prompt")
+//			flagProfile, _ := cmd.Flags().GetString("flagProfile")
 //
-//			kfcUsername, _ := cmd.Flags().GetString("kfcUsername")
-//			kfcPassword, _ := cmd.Flags().GetString("kfcPassword")
-//			kfcDomain, _ := cmd.Flags().GetString("kfcDomain")
+//			flagUsername, _ := cmd.Flags().GetString("flagUsername")
+//			flagPassword, _ := cmd.Flags().GetString("flagPassword")
+//			flagDomain, _ := cmd.Flags().GetString("flagDomain")
 //
 //
 //
-//			debugModeEnabled := checkDebug(debugFlag)
+//			debugModeEnabled := checkDebug(flagEnableDebug)
 //			log.Println("Debug mode enabled: ", debugModeEnabled)
 //
 //			templateType, _ := cmd.Flags().GetString("type")
@@ -1279,7 +1279,7 @@ package cmd
 //		maxLeaves       int
 //		tType           = tTypeCerts
 //		outPath         string
-//		outputFormat    string
+//		flagOutputFormat    string
 //		inputFile       string
 //		storeTypes      []string
 //		containerNames  []string
@@ -1382,7 +1382,7 @@ package cmd
 //		"Path to write the template file to. If not specified, the file will be written to the current directory.",
 //	)
 //	rotGenStoreTemplateCmd.Flags().StringVarP(
-//		&outputFormat, "format", "f", "csv",
+//		&flagOutputFormat, "format", "f", "csv",
 //		"The type of template to generate. Only `csv` is supported at this time.",
 //	)
 //	rotGenStoreTemplateCmd.Flags().Var(

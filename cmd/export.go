@@ -114,8 +114,8 @@ var exportCmd = &cobra.Command{
 		log.Debug().Msgf("%s: exportCmd", DebugFuncEnter)
 		isExperimental := true
 
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		informDebug(flagEnableDebug)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}

@@ -48,14 +48,14 @@ var storesTypesListCmd = &cobra.Command{
 	Long:  `List certificate store types.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
-		// expEnabled checks
+		// flagEnableExp checks
 		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
 		stdlog.SetOutput(io.Discard)
-		informDebug(debugFlag)
+		informDebug(flagEnableDebug)
 
 		// Authenticate
 		kfClient, cErr := initClient(false)
@@ -78,7 +78,7 @@ var storesTypesListCmd = &cobra.Command{
 			log.Error().Err(jErr).Msg("unable to marshal certificate store types to JSON")
 			return jErr
 		}
-		outputResult(output, outputFormat)
+		outputResult(output, flagOutputFormat)
 		return nil
 	},
 }
@@ -97,13 +97,13 @@ var storesTypeCreateCmd = &cobra.Command{
 		listTypes, _ := cmd.Flags().GetBool("list")
 		storeTypeConfigFile, _ := cmd.Flags().GetString("from-file")
 
-		// Debug + expEnabled checks
+		// Debug + flagEnableExp checks
 		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
-		informDebug(debugFlag)
+		informDebug(flagEnableDebug)
 
 		// Authenticate
 		kfClient, _ := initClient(false)
@@ -181,7 +181,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		} else {
 			typesToCreate = validStoreTypes
 		}
-		storeTypeConfig, stErr := readStoreTypesConfig("", gitRef, offline)
+		storeTypeConfig, stErr := readStoreTypesConfig("", gitRef, flagOffline)
 		if stErr != nil {
 			log.Error().Err(stErr).Send()
 			return stErr
@@ -236,13 +236,13 @@ var storesTypeDeleteCmd = &cobra.Command{
 		deleteAll, _ := cmd.Flags().GetBool("all")
 		gitRef, _ := cmd.Flags().GetString(FlagGitRef)
 
-		// Debug + expEnabled checks
+		// Debug + flagEnableExp checks
 		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
-		informDebug(debugFlag)
+		informDebug(flagEnableDebug)
 
 		log.Debug().Str("storeType", storeType).
 			Int("id", id).Bool("dryRun", dryRun).
@@ -317,7 +317,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 			if dryRun {
 				outputResult(
 					fmt.Sprintf("dry run delete called on certificate store type (%v) with ID: %d", st, id),
-					outputFormat,
+					flagOutputFormat,
 				)
 			} else {
 				log.Debug().Interface("storeType", st).
@@ -336,7 +336,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 				log.Info().Interface("storeType", st).
 					Int("id", id).
 					Msg("Certificate store type deleted")
-				outputResult(fmt.Sprintf("Certificate store type (%v) deleted", st), outputFormat)
+				outputResult(fmt.Sprintf("Certificate store type (%v) deleted", st), flagOutputFormat)
 			}
 		}
 		if len(removalErrors) > 0 {
@@ -359,18 +359,18 @@ var fetchStoreTypesCmd = &cobra.Command{
 		// Specific flags
 		gitRef, _ := cmd.Flags().GetString(FlagGitRef)
 
-		// Debug + expEnabled checks
+		// Debug + flagEnableExp checks
 		isExperimental := false
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		debugErr := warnExperimentalFeature(flagEnableExp, isExperimental)
 		if debugErr != nil {
 			return debugErr
 		}
-		informDebug(debugFlag)
+		informDebug(flagEnableDebug)
 
 		if gitRef == "" {
 			gitRef = "main"
 		}
-		templates, err := readStoreTypesConfig("", gitRef, offline)
+		templates, err := readStoreTypesConfig("", gitRef, flagOffline)
 		if err != nil {
 			log.Error().Err(err).Send()
 			return err
@@ -496,14 +496,14 @@ func getValidStoreTypes(fp string, gitRef string) []string {
 	log.Debug().
 		Str("file", fp).
 		Str("gitRef", gitRef).
-		Bool("offline", offline).
+		Bool("flagOffline", flagOffline).
 		Msg(DebugFuncEnter)
 
 	log.Debug().
 		Str("file", fp).
 		Str("gitRef", gitRef).
 		Msg("Reading store types config.")
-	validStoreTypes, rErr := readStoreTypesConfig(fp, gitRef, offline)
+	validStoreTypes, rErr := readStoreTypesConfig(fp, gitRef, flagOffline)
 	if rErr != nil {
 		log.Error().Err(rErr).Msg("unable to read store types")
 		return nil
@@ -568,11 +568,11 @@ func readStoreTypesConfig(fp, gitRef string, offline bool) (map[string]interface
 
 func init() {
 	defaultGitRef := "main"
-	offline = true    // temporarily set to true as it runs before the flag is set
-	debugFlag = false // temporarily set to false as it runs before the flag is set
+	flagOffline = true      // temporarily set to true as it runs before the flag is set
+	flagEnableDebug = false // temporarily set to false as it runs before the flag is set
 	var gitRef string
 	validTypesString := strings.Join(getValidStoreTypes("", defaultGitRef), ", ")
-	offline = false //revert this so that flag is not set to true by default
+	flagOffline = false //revert this so that flag is not set to true by default
 	RootCmd.AddCommand(storeTypesCmd)
 
 	// GET store type templates
