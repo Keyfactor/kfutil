@@ -1,197 +1,197 @@
-#name: Create Cert Store Update Pull Request
-#
-#on:
-#  repository_dispatch:
-#    types: targetRepo-event
-#  workflow_dispatch:
-#    inputs:
-#      targetRepo:
-#        description: 'Target repository for workflow_dispatch'
-#        default: 'all'
-#      targetRef:
-#        description: 'Target ref for workflow_dispatch'
-#        default: 'latest'
-#
-#jobs:
-#  create_pull_request:
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Set TARGET_REPO_BRANCH from workflow_dispatch input
-#        if: github.event_name == 'workflow_dispatch'
-#        id: set-local-env-vars
-#        run: |
-#          echo "TARGET_REPO_BRANCH=${{ inputs.targetRef }}" | tee -a $GITHUB_ENV
-#          echo "KFUTIL_ARG=${{ inputs.targetRepo }}" | tee -a $GITHUB_ENV
-#      - name: Set TARGET_REPO_BRANCH from repository_dispatch input
-#        if: github.event_name == 'repository_dispatch'
-#        id: set-env-vars-from-payload
-#        run: |
-#          echo "TARGET_REPO_BRANCH=${{ github.event.client_payload.targetRef }}" | tee -a $GITHUB_ENV
-#          echo "KFUTIL_ARG=${{ github.event.client_payload.targetRepo }}" | tee -a $GITHUB_ENV
-#      - name: Check Open PRs for Existing Branch
-#        id: check-branch
-#        uses: actions/github-script@v7
-#        with:
-#          script: |
-#            // Look for open pull requests
-#            const owner = context.repo.owner;
-#            const repo = context.repo.repo;
-#            const pulls = await github.rest.pulls.list({
-#              owner,
-#              repo,
-#              state: "open"
-#            });
-#            // Filter out ones matching the KFUTIL_ARG from payload (repository_dispatch) or input (workflow_dispatch)
-#            const filteredData = pulls.data.filter(item => item.head.ref === '${{ env.KFUTIL_ARG }}'); // Look for an existing branch with the orchestrator repo name
-#            const isBranch = (filteredData.length > 0)
-#            if (isBranch) {
-#              const {
-#                head: { ref: incomingBranch }, base: { ref: baseBranch }
-#              } = pulls.data[0]
-#              core.setOutput('PR_BRANCH', 'commit'); // Just commit since the branch exists
-#              console.log(`incomingBranch: ${incomingBranch}`)
-#              console.log(`baseBranch: ${baseBranch}`)
-#            } else {
-#              core.setOutput('PR_BRANCH', 'create') // No branch, create one
-#            }
-#            console.log(`Branch exists?`)
-#            console.log(filteredData.length > 0)
-#            console.log(`targetRepo: ${{env.KFUTIL_ARG}}`)
-#      - name: set env.PR_BRANCH value for jobs
-#        run: |
-#          echo "PR_BRANCH=${{steps.check-branch.outputs.PR_BRANCH}}" | tee -a $GITHUB_ENV
-#
-## If the branch with an open PR already exists, first check out that branch from kfutil
-#      - name: Check out existing repo merge branch
-#        if: env.PR_BRANCH == 'commit'
-#        uses: actions/checkout@v4
-#        with:
-#          repository: 'keyfactor/kfutil'
-#          sparse-checkout: |
-#            .github
-#          path: './merge-folder/'
-#          token: ${{ secrets.V2BUILDTOKEN }}
-#          ref: '${{env.KFUTIL_ARG}}'
-#
-## If the branch does not exist, first check out the main branch from kfutil.
-#      - name: Check out main
-#        if: env.PR_BRANCH == 'create'
-#        uses: actions/checkout@v4
-#        with:
-#          repository: 'keyfactor/kfutil'
-#          sparse-checkout: |
-#            .github
-#          path: './merge-folder/'
-#          token: ${{ secrets.V2BUILDTOKEN }}
-#
-## Save a copy of the original json
-#      - name: Save original store_types.json
-#        run: |
-#          echo "Saving original store_types.json as store_types.sav.json"
-#          cp ./merge-folder/store_types.json  ./merge-folder/store_types.sav.json
-#
-## Checkout and run the python tool
-#      - name: Check out python merge tool repo
-#        uses: actions/checkout@v4
-#        with:
-#          repository: 'keyfactor/integration-tools'
-#          path: './tools/'
-#          token: ${{ secrets.V2BUILDTOKEN }}
-#
-#      - name: Run Python Script
-#        working-directory: ./tools/store-type-merge
-#        run: |
-#          python main.py --repo-name ${{ env.KFUTIL_ARG }} --ref ${{ env.TARGET_REPO_BRANCH }}
-#          cat store_types.json
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN }}
-#
-#      - name: Save Store Types JSON Artifact
-#        if: success()
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: store-types
-#          path: |
-#              ./tools/store-type-merge/store_types.json
-#              ./merge-folder/store_types.sav.json
-#
-#      - name: Save Invalid Store Types JSON Artifact
-#        if: success()
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: invalid-repos
-#          path: ./tools/store-type-merge/invalid_repos.json
-#
-#      - name: Save logs directory
-#        if: success()
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: logs
-#          path: ./tools/store-type-merge/log
-#
-## Copy the result to the pr commit folder
-#      - name: Copy store-type-merge results
-#        run: |
-#          echo "Saving original store_types.json as store_types.sav.json"
-#          cp -f ./tools/store-type-merge/store_types.json  ./merge-folder/store_types.json
-#
-## Diff the new json against the saved copy and set an UPDATE_FILE variable
-#      - name: Diff the results
-#        run: |
-#          echo "Diff the results"
-#          echo "Set UPDATE_FILE=1 if differences"
-#          if cmp -s ./merge-folder/store_types.json ./merge-folder/store_types.sav.json ;
-#            then echo "UPDATE_FILE=F" | tee -a $GITHUB_ENV;
-#            else echo "UPDATE_FILE=T" | tee -a $GITHUB_ENV;
-#          fi
-#          diff ./merge-folder/store_types.json ./merge-folder/store_types.sav.json || true
-#
-##  There are two different steps with a condition to check the PR_BRANCH env var
-##  Both steps will contain a check for the UPDATE_FILE variable before running
-#      - name: Add and Commit to newly created branch
-#        if: ${{ env.UPDATE_FILE == 'T' && env.PR_BRANCH == 'create' }}
-#        uses: Keyfactor/add-and-commit@v9.1.3
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.SDK_SYNC_PAT }}
-#        with:
-#          add: store_types.json --force
-#          message: Update store_types.json for ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}}
-#          author_name: Keyfactor
-#          author_email: keyfactor@keyfactor.github.io
-#          cwd: './merge-folder/'
-#          new_branch: ${{env.KFUTIL_ARG}}
-#
-#      - name: Add and Commit to existing branch
-#        if: ${{ env.UPDATE_FILE == 'T' && env.PR_BRANCH == 'commit' }}
-#        uses: Keyfactor/add-and-commit@v9.1.3
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.SDK_SYNC_PAT }}
-#        with:
-#          add: store_types.json --force
-#          message: Update store_types.json for ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}}
-#          author_name: Keyfactor
-#          author_email: keyfactor@keyfactor.github.io
-#          cwd: './merge-folder/'
-#
-#      - name: Create new PR for the newly created branch
-#        if: env.UPDATE_FILE == 'T' && env.PR_BRANCH == 'create'
-#        uses: actions/github-script@v7
-#        with:
-#          script: |
-#            console.log(`Created ${{env.KFUTIL_ARG}} `)
-#            console.log("Commit to ${{env.KFUTIL_ARG}} for PR")
-#            const owner = context.repo.owner;
-#            const repo = context.repo.repo;
-#            const baseBranch = 'main';
-#            const newBranch = '${{env.KFUTIL_ARG}}';
-#            const response = await github.rest.pulls.create({
-#              owner,
-#              repo,
-#              title: 'New Pull Request - ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}}',
-#              head: newBranch,
-#              base: baseBranch,
-#              body: 'The cert store update from ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}} needs to be verified and merged if correct.',
-#            });
-#            console.log(`Pull request created: ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}} : ${response.data.html_url}`);
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN }}
+name: Create Cert Store Update Pull Request
+
+on:
+  repository_dispatch:
+    types: targetRepo-event
+  workflow_dispatch:
+    inputs:
+      targetRepo:
+        description: 'Target repository for workflow_dispatch'
+        default: 'all'
+      targetRef:
+        description: 'Target ref for workflow_dispatch'
+        default: 'latest'
+
+jobs:
+  create_pull_request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set TARGET_REPO_BRANCH from workflow_dispatch input
+        if: github.event_name == 'workflow_dispatch'
+        id: set-local-env-vars
+        run: |
+          echo "TARGET_REPO_BRANCH=${{ inputs.targetRef }}" | tee -a $GITHUB_ENV
+          echo "KFUTIL_ARG=${{ inputs.targetRepo }}" | tee -a $GITHUB_ENV
+      - name: Set TARGET_REPO_BRANCH from repository_dispatch input
+        if: github.event_name == 'repository_dispatch'
+        id: set-env-vars-from-payload
+        run: |
+          echo "TARGET_REPO_BRANCH=${{ github.event.client_payload.targetRef }}" | tee -a $GITHUB_ENV
+          echo "KFUTIL_ARG=${{ github.event.client_payload.targetRepo }}" | tee -a $GITHUB_ENV
+      - name: Check Open PRs for Existing Branch
+        id: check-branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Look for open pull requests
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pulls = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: "open"
+            });
+            // Filter out ones matching the KFUTIL_ARG from payload (repository_dispatch) or input (workflow_dispatch)
+            const filteredData = pulls.data.filter(item => item.head.ref === '${{ env.KFUTIL_ARG }}'); // Look for an existing branch with the orchestrator repo name
+            const isBranch = (filteredData.length > 0)
+            if (isBranch) {
+              const {
+                head: { ref: incomingBranch }, base: { ref: baseBranch }
+              } = pulls.data[0]
+              core.setOutput('PR_BRANCH', 'commit'); // Just commit since the branch exists
+              console.log(`incomingBranch: ${incomingBranch}`)
+              console.log(`baseBranch: ${baseBranch}`)
+            } else {
+              core.setOutput('PR_BRANCH', 'create') // No branch, create one
+            }
+            console.log(`Branch exists?`)
+            console.log(filteredData.length > 0)
+            console.log(`targetRepo: ${{env.KFUTIL_ARG}}`)
+      - name: set env.PR_BRANCH value for jobs
+        run: |
+          echo "PR_BRANCH=${{steps.check-branch.outputs.PR_BRANCH}}" | tee -a $GITHUB_ENV
+
+      # If the branch with an open PR already exists, first check out that branch from kfutil
+      - name: Check out existing repo merge branch
+        if: env.PR_BRANCH == 'commit'
+        uses: actions/checkout@v4
+        with:
+          repository: 'keyfactor/kfutil'
+          sparse-checkout: |
+            .github
+          path: './merge-folder/'
+          token: ${{ secrets.V2BUILDTOKEN }}
+          ref: '${{env.KFUTIL_ARG}}'
+
+      # If the branch does not exist, first check out the main branch from kfutil.
+      - name: Check out main
+        if: env.PR_BRANCH == 'create'
+        uses: actions/checkout@v4
+        with:
+          repository: 'keyfactor/kfutil'
+          sparse-checkout: |
+            .github
+          path: './merge-folder/'
+          token: ${{ secrets.V2BUILDTOKEN }}
+
+      # Save a copy of the original json
+      - name: Save original store_types.json
+        run: |
+          echo "Saving original store_types.json as store_types.sav.json"
+          cp ./merge-folder/store_types.json  ./merge-folder/store_types.sav.json
+
+      # Checkout and run the python tool
+      - name: Check out python merge tool repo
+        uses: actions/checkout@v4
+        with:
+          repository: 'keyfactor/integration-tools'
+          path: './tools/'
+          token: ${{ secrets.V2BUILDTOKEN }}
+
+      - name: Run Python Script
+        working-directory: ./tools/store-type-merge
+        run: |
+          python main.py --repo-name ${{ env.KFUTIL_ARG }} --ref ${{ env.TARGET_REPO_BRANCH }}
+          cat store_types.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN }}
+
+      - name: Save Store Types JSON Artifact
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: store-types
+          path: |
+            ./tools/store-type-merge/store_types.json
+            ./merge-folder/store_types.sav.json
+
+      - name: Save Invalid Store Types JSON Artifact
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: invalid-repos
+          path: ./tools/store-type-merge/invalid_repos.json
+
+      - name: Save logs directory
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: logs
+          path: ./tools/store-type-merge/log
+
+      # Copy the result to the pr commit folder
+      - name: Copy store-type-merge results
+        run: |
+          echo "Saving original store_types.json as store_types.sav.json"
+          cp -f ./tools/store-type-merge/store_types.json  ./merge-folder/store_types.json
+
+      # Diff the new json against the saved copy and set an UPDATE_FILE variable
+      - name: Diff the results
+        run: |
+          echo "Diff the results"
+          echo "Set UPDATE_FILE=1 if differences"
+          if cmp -s ./merge-folder/store_types.json ./merge-folder/store_types.sav.json ;
+            then echo "UPDATE_FILE=F" | tee -a $GITHUB_ENV;
+            else echo "UPDATE_FILE=T" | tee -a $GITHUB_ENV;
+          fi
+          diff ./merge-folder/store_types.json ./merge-folder/store_types.sav.json || true
+
+      #  There are two different steps with a condition to check the PR_BRANCH env var
+      #  Both steps will contain a check for the UPDATE_FILE variable before running
+      - name: Add and Commit to newly created branch
+        if: ${{ env.UPDATE_FILE == 'T' && env.PR_BRANCH == 'create' }}
+        uses: Keyfactor/add-and-commit@v9.1.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.SDK_SYNC_PAT }}
+        with:
+          add: store_types.json --force
+          message: Update store_types.json for ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}}
+          author_name: Keyfactor
+          author_email: keyfactor@keyfactor.github.io
+          cwd: './merge-folder/'
+          new_branch: ${{env.KFUTIL_ARG}}
+
+      - name: Add and Commit to existing branch
+        if: ${{ env.UPDATE_FILE == 'T' && env.PR_BRANCH == 'commit' }}
+        uses: Keyfactor/add-and-commit@v9.1.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.SDK_SYNC_PAT }}
+        with:
+          add: store_types.json --force
+          message: Update store_types.json for ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}}
+          author_name: Keyfactor
+          author_email: keyfactor@keyfactor.github.io
+          cwd: './merge-folder/'
+
+      - name: Create new PR for the newly created branch
+        if: env.UPDATE_FILE == 'T' && env.PR_BRANCH == 'create'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log(`Created ${{env.KFUTIL_ARG}} `)
+            console.log("Commit to ${{env.KFUTIL_ARG}} for PR")
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const baseBranch = 'main';
+            const newBranch = '${{env.KFUTIL_ARG}}';
+            const response = await github.rest.pulls.create({
+              owner,
+              repo,
+              title: 'New Pull Request - ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}}',
+              head: newBranch,
+              base: baseBranch,
+              body: 'The cert store update from ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}} needs to be verified and merged if correct.',
+            });
+            console.log(`Pull request created: ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}} : ${response.data.html_url}`);
+        env:
+          GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN }}
