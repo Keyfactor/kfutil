@@ -213,7 +213,10 @@ var storesCreateFromCSVCmd = &cobra.Command{
 
 		// check for minimum necessary required fields for creating certificate stores
 		log.Info().Msgf("Checking for minimum required fields for creating certificate stores")
-		intID, reqPropertiesForStoreType := getRequiredProperties(st, *kfClient)
+		intID, reqPropertiesForStoreType, pErr := getRequiredProperties(st, *kfClient)
+		if pErr != nil {
+			return pErr
+		}
 
 		// if not present in header, throw error.
 		headerRow := inFile[0]
@@ -863,13 +866,17 @@ func getHeadersForStoreType(id interface{}, kfClient api.Client) (int64, string,
 	return intId, shortName, csvHeaders
 }
 
-func getRequiredProperties(id interface{}, kfClient api.Client) (int64, []string) {
+func getRequiredProperties(id interface{}, kfClient api.Client) (int64, []string, error) {
 
 	storeType, err := kfClient.GetCertificateStoreType(id)
 	if err != nil {
-		log.Printf("Error: %s", err)
-		fmt.Printf("Error: %s\n", err)
-		panic("error retrieving store type")
+		log.Error().
+			Interface("id", id).
+			Err(err).Msg("Error retrieving store type from Keyfactor Command")
+		return 0, nil, fmt.Errorf(
+			"error retrieving store type '%s' from Keyfactor Command, please ensure you're using `ShortName` or `Id`",
+			id,
+		)
 	}
 
 	output, jErr := json.Marshal(storeType)
@@ -895,7 +902,7 @@ func getRequiredProperties(id interface{}, kfClient api.Client) (int64, []string
 	}
 	intId, _ := jsonParsedObj.S("StoreType").Data().(json.Number).Int64()
 
-	return intId, reqProps
+	return intId, reqProps, nil
 }
 
 func unmarshalPropertiesString(properties string) map[string]interface{} {
