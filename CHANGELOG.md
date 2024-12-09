@@ -2,7 +2,14 @@
 
 ## Features
 
+### CLI
 - `auth`: Added support for authenticating to Keyfactor Command using a oAuth2 client credentials or access token.
+
+### Store Types
+
+- `store-types create`: Added support for creating store types from a local file in `integration-manifest.json` format.
+- `store-types create`: Added support for creating store types specified by a Keyfactor repo name and optional branch
+  ref.
 
 ## Fixes
 
