@@ -215,6 +215,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		log.Info().Msgf("Checking for minimum required fields for creating certificate stores")
 		intID, reqPropertiesForStoreType, pErr := getRequiredProperties(st, *kfClient)
 		if pErr != nil {
+			cmd.SilenceUsage = true
 			return pErr
 		}
 
