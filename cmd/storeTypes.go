@@ -25,8 +25,10 @@ import (
 	"strings"
 	"time"
 
+	stdlog "log"
+
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -52,13 +54,18 @@ var storesTypesListCmd = &cobra.Command{
 		if debugErr != nil {
 			return debugErr
 		}
+		stdlog.SetOutput(io.Discard)
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, cErr := initClient(false)
+		if cErr != nil {
+			log.Error().Err(cErr).Msg("unable to authenticate")
+			return cErr
+		}
 
 		// CLI Logic
+
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
 		if err != nil {
 
@@ -99,8 +106,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		// CLI Logic
 		if gitRef == "" {
@@ -127,13 +133,15 @@ var storesTypeCreateCmd = &cobra.Command{
 		}
 
 		if storeTypeConfigFile != "" {
-			createdStore, err := createStoreFromFile(storeTypeConfigFile, kfClient)
+			createdStoreTypes, err := createStoreTypeFromFile(storeTypeConfigFile, kfClient)
 			if err != nil {
 				fmt.Printf("Failed to create store type from file \"%s\"", err)
 				return err
 			}
 
-			fmt.Printf("Created store type called \"%s\"\n", createdStore.Name)
+			for _, v := range createdStoreTypes {
+				fmt.Printf("Created store type \"%s\"\n", v.Name)
+			}
 			return nil
 		}
 
@@ -244,11 +252,10 @@ var storesTypeDeleteCmd = &cobra.Command{
 			Msg("delete command flags")
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
 		if gitRef == "" {
 			gitRef = "main"
 		}
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		var validStoreTypes []string
 		var removeStoreTypes []interface{}
@@ -404,27 +411,58 @@ var fetchStoreTypesCmd = &cobra.Command{
 //			return nil
 //		},
 //	}
-func createStoreFromFile(filename string, kfClient *api.Client) (*api.CertificateStoreType, error) {
+func createStoreTypeFromFile(filename string, kfClient *api.Client) ([]api.CertificateStoreType, error) {
 	// Read the file
+	log.Debug().Str("filename", filename).Msg("Reading store type from file")
 	file, err := os.Open(filename)
+	defer file.Close()
 	if err != nil {
+		log.Error().
+			Str("filename", filename).
+			Err(err).Msg("unable to open file")
 		return nil, err
 	}
 
 	// Compile JSON contents to a api.CertificateStoreType struct
-	var storeType api.CertificateStoreType
+	var sType api.CertificateStoreType
+	var sTypes []api.CertificateStoreType
+
+	log.Debug().Msg("Decoding JSON file as single store type")
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&storeType)
-	if err != nil {
-		return nil, err
+	err = decoder.Decode(&sType)
+	if err != nil || (sType.ShortName == "" && sType.Capability == "") {
+		log.Warn().Err(err).Msg("Unable to decode JSON file, attempting to parse an integration manifest")
+		// Attempt to parse as an integration manifest
+		var manifest IntegrationManifest
+		log.Debug().Msg("Decoding JSON file as integration manifest")
+		// Reset the file pointer
+		_, err = file.Seek(0, 0)
+		decoder = json.NewDecoder(file)
+		mErr := decoder.Decode(&manifest)
+		if mErr != nil {
+			return nil, err
+		}
+		log.Debug().Msg("Decoded JSON file as integration manifest")
+		sTypes = manifest.About.Orchestrator.StoreTypes
+	} else {
+		log.Debug().Msg("Decoded JSON file as single store type")
+		sTypes = []api.CertificateStoreType{sType}
 	}
 
-	// Use the Keyfactor client to create the store type
-	createResp, err := kfClient.CreateStoreType(&storeType)
-	if err != nil {
-		return nil, err
+	for _, st := range sTypes {
+		log.Debug().Msgf("Creating certificate store type %s", st.Name)
+		createResp, cErr := kfClient.CreateStoreType(&st)
+		if cErr != nil {
+			log.Error().
+				Str("storeType", st.Name).
+				Err(cErr).Msg("unable to create certificate store type")
+			return nil, cErr
+		}
+		log.Info().Msgf("Certificate store type %s created with ID: %d", st.Name, createResp.StoreType)
 	}
-	return createResp, nil
+	// Use the Keyfactor client to create the store type
+	log.Debug().Msg("Store type created")
+	return sTypes, nil
 }
 
 func formatStoreTypes(sTypesList *[]interface{}) (map[string]interface{}, error) {
