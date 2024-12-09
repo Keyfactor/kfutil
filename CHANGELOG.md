@@ -3,6 +3,7 @@
 ## Features
 
 ### CLI
+
 - `auth`: Added support for authenticating to Keyfactor Command using a oAuth2 client credentials or access token.
 
 ### Store Types
@@ -21,6 +22,8 @@
 ### Stores
 
 - `import csv`: Converts all `int` properties to `string` since Keyfactor Command does not support `int` properties.
+- `import csv`: Returns useful error message when invalid `store-type-name` or `store-type-id` are passed rather than
+  panic.
 
 ## Chores
 
