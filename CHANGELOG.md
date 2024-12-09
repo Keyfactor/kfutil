@@ -13,8 +13,14 @@
 
 ## Fixes
 
-- `cli`: Fixed an issue where the CLI would sometimes terminate with no error messages when calling the
+### CLI
+
+- Fixed an issue where the CLI would sometimes terminate with no error messages when calling the
   `keyfactor-go-client-sdk`
+
+### Stores
+
+- `import csv`: Converts all `int` properties to `string` since Keyfactor Command does not support `int` properties.
 
 ## Chores
 
