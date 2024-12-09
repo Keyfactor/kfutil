@@ -187,6 +187,7 @@ type StoreTypesGetOptions struct {
 	storeTypeName               string
 	genericFormat               bool
 	gitRef                      string
+	gitRepo                     string
 	storeTypeInterface          interface{}
 	outputType                  string
 	outputToIntegrationManifest bool
@@ -243,7 +244,7 @@ func (f *StoreTypesGetOptions) Validate() error {
 	// Check inputs and prompt if necessary
 	// The f.storeTypeInterface is used to pass the store type to the API
 	if f.storeTypeID < 0 && f.storeTypeName == "" {
-		validStoreTypes := getValidStoreTypes("", f.gitRef)
+		validStoreTypes := getValidStoreTypes("", f.gitRef, DefaultGitRepo)
 		prompt := &survey.Select{
 			Message: "Choose a store type:",
 			Options: validStoreTypes,

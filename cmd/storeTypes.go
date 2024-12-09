@@ -91,8 +91,9 @@ var storesTypeCreateCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 		// Specific flags
 		gitRef, _ := cmd.Flags().GetString(FlagGitRef)
+		gitRepo, _ := cmd.Flags().GetString(FlagGitRepo)
 		creatAll, _ := cmd.Flags().GetBool("all")
-		validStoreTypes := getValidStoreTypes("", gitRef)
+		validStoreTypes := getValidStoreTypes("", gitRef, gitRepo)
 		storeType, _ := cmd.Flags().GetString("name")
 		listTypes, _ := cmd.Flags().GetBool("list")
 		storeTypeConfigFile, _ := cmd.Flags().GetString("from-file")
@@ -110,7 +111,10 @@ var storesTypeCreateCmd = &cobra.Command{
 
 		// CLI Logic
 		if gitRef == "" {
-			gitRef = "main"
+			gitRef = DefaultGitRef
+		}
+		if gitRepo == "" {
+			gitRepo = DefaultGitRepo
 		}
 		storeTypeIsValid := false
 
@@ -119,6 +123,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			Str("storeTypeConfigFile", storeTypeConfigFile).
 			Bool("creatAll", creatAll).
 			Str("gitRef", gitRef).
+			Str("gitRepo", gitRepo).
 			Strs("validStoreTypes", validStoreTypes).
 			Msg("create command flags")
 
@@ -183,7 +188,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		} else {
 			typesToCreate = validStoreTypes
 		}
-		storeTypeConfig, stErr := readStoreTypesConfig("", gitRef, offline)
+		storeTypeConfig, stErr := readStoreTypesConfig("", gitRef, gitRepo, offline)
 		if stErr != nil {
 			log.Error().Err(stErr).Send()
 			return stErr
@@ -263,7 +268,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 			validStoreTypesResp, vstErr := kfClient.ListCertificateStoreTypes()
 			if vstErr != nil {
 				log.Error().Err(vstErr).Msg("unable to list certificate store types")
-				validStoreTypes = getValidStoreTypes("", gitRef)
+				validStoreTypes = getValidStoreTypes("", gitRef, DefaultGitRepo)
 			} else {
 				for _, v := range *validStoreTypesResp {
 					validStoreTypes = append(validStoreTypes, v.ShortName)
@@ -360,6 +365,7 @@ var fetchStoreTypesCmd = &cobra.Command{
 		cmd.SilenceUsage = true
 		// Specific flags
 		gitRef, _ := cmd.Flags().GetString(FlagGitRef)
+		gitRepo, _ := cmd.Flags().GetString(FlagGitRepo)
 
 		// Debug + expEnabled checks
 		isExperimental := false
@@ -372,7 +378,7 @@ var fetchStoreTypesCmd = &cobra.Command{
 		if gitRef == "" {
 			gitRef = "main"
 		}
-		templates, err := readStoreTypesConfig("", gitRef, offline)
+		templates, err := readStoreTypesConfig("", gitRef, gitRepo, offline)
 		if err != nil {
 			log.Error().Err(err).Send()
 			return err
@@ -480,15 +486,26 @@ func formatStoreTypes(sTypesList *[]interface{}) (map[string]interface{}, error)
 	return output, nil
 }
 
-func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
+func getStoreTypesInternet(gitRef string, repo string) (map[string]interface{}, error) {
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfutil/main/store_types.json")
 	//resp, err := http.Get("https://raw.githubusercontent.com/keyfactor/kfctl/master/storetypes/storetypes.json")
 
-	baseUrl := "https://raw.githubusercontent.com/Keyfactor/kfutil/%s/store_types.json"
+	baseUrl := "https://raw.githubusercontent.com/Keyfactor/%s/%s/%s"
 	if gitRef == "" {
-		gitRef = "main"
+		gitRef = DefaultGitRef
 	}
-	url := fmt.Sprintf(baseUrl, gitRef)
+	if repo == "" {
+		repo = DefaultGitRepo
+	}
+
+	var fileName string
+	if repo == "kfutil" {
+		fileName = "store_types.json"
+	} else {
+		fileName = "integration-manifest.json"
+	}
+
+	url := fmt.Sprintf(baseUrl, repo, gitRef, fileName)
 	log.Debug().
 		Str("url", url).
 		Msg("Getting store types from internet")
@@ -513,7 +530,23 @@ func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
 	var result []interface{}
 	jErr := json.Unmarshal(body, &result)
 	if jErr != nil {
-		return nil, jErr
+		log.Warn().Err(jErr).Msg("Unable to decode JSON file, attempting to parse an integration manifest")
+		// Attempt to parse as an integration manifest
+		var manifest IntegrationManifest
+		log.Debug().Msg("Decoding JSON file as integration manifest")
+		// Reset the file pointer
+
+		mErr := json.Unmarshal(body, &manifest)
+		if mErr != nil {
+			return nil, jErr
+		}
+		log.Debug().Msg("Decoded JSON file as integration manifest")
+		sTypes := manifest.About.Orchestrator.StoreTypes
+		output := make(map[string]interface{})
+		for _, st := range sTypes {
+			output[st.ShortName] = st
+		}
+		return output, nil
 	}
 	output, sErr := formatStoreTypes(&result)
 	if sErr != nil {
@@ -525,18 +558,20 @@ func getStoreTypesInternet(gitRef string) (map[string]interface{}, error) {
 
 }
 
-func getValidStoreTypes(fp string, gitRef string) []string {
+func getValidStoreTypes(fp string, gitRef string, gitRepo string) []string {
 	log.Debug().
 		Str("file", fp).
 		Str("gitRef", gitRef).
+		Str("gitRepo", gitRepo).
 		Bool("offline", offline).
 		Msg(DebugFuncEnter)
 
 	log.Debug().
 		Str("file", fp).
 		Str("gitRef", gitRef).
+		Str("gitRepo", gitRepo).
 		Msg("Reading store types config.")
-	validStoreTypes, rErr := readStoreTypesConfig(fp, gitRef, offline)
+	validStoreTypes, rErr := readStoreTypesConfig(fp, gitRef, gitRepo, offline)
 	if rErr != nil {
 		log.Error().Err(rErr).Msg("unable to read store types")
 		return nil
@@ -549,7 +584,7 @@ func getValidStoreTypes(fp string, gitRef string) []string {
 	return validStoreTypesList
 }
 
-func readStoreTypesConfig(fp, gitRef string, offline bool) (map[string]interface{}, error) {
+func readStoreTypesConfig(fp, gitRef string, gitRepo string, offline bool) (map[string]interface{}, error) {
 	log.Debug().Str("file", fp).Str("gitRef", gitRef).Msg("Entering readStoreTypesConfig")
 
 	var (
@@ -560,7 +595,7 @@ func readStoreTypesConfig(fp, gitRef string, offline bool) (map[string]interface
 		log.Debug().Msg("Reading store types config from file")
 	} else {
 		log.Debug().Msg("Reading store types config from internet")
-		sTypes, stErr = getStoreTypesInternet(gitRef)
+		sTypes, stErr = getStoreTypesInternet(gitRef, gitRepo)
 	}
 
 	if stErr != nil || sTypes == nil || len(sTypes) == 0 {
@@ -600,11 +635,11 @@ func readStoreTypesConfig(fp, gitRef string, offline bool) (map[string]interface
 }
 
 func init() {
-	defaultGitRef := "main"
 	offline = true    // temporarily set to true as it runs before the flag is set
 	debugFlag = false // temporarily set to false as it runs before the flag is set
 	var gitRef string
-	validTypesString := strings.Join(getValidStoreTypes("", defaultGitRef), ", ")
+	var gitRepo string
+	validTypesString := strings.Join(getValidStoreTypes("", DefaultGitRef, DefaultGitRepo), ", ")
 	offline = false //revert this so that flag is not set to true by default
 	RootCmd.AddCommand(storeTypesCmd)
 
@@ -616,6 +651,14 @@ func init() {
 		"b",
 		"main",
 		"The git branch or tag to reference when pulling store-types from the internet.",
+	)
+
+	fetchStoreTypesCmd.Flags().StringVarP(
+		&gitRepo,
+		FlagGitRepo,
+		"r",
+		DefaultGitRepo,
+		"The repository to pull store-type definitions from.",
 	)
 
 	// LIST command
@@ -653,6 +696,14 @@ func init() {
 		"main",
 		"The git branch or tag to reference when pulling store-types from the internet.",
 	)
+	storesTypeCreateCmd.Flags().StringVarP(
+		&gitRepo,
+		FlagGitRepo,
+		"r",
+		DefaultGitRepo,
+		"The repository to pull store-types definitions from.",
+	)
+
 	storesTypeCreateCmd.Flags().BoolVarP(&createAll, "all", "a", false, "Create all store types.")
 
 	// UPDATE command

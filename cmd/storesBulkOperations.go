@@ -77,7 +77,7 @@ func formatProperties(json *gabs.Container, reqPropertiesForStoreType []string) 
 
 func serializeStoreFromTypeDef(storeTypeName string, input string) (string, error) {
 	// check if storetypename is an integer
-	storeTypes, _ := readStoreTypesConfig("", "", offline)
+	storeTypes, _ := readStoreTypesConfig("", DefaultGitRef, DefaultGitRepo, offline)
 	log.Debug().
 		Str("storeTypeName", storeTypeName).
 		Msg("checking if storeTypeName is an integer")
@@ -399,7 +399,7 @@ Store type IDs can be found by running the "store-types" command.`,
 			validStoreTypesResp, vstErr := kfClient.ListCertificateStoreTypes()
 			if vstErr != nil {
 				log.Error().Err(vstErr).Msg("unable to list certificate store types")
-				validStoreTypes = getValidStoreTypes("", "main")
+				validStoreTypes = getValidStoreTypes("", DefaultGitRef, DefaultGitRepo)
 			} else {
 				for _, v := range *validStoreTypesResp {
 					validStoreTypes = append(validStoreTypes, v.ShortName)
