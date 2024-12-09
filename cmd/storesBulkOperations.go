@@ -50,26 +50,27 @@ var (
 // formatProperties will iterate through the properties of a json object and convert any "int" values to strings
 // this is required because the Keyfactor API expects all properties to be strings
 func formatProperties(json *gabs.Container, reqPropertiesForStoreType []string) *gabs.Container {
-	// iterate through required properties and add to json
+	// Iterate through required properties and add to JSON
 	for _, reqProp := range reqPropertiesForStoreType {
 		if json.ExistsP("Properties." + reqProp) {
 			log.Debug().Str("reqProp", reqProp).Msg("Property exists in json")
 			continue
 		}
-		json.Set("", "Properties."+reqProp)
+		json.Set("", "Properties", reqProp) // Correctly add the required property
 	}
 
-	// iterate through properties and convert any "int" values to strings
+	// Iterate through properties and convert any "int" values to strings
 	properties, _ := json.S("Properties").ChildrenMap()
 	for name, prop := range properties {
 		if prop.Data() == nil {
 			log.Debug().Str("name", name).Msg("Property is nil")
 			continue
 		}
-		if _, isInt := prop.Data().(int); isInt {
+		if intValue, isInt := prop.Data().(int); isInt {
 			log.Debug().Str("name", name).Msg("Property is an int")
-			asStr := strconv.Itoa(prop.Data().(int))
-			json.Set(asStr, "Properties."+name)
+			asStr := strconv.Itoa(intValue)
+			// Use gabs' Set method to update the property value
+			json.Set(asStr, "Properties", name)
 		}
 	}
 	return json
@@ -132,7 +133,11 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		kfClient, _ := initClient(false)
+		kfClient, cErr := initClient(false)
+		if cErr != nil {
+			log.Error().Err(cErr).Msg("Error initializing client")
+			return cErr
+		}
 
 		// CLI Logic
 		log.Info().Msg("Importing certificate stores")
@@ -683,6 +688,10 @@ var storesExportCmd = &cobra.Command{
 					log.Debug().Str("name", name).
 						Interface("prop", prop).
 						Msg("adding to properties CSV data")
+					//check if property is an int
+					if _, isInt := prop.(int); isInt {
+						prop = strconv.Itoa(prop.(int))
+					}
 					if name != "ServerUsername" && name != "ServerPassword" { // Don't add ServerUsername and ServerPassword to properties as they can't be exported via API
 						csvData[store.Id]["Properties."+name] = prop
 					}
@@ -899,6 +908,13 @@ func unmarshalPropertiesString(properties string) map[string]interface{} {
 		// Then, iterate through each key:value pair and serialize into map[string]string
 		newMap := make(map[string]interface{})
 		for key, value := range tempInterface.(map[string]interface{}) {
+			// check if value is an int
+			if _, isInt := value.(int); isInt {
+				log.Debug().
+					Str("key", key).
+					Int("value", value.(int)).Msg("converting int to string as Command does not accept int")
+				value = strconv.Itoa(value.(int))
+			}
 			newMap[key] = value
 		}
 		return newMap
