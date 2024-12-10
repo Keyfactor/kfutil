@@ -28,8 +28,8 @@ import (
 // logoutCmd represents the logout command
 var logoutCmd = &cobra.Command{
 	Use:   "logout",
-	Short: "Removes the credentials file '$HOME/.keyfactor/command_config.json'.",
-	Long:  `Removes the credentials file '$HOME/.keyfactor/command_config.json'.`,
+	Short: "Unsets environment variables and removes the stored credentials file.",
+	Long:  `Unsets environment variables and removes the stored credentials file.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Info().Msg("Running logout command")
 		cmd.SilenceUsage = true
@@ -75,7 +75,7 @@ var logoutCmd = &cobra.Command{
 			if os.IsNotExist(err) {
 				log.Error().
 					Err(err).
-					Msg("Config file does not exist, unable to logout.")
+					Msg("config file does not exist, unable to logout")
 				fmt.Println("Config file does not exist, unable to logout.")
 				return err
 			}
