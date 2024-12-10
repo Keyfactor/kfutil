@@ -29,10 +29,15 @@
 
 - `deps`: Bump `go` version to `1.23`.
 - `deps`: Bump `azure-sdk-for-go/sdk/azidentity` version to `v1.8.0`.
+- `deps`: Bump `AzureAD/microsoft-authentication-library-for-go` to `v1.3.2`.
 - `deps`: Bump `keyfactor-go-client-sdk` version to `v2.0.0`.
 - `deps`: Bump `keyfactor-go-client` version to `v3.0.0`.
-- `deps`: Bump `golang.org/x/crypto` version to `v0.27.0`.
-- `deps`: Bump `golang.org/x/term` version to `v0.24.0`.
+- `deps`: Bump `creack/pty` to `v1.1.24`.
+- `deps`: Bump `stretchr/testify` to `v1.10.0`.
+- `deps`: Bump `x/crypto` to `v0.30.0`.
+- `deps`: Bump `x/term` to `v0.27.0`.
+- `deps`: Bump `x/sys` to `v0.28.0`.
+- `deps`: Bump `x/text` to `v0.21.0`.
 
 # v1.5.1
 
