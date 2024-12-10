@@ -30,6 +30,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+
+	stdlog "log"
 )
 
 func boolToPointer(b bool) *bool {
@@ -188,6 +190,7 @@ func informDebug(debugFlag bool) {
 }
 
 func initLogger() {
+	stdlog.SetOutput(io.Discard)
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.SetGlobalLevel(zerolog.Disabled) // default to disabled
 	log.Logger = log.With().Caller().Logger()
