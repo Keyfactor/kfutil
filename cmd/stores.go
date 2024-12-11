@@ -51,7 +51,11 @@ var storesListCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		kfClient, _ := initClient(false)
+		kfClient, cErr := initClient(false)
+		if cErr != nil {
+			log.Error().Err(cErr).Send()
+			return cErr
+		}
 
 		// CLI Logic
 		params := make(map[string]interface{})

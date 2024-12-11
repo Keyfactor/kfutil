@@ -601,7 +601,7 @@ func initClient(saveConfig bool) (*api.Client, error) {
 		Err(envCfgErr).
 		Msg("unable to authenticate to Keyfactor Command")
 	log.Debug().Msg("return: initClient()")
-	return nil, fmt.Errorf("unable to authenticate to Keyfactor Command")
+	return nil, cfgErr
 }
 
 // initGenClient initializes the SDK Command API client
