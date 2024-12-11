@@ -327,6 +327,17 @@ func getDomainFromUsername(username string) string {
 	return ""
 }
 
+func promptForInteractiveYesNo(parameterName string) bool {
+	var input string
+	fmt.Printf("%s [y/n]: \n", parameterName)
+	_, err := fmt.Scanln(&input)
+	_ = handleInteractiveError(err, parameterName)
+	if strings.ToLower(input) == "y" || strings.ToLower(input) == "yes" {
+		return true
+	}
+	return false
+}
+
 func promptForInteractiveParameter(parameterName string, defaultValue string) string {
 	var input string
 	fmt.Printf("Enter %s [%s]: \n", parameterName, defaultValue)
@@ -559,7 +570,7 @@ func authInteractive(
 }
 
 func prepHomeDir() (string, error) {
-	log.Debug().Msg("prepHomeDir() called")
+	log.Debug().Msg(fmt.Sprintf("%s prepHomeDir()", DebugFuncEnter))
 	// Set up home directory config
 	userHomeDir, hErr := os.UserHomeDir()
 
@@ -573,17 +584,21 @@ func prepHomeDir() (string, error) {
 	} else {
 		userHomeDir = fmt.Sprintf("%s/.keyfactor", userHomeDir)
 	}
-	//log.Println("[DEBUG] Configuration directory: ", userHomeDir)
+
 	log.Debug().Str("userHomeDir", userHomeDir).Msg("Configuration directory")
 	_, err := os.Stat(userHomeDir)
 
 	if os.IsNotExist(err) {
 		errDir := os.MkdirAll(userHomeDir, 0700)
 		if errDir != nil {
-			fmt.Println("Unable to create login config file. ", errDir)
-			log.Printf("[ERROR] creating directory: %s", errDir)
+			outputError(fmt.Errorf("error creating home directory: %v", errDir), false, outputFormat)
+			log.Error().Err(errDir)
+			log.Debug().Msg(fmt.Sprintf("%s prepHomeDir() returning", DebugFuncExit))
 			return userHomeDir, errDir
 		}
 	}
+	log.Debug().
+		Str("userHomeDir", userHomeDir).
+		Msg(fmt.Sprintf("%s prepHomeDir() returning", DebugFuncExit))
 	return userHomeDir, hErr
 }

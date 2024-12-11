@@ -63,37 +63,95 @@ var logoutCmd = &cobra.Command{
 			configFilePath = configFile
 		}
 
-		// Remove environment variables
 		log.Info().Msg("Running logout command for environment variables")
 		envLogout()
 
-		log.Info().
-			Str("configFilePath", configFilePath).
-			Msg("Attempting to removing config file")
-		err := os.Remove(configFilePath)
-		if err != nil {
-			if os.IsNotExist(err) {
+		if profile != "" {
+			pErr := logoutProfile(profile, configFilePath)
+			if pErr != nil {
 				log.Error().
-					Err(err).
-					Msg("config file does not exist, unable to logout")
-				fmt.Println("Config file does not exist, unable to logout.")
-				return err
+					Err(pErr).
+					Str("profile", profile).
+					Msg("unable to logout profile")
+				return pErr
 			}
-			log.Error().
-				Err(err).
-				Msg("unable to remove config file, logout failed")
-			fmt.Println("Error removing config file: ", err)
-			return err
+			fmt.Printf(
+				"Logged out successfully, removed profile '%s' from config file '%s'.",
+				profile,
+				configFilePath,
+			)
+			return nil
 		}
-		log.Info().
-			Str("configFilePath", configFilePath).
-			Msg("Config file removed successfully")
-		fmt.Println("Logged out successfully!")
+
+		logoutFileErr := logoutFile(configFilePath)
+		if logoutFileErr != nil {
+			log.Error().
+				Err(logoutFileErr).
+				Str("configFilePath", configFilePath).
+				Msg("unable to logout")
+			return logoutFileErr
+		}
 		return nil
 	},
 }
 
+// logoutFile removes the config file
+func logoutFile(f string) error {
+	log.Info().
+		Str("configFilePath", f).
+		Msg("Running logout command for config file")
+
+	var performLogout bool
+	if !noPrompt {
+		performLogout = promptForInteractiveYesNo(
+			fmt.Sprintf(
+				"Are you sure you want to remove the config file '%s'?",
+				f,
+			),
+		)
+		if !performLogout {
+			log.Info().Msg("Logout file cancelled")
+			fmt.Println(fmt.Sprintf("Logout file '%s' cancelled.", f))
+			return nil
+		}
+	}
+
+	log.Debug().
+		Str("configFilePath", f).
+		Msg("Removing config file")
+	err := os.Remove(f)
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Error().
+				Err(err).
+				Msg("config file does not exist, unable to logout")
+			return err
+		}
+		log.Error().
+			Err(err).
+			Msg("unable to remove config file, logout failed")
+		return err
+	}
+	log.Info().
+		Str("configFilePath", f).
+		Msg("Config file removed successfully")
+	fmt.Println(fmt.Sprintf("Logged out successfully, removed config file '%s'", f))
+	return nil
+}
+
+// envLogout unsets environment variables
 func envLogout() {
+
+	if !noPrompt {
+		performLogout := promptForInteractiveYesNo("Are you sure you want to unset environment variables?")
+		if !performLogout {
+			log.Info().Msg("Logout environment variables cancelled")
+			fmt.Println("Logout environment variables cancelled.")
+			return
+		}
+	}
+
 	log.Debug().Msg("Running logout command for environment variables")
 
 	log.Debug().Msg("Unsetting base environment variables")
@@ -162,6 +220,70 @@ func envLogout() {
 	log.Trace().Str("EnvAzureVaultName", auth_providers.EnvAzureVaultName).Msg("Unsetting")
 	os.Unsetenv(auth_providers.EnvAzureVaultName)
 
+}
+
+// logoutProfile removes the profile from the config file
+func logoutProfile(p string, f string) error {
+	log.Info().
+		Str("profile", p).
+		Str("configFilePath", f).
+		Msg("Running logout command for profile")
+
+	var performLogout bool
+	if !noPrompt {
+		performLogout = promptForInteractiveYesNo(
+			fmt.Sprintf(
+				"Are you sure you want to remove profile '%s' from '%s?", p, f,
+			),
+		)
+		if !performLogout {
+			log.Info().Msg("Logout profile cancelled")
+			fmt.Println(fmt.Sprintf("Logout profile '%s' in '%s' cancelled.", p, f))
+			return nil
+		}
+	}
+
+	log.Debug().
+		Str("configFilePath", f).
+		Msg("Reading config file")
+	config, err := auth_providers.ReadConfigFromJSON(f)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("configFilePath", f).
+			Str("profile", p).
+			Msg("unable to read config file, logout failed")
+		return err
+	} else if config == nil {
+		log.Error().
+			Str("configFilePath", f).
+			Str("profile", p).
+			Msg("config file is empty, unable to logout")
+		return fmt.Errorf("config file is empty, unable to logout profile '%s'", p)
+	}
+
+	// check if profile exists
+	if _, ok := config.Servers[p]; !ok {
+		log.Error().
+			Str("profile", p).
+			Msg("profile does not exist, unable to logout")
+		return fmt.Errorf("profile '%s' does not exist, unable to logout", p)
+	}
+	delete(config.Servers, p)
+	wErr := auth_providers.WriteConfigToJSON(f, config)
+	if wErr != nil {
+		log.Error().
+			Err(wErr).
+			Str("configFilePath", f).
+			Str("profile", p).
+			Msg("unable to write config file, logout failed")
+		return wErr
+	}
+	log.Info().
+		Str("configFilePath", f).
+		Str("profile", p).
+		Msg("Profile removed successfully")
+	return nil
 }
 
 func init() {

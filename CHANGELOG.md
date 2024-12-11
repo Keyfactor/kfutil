@@ -5,6 +5,8 @@
 ### CLI
 
 - `auth`: Added support for authenticating to Keyfactor Command using a oAuth2 client credentials or access token.
+- `logout`: Added support for logging out of specific `profile` and `config-file`.
+- `logout`: Added `yes|no` prompt for logout actions, which can be skipped by using the `--no-prompt` flag.
 
 ### Store Types
 
