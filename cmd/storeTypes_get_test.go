@@ -18,97 +18,112 @@ package cmd
 
 import (
 	"encoding/json"
+	"os"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"kfutil/pkg/cmdtest"
 	manifestv1 "kfutil/pkg/keyfactor/v1"
-	"os"
-	"testing"
 )
 
 func Test_StoreTypesGet(t *testing.T) {
-	t.Run("WithName", func(t *testing.T) {
-		testCmd := RootCmd
+	t.Run(
+		"WithName", func(t *testing.T) {
+			testCmd := RootCmd
 
-		output, err := cmdtest.TestExecuteCommand(t, testCmd, []string{"store-types", "get", "--name", "PEM", "--debug"}...)
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
-		var storeType map[string]interface{}
-		if err := json.Unmarshal([]byte(output), &storeType); err != nil {
-			t.Fatalf("Error unmarshalling JSON: %v", err)
-		}
+			output, err := cmdtest.TestExecuteCommand(t, testCmd, []string{"store-types", "get", "--name", "PEM"}...)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+			var storeType map[string]interface{}
+			if err := json.Unmarshal([]byte(output), &storeType); err != nil {
+				t.Fatalf("Error unmarshalling JSON: %v", err)
+			}
 
-		assert.NotNil(t, storeType["Name"], "Expected store type to have a name")
-		assert.NotNil(t, storeType["ShortName"], "Expected store type to have short name")
-		assert.NotNil(t, storeType["StoreType"], "Expected store type to have a store type")
+			assert.NotNil(t, storeType["Name"], "Expected store type to have a name")
+			assert.NotNil(t, storeType["ShortName"], "Expected store type to have short name")
+			assert.NotNil(t, storeType["StoreType"], "Expected store type to have a store type")
 
-		// verify that the store type is an integer
-		_, ok := storeType["StoreType"].(float64)
-		assert.True(t, ok, "Expected store type to be an integer")
-		// verify short name is a string
-		_, ok = storeType["ShortName"].(string)
-		assert.True(t, ok, "Expected short name to be a string")
-		// verify name is a string
-		_, ok = storeType["Name"].(string)
-		assert.True(t, ok, "Expected name to be a string")
-		// check that shortname == AWS
-		assert.Equal(t, storeType["ShortName"], "PEM", "Expected short name to be PEM")
-	})
+			// verify that the store type is an integer
+			_, ok := storeType["StoreType"].(float64)
+			assert.True(t, ok, "Expected store type to be an integer")
+			// verify short name is a string
+			_, ok = storeType["ShortName"].(string)
+			assert.True(t, ok, "Expected short name to be a string")
+			// verify name is a string
+			_, ok = storeType["Name"].(string)
+			assert.True(t, ok, "Expected name to be a string")
+			// check that shortname == AWS
+			assert.Equal(t, storeType["ShortName"], "PEM", "Expected short name to be PEM")
+		},
+	)
 
-	t.Run("GenericOutput", func(t *testing.T) {
-		testCmd := RootCmd
-		output, err := cmdtest.TestExecuteCommand(t, testCmd, []string{"store-types", "get", "--name", "PEM", "-g", "--debug"}...)
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
-		var storeType map[string]interface{}
-		if err := json.Unmarshal(output, &storeType); err != nil {
-			t.Fatalf("Error unmarshalling JSON: %v", err)
-		}
+	t.Run(
+		"GenericOutput", func(t *testing.T) {
+			testCmd := RootCmd
+			output, err := cmdtest.TestExecuteCommand(
+				t,
+				testCmd,
+				[]string{"store-types", "get", "--name", "PEM", "-g"}...,
+			)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+			var storeType map[string]interface{}
+			if err := json.Unmarshal(output, &storeType); err != nil {
+				t.Fatalf("Error unmarshalling JSON: %v", err)
+			}
 
-		assert.NotNil(t, storeType["Name"], "Expected store type to have a Name")
-		assert.NotNil(t, storeType["ShortName"], "Expected store type to have ShortName")
+			assert.NotNil(t, storeType["Name"], "Expected store type to have a Name")
+			assert.NotNil(t, storeType["ShortName"], "Expected store type to have ShortName")
 
-		assert.Nil(t, storeType["StoreType"], "Expected StoreType to to be nil")
-		assert.Nil(t, storeType["InventoryJobType"], "Expected InventoryJobType to be nil")
-		assert.Nil(t, storeType["InventoryEndpoint"], "Expected InventoryEndpoint to be nil")
-		assert.Nil(t, storeType["ManagementJobType"], "Expected ManagementJobType to be nil")
-		assert.Nil(t, storeType["DiscoveryJobType"], "Expected DiscoveryJobType to be nil")
-		assert.Nil(t, storeType["EnrollmentJobType"], "Expected EnrollmentJobType to be nil")
-		assert.Nil(t, storeType["ImportType"], "Expected ImportType to be nil")
+			assert.Nil(t, storeType["StoreType"], "Expected StoreType to to be nil")
+			assert.Nil(t, storeType["InventoryJobType"], "Expected InventoryJobType to be nil")
+			assert.Nil(t, storeType["InventoryEndpoint"], "Expected InventoryEndpoint to be nil")
+			assert.Nil(t, storeType["ManagementJobType"], "Expected ManagementJobType to be nil")
+			assert.Nil(t, storeType["DiscoveryJobType"], "Expected DiscoveryJobType to be nil")
+			assert.Nil(t, storeType["EnrollmentJobType"], "Expected EnrollmentJobType to be nil")
+			assert.Nil(t, storeType["ImportType"], "Expected ImportType to be nil")
 
-		// verify short name is a string
-		_, ok := storeType["ShortName"].(string)
-		assert.True(t, ok, "Expected short name to be a string")
-		// verify name is a string
-		_, ok = storeType["Name"].(string)
-		assert.True(t, ok, "Expected name to be a string")
-		// check that shortname == PEM
-		assert.Equal(t, storeType["ShortName"], "PEM", "Expected short name to be PEM")
-	})
+			// verify short name is a string
+			_, ok := storeType["ShortName"].(string)
+			assert.True(t, ok, "Expected short name to be a string")
+			// verify name is a string
+			_, ok = storeType["Name"].(string)
+			assert.True(t, ok, "Expected name to be a string")
+			// check that shortname == PEM
+			assert.Equal(t, storeType["ShortName"], "PEM", "Expected short name to be PEM")
+		},
+	)
 
-	t.Run("OutputToManifest", func(t *testing.T) {
-		testCmd := RootCmd
-		_, err := cmdtest.TestExecuteCommand(t, testCmd, []string{"store-types", "get", "--name", "PEM", "--output-to-integration-manifest", "--debug"}...)
-		if err != nil {
-			t.Fatalf("Unexpected error: %v", err)
-		}
+	t.Run(
+		"OutputToManifest", func(t *testing.T) {
+			testCmd := RootCmd
+			_, err := cmdtest.TestExecuteCommand(
+				t,
+				testCmd,
+				[]string{"store-types", "get", "--name", "PEM", "--output-to-integration-manifest"}...,
+			)
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
 
-		// Verify that integration-manifest.json was created
-		manifest := manifestv1.IntegrationManifest{}
-		err = manifest.LoadFromFilesystem()
-		if err != nil {
-			t.Fatalf("Error loading integration manifest: %v", err)
-		}
+			// Verify that integration-manifest.json was created
+			manifest := manifestv1.IntegrationManifest{}
+			err = manifest.LoadFromFilesystem()
+			if err != nil {
+				t.Fatalf("Error loading integration manifest: %v", err)
+			}
 
-		if len(manifest.About.Orchestrator.StoreTypes) != 1 {
-			t.Fatalf("Expected 1 store type, got %d", len(manifest.About.Orchestrator.StoreTypes))
-		}
+			if len(manifest.About.Orchestrator.StoreTypes) != 1 {
+				t.Fatalf("Expected 1 store type, got %d", len(manifest.About.Orchestrator.StoreTypes))
+			}
 
-		// Clean up
-		err = os.Remove("integration-manifest.json")
-		if err != nil {
-			t.Errorf("Error removing integration-manifest.json: %v", err)
-		}
-	})
+			// Clean up
+			err = os.Remove("integration-manifest.json")
+			if err != nil {
+				t.Errorf("Error removing integration-manifest.json: %v", err)
+			}
+		},
+	)
 }
