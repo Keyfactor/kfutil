@@ -1,7 +1,7 @@
 name: Build and Release Container
 on:
   release:
-    types: [released]
+    types: [ released ]
   push:
     branches:
       - '*'
@@ -152,12 +152,12 @@ jobs:
           # Base command to create a manifest list with the selected tag(s) and push
           CMD="docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)"
-          
+
           # If the branch is 'release-*', add the 'edge' tag
           if [[ "${{ github.ref }}" == refs/heads/release-* ]]; then
             CMD="$CMD -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:edge"
           fi
-          
+
           # Execute the command
           eval "$CMD"
 
