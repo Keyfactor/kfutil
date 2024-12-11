@@ -63,8 +63,8 @@ var logoutCmd = &cobra.Command{
 			configFilePath = configFile
 		}
 
-		log.Info().Msg("Running logout command for environment variables")
-		envLogout()
+		//log.Info().Msg("Running logout command for environment variables")
+		//envLogout()
 
 		if profile != "" {
 			pErr := logoutProfile(profile, configFilePath)
