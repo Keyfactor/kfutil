@@ -20,6 +20,9 @@
 
 - Fixed an issue where the CLI would sometimes terminate with no error messages when calling the
   `keyfactor-go-client-sdk`
+- `auth`: When passing `--config` and/or `--profile` flags, and a failure occurs, the CLI will now return an error
+  message
+  rather attempt environment variable and default config file/profile fallbacks.
 
 ### Stores
 
