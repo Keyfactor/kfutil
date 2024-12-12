@@ -553,9 +553,10 @@ func initClient(saveConfig bool) (*api.Client, error) {
 		Str("providerProfile", providerProfile).
 		Msg("enter: initClient()")
 	var (
-		c         *api.Client
-		envCfgErr error
-		cfgErr    error
+		c              *api.Client
+		envCfgErr      error
+		cfgErr         error
+		explicitCfgErr error
 	)
 
 	if providerType != "" {
@@ -572,14 +573,20 @@ func initClient(saveConfig bool) (*api.Client, error) {
 			Str("configFile", configFile).
 			Str("profile", profile).
 			Msg("authenticating via config file")
-		c, cfgErr = authViaConfigFile(configFile, profile)
-		if cfgErr == nil {
+		c, explicitCfgErr = authViaConfigFile(configFile, profile)
+		if explicitCfgErr == nil {
 			log.Info().
 				Str("configFile", configFile).
 				Str("profile", profile).
 				Msgf("Authenticated via config file %s using profile %s", configFile, profile)
 			return c, nil
 		}
+		log.Error().
+			Err(explicitCfgErr).
+			Str("configFile", configFile).
+			Str("profile", profile).
+			Msg("unable to authenticate using explicit config file and/or profile")
+		return nil, explicitCfgErr // return explicit error
 	}
 
 	log.Info().Msg("authenticating via environment variables")
