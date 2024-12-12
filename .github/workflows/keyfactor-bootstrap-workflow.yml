@@ -83,7 +83,7 @@ jobs:
               hf="True"
             fi
 
-            # The intention is to use this to set the make_latest:false property when 
+            # The intention is to use this to set the make_latest:false property when
             # dispatching the create-release action, but it is not *yet* a configurable option
             echo "IS_HOTFIX=$hf" | tee -a "$GITHUB_ENV"
           else
@@ -113,114 +113,33 @@ jobs:
           echo "IS_HOTFIX=${{ env.IS_HOTFIX }}" | tee -a "$GITHUB_OUTPUT"
           echo "LATEST_TAG=${{ env.LATEST_TAG }}" | tee -a "$GITHUB_OUTPUT"
 
-#  check-package-version:
-#    needs: get-versions
-#    if: github.event_name == 'pull_request' && needs.get-versions.outputs.IS_RELEASE_BRANCH == 'True'
-#    outputs:
-#      release_version: ${{ steps.create_release.outputs.current_tag }}
-#      release_url: ${{ steps.create_release.outputs.upload_url }}
-#      update_version: ${{ steps.check_version.outputs.update_version }}
-#      next_version: ${{ steps.set-semver-info.outputs.new_version }}
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Check out the code
-#        uses: actions/checkout@v3
-#      - run: |
-#          echo "INC_LEVEL=${{ needs.get-versions.outputs.INC_LEVEL}}"
-#      - name: Check if initial release
-#        if: needs.get-versions.outputs.LATEST_TAG == ''
-#        run: |
-#          echo "INITIAL_VERSION=${{needs.get-versions.outputs.PR_BASE_TAG}}.0-rc.0" | tee -a "$GITHUB_STEP_SUMMARY" | tee -a "$GITHUB_ENV"
-#          echo "MANUAL_VERSION=${{needs.get-versions.outputs.PR_BASE_TAG}}.0-rc.0" | tee -a "$GITHUB_ENV"
-#      - name: Set semver info
-#        id: set-semver-info
-#        if: needs.get-versions.outputs.LATEST_TAG != ''
-#        uses: fiddlermikey/action-bump-semver@main
-#        with:
-#          current_version: ${{ needs.get-versions.outputs.LATEST_TAG}}
-#          level: ${{ needs.get-versions.outputs.INC_LEVEL}}
-#          preID: rc
-#      - name: Show next sem-version
-#        if: needs.get-versions.outputs.LATEST_TAG != ''
-#        run: |
-#          echo "MANUAL_VERSION=${{ steps.set-semver-info.outputs.new_version }}" > "$GITHUB_ENV"
-#      - run: |
-#          echo "Next version: ${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_STEP_SUMMARY"
-#
-#      - name: Get Package Version
-#        id: get-pkg-version
-#        run: |
-#          pwd
-#          ls -la
-#          echo "CURRENT_PKG_VERSION=$(cat pkg/version/version.go | grep 'const VERSION' | awk '{print $NF}' | tr -d '"')" | tee -a "$GITHUB_ENV"
-#      - name: Compare package version
-#        id: check_version
-#        run: |
-#          if [ "${{ env.CURRENT_PKG_VERSION }}" != "${{ env.MANUAL_VERSION }}" ]; then
-#            echo "Updating version in version.go"
-#            echo "update_version=true" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
-#            echo "update_version=true" | tee -a "$GITHUB_STEP_SUMMARY"
-#          else
-#            echo "Versions match, no update needed"
-#            echo "update_version=false" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
-#            echo "update_version=false" | tee -a $GITHUB_STEP_SUMMARY
-#          fi
-#        env:
-#          UPDATE_VERSION: ${{ steps.check_version.outputs.update_version }}
-#
-#      - name: Set Outputs
-#        id: set-outputs
-#        if: needs.get-versions.outputs.LATEST_TAG != ''
-#        run: |
-#          echo "UPDATE_VERSION=${{ steps.check_version.outputs.update_version }}" | tee -a "$GITHUB_OUTPUT"
-#          echo "CURRENT_PKG_VERSION=${{ env.CURRENT_PKG_VERSION }}" | tee -a "$GITHUB_OUTPUT"
-#          echo "MANUAL_VERSION=${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_OUTPUT"
-#          echo "NEW_PKG_VERSION=${{ env.MANUAL_VERSION }}" | tee -a "$GITHUB_OUTPUT"
-#
-#  update-pkg-version:
-#    needs:
-#      - check-package-version
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: Checkout repository
-#        uses: actions/checkout@v3
-#        with:
-#          token: ${{ secrets.V2BUILDTOKEN}}
-#      - name: No Update
-#        if: ${{ needs.check-package-version.outputs.update_version != 'true' }}
-#        run: |
-#          echo "Versions match, no update needed"
-#          exit 0
-#
-#      - name: Commit to PR branch
-#        id: commit-version
-#        if: ${{ needs.check-package-version.outputs.update_version == 'true' }}
-#        env:
-#          AUTHOR_EMAIL: keyfactor@keyfactor.github.io
-#          AUTHOR_NAME: Keyfactor Robot
-#          GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN}}
-#        run: |
-#          git remote -v
-#          echo "Checking out ${{ github.head_ref }}"
-#          git fetch
-#          echo "git checkout -b ${{ github.head_ref }}"
-#          git checkout -b ${{ github.head_ref }}
-#          git reset --hard origin/${{ github.head_ref }}
-#          sed -i "s/const VERSION = .*/const VERSION = \"${{ needs.check-package-version.outputs.next_version }}\"/" pkg/version/version.go
-#          git add pkg/version/version.go
-#          git config --global user.email "${{ env.AUTHOR_EMAIL }}"
-#          git config --global user.name "${{ env.AUTHOR_NAME }}"
-#          git commit -m "Bump package version to ${{ needs.check-package-version.outputs.next_version }}"
-#          git push --set-upstream origin ${{ github.head_ref }}
-#          echo "Version mismatch! Please create a new pull request with the updated version."
-#          exit 1
-
   call-starter-workflow:
-    uses: keyfactor/actions/.github/workflows/starter.yml@v2
+    uses: keyfactor/actions/.github/workflows/starter.yml@v3
     needs: get-versions
     secrets:
       token: ${{ secrets.V2BUILDTOKEN}}
       APPROVE_README_PUSH: ${{ secrets.APPROVE_README_PUSH}}
       gpg_key: ${{ secrets.KF_GPG_PRIVATE_KEY }}
       gpg_pass: ${{ secrets.KF_GPG_PASSPHRASE }}
+      scan_token: ${{ secrets.SAST_TOKEN }}
+
+  # Tester Install Script
+  Test_Install_Script:
+    runs-on: kfutil-runner-set
+    needs:
+      - get-versions
+    #      - call-starter-workflow
+    steps:
+      - name: Test Quick Install Script
+        env:
+          VERSION: ${{ needs.get-versions.outputs.NEXT_VERSION }}
+        run: |
+          echo "Testing Install Script for version: $VERSION"
+          sudo apt update && sudo apt upgrade -y && sudo apt install -y curl wget unzip jq openssl && sudo apt clean
+          echo curl -s "https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME}/install.sh"
+          GITHUB_REF_NAME_ENCODED=$(echo -n "${GITHUB_REF_NAME}" | jq -sRr @uri)
+          VERIFY_CHECKSUM=0
+          bash <(curl -s "https://raw.githubusercontent.com/Keyfactor/kfutil/${GITHUB_REF_NAME_ENCODED}/install.sh")
+          which kfutil
+          kfutil version
+          rm $(which kfutil)

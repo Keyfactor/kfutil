@@ -61,7 +61,7 @@ jobs:
         run: |
           echo "PR_BRANCH=${{steps.check-branch.outputs.PR_BRANCH}}" | tee -a $GITHUB_ENV
 
-# If the branch with an open PR already exists, first check out that branch from kfutil 
+      # If the branch with an open PR already exists, first check out that branch from kfutil
       - name: Check out existing repo merge branch
         if: env.PR_BRANCH == 'commit'
         uses: actions/checkout@v4
@@ -71,9 +71,9 @@ jobs:
             .github
           path: './merge-folder/'
           token: ${{ secrets.V2BUILDTOKEN }}
-          ref: '${{env.KFUTIL_ARG}}' 
+          ref: '${{env.KFUTIL_ARG}}'
 
-# If the branch does not exist, first check out the main branch from kfutil. 
+      # If the branch does not exist, first check out the main branch from kfutil.
       - name: Check out main
         if: env.PR_BRANCH == 'create'
         uses: actions/checkout@v4
@@ -84,13 +84,13 @@ jobs:
           path: './merge-folder/'
           token: ${{ secrets.V2BUILDTOKEN }}
 
-# Save a copy of the original json
+      # Save a copy of the original json
       - name: Save original store_types.json
         run: |
           echo "Saving original store_types.json as store_types.sav.json"
           cp ./merge-folder/store_types.json  ./merge-folder/store_types.sav.json
 
-# Checkout and run the python tool
+      # Checkout and run the python tool
       - name: Check out python merge tool repo
         uses: actions/checkout@v4
         with:
@@ -110,44 +110,44 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v3
         with:
-          name: store-types  
+          name: store-types
           path: |
-              ./tools/store-type-merge/store_types.json 
-              ./merge-folder/store_types.sav.json
+            ./tools/store-type-merge/store_types.json
+            ./merge-folder/store_types.sav.json
 
       - name: Save Invalid Store Types JSON Artifact
         if: success()
         uses: actions/upload-artifact@v3
         with:
-          name: invalid-repos 
-          path: ./tools/store-type-merge/invalid_repos.json  
+          name: invalid-repos
+          path: ./tools/store-type-merge/invalid_repos.json
 
       - name: Save logs directory
         if: success()
         uses: actions/upload-artifact@v3
         with:
-          name: logs 
-          path: ./tools/store-type-merge/log 
+          name: logs
+          path: ./tools/store-type-merge/log
 
-# Copy the result to the pr commit folder
+      # Copy the result to the pr commit folder
       - name: Copy store-type-merge results
         run: |
           echo "Saving original store_types.json as store_types.sav.json"
           cp -f ./tools/store-type-merge/store_types.json  ./merge-folder/store_types.json
 
-# Diff the new json against the saved copy and set an UPDATE_FILE variable
+      # Diff the new json against the saved copy and set an UPDATE_FILE variable
       - name: Diff the results
         run: |
           echo "Diff the results"
           echo "Set UPDATE_FILE=1 if differences"
-          if cmp -s ./merge-folder/store_types.json ./merge-folder/store_types.sav.json ; 
-            then echo "UPDATE_FILE=F" | tee -a $GITHUB_ENV; 
-            else echo "UPDATE_FILE=T" | tee -a $GITHUB_ENV; 
+          if cmp -s ./merge-folder/store_types.json ./merge-folder/store_types.sav.json ;
+            then echo "UPDATE_FILE=F" | tee -a $GITHUB_ENV;
+            else echo "UPDATE_FILE=T" | tee -a $GITHUB_ENV;
           fi
           diff ./merge-folder/store_types.json ./merge-folder/store_types.sav.json || true
 
-#  There are two different steps with a condition to check the PR_BRANCH env var
-#  Both steps will contain a check for the UPDATE_FILE variable before running
+      #  There are two different steps with a condition to check the PR_BRANCH env var
+      #  Both steps will contain a check for the UPDATE_FILE variable before running
       - name: Add and Commit to newly created branch
         if: ${{ env.UPDATE_FILE == 'T' && env.PR_BRANCH == 'create' }}
         uses: Keyfactor/add-and-commit@v9.1.3
@@ -182,8 +182,8 @@ jobs:
             console.log("Commit to ${{env.KFUTIL_ARG}} for PR")
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const baseBranch = 'main'; 
-            const newBranch = '${{env.KFUTIL_ARG}}'; 
+            const baseBranch = 'main';
+            const newBranch = '${{env.KFUTIL_ARG}}';
             const response = await github.rest.pulls.create({
               owner,
               repo,
