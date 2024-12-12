@@ -40,6 +40,7 @@ var (
 	noPrompt        bool
 	expEnabled      bool
 	debugFlag       bool
+	skipVerifyFlag  bool
 	kfcUsername     string
 	kfcHostName     string
 	kfcPassword     string
@@ -112,6 +113,10 @@ func getServerConfigFromFile(configFile string, profile string) (*auth_providers
 		return nil, fmt.Errorf("invalid profile: %s", profile)
 	}
 
+	if skipVerifyFlag {
+		serverConfig.SkipTLSVerify = true
+	}
+
 	log.Debug().Msg("return: getServerConfigFromFile()")
 	return &serverConfig, nil
 }
@@ -137,7 +142,9 @@ func getServerConfigFromEnv() (*auth_providers.Server, error) {
 	isBasicAuth := uOk && pOk
 	isOAuth := cOk && csOk && tOk
 
-	if svOk {
+	if skipVerifyFlag {
+		skipVerifyBool = true
+	} else if svOk {
 		//convert to bool
 		skipVerify = strings.ToLower(skipVerify)
 		skipVerifyBool = skipVerify == "true" || skipVerify == "1" || skipVerify == "yes" || skipVerify == "y" || skipVerify == "t"
@@ -533,6 +540,8 @@ func initClient(saveConfig bool) (*api.Client, error) {
 		Str("providerProfile", providerProfile).
 		Bool("noPrompt", noPrompt).
 		Bool("saveConfig", saveConfig).
+		Bool("logInsecure", logInsecure).
+		Bool("skipVerifyFlag", skipVerifyFlag).
 		Str("hostname", kfcHostName).
 		Str("username", kfcUsername).
 		Str("password", hashSecretValue(kfcPassword)).
@@ -753,6 +762,10 @@ func init() {
 		"Will not attempt to connect to GitHub for latest release information and resources.",
 	)
 	RootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Enable debugFlag logging.")
+	RootCmd.PersistentFlags().BoolVar(
+		&skipVerifyFlag, "skip-tls-verify", false,
+		"Disable TLS verification for API requests to Keyfactor Command.",
+	)
 	//RootCmd.PersistentFlags().BoolVar(
 	//	&logInsecure,
 	//	"log-insecure",

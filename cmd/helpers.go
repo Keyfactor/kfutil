@@ -333,11 +333,19 @@ func outputError(err error, isFatal bool, format string) {
 }
 
 func outputResult(result interface{}, format string) {
+	log.Debug().
+		Interface("result", result).
+		Str("format", format).
+		Msg(fmt.Sprintf("%s outputResult", DebugFuncEnter))
 	if format == "json" {
 		fmt.Println(result)
 	} else {
 		fmt.Println(fmt.Sprintf("%s", result))
 	}
+	log.Debug().
+		Interface("result", result).
+		Str("format", format).
+		Msg(fmt.Sprintf("%s outputResult", DebugFuncExit))
 }
 
 func readCSVHeader(filename string) ([]string, error) {

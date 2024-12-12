@@ -74,6 +74,7 @@ var storesListCmd = &cobra.Command{
 			log.Error().Err(jErr).Send()
 			return jErr
 		}
+
 		outputResult(output, outputFormat)
 		return nil
 	},
