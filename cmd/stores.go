@@ -18,10 +18,11 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // storesCmd represents the stores command
@@ -50,12 +51,19 @@ var storesListCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, cErr := initClient(false)
+		if cErr != nil {
+			log.Error().Err(cErr).Send()
+			return cErr
+		}
 
 		// CLI Logic
 		params := make(map[string]interface{})
+		log.Debug().
+			Str("params", fmt.Sprintf("%v", params)).
+			Msg("Calling ListCertificateStores")
 		stores, err := kfClient.ListCertificateStores(&params)
+		log.Debug().Str("stores", fmt.Sprintf("%v", stores)).Msg("Stores returned")
 
 		if err != nil {
 			log.Error().Err(err).Send()
@@ -66,6 +74,7 @@ var storesListCmd = &cobra.Command{
 			log.Error().Err(jErr).Send()
 			return jErr
 		}
+
 		outputResult(output, outputFormat)
 		return nil
 	},
@@ -89,8 +98,7 @@ var storesGetCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		// CLI Logic
 		stores, err := kfClient.GetCertificateStoreByID(storeID)
@@ -129,8 +137,7 @@ var storesDeleteCmd = &cobra.Command{
 		informDebug(debugFlag)
 
 		// Authenticate
-		authConfig := createAuthConfigFromParams(kfcHostName, kfcUsername, kfcPassword, kfcDomain, kfcAPIPath)
-		kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
+		kfClient, _ := initClient(false)
 
 		// CLI Logic
 		log.Info().Str("storeID", storeID).Msg("Deleting certificate store")
@@ -298,7 +305,13 @@ func init() {
 
 	// delete cmd
 	storesDeleteCmd.Flags().StringVarP(&storeID, "id", "i", "", "ID of the certificate store to delete.")
-	storesDeleteCmd.Flags().StringVarP(&inputFile, "file", "f", "", "The path to a CSV file containing the Ids of the stores to delete.")
+	storesDeleteCmd.Flags().StringVarP(
+		&inputFile,
+		"file",
+		"f",
+		"",
+		"The path to a CSV file containing the Ids of the stores to delete.",
+	)
 	storesDeleteCmd.Flags().BoolVarP(&deleteAll, "all", "a", false, "Attempt to delete ALL stores.")
 	storesDeleteCmd.MarkFlagsMutuallyExclusive("id", "all")
 

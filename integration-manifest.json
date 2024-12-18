@@ -6,6 +6,7 @@
   "description": "`kfutil` is a go-lang CLI wrapper for Keyfactor Command API. It also includes other utility/helper functions around automating common Keyfactor Command operations.",
   "support_level": "kf-community",
   "link_github": false,
-  "update_catalog": false
+  "update_catalog": false,
+  "release_dir": "bin"
 }
 

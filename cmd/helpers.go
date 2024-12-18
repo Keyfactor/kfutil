@@ -19,16 +19,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/cobra"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
+
+	stdlog "log"
 )
 
 func boolToPointer(b bool) *bool {
@@ -180,7 +183,6 @@ func getCurrentTime(f string) string {
 
 func informDebug(debugFlag bool) {
 	debugModeEnabled := checkDebug(debugFlag)
-	zerolog.SetGlobalLevel(zerolog.Disabled)
 	if debugModeEnabled {
 		//zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
@@ -188,9 +190,12 @@ func informDebug(debugFlag bool) {
 }
 
 func initLogger() {
+	stdlog.SetOutput(io.Discard)
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zerolog.SetGlobalLevel(zerolog.Disabled) // default to disabled
 	log.Logger = log.With().Caller().Logger()
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
+
 }
 
 func intToPointer(i int) *int {
@@ -328,11 +333,19 @@ func outputError(err error, isFatal bool, format string) {
 }
 
 func outputResult(result interface{}, format string) {
+	log.Debug().
+		Interface("result", result).
+		Str("format", format).
+		Msg(fmt.Sprintf("%s outputResult", DebugFuncEnter))
 	if format == "json" {
 		fmt.Println(result)
 	} else {
 		fmt.Println(fmt.Sprintf("%s", result))
 	}
+	log.Debug().
+		Interface("result", result).
+		Str("format", format).
+		Msg(fmt.Sprintf("%s outputResult", DebugFuncExit))
 }
 
 func readCSVHeader(filename string) ([]string, error) {
