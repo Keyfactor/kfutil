@@ -210,7 +210,10 @@ func getServerConfigFromEnv() (*auth_providers.Server, error) {
 	}
 
 	log.Error().Msg("unable to authenticate with provided credentials")
-	return nil, fmt.Errorf("incomplete environment variable configuration")
+	return nil, fmt.Errorf(
+		"incomplete environment variable configuration, " +
+			"please provide basic auth credentials or oAuth credentials",
+	)
 
 }
 
@@ -617,7 +620,15 @@ func initClient(saveConfig bool) (*api.Client, error) {
 		Err(envCfgErr).
 		Msg("unable to authenticate to Keyfactor Command")
 	log.Debug().Msg("return: initClient()")
-	return nil, cfgErr
+
+	//combine envCfgErr and cfgErr and return
+	outErr := fmt.Errorf(
+		"Environment Authentication Error:\r\n%s\r\n\r\nConfiguration File Authentication Error:\r\n%s",
+		envCfgErr,
+		cfgErr,
+	)
+
+	return nil, outErr
 }
 
 // initGenClient initializes the SDK Command API client
