@@ -1,12 +1,12 @@
 [
   {
-    "Name": "Azure Keyvault",
     "BlueprintAllowed": false,
     "Capability": "AKV",
     "CustomAliasAllowed": "Optional",
-    "EntryParameters": null,
+    "EntryParameters": [],
     "JobProperties": [],
     "LocalStore": false,
+    "Name": "Azure Keyvault",
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -20,7 +20,6 @@
         "DisplayName": "Tenant Id",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": null,
         "Required": false
       },
       {
@@ -44,7 +43,7 @@
         "DisplayName": "Azure Cloud",
         "Type": "MultipleChoice",
         "DependsOn": "",
-        "DefaultValue": "public,china,germany,government",
+        "DefaultValue": "public,china,government",
         "Required": false
       },
       {
@@ -52,7 +51,6 @@
         "DisplayName": "Private KeyVault Endpoint",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": null,
         "Required": false
       }
     ],
@@ -82,6 +80,14 @@
     },
     "Properties": [
       {
+        "Name": "UseEC2AssumeRole",
+        "DisplayName": "Assume new Account / Role in EC2",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "false",
+        "Required": true
+      },
+      {
         "Name": "UseOAuth",
         "DisplayName": "Use OAuth 2.0 Provider",
         "Type": "Bool",
@@ -96,6 +102,14 @@
         "DependsOn": null,
         "DefaultValue": "false",
         "Required": true
+      },
+      {
+        "Name": "EC2AssumeRole",
+        "DisplayName": "AWS Role to Assume (EC2)",
+        "Type": "String",
+        "DependsOn": "UseEC2AssumeRole",
+        "DefaultValue": null,
+        "Required": false
       },
       {
         "Name": "OAuthScope",
@@ -134,6 +148,14 @@
         "DisplayName": "AWS Role to Assume (OAuth)",
         "Type": "String",
         "DependsOn": "UseOAuth",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ExternalId",
+        "DisplayName": "sts:ExternalId",
+        "Type": "String",
+        "DependsOn": null,
         "DefaultValue": null,
         "Required": false
       },
@@ -1240,7 +1262,11 @@
     "Name": "CitrixAdc",
     "ShortName": "CitrixAdc",
     "Capability": "CitrixAdc",
-    "LocalStore": false,
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Required",
     "SupportedOperations": {
       "Add": true,
       "Create": false,
@@ -1248,38 +1274,20 @@
       "Enrollment": false,
       "Remove": true
     },
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
     "Properties": [
-      {
-        "Name": "ServerUsername",
-        "DisplayName": "Server Username",
-        "Type": "Secret",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
-      },
-      {
-        "Name": "ServerPassword",
-        "DisplayName": "Server Password",
-        "Type": "Secret",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
-      },
-      {
-        "Name": "ServerUseSsl",
-        "DisplayName": "Use SSL",
-        "Type": "Bool",
-        "DependsOn": null,
-        "DefaultValue": "true",
-        "Required": true
-      },
       {
         "Name": "linkToIssuer",
         "DisplayName": "Link To Issuer",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "false",
-        "Required": false
+        "Required": false,
+        "Description": "Determines whether an attempt will be made to link the added certificate (via a Management-Add job) to its issuing CA certificate."
       }
     ],
     "EntryParameters": [
@@ -1287,6 +1295,7 @@
         "Name": "virtualServerName",
         "DisplayName": "Virtual Server Name",
         "Type": "String",
+        "Description": "When adding a certificate, this can be a single VServer name or a comma separated list of VServers to bind to  Note: must match the number of Virtual SNI Cert values.",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
@@ -1298,38 +1307,136 @@
         "Name": "sniCert",
         "DisplayName": "SNI Cert",
         "Type": "String",
+        "Description": "When adding a certificate, this can be a single boolean value (true/false) or a comma separated list of boolean values to determine whether the binding should use server name indication.  Note: must match the number of Virtual Server Name values.",
         "RequiredWhen": {
           "HasPrivateKey": false,
-          "OnAdd": true,
+          "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": false
-        },
-        "DefaultValue": "FALSE"
+        }
       }
     ],
+    "ClientMachineDescription": "The DNS or IP Address of the Citrix ADC Appliance.",
+    "StorePathDescription": "The path where certificate files are located on the Citrix ADC appliance.  This value will likely be /nsconfig/ssl/"
+  },
+  {
+    "Name": "IBM Data Power",
+    "ShortName": "DataPower",
+    "Capability": "DataPower",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "Api UserName for DataPower. (or valid PAM key if the username is stored in a KF Command configured PAM integration)."
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "A password for DataPower API access.  Used for inventory.(or valid PAM key if the password is stored in a KF Command configured PAM integration)."
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true,
+        "Description": "Should be true, http is not supported."
+      },
+      {
+        "Name": "InventoryBlackList",
+        "DisplayName": "Inventory Black List",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "Comma seperated list of alias values you do not want to inventory from DataPower."
+      },
+      {
+        "Name": "Protocol",
+        "DisplayName": "Protocol Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "https",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "Comma seperated list of alias values you do not want to inventory from DataPower."
+      },
+      {
+        "Name": "PublicCertStoreName",
+        "DisplayName": "Public Cert Store Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "pubcert",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "This probably will remain pubcert unless someone changed the default name in DataPower."
+      },
+      {
+        "Name": "InventoryPageSize",
+        "DisplayName": "Inventory Page Size",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "100",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "This determines the page size during the inventory calls. (100 should be fine)."
+      }
+    ],
+    "EntryParameters": [],
+    "ClientMachineDescription": "The Client Machine field should contain the IP or Domain name and Port Needed for REST API Access.  For SSH Access, Port 22 will be used.",
+    "StorePathDescription": "The Store Path field should always be / unless we later determine there are alternate locations needed.",
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
       "Style": "Default"
     },
-    "PrivateKeyAllowed": "Required",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Required",
-    "InventoryEndpoint": "/AnyInventory/Update"
+    "CustomAliasAllowed": "Required"
   },
   {
     "Name": "F5 Big IQ",
     "ShortName": "F5-BigIQ",
     "Capability": "F5-BigIQ",
-    "LocalStore": false,
+    "PrivateKeyAllowed": "Required",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required",
     "SupportedOperations": {
       "Add": true,
       "Create": false,
       "Discovery": false,
       "Enrollment": true,
       "Remove": true
+    },
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
     },
     "Properties": [
       {
@@ -1338,7 +1445,8 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
-        "Required": false
+        "Required": false,
+        "Description": "This optional setting determines whether renewed certificates (Management-Add jobs with Overwrite selected) will be deployed to all linked Big IP devices. Linked devices are determined by looking at all of the client-ssl profiles that reference the renewed certificate that have an associated virtual server linked to a Big IP device. An immediate deployment is then scheduled within F5 Big IQ for each linked Big IP device."
       },
       {
         "Name": "IgnoreSSLWarning",
@@ -1346,7 +1454,8 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
-        "Required": false
+        "Required": false,
+        "Description": "If you use a self signed certificate for the F5 Big IQ portal, you will need to add this optional Custom Field and set the value to True on the managed certificate store."
       },
       {
         "Name": "UseTokenAuth",
@@ -1354,7 +1463,8 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
-        "Required": false
+        "Required": false,
+        "Description": "If you prefer to use F5 Big IQ's Token Authentication to authenticate F5 Big IQ API calls, you will need to add this optional Custom Field and set the value to True on the managed certificate store. If set to True for the store, the userid/password credentials you set for the certificate store will be used once to receive a token. This token is then used for all subsequent API calls for the duration of the job. If this option does not exist or is set to False, the userid/password credentials you set for the certificate store will be used for all API calls."
       },
       {
         "Name": "LoginProviderName",
@@ -1362,7 +1472,28 @@
         "Type": "String",
         "DependsOn": "UseTokenAuth",
         "DefaultValue": "",
-        "Required": false
+        "Required": false,
+        "Description": "If Use Token Authentication is selected, you may optionally add a value for the authentication provider F5 Big IQ will use to retrieve the auth token. If you choose not to add this field or leave it blank on the certificate store (with no default value set), the default of \"TMOS\" will be used."
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "IsPAMEligible": true,
+        "Required": false,
+        "Description": "Login credential for the F5 Big IQ device.  MUST be an Admin account."
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "IsPAMEligible": true,
+        "Required": false,
+        "Description": "Login password for the F5 Big IQ device."
       }
     ],
     "EntryParameters": [
@@ -1378,7 +1509,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "",
-        "Options": ""
+        "Options": "",
+        "Description": "The name F5 Big IQ uses to identify the certificate"
       },
       {
         "Name": "Overwrite",
@@ -1392,7 +1524,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "False",
-        "Options": ""
+        "Options": "",
+        "Description": "Allow overwriting an existing certificate when reenrolling?"
       },
       {
         "Name": "SANs",
@@ -1406,24 +1539,18 @@
         },
         "DependsOn": "",
         "DefaultValue": "",
-        "Options": ""
+        "Options": "",
+        "Description": "External SANs for the requested certificate. Each SAN must be prefixed with the type (DNS: or IP:) and multiple SANs must be delimitted by an ampersand (&). Example: DNS:server.domain.com&IP:127.0.0.1&DNS:server2.domain.com.  This is an optional field."
       }
-    ],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "PrivateKeyAllowed": "Required",
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": true,
-    "CustomAliasAllowed": "Required"
+    ]
   },
   {
     "Name": "F5 CA Profiles REST",
     "ShortName": "F5-CA-REST",
     "Capability": "F5-CA-REST",
+    "ServerRequired": true,
+    "ClientMachineDescription": "The server name or IP Address for the F5 device.",
+    "StorePathDescription": "Enter the name of the partition on the F5 device you wish to manage. This value is case sensitive, so if the partition name is \"Common\", it must be entered as \"Common\" and not \"common\",",
     "SupportedOperations": {
       "Add": true,
       "Create": false,
@@ -1431,6 +1558,16 @@
       "Enrollment": false,
       "Remove": true
     },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": false
+    },
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required",
     "Properties": [
       {
         "Name": "PrimaryNode",
@@ -1438,7 +1575,8 @@
         "Type": "String",
         "DependsOn": "PrimaryNodeOnlineRequired",
         "DefaultValue": "",
-        "Required": true
+        "Required": true,
+        "Description": "Only required (and shown) if Primary Node Online Required is added and selected.  Enter the Host Name of the F5 device that acts as the primary node in a highly available F5 implementation. Please note that this value IS case sensitive."
       },
       {
         "Name": "PrimaryNodeCheckRetryWaitSecs",
@@ -1446,7 +1584,8 @@
         "Type": "String",
         "DependsOn": "PrimaryNodeOnlineRequired",
         "DefaultValue": "120",
-        "Required": true
+        "Required": true,
+        "Description": "Enter the number of seconds to wait between attempts to add/replace/renew a certificate if the node is inactive."
       },
       {
         "Name": "PrimaryNodeCheckRetryMax",
@@ -1454,39 +1593,8 @@
         "Type": "String",
         "DependsOn": "PrimaryNodeOnlineRequired",
         "DefaultValue": "3",
-        "Required": true
-      },
-      {
-        "Name": "F5Version",
-        "DisplayName": "Version of F5",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "v12,v13,v14,v15",
-        "Required": true
-      },
-      {
-        "Name": "ServerUsername",
-        "DisplayName": "Server Username",
-        "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
-      },
-      {
-        "Name": "ServerPassword",
-        "DisplayName": "Server Password",
-        "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
-      },
-      {
-        "Name": "ServerUseSsl",
-        "DisplayName": "Use SSL",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "true",
-        "Required": true
+        "Required": true,
+        "Description": "Enter the number of times a Management-Add job will attempt to add/replace/renew a certificate if the node is inactive before failing."
       },
       {
         "Name": "PrimaryNodeOnlineRequired",
@@ -1494,7 +1602,8 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "",
-        "Required": true
+        "Required": true,
+        "Description": "Select this if you wish to stop the orchestrator from adding, replacing or renewing certificates on nodes that are inactive. If this is not selected, adding, replacing and renewing certificates on inactive nodes will be allowed. If you choose not to add this custom field, the default value of False will be assumed."
       },
       {
         "Name": "IgnoreSSLWarning",
@@ -1502,7 +1611,8 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "False",
-        "Required": true
+        "Required": true,
+        "Description": "Select this if you wish to ignore SSL warnings from F5 that occur during API calls when the site does not have a trusted certificate with the proper SAN bound to it. If you choose not to add this custom field, the default value of False will be assumed and SSL warnings will cause errors during orchestrator extension jobs."
       },
       {
         "Name": "UseTokenAuth",
@@ -1510,32 +1620,67 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
-        "Required": true
+        "Required": true,
+        "Description": "Select this if you wish to use F5's token authentiation instead of basic authentication for all API requests. If you choose not to add this custom field, the default value of False will be assumed and basic authentication will be used for all API requests for all jobs. Setting this value to True will enable an initial basic authenticated request to acquire an authentication token, which will then be used for all subsequent API requests."
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "IsPAMEligible": true,
+        "Required": false,
+        "Description": "Login credential for the F5 device.  MUST be an Admin account."
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "IsPAMEligible": true,
+        "Required": false,
+        "Description": "Login password for the F5 device."
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true,
+        "Description": "True if using https to access the F5 device. False if using http."
       }
     ],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "PrivateKeyAllowed": "Forbidden",
-    "JobProperties": [],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": true,
-    "CustomAliasAllowed": "Required"
+    "EntryParameters": []
   },
   {
     "Name": "F5 SSL Profiles REST",
     "ShortName": "F5-SL-REST",
     "Capability": "F5-SL-REST",
+    "ServerRequired": true,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "ClientMachineDescription": "The server name or IP Address for the F5 device.",
+    "StorePathDescription": "Enter the name of the partition on the F5 device you wish to manage. This value is case sensitive, so if the partition name is \"Common\", it must be entered as \"Common\" and not \"common\",",
     "SupportedOperations": {
       "Add": true,
       "Create": false,
       "Discovery": true,
       "Enrollment": false,
       "Remove": true
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true,
+      "StorePassword": {
+        "Description": "Check \"No Password\" if you wish the private key of any added certificate to be set to Key Security Type \"Normal\". Enter a value (either a password or pointer to an installed PAM provider key for the password) to be used to encrypt the private key of any added certificate for Key Security Type of \"Password\".",
+        "IsPAMEligible": true
+      }
     },
     "Properties": [
       {
@@ -1544,7 +1689,8 @@
         "Type": "String",
         "DependsOn": "PrimaryNodeOnlineRequired",
         "DefaultValue": "",
-        "Required": true
+        "Required": true,
+        "Description": "Only required (and shown) if Primary Node Online Required is added and selected.  Enter the Host Name of the F5 device that acts as the primary node in a highly available F5 implementation. Please note that this value IS case sensitive."
       },
       {
         "Name": "PrimaryNodeCheckRetryWaitSecs",
@@ -1552,7 +1698,8 @@
         "Type": "String",
         "DependsOn": "PrimaryNodeOnlineRequired",
         "DefaultValue": "120",
-        "Required": true
+        "Required": true,
+        "Description": "Enter the number of seconds to wait between attempts to add/replace/renew a certificate if the node is inactive."
       },
       {
         "Name": "PrimaryNodeCheckRetryMax",
@@ -1560,39 +1707,8 @@
         "Type": "String",
         "DependsOn": "PrimaryNodeOnlineRequired",
         "DefaultValue": "3",
-        "Required": true
-      },
-      {
-        "Name": "F5Version",
-        "DisplayName": "Version of F5",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "v12,v13,v14,v15",
-        "Required": true
-      },
-      {
-        "Name": "ServerUsername",
-        "DisplayName": "Server Username",
-        "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
-      },
-      {
-        "Name": "ServerPassword",
-        "DisplayName": "Server Password",
-        "Type": "Secret",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
-      },
-      {
-        "Name": "ServerUseSsl",
-        "DisplayName": "Use SSL",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "true",
-        "Required": true
+        "Required": true,
+        "Description": "Enter the number of times a Management-Add job will attempt to add/replace/renew a certificate if the node is inactive before failing."
       },
       {
         "Name": "PrimaryNodeOnlineRequired",
@@ -1600,7 +1716,8 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "",
-        "Required": true
+        "Required": true,
+        "Description": "Select this if you wish to stop the orchestrator from adding, replacing or renewing certificates on nodes that are inactive. If this is not selected, adding, replacing and renewing certificates on inactive nodes will be allowed. If you choose not to add this custom field, the default value of False will be assumed."
       },
       {
         "Name": "IgnoreSSLWarning",
@@ -1608,7 +1725,8 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "False",
-        "Required": true
+        "Required": true,
+        "Description": "Select this if you wish to ignore SSL warnings from F5 that occur during API calls when the site does not have a trusted certificate with the proper SAN bound to it. If you choose not to add this custom field, the default value of False will be assumed and SSL warnings will cause errors during orchestrator extension jobs."
       },
       {
         "Name": "UseTokenAuth",
@@ -1616,26 +1734,156 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
-        "Required": true
+        "Required": true,
+        "Description": "Select this if you wish to use F5's token authentiation instead of basic authentication for all API requests. If you choose not to add this custom field, the default value of False will be assumed and basic authentication will be used for all API requests for all jobs. Setting this value to True will enable an initial basic authenticated request to acquire an authentication token, which will then be used for all subsequent API requests."
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "IsPAMEligible": true,
+        "Required": false,
+        "Description": "Login credential for the F5 device.  MUST be an Admin account."
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "IsPAMEligible": true,
+        "Required": false,
+        "Description": "Login password for the F5 device."
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true,
+        "Description": "True if using https to access the F5 device. False if using http."
       }
     ],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": true,
-      "Style": "Default"
-    },
-    "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": true,
-    "CustomAliasAllowed": "Required"
+    "EntryParameters": []
   },
   {
     "Name": "F5 WS Profiles REST",
     "ShortName": "F5-WS-REST",
     "Capability": "F5-WS-REST",
+    "ServerRequired": true,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Forbidden",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Required",
+    "ClientMachineDescription": "The server name or IP Address for the F5 device.",
+    "StorePathDescription": "Enter the name of the partition on the F5 device you wish to manage. This value is case sensitive, so if the partition name is \"Common\", it must be entered as \"Common\" and not \"common\",",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": false
+    },
+    "Properties": [
+      {
+        "Name": "PrimaryNode",
+        "DisplayName": "Primary Node",
+        "Type": "String",
+        "DependsOn": "PrimaryNodeOnlineRequired",
+        "DefaultValue": "",
+        "Required": true,
+        "Description": "Only required (and shown) if Primary Node Online Required is added and selected.  Enter the Host Name of the F5 device that acts as the primary node in a highly available F5 implementation. Please note that this value IS case sensitive."
+      },
+      {
+        "Name": "PrimaryNodeCheckRetryWaitSecs",
+        "DisplayName": "Primary Node Check Retry Wait Seconds",
+        "Type": "String",
+        "DependsOn": "PrimaryNodeOnlineRequired",
+        "DefaultValue": "120",
+        "Required": true,
+        "Description": "Enter the number of seconds to wait between attempts to add/replace/renew a certificate if the node is inactive."
+      },
+      {
+        "Name": "PrimaryNodeCheckRetryMax",
+        "DisplayName": "Primary Node Check Retry Maximum",
+        "Type": "String",
+        "DependsOn": "PrimaryNodeOnlineRequired",
+        "DefaultValue": "3",
+        "Required": true,
+        "Description": "Enter the number of times a Management-Add job will attempt to add/replace/renew a certificate if the node is inactive before failing."
+      },
+      {
+        "Name": "PrimaryNodeOnlineRequired",
+        "DisplayName": "Primary Node Online Required",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "Description": "Select this if you wish to stop the orchestrator from adding, replacing or renewing certificates on nodes that are inactive. If this is not selected, adding, replacing and renewing certificates on inactive nodes will be allowed. If you choose not to add this custom field, the default value of False will be assumed."
+      },
+      {
+        "Name": "IgnoreSSLWarning",
+        "DisplayName": "Ignore SSL Warning",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "False",
+        "Required": true,
+        "Description": "Select this if you wish to ignore SSL warnings from F5 that occur during API calls when the site does not have a trusted certificate with the proper SAN bound to it. If you choose not to add this custom field, the default value of False will be assumed and SSL warnings will cause errors during orchestrator extension jobs."
+      },
+      {
+        "Name": "UseTokenAuth",
+        "DisplayName": "Use Token Authentication",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "Description": "Select this if you wish to use F5's token authentiation instead of basic authentication for all API requests. If you choose not to add this custom field, the default value of False will be assumed and basic authentication will be used for all API requests for all jobs. Setting this value to True will enable an initial basic authenticated request to acquire an authentication token, which will then be used for all subsequent API requests."
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "IsPAMEligible": true,
+        "Required": false,
+        "Description": "Login credential for the F5 device.  MUST be an Admin account."
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "IsPAMEligible": true,
+        "Required": false,
+        "Description": "Login password for the F5 device."
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true,
+        "Description": "True if using https to access the F5 device. False if using http."
+      }
+    ],
+    "EntryParameters": []
+  },
+  {
+    "Name": "FortiWeb",
+    "ShortName": "FortiWeb",
+    "Capability": "FortiWeb",
+    "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
       "Create": false,
@@ -1645,52 +1893,24 @@
     },
     "Properties": [
       {
-        "Name": "PrimaryNode",
-        "DisplayName": "Primary Node",
-        "Type": "String",
-        "DependsOn": "PrimaryNodeOnlineRequired",
-        "DefaultValue": "",
-        "Required": true
-      },
-      {
-        "Name": "PrimaryNodeCheckRetryWaitSecs",
-        "DisplayName": "Primary Node Check Retry Wait Seconds",
-        "Type": "String",
-        "DependsOn": "PrimaryNodeOnlineRequired",
-        "DefaultValue": "120",
-        "Required": true
-      },
-      {
-        "Name": "PrimaryNodeCheckRetryMax",
-        "DisplayName": "Primary Node Check Retry Maximum",
-        "Type": "String",
-        "DependsOn": "PrimaryNodeOnlineRequired",
-        "DefaultValue": "3",
-        "Required": true
-      },
-      {
-        "Name": "F5Version",
-        "DisplayName": "Version of F5",
-        "Type": "MultipleChoice",
-        "DependsOn": "",
-        "DefaultValue": "v12,v13,v14,v15",
-        "Required": true
-      },
-      {
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "A username for CLI/SSH and REST API access.  Used for inventory. (or valid PAM key if the username is stored in a KF Command configured PAM integration)."
       },
       {
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "A password for CLI/SSH and REST API access.  Used for inventory.(or valid PAM key if the password is stored in a KF Command configured PAM integration)."
       },
       {
         "Name": "ServerUseSsl",
@@ -1698,45 +1918,34 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "true",
-        "Required": true
+        "Required": true,
+        "Description": "Should be true, http is not supported."
       },
       {
-        "Name": "PrimaryNodeOnlineRequired",
-        "DisplayName": "Primary Node Online Required",
-        "Type": "Bool",
+        "Name": "ADom",
+        "DisplayName": "Administrative Domain",
+        "Type": "String",
         "DependsOn": "",
-        "DefaultValue": "",
-        "Required": true
-      },
-      {
-        "Name": "IgnoreSSLWarning",
-        "DisplayName": "Ignore SSL Warning",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "False",
-        "Required": true
-      },
-      {
-        "Name": "UseTokenAuth",
-        "DisplayName": "Use Token Authentication",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "false",
-        "Required": true
+        "DefaultValue": "root",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "Specifies the administrative or virtual domain within the FortiWeb system that the API user is targeting."
       }
     ],
     "EntryParameters": [],
+    "ClientMachineDescription": "The Client Machine field should contain the IP or Domain name and Port Needed for REST API Access.  For SSH Access, Port 22 will be used.",
+    "StorePathDescription": "The Store Path field should always be / unless we later determine there are alternate locations needed.",
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
       "Style": "Default"
     },
-    "PrivateKeyAllowed": "Required",
+    "PrivateKeyAllowed": "Optional",
     "JobProperties": [],
     "ServerRequired": true,
     "PowerShell": false,
-    "BlueprintAllowed": true,
-    "CustomAliasAllowed": "Forbidden"
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
   },
   {
     "Name": "Fortigate",
@@ -1941,7 +2150,7 @@
         "DisplayName": "Mount Point",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -1949,7 +2158,7 @@
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -1957,7 +2166,7 @@
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -1969,7 +2178,7 @@
         "Required": true
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -2010,7 +2219,7 @@
         "DisplayName": "Mount Point",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -2026,7 +2235,7 @@
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -2034,7 +2243,7 @@
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -2046,7 +2255,7 @@
         "Required": true
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -2095,7 +2304,7 @@
         "DisplayName": "Mount Point",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -2103,7 +2312,7 @@
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -2111,7 +2320,7 @@
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -2123,7 +2332,7 @@
         "Required": true
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -2170,7 +2379,7 @@
         "DisplayName": "Mount Point",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -2178,7 +2387,7 @@
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -2186,7 +2395,7 @@
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -2198,7 +2407,7 @@
         "Required": true
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -2231,27 +2440,11 @@
         "DisplayName": "Mount Point",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": true
-      },
-      {
-        "Name": "VaultToken",
-        "DisplayName": "VaultToken",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
-      },
-      {
-        "Name": "VaultServerUrl",
-        "DisplayName": "Vault Server URL",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -2259,7 +2452,7 @@
     },
     "PrivateKeyAllowed": "Optional",
     "JobProperties": [],
-    "ServerRequired": false,
+    "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Optional"
@@ -2283,39 +2476,44 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
-        "Required": false
+        "Required": false,
+        "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
       },
       {
-        "Name": "WinRm Protocol",
-        "DisplayName": "WinRm Protocol",
+        "Name": "WinRM Protocol",
+        "DisplayName": "WinRM Protocol",
         "Type": "MultipleChoice",
         "DependsOn": "",
         "DefaultValue": "https,http",
-        "Required": true
+        "Required": true,
+        "Description": "Multiple choice value specifying the protocol (https or http) that the target server's WinRM listener is using. Example: 'https' to use secure communication."
       },
       {
-        "Name": "WinRm Port",
-        "DisplayName": "WinRm Port",
+        "Name": "WinRM Port",
+        "DisplayName": "WinRM Port",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "5986",
-        "Required": true
+        "Required": true,
+        "Description": "String value specifying the port number that the target server's WinRM listener is configured to use. Example: '5986' for HTTPS or '5985' for HTTP."
       },
       {
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Username used to log into the target server for establishing the WinRM session. Example: 'administrator' or 'domain\\username'."
       },
       {
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Password corresponding to the Server Username used to log into the target server for establishing the WinRM session. Example: 'P@ssw0rd123'."
       },
       {
         "Name": "ServerUseSsl",
@@ -2323,7 +2521,8 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "true",
-        "Required": true
+        "Required": true,
+        "Description": "Determine whether the server uses SSL or not (This field is automatically created)"
       }
     ],
     "EntryParameters": [
@@ -2339,7 +2538,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "443",
-        "Options": ""
+        "Options": "",
+        "Description": "String value specifying the IP port to bind the certificate to for the IIS site. Example: '443' for HTTPS."
       },
       {
         "Name": "IPAddress",
@@ -2353,7 +2553,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "*",
-        "Options": ""
+        "Options": "",
+        "Description": "String value specifying the IP address to bind the certificate to for the IIS site. Example: '*' for all IP addresses or '192.168.1.1' for a specific IP address."
       },
       {
         "Name": "HostName",
@@ -2367,7 +2568,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "",
-        "Options": ""
+        "Options": "",
+        "Description": "String value specifying the host name (host header) to bind the certificate to for the IIS site. Leave blank for all host names or enter a specific hostname such as 'www.example.com'."
       },
       {
         "Name": "SiteName",
@@ -2381,12 +2583,13 @@
         },
         "DependsOn": "",
         "DefaultValue": "Default Web Site",
-        "Options": ""
+        "Options": "",
+        "Description": "String value specifying the name of the IIS web site to bind the certificate to. Example: 'Default Web Site' or any custom site name such as 'MyWebsite'."
       },
       {
         "Name": "SniFlag",
-        "DisplayName": "SNI Support",
-        "Type": "MultipleChoice",
+        "DisplayName": "SSL Flags",
+        "Type": "String",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
@@ -2394,8 +2597,9 @@
           "OnReenrollment": false
         },
         "DependsOn": "",
-        "DefaultValue": "0 - No SNI",
-        "Options": "0 - No SNI,1 - SNI Enabled,2 - Non SNI Binding,3 - SNI Binding"
+        "DefaultValue": "0",
+        "Options": "",
+        "Description": "A 128-Bit Flag that determines what type of SSL settings you wish to use.  The default is 0, meaning No SNI.  For more information, check IIS documentation for the appropriate bit setting.)"
       },
       {
         "Name": "Protocol",
@@ -2409,7 +2613,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "https",
-        "Options": "https,http"
+        "Options": "https,http",
+        "Description": "Multiple choice value specifying the protocol to bind to. Example: 'https' for secure communication."
       },
       {
         "Name": "ProviderName",
@@ -2423,7 +2628,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "",
-        "Options": ""
+        "Options": "",
+        "Description": "Name of the Windows cryptographic provider to use during reenrollment jobs when generating and storing the private keys. If not specified, defaults to 'Microsoft Strong Cryptographic Provider'. This value would typically be specified when leveraging a Hardware Security Module (HSM). The specified cryptographic provider must be available on the target server being managed. The list of installed cryptographic providers can be obtained by running 'certutil -csplist' on the target Server."
       },
       {
         "Name": "SAN",
@@ -2437,7 +2643,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "",
-        "Options": ""
+        "Options": "",
+        "Description": "String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>=<san_value> entries separated by ampersands; Example: 'dns=www.example.com&dns=www.example2.com' for multiple SANs. Can be made optional if RFC 2818 is disabled on the CA."
       }
     ],
     "PasswordOptions": {
@@ -2450,7 +2657,9 @@
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden"
+    "CustomAliasAllowed": "Forbidden",
+    "ClientMachineDescription": "Hostname of the Windows Server containing the IIS certificate store to be managed. If this value is a hostname, a WinRM session will be established using the credentials specified in the Server Username and Server Password fields.  For more information, see [Client Machine](#note-regarding-client-machine).",
+    "StorePathDescription": "Windows certificate store path to manage. Choose 'My' for the Personal store or 'WebHosting' for the Web Hosting store."
   },
   {
     "Name": "Imperva",
@@ -2471,10 +2680,16 @@
     "PasswordOptions": {
       "Style": "Default",
       "EntrySupported": false,
-      "StoreRequired": true
+      "StoreRequired": true,
+      "StorePassword": {
+        "Description": "Your Imperva API id and API key concatenated with a comma (,}.  For example: 12345,12345678-1234-1234-1234-123456789ABC.  Please refer to the [Imperva documentation](https://docs.imperva.com/bundle/cloud-application-security/page/settings/api-keys.htm#:~:text=In%20the%20Cloud%20Security%20Console%20top%20menu%20bar%2C%20click%20Account,to%20create%20a%20new%20key.) as to how to create an API id and key.",
+        "IsPAMEligible": true
+      }
     },
     "Properties": [],
-    "EntryParameters": []
+    "EntryParameters": [],
+    "ClientMachineDescription": "The URL that will be used as the base URL for Imperva endpoint calls.  Should be https://my.imperva.com",
+    "StorePathDescription": "Your Imperva account id.  Please refer to the [Imperva documentation](https://docs.imperva.com/howto/bd68301b) as to how to find your Imperva account id."
   },
   {
     "Name": "K8SCert",
@@ -3045,6 +3260,22 @@
         "DependsOn": null,
         "DefaultValue": null,
         "Required": false
+      },
+      {
+        "Name": "InventoryTrustedCerts",
+        "DisplayName": "Inventory Trusted Certs",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "false",
+        "Required": true
+      },
+      {
+        "Name": "TemplateStack",
+        "DisplayName": "Template Stack",
+        "Type": "String",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": false
       }
     ],
     "EntryParameters": [],
@@ -3497,7 +3728,7 @@
         "DependsOn": "",
         "Type": "Bool",
         "DefaultValue": "false",
-        "Description": "The IgnorePrivateKeyOnInventory field should contain a boolean value ('true' or 'false') indicating whether to ignore the private key during inventory, which will make the store inventory-only and return all certificates without private key entries. Example: 'true' to ignore the private key or 'false' to include it."
+        "Description": "The IgnorePrivateKeyOnInventory field should contain a boolean value ('true' or 'false') indicating whether to disregard the private key during inventory. Setting this to 'true' will allow inventory for the store without needing to supply the location of the private key or the password if the key is encrypted.  However, doing this makes the store in effect inventory-only and no management jobs will be able to be run for this store. Example: 'true' to ignore the private key or 'false' to include it."
       }
     ],
     "EntryParameters": [],
@@ -3753,7 +3984,8 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
-        "Required": false
+        "Required": false,
+        "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
       },
       {
         "Name": "WinRM Protocol",
@@ -3761,7 +3993,8 @@
         "Type": "MultipleChoice",
         "DependsOn": "",
         "DefaultValue": "https,http",
-        "Required": true
+        "Required": true,
+        "Description": "Multiple choice value specifying the protocol (https or http) that the target server's WinRM listener is using. Example: 'https' to use secure communication."
       },
       {
         "Name": "WinRM Port",
@@ -3769,23 +4002,26 @@
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "5986",
-        "Required": true
+        "Required": true,
+        "Description": "String value specifying the port number that the target server's WinRM listener is configured to use. Example: '5986' for HTTPS or '5985' for HTTP."
       },
       {
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Username used to log into the target server for establishing the WinRM session. Example: 'administrator' or 'domain\\username'."
       },
       {
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Password corresponding to the Server Username used to log into the target server for establishing the WinRM session. Example: 'P@ssw0rd123'."
       },
       {
         "Name": "ServerUseSsl",
@@ -3793,7 +4029,8 @@
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "true",
-        "Required": true
+        "Required": true,
+        "Description": "Determine whether the server uses SSL or not (This field is automatically created)"
       }
     ],
     "EntryParameters": [
@@ -3809,7 +4046,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "",
-        "Options": ""
+        "Options": "",
+        "Description": "Name of the Windows cryptographic provider to use during reenrollment jobs when generating and storing the private keys. If not specified, defaults to 'Microsoft Strong Cryptographic Provider'. This value would typically be specified when leveraging a Hardware Security Module (HSM). The specified cryptographic provider must be available on the target server being managed. The list of installed cryptographic providers can be obtained by running 'certutil -csplist' on the target Server."
       },
       {
         "Name": "SAN",
@@ -3823,7 +4061,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "",
-        "Options": ""
+        "Options": "",
+        "Description": "String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>=<san_value> entries separated by ampersands; Example: 'dns=www.example.com&dns=www.example2.com' for multiple SANs. Can be made optional if RFC 2818 is disabled on the CA."
       }
     ],
     "PasswordOptions": {
@@ -3836,7 +4075,9 @@
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden"
+    "CustomAliasAllowed": "Forbidden",
+    "ClientMachineDescription": "Hostname of the Windows Server containing the certificate store to be managed. If this value is a hostname, a WinRM session will be established using the credentials specified in the Server Username and Server Password fields. For more information, see [Client Machine](#note-regarding-client-machine).",
+    "StorePathDescription": "Windows certificate store path to manage. The store must exist in the Local Machine store on the target server, e.g., 'My' for the Personal Store or 'Root' for the Trusted Root Certification Authorities Store."
   },
   {
     "Name": "WinSql",
@@ -3852,52 +4093,67 @@
     },
     "Properties": [
       {
-        "Name": "WinRm Protocol",
-        "DisplayName": "WinRm Protocol",
-        "Type": "MultipleChoice",
-        "DependsOn": null,
-        "DefaultValue": "https,http",
-        "Required": true
+        "Name": "spnwithport",
+        "DisplayName": "SPN With Port",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
       },
       {
-        "Name": "WinRm Port",
-        "DisplayName": "WinRm Port",
+        "Name": "WinRM Protocol",
+        "DisplayName": "WinRM Protocol",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "https,http",
+        "Required": true,
+        "Description": "Multiple choice value specifying the protocol (https or http) that the target server's WinRM listener is using. Example: 'https' to use secure communication."
+      },
+      {
+        "Name": "WinRM Port",
+        "DisplayName": "WinRM Port",
         "Type": "String",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "5986",
-        "Required": true
+        "Required": true,
+        "Description": "String value specifying the port number that the target server's WinRM listener is configured to use. Example: '5986' for HTTPS or '5985' for HTTP."
       },
       {
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Username used to log into the target server for establishing the WinRM session. Example: 'administrator' or 'domain\\username'."
       },
       {
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Password corresponding to the Server Username used to log into the target server for establishing the WinRM session. Example: 'P@ssw0rd123'."
       },
       {
         "Name": "ServerUseSsl",
         "DisplayName": "Use SSL",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "true",
-        "Required": true
+        "Required": true,
+        "Description": "Determine whether the server uses SSL or not (This field is automatically created)"
       },
       {
         "Name": "RestartService",
         "DisplayName": "Restart SQL Service After Cert Installed",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "false",
-        "Required": true
+        "Required": true,
+        "Description": "Boolean value (true or false) indicating whether to restart the SQL Server service after installing the certificate. Example: 'true' to enable service restart after installation."
       }
     ],
     "EntryParameters": [
@@ -3910,7 +4166,8 @@
           "OnAdd": false,
           "OnRemove": false,
           "OnReenrollment": false
-        }
+        },
+        "Description": "String value specifying the SQL Server instance name to bind the certificate to. Example: 'MSSQLServer' for the default instance or 'Instance1' for a named instance."
       },
       {
         "Name": "ProviderName",
@@ -3924,7 +4181,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "",
-        "Options": ""
+        "Options": "",
+        "Description": "Optional string value specifying the name of the Windows cryptographic provider to use during reenrollment jobs when generating and storing private keys. Example: 'Microsoft Strong Cryptographic Provider'."
       },
       {
         "Name": "SAN",
@@ -3938,7 +4196,8 @@
         },
         "DependsOn": "",
         "DefaultValue": "",
-        "Options": ""
+        "Options": "",
+        "Description": "String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>=<san_value> entries separated by ampersands; Example: 'dns=www.example.com&dns=www.example2.com' for multiple SANs."
       }
     ],
     "PasswordOptions": {
@@ -3948,6 +4207,130 @@
     },
     "StorePathValue": "My",
     "PrivateKeyAllowed": "Optional",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Forbidden",
+    "ClientMachineDescription": "Hostname of the Windows Server containing the SQL Server Certificate Store to be managed. If this value is a hostname, a WinRM session will be established using the credentials specified in the Server Username and Server Password fields. For more information, see [Client Machine](#note-regarding-client-machine).",
+    "StorePathDescription": "Fixed string value 'My' indicating the Personal store on the Local Machine. This denotes the Windows certificate store to be managed for SQL Server."
+  },
+  {
+    "Name": "F5 WAF CA",
+    "ShortName": "f5WafCa",
+    "Capability": "f5WafCa",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "Not used.  Set to No Value."
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The API Token configured in the F5 Distributed Cloud instance's Account Settings. Please review the Requirements & Prerequisites section in this README for more information on creating this API token."
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required",
+    "ClientMachineDescription": "The URL for the F5 Distributed Cloud instance (typically ending in '.console.ves.volterra.io').",
+    "StorePathDescription": "The Multi-Cloud App Connect namespace containing the certificates you wish to manage."
+  },
+  {
+    "Name": "F5 WAF TLS",
+    "ShortName": "f5WafTls",
+    "Capability": "f5WafTls",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "Not used.  Set to No Value."
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The API Token configured in the F5 Distributed Cloud instance's Account Settings. Please review the Requirements & Prerequisites section in this README for more information on creating this API token."
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Required",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required",
+    "ClientMachineDescription": "The URL for the F5 Distributed Cloud instance (typically ending in '.console.ves.volterra.io').",
+    "StorePathDescription": "The Multi-Cloud App Connect namespace containing the certificates you wish to manage."
+  },
+  {
+    "Name": "iDRAC",
+    "ShortName": "iDRAC",
+    "Capability": "iDRAC",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Required",
+    "JobProperties": [],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": true,

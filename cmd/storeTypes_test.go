@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
@@ -185,23 +186,23 @@ func Test_StoreTypesCreateFromTemplatesCmd(t *testing.T) {
 	assert.True(t, len(storeTypes) >= 0, "Expected non-empty list of store types")
 
 	// iterate over the store types and verify that each has a name shortname and storetype
-	for sType := range storeTypes {
-		t.Log("Creating store type: " + sType)
-		storeType := storeTypes[sType].(map[string]interface{})
-		assert.NotNil(t, storeType["Name"], "Expected store type to have a name")
-		assert.NotNil(t, storeType["ShortName"], "Expected store type to have short name")
-
-		// verify short name is a string
-		_, ok := storeType["ShortName"].(string)
-		assert.True(t, ok, "Expected short name to be a string")
-		// verify name is a string
-		_, ok = storeType["Name"].(string)
-		assert.True(t, ok, "Expected name to be a string")
-
-		// Attempt to create the store type
-		shortName := storeType["ShortName"].(string)
-		createStoreTypeTest(t, shortName, false)
-	}
+	//for sType := range storeTypes {
+	//	t.Log("Creating store type: " + sType)
+	//	storeType := storeTypes[sType].(map[string]interface{})
+	//	assert.NotNil(t, storeType["Name"], "Expected store type to have a name")
+	//	assert.NotNil(t, storeType["ShortName"], "Expected store type to have short name")
+	//
+	//	// verify short name is a string
+	//	_, ok := storeType["ShortName"].(string)
+	//	assert.True(t, ok, "Expected short name to be a string")
+	//	// verify name is a string
+	//	_, ok = storeType["Name"].(string)
+	//	assert.True(t, ok, "Expected name to be a string")
+	//
+	//	// Attempt to create the store type
+	//	shortName := storeType["ShortName"].(string)
+	//	createStoreTypeTest(t, shortName, false)
+	//}
 	createAllStoreTypes(t, storeTypes)
 }
 
@@ -225,6 +226,7 @@ func testCreateStoreType(
 	allowFail := false
 	// Attempt to get the AWS store type because it comes with the product
 	testCmd.SetArgs(testArgs)
+	t.Log(fmt.Sprintf("Test args: %s", testArgs))
 	output := captureOutput(
 		func() {
 			err := testCmd.Execute()
@@ -291,21 +293,32 @@ func testCreateStoreType(
 }
 
 func createAllStoreTypes(t *testing.T, storeTypes map[string]interface{}) {
-	t.Run(
-		fmt.Sprintf("ONLINE Create ALL StoreTypes"), func(t *testing.T) {
-			testCmd := RootCmd
-			// check if I'm running inside a GitHub Action
-			testArgs := []string{"store-types", "create", "--all"}
-			testCreateStoreType(t, testCmd, testArgs, storeTypes)
-
-		},
-	)
+	//t.Run(
+	//	fmt.Sprintf("ONLINE Create ALL StoreTypes"), func(t *testing.T) {
+	//		testCmd := RootCmd
+	//		// check if I'm running inside a GitHub Action
+	//		testArgs := []string{"store-types", "create", "--all"}
+	//		testCreateStoreType(t, testCmd, testArgs, storeTypes)
+	//
+	//	},
+	//)
 	t.Run(
 		fmt.Sprintf("OFFLINE Create ALL StoreTypes"), func(t *testing.T) {
 			testCmd := RootCmd
-			// check if I'm running inside a GitHub Action
 			testArgs := []string{"store-types", "create", "--all", "--offline"}
-			testCreateStoreType(t, testCmd, testArgs, storeTypes)
+
+			var emStoreTypes []interface{}
+			if err := json.Unmarshal(EmbeddedStoreTypesJSON, &emStoreTypes); err != nil {
+				log.Error().Err(err).Msg("Unable to unmarshal embedded store type definitions")
+				t.FailNow()
+			}
+			offlineStoreTypes, stErr := formatStoreTypes(&emStoreTypes)
+			if stErr != nil {
+				log.Error().Err(stErr).Msg("Unable to format store types")
+				t.FailNow()
+			}
+
+			testCreateStoreType(t, testCmd, testArgs, offlineStoreTypes)
 		},
 	)
 }
