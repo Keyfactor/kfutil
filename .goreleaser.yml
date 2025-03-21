@@ -14,7 +14,7 @@ builds:
     flags:
       - '-trimpath'
     ldflags:
-      - '-s -w -X version.VERSION={{.Version}} -X main.commit={{.Commit}}'
+      - "-s -w -X 'kfutil/pkg/version.Version={{ .Version }}' -X 'kfutil/pkg/version.Commit={{ .Commit }} -X 'kfutil/pkg/version.Date={{ .CommitTimestamp }}'"
     goos:
       - freebsd
       - windows
@@ -22,12 +22,8 @@ builds:
       - darwin
     goarch:
       - amd64
-      - '386'
       - arm
       - arm64
-    ignore:
-      - goos: darwin
-        goarch: '386'
     binary: 'kfutil'
 archives:
   - format: zip
