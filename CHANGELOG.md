@@ -4,6 +4,14 @@
 
 ### CLI
 
+- `version`: Correct version is reported for `kfutil version`
+
+# v1.6.1
+
+## Fixes
+
+### CLI
+
 - `auth`: When using `oauth` pass empty list for `scopes` if no scopes are provided, rather than default scope `openid`
 - `auth`: Output env and config file errors when both are encountered rather than just config file errors.
 
