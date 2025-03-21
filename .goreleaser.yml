@@ -14,7 +14,7 @@ builds:
     flags:
       - '-trimpath'
     ldflags:
-      - "-s -w -X 'kfutil/pkg/version.Version={{ .Version }}' -X -X 'kfutil/pkg/version.Commit={{ .Commit }} -X 'kfutil/pkg/version.Date={{ .CommitTimestamp }}'"
+      - "-s -w -X 'kfutil/pkg/version.Version={{ .Version }}' -X 'kfutil/pkg/version.Commit={{ .Commit }} -X 'kfutil/pkg/version.Date={{ .CommitTimestamp }}'"
     goos:
       - freebsd
       - windows
