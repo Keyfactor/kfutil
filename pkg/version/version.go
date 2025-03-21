@@ -14,6 +14,8 @@
 
 package version
 
-const VERSION = "1.6.0"
-const BUILD_DATE = "2024-03-25"
-const COMMIT = "HEAD"
+var (
+	VERSION    = "1.6.0"
+	BUILD_DATE = "2024-03-25"
+	COMMIT     = "HEAD"
+)
