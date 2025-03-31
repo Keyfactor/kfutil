@@ -14,4 +14,8 @@
 
 package version
 
-const VERSION = "1.6.3-rc.0"
+var (
+	VERSION    = "1.6.0"
+	BUILD_DATE = "2024-03-25"
+	COMMIT     = "HEAD"
+)
