@@ -1,3 +1,11 @@
+# v1.6.2
+
+## Fixes
+
+### CLI
+
+- `version`: Correct version is reported for `kfutil version`
+
 # v1.6.1
 
 ## Fixes
