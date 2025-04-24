@@ -117,6 +117,9 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		filePath, _ := cmd.Flags().GetString("file")
 		outPath, _ := cmd.Flags().GetString("results-path")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
+		serverUsername, _ := cmd.Flags().GetString("server-username")
+		serverPassword, _ := cmd.Flags().GetString("server-password")
+		storePassword, _ := cmd.Flags().GetString("store-password")
 
 		//// Flag Checks
 		//inputErr := storeTypeIdentifierFlagCheck(cmd)
@@ -259,6 +262,19 @@ var storesCreateFromCSVCmd = &cobra.Command{
 
 		errorCount := 0
 
+		if !noPrompt {
+			promptCreds := promptForInteractiveYesNo("Input default credentials to use for certificate stores?")
+			if promptCreds {
+				outputResult("NOTE: Credentials provided in file will take precedence over prompts.", outputFormat)
+				serverUsername = promptForInteractiveParameter("ServerUsername", serverUsername)
+				log.Debug().Str("serverUsername", serverUsername).Msg("ServerUsername")
+				serverPassword = promptForInteractivePassword("ServerPassword", serverPassword)
+				log.Debug().Str("serverPassword", hashSecretValue(serverPassword)).Msg("ServerPassword")
+				storePassword = promptForInteractivePassword("StorePassword", storePassword)
+				log.Debug().Str("storePassword", hashSecretValue(storePassword)).Msg("StorePassword")
+			}
+		}
+
 		log.Info().Msgf("Processing CSV rows from file '%s'", filePath)
 		for idx, row := range inFile {
 			log.Debug().Msgf("Processing row '%d'", idx)
@@ -270,7 +286,6 @@ var storesCreateFromCSVCmd = &cobra.Command{
 				continue
 			}
 			reqJson := getJsonForRequest(headerRow, row)
-
 			reqJson = formatProperties(reqJson, reqPropertiesForStoreType)
 
 			reqJson.Set(intID, "CertStoreType")
@@ -286,13 +301,29 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			// parse properties
 			var createStoreReqParameters api.CreateStoreFctArgs
 			props := unmarshalPropertiesString(reqJson.S("Properties").String())
-			storePasswd := reqJson.S("Password").String()
+
+			//check if ServerUsername is present in the properties
+			_, uOk := props["ServerUsername"]
+			if !uOk && serverUsername != "" {
+				props["ServerUsername"] = serverUsername
+			}
+
+			_, pOk := props["ServerPassword"]
+			if !pOk && serverPassword != "" {
+				props["ServerPassword"] = serverPassword
+			}
+
+			rowStorePassword := reqJson.S("Password").String()
 			reqJson.Delete("Properties") // todo: why is this deleting the properties from the request json?
 			var passwdParams *api.StorePasswordConfig
-			if storePasswd != "" {
+			if rowStorePassword != "" {
 				reqJson.Delete("Password")
 				passwdParams = &api.StorePasswordConfig{
-					Value: &storePasswd,
+					Value: &rowStorePassword,
+				}
+			} else {
+				passwdParams = &api.StorePasswordConfig{
+					Value: &storePassword,
 				}
 			}
 			mJSON := reqJson.String()
@@ -311,7 +342,6 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			createStoreReqParameters.Properties = props
 			log.Debug().Msgf("Request parameters: %v", createStoreReqParameters)
 
-			// make request.
 			log.Info().Msgf("Calling Command to create store from row '%d'", idx)
 			res, err := kfClient.CreateStore(&createStoreReqParameters)
 
@@ -344,6 +374,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			Int("totalSuccess", totalSuccess).Send()
 
 		log.Info().Msgf("Writing results to file '%s'", outPath)
+
 		//writeCsvFile(outPath, originalMap)
 		mapToCSV(inputMap, outPath)
 		log.Info().Int("totalRows", totalRows).
@@ -1120,6 +1151,28 @@ func init() {
 		-1,
 		"The ID of the cert store type for the stores.",
 	)
+	storesCreateFromCSVCmd.Flags().StringVarP(
+		&storeTypeName,
+		"server-username",
+		"u",
+		"",
+		"The username Keyfactor Command will use to use connect to the certificate store host. This field can be specified in the CSV file in the column `Properties.ServerUsername`.",
+	)
+	storesCreateFromCSVCmd.Flags().StringVarP(
+		&storeTypeName,
+		"server-password",
+		"p",
+		"",
+		"The password Keyfactor Command will use to use connect to the certificate store host. This field can be specified in the CSV file in the column `Properties.ServerPassword`.",
+	)
+	storesCreateFromCSVCmd.Flags().StringVarP(
+		&storeTypeName,
+		"store-password",
+		"s",
+		"",
+		"The credential information Keyfactor Command will use to access the certificates in a specific certificate store (the store password). This is different from credential information Keyfactor Command uses to access a certificate store host. This field can be specified in the CSV file in the column `Password`.",
+	)
+
 	storesCreateFromCSVCmd.Flags().StringVarP(&file, "file", "f", "", "CSV file containing cert stores to create.")
 	storesCreateFromCSVCmd.MarkFlagRequired("file")
 	storesCreateFromCSVCmd.Flags().BoolP("dry-run", "d", false, "Do not import, just check for necessary fields.")
