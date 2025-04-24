@@ -1948,6 +1948,57 @@
     "CustomAliasAllowed": "Required"
   },
   {
+    "Name": "F5 Big IQ",
+    "ShortName": "F5-BigIQ",
+    "Capability": "F5-BigIQ",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "DeployCertificateOnRenewal",
+        "DisplayName": "Deploy Certificate to Linked Big IP on Renewal",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false
+      },
+      {
+        "Name": "IgnoreSSLWarning",
+        "DisplayName": "Ignore SSL Warning",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false
+      },
+      {
+        "Name": "UseTokenAuth",
+        "DisplayName": "Use Token Authentication",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Required",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  {
     "Name": "Fortigate",
     "ShortName": "Fortigate",
     "Capability": "Fortigate",
