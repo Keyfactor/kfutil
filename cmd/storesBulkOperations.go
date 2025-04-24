@@ -286,7 +286,15 @@ var storesCreateFromCSVCmd = &cobra.Command{
 			// parse properties
 			var createStoreReqParameters api.CreateStoreFctArgs
 			props := unmarshalPropertiesString(reqJson.S("Properties").String())
+			storePasswd := reqJson.S("Password").String()
 			reqJson.Delete("Properties") // todo: why is this deleting the properties from the request json?
+			var passwdParams *api.StorePasswordConfig
+			if storePasswd != "" {
+				reqJson.Delete("Password")
+				passwdParams = &api.StorePasswordConfig{
+					Value: &storePasswd,
+				}
+			}
 			mJSON := reqJson.String()
 			conversionError := json.Unmarshal([]byte(mJSON), &createStoreReqParameters)
 
@@ -299,6 +307,7 @@ var storesCreateFromCSVCmd = &cobra.Command{
 				return conversionError
 			}
 
+			createStoreReqParameters.Password = passwdParams
 			createStoreReqParameters.Properties = props
 			log.Debug().Msgf("Request parameters: %v", createStoreReqParameters)
 
