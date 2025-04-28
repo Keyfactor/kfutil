@@ -99,7 +99,7 @@ func serializeStoreFromTypeDef(storeTypeName string, input string) (string, erro
 
 var importStoresCmd = &cobra.Command{
 	Use:   "import",
-	Short: "Import a file with certificate store parameters and create them in keyfactor.",
+	Short: "Import a file with certificate store definitions and create them in Keyfactor Command.",
 	Long:  `Tools for generating import templates and importing certificate stores`,
 }
 
@@ -120,6 +120,16 @@ var storesCreateFromCSVCmd = &cobra.Command{
 		serverUsername, _ := cmd.Flags().GetString("server-username")
 		serverPassword, _ := cmd.Flags().GetString("server-password")
 		storePassword, _ := cmd.Flags().GetString("store-password")
+
+		if serverUsername == "" {
+			serverUsername = os.Getenv(EnvStoresImportCSVServerUsername)
+		}
+		if serverPassword == "" {
+			serverPassword = os.Getenv(EnvStoresImportCSVServerPassword)
+		}
+		if storePassword == "" {
+			storePassword = os.Getenv(EnvStoresImportCSVStorePassword)
+		}
 
 		//// Flag Checks
 		//inputErr := storeTypeIdentifierFlagCheck(cmd)
@@ -1156,21 +1166,32 @@ func init() {
 		"server-username",
 		"u",
 		"",
-		"The username Keyfactor Command will use to use connect to the certificate store host. This field can be specified in the CSV file in the column `Properties.ServerUsername`.",
+		"The username Keyfactor Command will use to use connect to the certificate store host. "+
+			"This field can be specified in the CSV file in the column `Properties.ServerUsername`. "+
+			"This value can also be sourced from the environmental variable `KFUTIL_CSV_SERVER_USERNAME`. "+
+			"*NOTE* a value provided in the CSV file will override any other input value",
 	)
 	storesCreateFromCSVCmd.Flags().StringVarP(
 		&storeTypeName,
 		"server-password",
 		"p",
 		"",
-		"The password Keyfactor Command will use to use connect to the certificate store host. This field can be specified in the CSV file in the column `Properties.ServerPassword`.",
+		"The password Keyfactor Command will use to use connect to the certificate store host. "+
+			"This field can be specified in the CSV file in the column `Properties.ServerPassword`. "+
+			"This value can also be sourced from the environmental variable `KFUTIL_CSV_SERVER_PASSWORD`. "+
+			"*NOTE* a value provided in the CSV file will override any other input value",
 	)
 	storesCreateFromCSVCmd.Flags().StringVarP(
 		&storeTypeName,
 		"store-password",
 		"s",
 		"",
-		"The credential information Keyfactor Command will use to access the certificates in a specific certificate store (the store password). This is different from credential information Keyfactor Command uses to access a certificate store host. This field can be specified in the CSV file in the column `Password`.",
+		"The credential information Keyfactor Command will use to access the certificates in a specific certificate"+
+			" store (the store password). This is different from credential information Keyfactor Command uses to"+
+			" access a certificate store host."+
+			" This field can be specified in the CSV file in the column `Password`. This value can also be sourced from"+
+			" the environmental variable `KFUTIL_CSV_STORE_PASSWORD`. *NOTE* a value provided in the CSV file will"+
+			" override any other input value",
 	)
 
 	storesCreateFromCSVCmd.Flags().StringVarP(&file, "file", "f", "", "CSV file containing cert stores to create.")
