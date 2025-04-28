@@ -17,8 +17,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"io"
-	stdlog "log"
 	"os"
 	"path"
 	"strings"
@@ -70,7 +68,7 @@ WARNING: This will write the environmental credentials to disk and will be store
 		if debugErr != nil {
 			return debugErr
 		}
-		stdlog.SetOutput(io.Discard)
+		//stdlog.SetOutput(io.Discard)
 		informDebug(debugFlag)
 		logGlobals()
 
