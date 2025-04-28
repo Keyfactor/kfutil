@@ -8,6 +8,11 @@ Certificate stores: Will parse a CSV and attempt to create a certificate store f
 'store-type-name' OR 'store-type-id' are required.
 'file' is the path to the file to be imported.
 'resultspath' is where the import results will be written to.
+*NOTE*: If you do not wish to include credentials in your CSV file they can be provided one of three ways:
+
+- via the --server-username --server-password and --store-password flags
+- via environment variables: KFUTIL_CSV_SERVER_USERNAME, KFUTIL_CSV_SERVER_PASSWORD, KFUTIL_CSV_STORE_PASSWORD
+- via interactive prompts
 
 ```
 kfutil stores import csv --file <file name to import> --store-type-id <store type id> --store-type-name <store type name> --results-path <filepath for results> --dry-run <check fields only> [flags]
