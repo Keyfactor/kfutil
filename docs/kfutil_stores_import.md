@@ -1,6 +1,6 @@
 ## kfutil stores import
 
-Import a file with certificate store parameters and create them in keyfactor.
+Import a file with certificate store definitions and create them in Keyfactor Command.
 
 ### Synopsis
 
@@ -41,4 +41,4 @@ Tools for generating import templates and importing certificate stores
 * [kfutil stores import csv](kfutil_stores_import_csv.md)	 - Create certificate stores from CSV file.
 * [kfutil stores import generate-template](kfutil_stores_import_generate-template.md)	 - For generating a CSV template with headers for bulk store creation.
 
-###### Auto generated on 24-Apr-2025
+###### Auto generated on 27-Apr-2025
