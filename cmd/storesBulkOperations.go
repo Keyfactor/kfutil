@@ -110,7 +110,17 @@ var storesCreateFromCSVCmd = &cobra.Command{
 'store-type-name' OR 'store-type-id' are required.
 'file' is the path to the file to be imported.
 'resultspath' is where the import results will be written to.
-*NOTE*: If you do not wish to include credentials in your CSV file they can be provided one of three ways:
+
+#### Credentials
+
+##### In the CSV file:
+| Header | Description |
+| Properties.ServerUsername | This is equivalent to the 'ServerUsername' field in the Command Certificate Store UI. |
+| Properties.ServerPassword | This is equivalent to the 'ServerPassword' field in the Command Certificate Store UI. |
+| Password | This is equivalent to the 'StorePassword' field in the Command Certificate Store UI. |
+
+##### Outside CSV file:
+If you do not wish to include credentials in your CSV file they can be provided one of three ways:
 - via the --server-username --server-password and --store-password flags
 - via environment variables: KFUTIL_CSV_SERVER_USERNAME, KFUTIL_CSV_SERVER_PASSWORD, KFUTIL_CSV_STORE_PASSWORD
 - via interactive prompts
