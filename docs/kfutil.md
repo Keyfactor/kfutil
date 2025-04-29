@@ -46,4 +46,4 @@ A CLI wrapper around the Keyfactor Platform API.
 * [kfutil stores](kfutil_stores.md)	 - Keyfactor certificate stores APIs and utilities.
 * [kfutil version](kfutil_version.md)	 - Shows version of kfutil
 
-###### Auto generated on 27-Apr-2025
+###### Auto generated on 29-Apr-2025
