@@ -52,4 +52,4 @@ kfutil completion powershell [flags]
 
 * [kfutil completion](kfutil_completion.md)	 - Generate the autocompletion script for the specified shell
 
-###### Auto generated on 27-Apr-2025
+###### Auto generated on 29-Apr-2025
