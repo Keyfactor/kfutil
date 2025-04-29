@@ -106,11 +106,25 @@ var importStoresCmd = &cobra.Command{
 var storesCreateFromCSVCmd = &cobra.Command{
 	Use:   "csv --file <file name to import> --store-type-id <store type id> --store-type-name <store type name> --results-path <filepath for results> --dry-run <check fields only>",
 	Short: "Create certificate stores from CSV file.",
-	Long: `Certificate stores: Will parse a CSV and attempt to create a certificate store for each row with the provided parameters.
-'store-type-name' OR 'store-type-id' are required.
-'file' is the path to the file to be imported.
-'resultspath' is where the import results will be written to.
-*NOTE*: If you do not wish to include credentials in your CSV file they can be provided one of three ways:
+	Long: `Will parse a CSV file and attempt to create a certificate store for each row with the provided parameters.
+Any errors encountered will be logged to the <file_name>_results.csv file, under the 'Errors' column.
+
+Required Flags:
+- '--store-type-name' OR '--store-type-id'
+- '--file' is the path to the file to be imported.
+
+#### Credentials
+
+##### In the CSV file:
+
+| Header | Description |
+| --- | --- |
+| Properties.ServerUsername | This is equivalent to the 'ServerUsername' field in the Command Certificate Store UI. |
+| Properties.ServerPassword | This is equivalent to the 'ServerPassword' field in the Command Certificate Store UI. |
+| Password | This is equivalent to the 'StorePassword' field in the Command Certificate Store UI. |
+
+##### Outside CSV file:
+If you do not wish to include credentials in your CSV file they can be provided one of three ways:
 - via the --server-username --server-password and --store-password flags
 - via environment variables: KFUTIL_CSV_SERVER_USERNAME, KFUTIL_CSV_SERVER_PASSWORD, KFUTIL_CSV_STORE_PASSWORD
 - via interactive prompts
