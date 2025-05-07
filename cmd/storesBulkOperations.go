@@ -1062,8 +1062,6 @@ func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 			}
 		}
 	}
-	//fmt.Printf("[DEBUG] get JSON for create store request: %s", reqJson.String())
-	log.Debug().Msgf("JSON for create store request: %s", reqJson.String())
 	return reqJson
 }
 
