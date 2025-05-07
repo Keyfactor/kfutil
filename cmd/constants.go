@@ -34,6 +34,10 @@ const (
 	DebugFuncExit             = "exiting: %s"
 	DebugFuncCall             = "calling: %s"
 	MinHttpTimeout            = 3
+
+	EnvStoresImportCSVServerUsername = "KFUTIL_CSV_SERVER_USERNAME"
+	EnvStoresImportCSVServerPassword = "KFUTIL_CSV_SERVER_PASSWORD"
+	EnvStoresImportCSVStorePassword  = "KFUTIL_CSV_STORE_PASSWORD"
 )
 
 var ProviderTypeChoices = []string{
