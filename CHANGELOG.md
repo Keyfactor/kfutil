@@ -13,6 +13,8 @@
 
 - `stores import csv`: providing a `Password(/StorePassword)` does not crash CLI.
 - `stores import csv`: results CSV retains input header ordering.
+- `store-types create`: URL encode `-b` parameter when passed.
+- `store-types create`: Initialize logger before fetching store-type definitions
 
 # v1.6.2
 
