@@ -47,6 +47,12 @@ var (
 	}
 )
 
+const bom = "\uFEFF"
+
+func stripAllBOMs(s string) string {
+	return strings.ReplaceAll(s, bom, "")
+}
+
 // formatProperties will iterate through the properties of a json object and convert any "int" values to strings
 // this is required because the Keyfactor API expects all properties to be strings
 func formatProperties(json *gabs.Container, reqPropertiesForStoreType []string) *gabs.Container {
@@ -355,7 +361,7 @@ If you do not wish to include credentials in your CSV file they can be provided 
 					Value: &storePassword,
 				}
 			}
-			mJSON := reqJson.String()
+			mJSON := stripAllBOMs(reqJson.String())
 			conversionError := json.Unmarshal([]byte(mJSON), &createStoreReqParameters)
 
 			if conversionError != nil {
