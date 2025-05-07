@@ -311,12 +311,14 @@ If you do not wish to include credentials in your CSV file they can be provided 
 		}
 
 		log.Info().Msgf("Processing CSV rows from file '%s'", filePath)
+		var inputHeader []string
 		for idx, row := range inFile {
 			log.Debug().Msgf("Processing row '%d'", idx)
 			originalMap = append(originalMap, row)
 
 			if idx == 0 {
 				// skip header row
+				inputHeader = row
 				log.Debug().Msgf("Skipping header row")
 				continue
 			}
@@ -411,7 +413,7 @@ If you do not wish to include credentials in your CSV file they can be provided 
 		log.Info().Msgf("Writing results to file '%s'", outPath)
 
 		//writeCsvFile(outPath, originalMap)
-		mapToCSV(inputMap, outPath)
+		mapToCSV(inputMap, outPath, inputHeader)
 		log.Info().Int("totalRows", totalRows).
 			Int("totalSuccesses", totalSuccess).
 			Int("errorCount", errorCount).
