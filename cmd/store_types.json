@@ -2,8 +2,23 @@
   {
     "BlueprintAllowed": false,
     "Capability": "AKV",
+    "ClientMachineDescription": "The GUID of the tenant ID of the Azure Keyvault instance; for example, '12345678-1234-1234-1234-123456789abc'.",
     "CustomAliasAllowed": "Optional",
-    "EntryParameters": [],
+    "EntryParameters": [
+      {
+        "Name": "CertificateTags",
+        "DisplayName": "Certificate Tags",
+        "Description": "If desired, tags can be applied to the KeyVault entries.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+        "Type": "string",
+        "DefaultValue": "",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      }
+    ],
     "JobProperties": [],
     "LocalStore": false,
     "Name": "Azure Keyvault",
@@ -18,6 +33,7 @@
       {
         "Name": "TenantId",
         "DisplayName": "Tenant Id",
+        "Description": "The ID of the primary Azure Tenant where the KeyVaults are hosted",
         "Type": "String",
         "DependsOn": "",
         "Required": false
@@ -25,6 +41,7 @@
       {
         "Name": "SkuType",
         "DisplayName": "SKU Type",
+        "Description": "The SKU type for newly created KeyVaults (only needed if needing to create new KeyVaults in your Azure subscription via Command)",
         "Type": "MultipleChoice",
         "DependsOn": "",
         "DefaultValue": "standard,premium",
@@ -33,6 +50,7 @@
       {
         "Name": "VaultRegion",
         "DisplayName": "Vault Region",
+        "Description": "The Azure Region to put newly created KeyVaults (only needed if needing to create new KeyVaults in your Azure subscription via Command)",
         "Type": "MultipleChoice",
         "DependsOn": "",
         "DefaultValue": "eastus,eastus2,westus2,westus3,westus",
@@ -41,6 +59,7 @@
       {
         "Name": "AzureCloud",
         "DisplayName": "Azure Cloud",
+        "Description": "The Azure Cloud where the KeyVaults are located (only necessary if not using the standard Azure Public cloud)",
         "Type": "MultipleChoice",
         "DependsOn": "",
         "DefaultValue": "public,china,government",
@@ -49,6 +68,7 @@
       {
         "Name": "PrivateEndpoint",
         "DisplayName": "Private KeyVault Endpoint",
+        "Description": "The private endpoint of your vault instance (if a private endpoint is configured in Azure)",
         "Type": "String",
         "DependsOn": "",
         "Required": false
@@ -56,6 +76,7 @@
     ],
     "ServerRequired": true,
     "ShortName": "AKV",
+    "StorePathDescription": "A string formatted as '{subscription id}:{resource group name}:{vault name}'; for example, '12345678-1234-1234-1234-123456789abc:myResourceGroup:myVault'.",
     "StorePathType": "",
     "StorePathValue": "",
     "SupportedOperations": {
@@ -83,41 +104,51 @@
         "Name": "UseEC2AssumeRole",
         "DisplayName": "Assume new Account / Role in EC2",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "false",
-        "Required": true
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to assume a new Account ID and Role when using EC2 credentials"
       },
       {
         "Name": "UseOAuth",
         "DisplayName": "Use OAuth 2.0 Provider",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "false",
-        "Required": true
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to use an OAuth provider workflow to authenticate with AWS ACM"
       },
       {
         "Name": "UseIAM",
         "DisplayName": "Use IAM User Auth",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "false",
-        "Required": true
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS ACM"
       },
       {
         "Name": "EC2AssumeRole",
         "DisplayName": "AWS Role to Assume (EC2)",
         "Type": "String",
         "DependsOn": "UseEC2AssumeRole",
-        "DefaultValue": null,
-        "Required": false
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The AWS Role to assume using the EC2 instance credentials"
       },
       {
         "Name": "OAuthScope",
         "DisplayName": "OAuth Scope",
         "Type": "String",
         "DependsOn": "UseOAuth",
-        "DefaultValue": null,
-        "Required": false
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "This is the OAuth Scope needed for Okta OAuth, defined in Okta"
       },
       {
         "Name": "OAuthGrantType",
@@ -125,7 +156,9 @@
         "Type": "String",
         "DependsOn": "UseOAuth",
         "DefaultValue": "client_credentials",
-        "Required": false
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "In OAuth 2.0, the term \ufffdgrant type\ufffd refers to the way an application gets an access token. In Okta this is `client_credentials`"
       },
       {
         "Name": "OAuthUrl",
@@ -133,55 +166,59 @@
         "Type": "String",
         "DependsOn": "UseOAuth",
         "DefaultValue": "https://***/oauth2/default/v1/token",
-        "Required": false
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
       },
       {
         "Name": "IAMAssumeRole",
         "DisplayName": "AWS Role to Assume (IAM)",
         "Type": "String",
         "DependsOn": "UseIAM",
-        "DefaultValue": null,
-        "Required": false
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The AWS Role to assume as the IAM User."
       },
       {
         "Name": "OAuthAssumeRole",
         "DisplayName": "AWS Role to Assume (OAuth)",
         "Type": "String",
         "DependsOn": "UseOAuth",
-        "DefaultValue": null,
-        "Required": false
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The AWS Role to assume after getting an OAuth token."
       },
       {
         "Name": "ExternalId",
         "DisplayName": "sts:ExternalId",
         "Type": "String",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
       },
       {
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The AWS Access Key for an IAM User or Client ID for OAuth. Depends on Auth method in use."
       },
       {
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
-      },
-      {
-        "Name": "ServerUseSsl",
-        "DisplayName": "Use SSL",
-        "Type": "Bool",
-        "DependsOn": null,
-        "DefaultValue": "true",
-        "Required": true
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The AWS Access Secret for an IAM User or Client Secret for OAuth. Depends on Auth method in use."
       }
     ],
     "EntryParameters": [
@@ -194,7 +231,20 @@
           "OnAdd": true,
           "OnRemove": false,
           "OnReenrollment": false
-        }
+        },
+        "Description": "When adding, this is the Region that the Certificate will be added to"
+      },
+      {
+        "Name": "ACM Tags",
+        "DisplayName": "ACM Tags",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "Description": "The optional ACM tags that should be assigned to the certificate.  Multiple name/value pairs may be entered in the format of `Name1=Value1,Name2=Value2,...,NameN=ValueN`"
       }
     ],
     "PasswordOptions": {
@@ -206,7 +256,9 @@
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": true,
-    "CustomAliasAllowed": "Optional"
+    "CustomAliasAllowed": "Optional",
+    "ClientMachineDescription": "This is the AWS Account ID that will be used for access. This will dictate what certificates are usable by the orchestrator. Note: this does not have any effect on EC2 inferred credentials, which are limited to a specific role/account.",
+    "StorePathDescription": "The AWS Region, or a comma-separated list of multiple regions, the store will operate in."
   },
   {
     "Name": "Akamai Certificate Provisioning Service",
@@ -1205,33 +1257,41 @@
         "Name": "CommitToDisk",
         "DisplayName": "Commit To Disk",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "false",
-        "Required": false
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "This controls if you will write to the disk or memory on the device when adding or removing certificates."
       },
       {
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The username to log into the target server (This field is automatically created). Check the No Value Checkbox when using GMSA Accounts."
       },
       {
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The password that matches the username to log into the target server (This field is automatically created). Check the No Value Checkbox when using GMSA Accounts."
       },
       {
         "Name": "ServerUseSsl",
         "DisplayName": "Use SSL",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "true",
-        "Required": true
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "Determines whether the server uses SSL or not (This field is automatically created)."
       }
     ],
     "EntryParameters": [
@@ -1239,6 +1299,7 @@
         "Name": "interfaces",
         "DisplayName": "Interfaces Comma Separated",
         "Type": "String",
+        "Description": "Comma separated list of Interfaces to bind to. One can be the primary certificate and the other can be the load balancing certificate. For inside here is a sample of binding to both primary and load balancing inside,inside vpnlb-ip.",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
@@ -1256,7 +1317,9 @@
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": true,
-    "CustomAliasAllowed": "Required"
+    "CustomAliasAllowed": "Required",
+    "ClientMachineDescription": "Hostname or IP of the Cisco Asa Device without the http:// or https:// prefix same sample would be 10.5.0.4.",
+    "StorePathDescription": "Cisco Asa Certificate Types to manage for Now all that is supported is /Identity."
   },
   {
     "Name": "CitrixAdc",
@@ -1280,6 +1343,26 @@
       "Style": "Default"
     },
     "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The Citrix username (or valid PAM key if the username is stored in a KF Command configured PAM integration) to be used to log into the Citrix device."
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The Citrix password (or valid PAM key if the password is stored in a KF Command configured PAM integration) to be used to log into the Citrix device."
+      },
       {
         "Name": "linkToIssuer",
         "DisplayName": "Link To Issuer",
@@ -1959,17 +2042,70 @@
     "SupportedOperations": {
       "Add": true,
       "Create": false,
-      "Discovery": true,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true,
+      "StorePassword": {
+        "Description": "Enter the Fortigate API Token here",
+        "IsPAMEligible": true
+      }
+    },
+    "ClientMachineDescription": "The IP address or DNS of the Fortigate server",
+    "StorePathDescription": "This is not used in this integration, but is a required field in the UI. Just enter any value here"
+  },
+  {
+    "Name": "Google Cloud Provider Apigee",
+    "ShortName": "GcpApigee",
+    "Capability": "GcpApigee",
+    "ServerRequired": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": false,
       "Enrollment": false,
       "Remove": true
     },
     "PasswordOptions": {
-      "Style": "Default",
       "EntrySupported": false,
-      "StoreRequired": true
+      "StoreRequired": false,
+      "Style": "Default"
     },
-    "Properties": [],
-    "EntryParameters": []
+    "Properties": [
+      {
+        "Name": "isTrustStore",
+        "DisplayName": "Is Trust Store?",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "Should be checked if the Apigee keystore being managed is a truststore."
+      },
+      {
+        "Name": "jsonKey",
+        "DisplayName": "Google Json Key File",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "The JSON key tied to the Apigee service account. You can copy and paste the entire Json key in the textbox when creating a certificate store in the Keyfactor Command UI."
+      }
+    ],
+    "EntryParameters": [],
+    "ClientMachineDescription": "The Base URL for the GCP Apigee REST Api. Should be *apigee.googleapis.com*",
+    "StorePathDescription": "The Apigee keystore being managed.  Must be provided in the following format: organizations/{org}/environments/{env}/keystores/{keystore}, where {org}, {env}, and {keystore} will be replaced with your environment-specific values."
   },
   {
     "Name": "GCP Load Balancer",
@@ -1997,11 +2133,15 @@
         "Name": "jsonKey",
         "DisplayName": "Service Account Key",
         "Required": true,
+        "IsPAMEligible": false,
         "DependsOn": "",
         "Type": "Secret",
-        "DefaultValue": ""
+        "DefaultValue": "",
+        "Description": "If authenticating by passing credentials from Keyfactor Command, this is the JSON-based service account key created from within Google Cloud.  If authenticating via Application Default Credentials (ADC), select No Value"
       }
     ],
+    "ClientMachineDescription": "Not used, but required when creating a store.  Just enter any value.",
+    "StorePathDescription": "Your Google Cloud Project ID only if you choose to use global resources.  Append a forward slash '/' and valid GCP region to process against a specific [GCP region](https://gist.github.com/rpkim/084046e02fd8c452ba6ddef3a61d5d59).",
     "EntryParameters": []
   },
   {
@@ -2034,17 +2174,23 @@
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "global",
-        "Required": true
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "The GCP region used for this Certificate Manager instance.  **global** is the default but could be another region based on the project."
       },
       {
         "Name": "ServiceAccountKey",
         "DisplayName": "Service Account Key File Path",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": null,
-        "Required": false
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The file name of the Google Cloud Service Account Key File installed in the same folder as the orchestrator extension. Empty if the orchestrator server resides in GCP and you are not using a service account key."
       }
     ],
+    "ClientMachineDescription": "GCP Project ID for your account.",
+    "StorePathDescription": "This is not used and should be defaulted to n/a per the certificate store type set up.",
     "EntryParameters": []
   },
   {
@@ -2456,6 +2602,57 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Optional"
+  },
+  {
+    "Name": "HP iLO Cert Store",
+    "ShortName": "HPiLO",
+    "Capability": "HPiLO",
+    "LocalStore": false,
+    "StorePathDescription": "Path points to the HPiLO instance address, IP or domain name.",
+    "ClientMachineDescription": "Runs on a Windows based machine.",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": true,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "InventoryAll",
+        "DisplayName": "InventoryAll",
+        "Type": "Bool",
+        "DefaultValue": "false",
+        "Required": true,
+        "Description": "Allows for inventory of factory-installed certificates: `Platform Cert`,`SystemIAK`,`SystemIDevID`, `iLOIDevID/BMCIDevIDPCA`"
+      },
+      {
+        "Name": "IgnoreValidation",
+        "DisplayName": "IgnoreValidation",
+        "Type": "Bool",
+        "DefaultValue": "true",
+        "Required": true,
+        "Description": "WARNING: Only enable if testing. Used to disable certificate validation checks at the API endpoint."
+      },
+      {
+        "Name": "HTTPSCertWaitTime",
+        "DisplayName": "HTTPS Cert Wait Time",
+        "Type": "String",
+        "DefaultValue": "60",
+        "Required": true,
+        "Description": "The HPiLO API requires the user to wait while the HTTPS Cert CSR is generated. HP suggests a time of 60 seconds, as is the default setting, but it can be adjusted."
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": true,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Optional",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
   },
   {
     "Name": "IIS Bound Certificate",
@@ -3233,52 +3430,66 @@
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "Palo Alto or Panorama Api User. (or valid PAM key if the username is stored in a KF Command configured PAM integration)."
       },
       {
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "Palo Alto or Panorama Api Password. (or valid PAM key if the username is stored in a KF Command configured PAM integration)."
       },
       {
         "Name": "ServerUseSsl",
         "DisplayName": "Use SSL",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "true",
-        "Required": true
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "Should be true, http is not supported."
       },
       {
         "Name": "DeviceGroup",
         "DisplayName": "Device Group",
         "Type": "String",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "Device Group on Panorama that changes will be pushed to."
       },
       {
         "Name": "InventoryTrustedCerts",
         "DisplayName": "Inventory Trusted Certs",
         "Type": "Bool",
-        "DependsOn": null,
+        "DependsOn": "",
         "DefaultValue": "false",
-        "Required": true
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "If false, will not inventory default trusted certs, saves time."
       },
       {
         "Name": "TemplateStack",
         "DisplayName": "Template Stack",
         "Type": "String",
-        "DependsOn": null,
-        "DefaultValue": null,
-        "Required": false
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "Template stack used for device push of certificates via Template."
       }
     ],
     "EntryParameters": [],
+    "ClientMachineDescription": "Either the Panorama or Palo Alto Firewall URI or IP address.",
+    "StorePathDescription": "The Store Path field should be reviewed in the store path explanation section.  It varies depending on configuration.",
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -3344,7 +3555,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'."
+        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'.  Overrides DefaultLinuxPermissionOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "LinuxFileOwnerOnStoreCreation",
@@ -3353,7 +3564,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'."
+        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "SudoImpersonatingUser",
@@ -3362,7 +3573,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'."
+        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
       },
       {
         "Name": "SeparatePrivateKeyFilePath",
@@ -3372,6 +3583,42 @@
         "Type": "String",
         "DefaultValue": "",
         "Description": "The SeparatePrivateKeyFilePath field should contain the full path and file name where the separate private key file will be stored if it is to be kept outside the main certificate file. Example: '/path/to/privatekey.der'."
+      },
+      {
+        "Name": "RemoveRootCertificate",
+        "DisplayName": "Remove Root Certificate from Chain",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Remove root certificate from chain when adding/renewing a certificate in a store."
+      },
+      {
+        "Name": "IncludePortInSPN",
+        "DisplayName": "Include Port in SPN for WinRM",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": ",SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "SSHPort",
+        "DisplayName": "SSH Port",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": "",
+        "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
       }
     ],
     "EntryParameters": [],
@@ -3431,7 +3678,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'."
+        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'.  Overrides DefaultLinuxPermissionOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "LinuxFileOwnerOnStoreCreation",
@@ -3440,7 +3687,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'."
+        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "SudoImpersonatingUser",
@@ -3449,7 +3696,43 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'."
+        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides DefaultSudoImpersonatedUser [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "RemoveRootCertificate",
+        "DisplayName": "Remove Root Certificate from Chain",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Remove root certificate from chain when adding/renewing a certificate in a store."
+      },
+      {
+        "Name": "IncludePortInSPN",
+        "DisplayName": "Include Port in SPN for WinRM",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": ",SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "SSHPort",
+        "DisplayName": "SSH Port",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": "",
+        "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
       }
     ],
     "EntryParameters": [],
@@ -3509,7 +3792,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'."
+        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'.  Overrides DefaultLinuxPermissionOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "LinuxFileOwnerOnStoreCreation",
@@ -3518,7 +3801,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'."
+        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "SudoImpersonatingUser",
@@ -3527,7 +3810,43 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'."
+        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
+      },
+      {
+        "Name": "RemoveRootCertificate",
+        "DisplayName": "Remove Root Certificate from Chain",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Remove root certificate from chain when adding/renewing a certificate in a store."
+      },
+      {
+        "Name": "IncludePortInSPN",
+        "DisplayName": "Include Port in SPN for WinRM",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": ",SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "SSHPort",
+        "DisplayName": "SSH Port",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": "",
+        "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
       }
     ],
     "EntryParameters": [],
@@ -3587,7 +3906,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'."
+        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'.  Overrides DefaultLinuxPermissionOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "LinuxFileOwnerOnStoreCreation",
@@ -3596,7 +3915,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'."
+        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "SudoImpersonatingUser",
@@ -3605,7 +3924,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'."
+        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
       },
       {
         "Name": "WorkFolder",
@@ -3615,6 +3934,42 @@
         "Type": "String",
         "DefaultValue": "",
         "Description": "The WorkFolder field should contain the path on the managed server where temporary work files can be created, modified, and deleted during Inventory and Management jobs. Example: '/path/to/workfolder'."
+      },
+      {
+        "Name": "RemoveRootCertificate",
+        "DisplayName": "Remove Root Certificate from Chain",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Remove root certificate from chain when adding/renewing a certificate in a store."
+      },
+      {
+        "Name": "IncludePortInSPN",
+        "DisplayName": "Include Port in SPN for WinRM",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": ",SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "SSHPort",
+        "DisplayName": "SSH Port",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": "",
+        "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
       }
     ],
     "EntryParameters": [],
@@ -3674,7 +4029,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'."
+        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'.  Overrides DefaultLinuxPermissionOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "LinuxFileOwnerOnStoreCreation",
@@ -3683,7 +4038,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'."
+        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "SudoImpersonatingUser",
@@ -3692,7 +4047,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'."
+        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting.."
       },
       {
         "Name": "IsTrustStore",
@@ -3729,6 +4084,42 @@
         "Type": "Bool",
         "DefaultValue": "false",
         "Description": "The IgnorePrivateKeyOnInventory field should contain a boolean value ('true' or 'false') indicating whether to disregard the private key during inventory. Setting this to 'true' will allow inventory for the store without needing to supply the location of the private key or the password if the key is encrypted.  However, doing this makes the store in effect inventory-only and no management jobs will be able to be run for this store. Example: 'true' to ignore the private key or 'false' to include it."
+      },
+      {
+        "Name": "RemoveRootCertificate",
+        "DisplayName": "Remove Root Certificate from Chain",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Remove root certificate from chain when adding/renewing a certificate in a store."
+      },
+      {
+        "Name": "IncludePortInSPN",
+        "DisplayName": "Include Port in SPN for WinRM",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": ",SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "SSHPort",
+        "DisplayName": "SSH Port",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": "",
+        "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
       }
     ],
     "EntryParameters": [],
@@ -3788,7 +4179,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'."
+        "Description": "The LinuxFilePermissionsOnStoreCreation field should contain a three-digit value between 000 and 777 representing the Linux file permissions to be set for the certificate store upon creation. Example: '600' or '755'.  Overrides DefaultLinuxPermissionOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "LinuxFileOwnerOnStoreCreation",
@@ -3797,7 +4188,7 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'."
+        "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
         "Name": "SudoImpersonatingUser",
@@ -3806,7 +4197,43 @@
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'."
+        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides DefaultSudoImpersonatedUser [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "RemoveRootCertificate",
+        "DisplayName": "Remove Root Certificate from Chain",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Remove root certificate from chain when adding/renewing a certificate in a store."
+      },
+      {
+        "Name": "IncludePortInSPN",
+        "DisplayName": "Include Port in SPN for WinRM",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": ",SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "SSHPort",
+        "DisplayName": "SSH Port",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "String",
+        "DefaultValue": "",
+        "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
       }
     ],
     "EntryParameters": [],
@@ -3844,7 +4271,11 @@
     "Name": "Signum",
     "ShortName": "Signum",
     "Capability": "Signum",
-    "LocalStore": false,
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Required",
     "SupportedOperations": {
       "Add": false,
       "Create": false,
@@ -3852,21 +4283,36 @@
       "Enrollment": false,
       "Remove": false
     },
-    "Properties": [],
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "IsPAMEligible": true,
+        "Description": "The user ID (or PAM key pointing to the user ID) to use with authorization to execute Signum SOAP endpoints in your Signum environment."
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "IsPAMEligible": true,
+        "Description": "The password (or PAM key pointing to the password) for the user ID you entered for Server User Name."
+      }
+    ],
     "EntryParameters": [],
+    "ClientMachineDescription": "The URL that will be used as the base URL for Signum endpoint calls. Should be something like https://{base url for your signum install}/rtadminservice.svc/basic. The API service port can be configured so yours may use something other than default https/443. The '/basic' at the end is required, as this integration makes use of Basic Authentication only when consuming the Signum SOAP API library.",
+    "StorePathDescription": "Not used and hardcoded to NA for 'not applicable'",
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
       "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "na",
-    "PrivateKeyAllowed": "Required",
-    "JobProperties": [],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Required"
+    }
   },
   {
     "Name": "VMware-NSX",
@@ -3886,24 +4332,20 @@
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
+        "DefaultValue": "",
+        "Required": true,
+        "IsPAMEligible": true,
+        "Description": "The username of the user to log on as in VMware NSX ALB."
       },
       {
         "Name": "ServerPassword",
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
-      },
-      {
-        "Name": "ServerUseSsl",
-        "DisplayName": "Use SSL",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "true",
-        "Required": true
+        "DefaultValue": "",
+        "Required": true,
+        "IsPAMEligible": true,
+        "Description": "The password of the user to log on as in VMware NSX ALB."
       },
       {
         "Name": "ApiVersion",
@@ -3911,10 +4353,12 @@
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "20.1.1",
-        "Required": true
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "The API Version of Avi / NSX to target. A default is set for the version this was originally developed and tested against."
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -3927,7 +4371,9 @@
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Required"
+    "CustomAliasAllowed": "Required",
+    "ClientMachineDescription": "This is the URL for the VMware NSX instance. It also includes an optional tenant in square brackets before the URL. A tenant value is required when the certificates being managed are in a different tenant from the default tenant set for the NSX User specified for the store. This should look like either: [optional-tenant-name]https://my.nsx.url/ OR https://my.nsx.url/ ",
+    "StorePathDescription": "A selection from the different certificate types supported: Application, Controller, or CA."
   },
   {
     "Name": "WinCerMgmt",
@@ -4322,7 +4768,30 @@
       "Enrollment": false,
       "Remove": false
     },
-    "Properties": [],
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "IsPAMEligible": true,
+        "Description": "The user ID (or, if using a PAM provider, the key pointing to the user ID) to log into the iDRAC instance being managed."
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "IsPAMEligible": true,
+        "Description": "The password (or, if using a PAM provider, the key pointing to the password) for the user ID above."
+      }
+    ],
+    "ClientMachineDescription": "The IP address of the iDRAC instance being managed.",
+    "StorePathDescription": "Enter the full path where the Racadm executable is installed on the orchestrator server.  See [Requirements & Prerequisites](#requirements--prerequisites) above for more details.",
     "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
