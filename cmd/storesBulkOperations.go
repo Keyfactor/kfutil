@@ -333,7 +333,7 @@ If you do not wish to include credentials in your CSV file they can be provided 
 				log.Debug().Msgf("ContainerId is 0, omitting from request")
 				reqJson.Set(nil, "ContainerId")
 			}
-			log.Debug().Msgf("Request JSON: %s", reqJson.String())
+			//log.Debug().Msgf("Request JSON: %s", reqJson.String())
 
 			// parse properties
 			var createStoreReqParameters api.CreateStoreFctArgs
@@ -377,7 +377,7 @@ If you do not wish to include credentials in your CSV file they can be provided 
 
 			createStoreReqParameters.Password = passwdParams
 			createStoreReqParameters.Properties = props
-			log.Debug().Msgf("Request parameters: %v", createStoreReqParameters)
+			//log.Debug().Msgf("Request parameters: %v", createStoreReqParameters)
 
 			log.Info().Msgf("Calling Command to create store from row '%d'", idx)
 			res, err := kfClient.CreateStore(&createStoreReqParameters)
