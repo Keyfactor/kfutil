@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"time"
 
@@ -132,7 +133,7 @@ func csvToMap(filename string) ([]map[string]string, error) {
 
 			// Populate the map with data from the row
 			for i, column := range header {
-				rowMap[column] = row[i]
+				rowMap[column] = stripAllBOMs(row[i])
 			}
 
 			// Append the map to the data slice
@@ -282,10 +283,10 @@ func logGlobals() {
 
 }
 
-func mapToCSV(data []map[string]string, filename string) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
+func mapToCSV(data []map[string]string, filename string, inputHeader []string) error {
+	file, fErr := os.Create(filename)
+	if fErr != nil {
+		return fErr
 	}
 	defer file.Close()
 
@@ -293,14 +294,19 @@ func mapToCSV(data []map[string]string, filename string) error {
 	defer writer.Flush()
 
 	// Write the header using keys from the first map
-	var header []string
-	if len(data) > 0 {
+	var header = inputHeader
+	if len(header) <= 0 && len(data) > 0 {
 		for key := range data[0] {
-			header = append(header, key)
+			header = append(header, stripAllBOMs(key))
 		}
-		if err := writer.Write(header); err != nil {
-			return err
-		}
+	}
+
+	errorColFound := slices.Contains(header, "Errors")
+	if !errorColFound {
+		header = append(header, "Errors")
+	}
+	if hErr := writer.Write(header); hErr != nil {
+		return hErr
 	}
 
 	// Write map data to CSV
