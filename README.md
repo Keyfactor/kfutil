@@ -110,6 +110,7 @@ Below are examples of setting the environment variables in Linux/MacOS to be use
 
 This is the minimum required configuration to authenticate to Keyfactor Command using Active Directory username,
 password auth.
+
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 export KEYFACTOR_USERNAME="<myusername>"
@@ -120,6 +121,7 @@ export KEYFACTOR_DOMAIN="<mykeyfactordomain>" # Optional if username contains do
 #### oAuth Client Credentials
 
 This is the minimum required configuration to authenticate to Keyfactor Command using oAuth client credentials.
+
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 export KEYFACTOR_AUTH_CLIENT_ID="<my-oauth2-client-id"
@@ -514,16 +516,49 @@ kfutil stores inventory remove \
 
 ## Development
 
-This CLI developed using [cobra](https://umarcor.github.io/cobra/)
+This CLI developed using [cobra](https://umarcor.github.io/cobra/) for full developer details visit
+the [user guide](https://github.com/spf13/cobra/blob/main/site/content/user_guide.md#user-guide)
 
-### Adding a new command
+### Setup
 
+To being development on `kfutil` you'll need to perform the following:
+
+1. Install Go 1.20 or later [docs](https://golang.org/doc/install)
+2. Install the `cobra-cli` generator [docs](https://github.com/spf13/cobra-cli/blob/main/README.md#cobra-generator)
+3. Clone the `kfutil` [repository](https://github.com/Keyfactor/kfutil)
+4. Install the dependencies (`go mod tidy`)
+5. Run the generator to create the CLI
+   commands [docs](https://github.com/spf13/cobra-cli/blob/main/README.md#cobra-generator)
+
+```bash
+git clone git@github.com:Keyfactor/kfutil.git
+cd kfutil
+go install github.com/spf13/cobra-cli@latest    
+go mod tidy                                  
+```
+
+### Extending the CLI
+
+This utility uses the [cobra](https://github.com/spf13/cobra-cli?tab=readme-ov-file#cobra-generator) CLI generator to
+generate the CLI commands. The generator is installed via `go install github.com/spf13/cobra-cli@latest` and
+installed in `$GOPATH/bin`. The generator is used to create the CLI commands and subcommands.
+
+### Adding a new top-level command
+
+To create a new top-level command, use the following command:
 ```bash
 cobra-cli add <my-new-command>
 ```
 
-alternatively you can specify the parent command
+This will create a top level command named `<my-new-command>` and a file in `cmd/<my-new-command>.go`. The command will
+be `kfutil <my-new-command>`
 
+### Adding a new sub CLI command
+
+To create a new sub command, use the following command:
 ```bash
-cobra-cli add <my-new-command> -p '<parent>Cmd'
+cobra-cli add <my-new-sub-command> -p '<parent>'
 ```
+
+This will create a sub command named `<my-new-sub-command>` and a file in `cmd/<my-new-sub-command>.go`. The
+command will be `kfutil <parent> <my-new-sub-command>`
