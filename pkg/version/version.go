@@ -15,7 +15,7 @@
 package version
 
 var (
-	VERSION    = "1.6.0"
-	BUILD_DATE = "2024-03-25"
+	VERSION    = "1.8.0"
+	BUILD_DATE = "2025-05-20"
 	COMMIT     = "HEAD"
 )

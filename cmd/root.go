@@ -20,7 +20,9 @@ import (
 	"io"
 	stdlog "log"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
 	"github.com/Keyfactor/keyfactor-go-client-sdk/v2/api/keyfactor"
@@ -54,7 +56,19 @@ var (
 	offline         bool
 )
 
-// hashSecretValue hashes the secret value using bcrypt
+func setupSignalHandler() {
+	// Start a goroutine to listen for SIGINT signals
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT)
+
+	go func() {
+		<-sigChan
+		// Handle SIGINT signal
+		fmt.Println("\nCtrl+C pressed. Exiting...")
+		os.Exit(1)
+	}()
+}
+
 func hashSecretValue(secretValue string) string {
 	log.Debug().Msg("Enter hashSecretValue()")
 	if secretValue == "" {

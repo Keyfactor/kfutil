@@ -92,9 +92,6 @@ var containersUpdateCmd = &cobra.Command{
 			return debugErr
 		}
 
-		// Authenticate
-		//
-
 		// CLI Logic
 		return fmt.Errorf("update store containers not implemented")
 	},
@@ -142,7 +139,6 @@ var containersListCmd = &cobra.Command{
 		}
 
 		// Authenticate
-		//
 		kfClient, _ := initClient(false)
 
 		// CLI Logic

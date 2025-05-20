@@ -35,6 +35,21 @@ import (
 	stdlog "log"
 )
 
+func mergeErrsToString(errs *[]error, indent bool) string {
+	var errStr string
+	if errs == nil || len(*errs) == 0 {
+		return ""
+	}
+	for _, err := range *errs {
+		if indent {
+			errStr += fmt.Sprintf(" \t%s\r\n", err)
+			continue
+		}
+		errStr += fmt.Sprintf("%s\r\n", err)
+	}
+	return errStr
+}
+
 func boolToPointer(b bool) *bool {
 	return &b
 }

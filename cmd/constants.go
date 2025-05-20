@@ -16,37 +16,56 @@ package cmd
 import "fmt"
 
 const (
-	ColorRed                  = "\033[31m"
-	ColorWhite                = "\033[37m"
-	DefaultAPIPath            = "KeyfactorAPI"
-	DefaultConfigFileName     = "command_config.json"
-	DefaultStoreTypesFileName = "store_types.json"
-	DefaultGitRepo            = "kfutil"
-	DefaultGitRef             = "main"
-	FailedAuthMsg             = "Login failed!"
-	SuccessfulAuthMsg         = "Login successful!"
-	XKeyfactorRequestedWith   = "APIClient"
-	XKeyfactorApiVersion      = "1"
-	FlagGitRef                = "git-ref"
-	FlagGitRepo               = "repo"
-	FlagFromFile              = "from-file"
-	DebugFuncEnter            = "entered: %s"
-	DebugFuncExit             = "exiting: %s"
-	DebugFuncCall             = "calling: %s"
-	MinHttpTimeout            = 3
+	ColorRed                              = "\033[31m"
+	ColorWhite                            = "\033[37m"
+	DefaultAPIPath                        = "KeyfactorAPI"
+	DefaultConfigFileName                 = "command_config.json"
+	DefaultROTAuditStoresOutfilePath      = "rot_audit_selected_stores.csv"
+	DefaultROTAuditAddCertsOutfilePath    = "rot_audit_selected_certs_add.csv"
+	DefaultROTAuditRemoveCertsOutfilePath = "rot_audit_selected_certs_remove.csv"
+	DefaultStoreTypesFileName             = "store_types.json"
+	DefaultGitRepo                        = "kfutil"
+	DefaultGitRef                         = "main"
+	FailedAuthMsg                         = "Login failed!"
+	SuccessfulAuthMsg                     = "Login successful!"
+	XKeyfactorRequestedWith               = "APIClient"
+	XKeyfactorApiVersion                  = "1"
+	FlagGitRef                            = "git-ref"
+	FlagGitRepo                           = "repo"
+	FlagFromFile                          = "from-file"
+	DebugFuncEnter                        = "entered: %s"
+	DebugFuncExit                         = "exiting: %s"
+	DebugFuncCall                         = "calling: %s"
+	MinHttpTimeout                        = 3
+	ErrMsgEmptyResponse                   = "empty response received from Keyfactor Command %s"
 
 	EnvStoresImportCSVServerUsername = "KFUTIL_CSV_SERVER_USERNAME"
 	EnvStoresImportCSVServerPassword = "KFUTIL_CSV_SERVER_PASSWORD"
 	EnvStoresImportCSVStorePassword  = "KFUTIL_CSV_STORE_PASSWORD"
 )
 
+// CLI Menu Defaults
+const (
+	DefaultMenuPageSizeSmall = 25
+	DefaultMenuPageSizeLarge = 100
+)
+
+var (
+	DefaultSourceTypeOptions = []string{"API", "File"}
+)
+
 var ProviderTypeChoices = []string{
 	"azid",
 }
 var ValidAuthProviders = [2]string{"azure-id", "azid"}
+var ErrKfcEmptyResponse = fmt.Errorf("empty response recieved from Keyfactor Command")
 
 // Error messages
 var (
-	StoreTypeReadError = fmt.Errorf("error reading store type from configuration file")
-	InvalidInputError  = fmt.Errorf("invalid input")
+	StoreTypeReadError      = fmt.Errorf("error reading store type from configuration file")
+	InvalidInputError       = fmt.Errorf("invalid input")
+	InvalidROTCertsInputErr = fmt.Errorf(
+		"at least one of `--add-certs` or `--remove-certs` is required to perform a" +
+			" root of trust audit",
+	)
 )

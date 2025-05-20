@@ -66,7 +66,6 @@ var storesTypesListCmd = &cobra.Command{
 		}
 
 		// CLI Logic
-
 		storeTypes, err := kfClient.ListCertificateStoreTypes()
 		if err != nil {
 
