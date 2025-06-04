@@ -631,7 +631,7 @@ kfutil stores rot reconcile --import-csv <audit-file>
 			if debugErr != nil {
 				return debugErr
 			}
-			stdlog.SetOutput(io.Discard)
+			//stdlog.SetOutput(io.Discard)
 			informDebug(debugFlag)
 
 			var lookupFailures []string
@@ -880,7 +880,7 @@ the utility will first generate an audit report and then execute the add/remove 
 			if debugErr != nil {
 				return debugErr
 			}
-			stdlog.SetOutput(io.Discard)
+			//stdlog.SetOutput(io.Discard)
 			informDebug(debugFlag)
 
 			var lookupFailures []string
@@ -1415,7 +1415,7 @@ the utility will first generate an audit report and then execute the add/remove 
 			if debugErr != nil {
 				return debugErr
 			}
-			stdlog.SetOutput(io.Discard)
+			//stdlog.SetOutput(io.Discard)
 			informDebug(debugFlag)
 
 			// Authenticate

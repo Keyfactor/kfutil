@@ -17,7 +17,6 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
-	"io"
 	stdlog "log"
 	"os"
 	"strings"
@@ -738,7 +737,7 @@ var RootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	stdlog.SetOutput(io.Discard)
+	//stdlog.SetOutput(io.Discard)
 	err := RootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
@@ -880,4 +879,10 @@ func init() {
 	// when this action is called directly.
 
 	RootCmd.AddCommand(makeDocsCmd)
+}
+
+func initStdLogger() {
+	// Redirect standard library's log to zerolog
+	stdlog.SetOutput(zerologWriter{})
+	stdlog.SetFlags(0) // Remove timestamp from standard logger
 }

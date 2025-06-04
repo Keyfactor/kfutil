@@ -16,8 +16,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
-	stdlog "log"
 	"os"
 
 	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
@@ -39,7 +37,7 @@ var logoutCmd = &cobra.Command{
 		if debugErr != nil {
 			return debugErr
 		}
-		stdlog.SetOutput(io.Discard)
+		//stdlog.SetOutput(io.Discard)
 		informDebug(debugFlag)
 
 		logGlobals()

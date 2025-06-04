@@ -55,7 +55,7 @@ var storesTypesListCmd = &cobra.Command{
 		if debugErr != nil {
 			return debugErr
 		}
-		stdlog.SetOutput(io.Discard)
+		//stdlog.SetOutput(io.Discard)
 		informDebug(debugFlag)
 
 		// Authenticate

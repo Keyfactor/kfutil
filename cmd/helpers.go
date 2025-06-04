@@ -31,8 +31,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-
-	stdlog "log"
+	//stdlog "log"
 )
 
 func boolToPointer(b bool) *bool {
@@ -191,11 +190,22 @@ func informDebug(debugFlag bool) {
 }
 
 func initLogger() {
-	stdlog.SetOutput(io.Discard)
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerolog.SetGlobalLevel(zerolog.Disabled) // default to disabled
-	log.Logger = log.With().Caller().Logger()
+	// Configure zerolog to include caller information
+	log.Logger = log.With().Caller().Logger().Output(
+		zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: time.RFC3339,
+			FormatCaller: func(caller interface{}) string {
+				if c, ok := caller.(string); ok {
+					return c // This will include the full file path and line number
+				}
+				return ""
+			},
+		},
+	)
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
+
+	initStdLogger()
 
 }
 
