@@ -1,3 +1,23 @@
+# v1.7.0
+
+## Features
+
+### CLI
+
+- `stores import csv`: supports interactive credential input, as well as input via flags and environmental
+  variables. [docs](docs/kfutil_stores_import_csv.md)
+
+## Fixes
+
+### CLI
+
+- `stores import csv`: providing a `Password(/StorePassword)` does not crash CLI.
+- `stores import csv`: results CSV retains input header ordering.
+- `stores import csv`: Handle `BOM` characters in an input CSV file.
+- `store-types create`: URL encode `-b` parameter when passed.
+- `store-types create`: Initialize logger before fetching store-type definitions.
+- `stores rot`: Re-enabled and improved logging.
+
 # v1.6.2
 
 ## Fixes
