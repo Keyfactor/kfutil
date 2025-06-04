@@ -30,10 +30,14 @@ const (
 	FlagGitRef                = "git-ref"
 	FlagGitRepo               = "repo"
 	FlagFromFile              = "from-file"
-	DebugFuncEnter            = "entered: %s"
-	DebugFuncExit             = "exiting: %s"
-	DebugFuncCall             = "calling: %s"
+	DebugFuncEnter            = "entered:"
+	DebugFuncExit             = "exiting:"
+	DebugFuncCall             = "calling:"
 	MinHttpTimeout            = 3
+
+	EnvStoresImportCSVServerUsername = "KFUTIL_CSV_SERVER_USERNAME"
+	EnvStoresImportCSVServerPassword = "KFUTIL_CSV_SERVER_PASSWORD"
+	EnvStoresImportCSVStorePassword  = "KFUTIL_CSV_STORE_PASSWORD"
 )
 
 var ProviderTypeChoices = []string{
