@@ -35,7 +35,7 @@ func (w zerologWriter) Write(p []byte) (n int, err error) {
 
 	} else if strings.Contains(msg, "[TRACE]") {
 		msg = strings.Replace(msg, "[TRACE]", "", 1)
-		log.Debug().Msg(strings.TrimSpace(msg)) // Converting TRACE to DEBUG for zerolog
+		log.Trace().Msg(strings.TrimSpace(msg))
 	} else {
 		// Default to info level
 		log.Info().Msg(msg)
