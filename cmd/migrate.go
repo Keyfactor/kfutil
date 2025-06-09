@@ -22,20 +22,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// type JSONImportableObject interface {
-// 	keyfactor.KeyfactorApiPAMProviderTypeCreateRequest |
-// 		keyfactor.CSSCMSDataModelModelsProvider
-// }
-
-// const (
-// 	convertResponseMsg = "Converting PAM Provider response to JSON"
-// )
-
-type PAMParameterValue struct {
-	GUID  string
-	Value string
-}
-
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Keyfactor Migration Tools.",
@@ -53,9 +39,10 @@ var migratePamCmd = &cobra.Command{
 		isExperimental := true
 
 		// load specified flags
-		migrateFrom, _ := cmd.Flags().GetString("from")
-		migrateTo, _ := cmd.Flags().GetString("to")
-		appendName, _ := cmd.Flags().GetString("append-name")
+		migrateFrom, _ := cmd.Flags().GetString("from")       // defined pam provider
+		migrateTo, _ := cmd.Flags().GetString("to")           // target pam provider typefffffff
+		appendName, _ := cmd.Flags().GetString("append-name") // text to append to <<FROM>> name
+		// TODO: define stores flag to pass in GUIDs of stores to migrate
 
 		// Debug + expEnabled checks
 		informDebug(debugFlag)
@@ -63,6 +50,8 @@ var migratePamCmd = &cobra.Command{
 		if debugErr != nil {
 			return debugErr
 		}
+
+		// <<TO>> Pam Type must be CyberArk-SdkCredentialProvider
 
 		// Log flags
 		log.Info().Str("from", migrateFrom).
@@ -107,6 +96,7 @@ var migratePamCmd = &cobra.Command{
 		// assess <<FROM>> source PAM Type to create map for storing existing data
 		// this map has the first string key record the parameter field name
 		// the inner map tracks PAM instance GUIDs to that instances value for the field
+		// map[fieldname] -> map[InstanceGuid] = set value
 		inUsePamParamValues := map[string]map[string]string{}
 		for _, pamType := range pamTypes {
 			if pamType.Id == listPamProvidersInUse[0].ProviderType.Id {
@@ -136,7 +126,50 @@ var migratePamCmd = &cobra.Command{
 
 		// log.Info().Msgf("Found %d PAM Provider usages of Provider %s",)
 
-		// implement migration logic
+		// GET all PAM Types
+		// select array entry with matching Name field of <<TO>>
+		// mark GUID ID for pam type
+		// mark integer IDs for each Parameter type
+
+		// POST new PAM Provider
 		// create new PAM Instance of designated <<TO>> type
+		// set area = 1 or previous value
+		// name = old name plus append parameter
+		// providertype.id = Type GUID
+		// for all provider level values:
+		// set value to migrating value
+		// null for instanceid, instanceguid
+		// providertypeparam should be set to all matching values from GET TYPES
+		// ignoring datatype
+
+		// foreach store GUID pass in as a parameter-----
+		// GET Store by GUID (instance GUID matches Store Id GUID)
+		// output some store info to confirm
+
+		// parse Properties field into interactable object
+
+		// foreach property key (properties is an object not an array)
+		// if value is an object, and object has an InstanceGuid
+		// property object is a match for a secret
+		// instead, can check if there is a ProviderId set, and if that
+		// matches integer id of original Provider <<FROM>>
+
+		// update property object
+		// foreach ProviderTypeParameterValues
+		// where ProviderTypeParam.Name = first map key (map is map[fieldname]map[InstanceGuid]value)
+		// create new PAM value for this secret
+		// json object:
+		// value: {
+		// provider: integer id of new provider
+		// Parameters: {
+		// fieldname: new value
+		// }}
+		//
+		// leave all other fields untouched
+		// IMPORTANT: other secret fields need to match value:{secretvalue:"*****" or secretvalue:null}
+
+		// marshal json back to string for Properties field
+		// make sure quotes are escaped
+		// submit PUT for updating Store definition
 	},
 }
