@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/rs/zerolog/log"
@@ -79,6 +80,9 @@ var migratePamCmd = &cobra.Command{
 			return returnHttpErr(httpResponse, rErr)
 		}
 
+		jobject, _ := json.MarshalIndent(listPamProvidersInUse, "", "    ")
+		fmt.Println(string(jobject))
+
 		// TODO: ensure only 1 returned PAM Provider definition
 
 		// get PAM Type definition for PAM Provider migrating <<FROM>>
@@ -93,33 +97,53 @@ var migratePamCmd = &cobra.Command{
 			return returnHttpErr(httpResponse, rErr)
 		}
 
+		// jobject, _ = json.MarshalIndent(pamTypes, "", "    ")
+		// fmt.Println(string(jobject))
+
 		// assess <<FROM>> source PAM Type to create map for storing existing data
 		// this map has the first string key record the parameter field name
 		// the inner map tracks PAM instance GUIDs to that instances value for the field
 		// map[fieldname] -> map[InstanceGuid] = set value
 		inUsePamParamValues := map[string]map[string]string{}
 		for _, pamType := range pamTypes {
-			if pamType.Id == listPamProvidersInUse[0].ProviderType.Id {
-				for _, pamParamType := range pamType.ProviderTypeParams {
-					if *pamParamType.InstanceLevel {
+			if *pamType.Id == *listPamProvidersInUse[0].ProviderType.Id {
+				// TODO: remove debugging
+				jobject, _ := json.MarshalIndent(pamType, "", "    ")
+				fmt.Println(string(jobject))
+				jobject, _ = json.MarshalIndent(pamType.AdditionalProperties["Parameters"], "", "    ")
+				fmt.Println(string(jobject))
+				// TODO: check typing, have to access "Parameters" instead of ProviderTypeParams
+				for _, pamParamType := range pamType.AdditionalProperties["Parameters"].([]interface{}) {
+					jobject, _ := json.MarshalIndent(pamParamType, "", "    ")
+					fmt.Println(string(jobject))
+					if pamParamType.(map[string]interface{})["InstanceLevel"].(bool) {
 						// found definition of an instance level param for the type in question
 						// create key in map for the field name
-						inUsePamParamValues[*pamParamType.Name] = map[string]string{}
+						inUsePamParamValues[pamParamType.(map[string]interface{})["Name"].(string)] = map[string]string{}
+						fmt.Println("made it!")
 					}
 				}
 			}
 		}
+		jobject, _ = json.MarshalIndent(inUsePamParamValues, "", "    ")
+		fmt.Println(string(jobject))
 
 		// step through list of every defined param value
 		// record unique GUIDs of every param value on InstanceLevel : true
 		// don't count InstanceLevel : false because those are Secret (DataType:2) instances for the Provider itself, not actual usages
 		for _, pamParam := range listPamProvidersInUse[0].ProviderTypeParamValues {
+			jobject, _ = json.MarshalIndent(pamParam, "", "    ")
+			fmt.Println(string(jobject))
 			if *pamParam.ProviderTypeParam.InstanceLevel {
 				fieldName := *pamParam.ProviderTypeParam.Name
 				usageGuid := *pamParam.InstanceGuid
 				inUsePamParamValues[fieldName][usageGuid] = *pamParam.Value
 			}
 		}
+		jobject, _ = json.MarshalIndent(inUsePamParamValues, "", "    ")
+		fmt.Println(string(jobject))
+
+		return nil
 
 		// TODO: make sure every field has the same number of GUIDs tracked
 		// tally GUID count for logging
@@ -172,4 +196,42 @@ var migratePamCmd = &cobra.Command{
 		// make sure quotes are escaped
 		// submit PUT for updating Store definition
 	},
+}
+
+func init() {
+	var from string
+	var to string
+	var appendName string
+
+	RootCmd.AddCommand(migrateCmd)
+
+	migrateCmd.AddCommand(migratePamCmd)
+
+	migratePamCmd.Flags().StringVarP(
+		&from,
+		"from",
+		"f",
+		"",
+		"Name of the defined PAM Provider to migrate to a new type",
+	)
+
+	migratePamCmd.Flags().StringVarP(
+		&to,
+		"to",
+		"t",
+		"",
+		"Name of the PAM Provider Type to migrate to",
+	)
+
+	migratePamCmd.Flags().StringVarP(
+		&appendName,
+		"append-name",
+		"a",
+		"",
+		"Text to append to current PAM Provider Name in newly created Provider",
+	)
+
+	migratePamCmd.MarkFlagRequired("from")
+	migratePamCmd.MarkFlagRequired("to")
+	migratePamCmd.MarkFlagRequired("append-name")
 }
