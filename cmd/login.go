@@ -17,8 +17,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"io"
-	stdlog "log"
 	"os"
 	"path"
 	"strings"
@@ -70,7 +68,7 @@ WARNING: This will write the environmental credentials to disk and will be store
 		if debugErr != nil {
 			return debugErr
 		}
-		stdlog.SetOutput(io.Discard)
+		//stdlog.SetOutput(io.Discard)
 		informDebug(debugFlag)
 		logGlobals()
 
@@ -237,14 +235,32 @@ WARNING: This will write the environmental credentials to disk and will be store
 		}
 
 		if authType == "oauth" {
-			log.Debug().Msg("attempting to authenticate via OAuth")
+			log.Debug().
+				Str("profile", profile).
+				Str("configFile", configFile).
+				Str("host", outputServer.Host).
+				Str("authType", authType).
+				Str("accessToken", hashSecretValue(kfcOAuth.AccessToken)).
+				Str("clientID", kfcOAuth.ClientID).
+				Str("clientSecret", hashSecretValue(kfcOAuth.ClientSecret)).
+				Str("apiPath", kfcOAuth.CommandAPIPath).
+				Msg("attempting to authenticate via OAuth")
 			aErr := kfcOAuth.Authenticate()
 			if aErr != nil {
 				log.Error().Err(aErr)
 				return aErr
 			}
 		} else if authType == "basic" {
-			log.Debug().Msg("attempting to authenticate via Basic Auth")
+			log.Debug().
+				Str("profile", profile).
+				Str("configFile", configFile).
+				Str("host", outputServer.Host).
+				Str("authType", authType).
+				Str("username", kfcBasicAuth.Username).
+				Str("domain", kfcBasicAuth.Domain).
+				Str("password", hashSecretValue(kfcBasicAuth.Password)).
+				Str("apiPath", kfcBasicAuth.CommandAPIPath).
+				Msg("attempting to authenticate via Basic Auth")
 			aErr := kfcBasicAuth.Authenticate()
 			if aErr != nil {
 				log.Error().Err(aErr)
