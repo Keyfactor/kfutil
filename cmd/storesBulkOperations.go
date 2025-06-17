@@ -123,11 +123,23 @@ Required Flags:
 
 ##### In the CSV file:
 
+###### Credential Fields
+
 | Header | Description |
 | --- | --- |
 | Properties.ServerUsername | This is equivalent to the 'ServerUsername' field in the Command Certificate Store UI. |
 | Properties.ServerPassword | This is equivalent to the 'ServerPassword' field in the Command Certificate Store UI. |
 | Password | This is equivalent to the 'StorePassword' field in the Command Certificate Store UI. |
+
+###### Inventory Schedule Fields
+
+| Header | Description |
+| --- | --- |
+| InventorySchedule.Immediate | Boolean value, set to "TRUE" to schedule immediate inventory |	
+| InventorySchedule.Interval.Minutes | The timeframe in which to periodically inventory int number/integer value. Ex.120 for 2 hours. |
+| InventorySchedule.Daily.Time | The time of day to inventory daily, RFC3339 format. Ex. "2023-10-01T12:00:00Z" for noon UTC. |	
+| InventorySchedule.Weekly.Days | TBD |	
+| InventorySchedule.Weekly.Time | The time of day to inventory daily, RFC3339 format. Ex. "2023-10-01T12:00:00Z" for noon UTC. |
 
 ##### Outside CSV file:
 If you do not wish to include credentials in your CSV file they can be provided one of three ways:
