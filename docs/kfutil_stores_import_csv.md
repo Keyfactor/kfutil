@@ -25,13 +25,21 @@ Required Flags:
 
 ###### Inventory Schedule Fields
 
-| Header                             | Description                                                                                    |
-|------------------------------------|------------------------------------------------------------------------------------------------|
-| InventorySchedule.Immediate        | Boolean value, set to "TRUE" to schedule immediate inventory                                   |	
-| InventorySchedule.Interval.Minutes | The timeframe in which to periodically inventory int number/integer value. Ex.120 for 2 hours. |
-| InventorySchedule.Daily.Time       | The time of day to inventory daily, RFC3339 format. Ex. "2023-10-01T12:00:00Z" for noon UTC.   |	
-| InventorySchedule.Weekly.Days      | TBD                                                                                            |	
-| InventorySchedule.Weekly.Time      | The time of day to inventory daily, RFC3339 format. Ex. "2023-10-01T12:00:00Z" for noon UTC.   |
+For full information on certificate store schedules
+visit: https://software.keyfactor.com/Core-OnPrem/v25.1.1/Content/WebAPI/KeyfactorAPI/CertificateStoresPostSchedule.htm#API-Table-Schedule
+
+> [!NOTE]
+> Only one type of schedule can be specified in the CSV file. If multiple are specified,
+> the last one will be used. For example you can't schedule both "InventorySchedule.Immediate" and "InventorySchedule.
+> Interval.Minutes", in which case the value of "InventorySchedule.Interval.Minutes" would be used.
+
+| Header                             | Description                                                                                                                                                                                      |
+|------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| InventorySchedule.Immediate        | A Boolean that indicates a job scheduled to run immediately (TRUE) or not (FALSE).                                                                                                               |	
+| InventorySchedule.Interval.Minutes | An integer indicating the number of minutes between each interval.                                                                                                                               |
+| InventorySchedule.Daily.Time       | The date and time to next run the job. The date and time should be given using the ISO 8601 UTC time format "YYYY-MM-DDTHH:mm:ss.000Z"" (e.g. 2023-11-19T16:23:01Z).                             |	
+| InventorySchedule.Weekly.Days      | An array of values representing the days of the week on which to run the job. These can either be entered as integers (0 for Sunday, 1 for Monday, etc.) or as days of the week (e.g. "Sunday"). |	
+| InventorySchedule.Weekly.Time      | The time of day to inventory daily, RFC3339 format. Ex. "2023-10-01T12:00:00Z" for noon UTC.                                                                                                     |
 
 ##### Outside CSV file:
 If you do not wish to include credentials in your CSV file they can be provided one of three ways:
