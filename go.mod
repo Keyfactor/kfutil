@@ -7,9 +7,9 @@ toolchain go1.24.3
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.10.1
 	github.com/Jeffail/gabs v1.4.0
-	github.com/Keyfactor/keyfactor-auth-client-go v1.2.1-rc.8
+	github.com/Keyfactor/keyfactor-auth-client-go v1.3.0
 	github.com/Keyfactor/keyfactor-go-client-sdk/v2 v2.0.0
 	github.com/Keyfactor/keyfactor-go-client/v3 v3.1.0
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
