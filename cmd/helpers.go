@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"time"
 
@@ -30,8 +31,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
-
-	stdlog "log"
+	//stdlog "log"
 )
 
 func boolToPointer(b bool) *bool {
@@ -132,7 +132,7 @@ func csvToMap(filename string) ([]map[string]string, error) {
 
 			// Populate the map with data from the row
 			for i, column := range header {
-				rowMap[column] = row[i]
+				rowMap[column] = stripAllBOMs(row[i])
 			}
 
 			// Append the map to the data slice
@@ -190,11 +190,22 @@ func informDebug(debugFlag bool) {
 }
 
 func initLogger() {
-	stdlog.SetOutput(io.Discard)
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zerolog.SetGlobalLevel(zerolog.Disabled) // default to disabled
-	log.Logger = log.With().Caller().Logger()
+	// Configure zerolog to include caller information
+	log.Logger = log.With().Caller().Logger().Output(
+		zerolog.ConsoleWriter{
+			Out:        os.Stdout,
+			TimeFormat: time.RFC3339,
+			FormatCaller: func(caller interface{}) string {
+				if c, ok := caller.(string); ok {
+					return c // This will include the full file path and line number
+				}
+				return ""
+			},
+		},
+	)
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
+
+	initStdLogger()
 
 }
 
@@ -282,10 +293,10 @@ func logGlobals() {
 
 }
 
-func mapToCSV(data []map[string]string, filename string) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
+func mapToCSV(data []map[string]string, filename string, inputHeader []string) error {
+	file, fErr := os.Create(filename)
+	if fErr != nil {
+		return fErr
 	}
 	defer file.Close()
 
@@ -293,14 +304,19 @@ func mapToCSV(data []map[string]string, filename string) error {
 	defer writer.Flush()
 
 	// Write the header using keys from the first map
-	var header []string
-	if len(data) > 0 {
+	var header = inputHeader
+	if len(header) <= 0 && len(data) > 0 {
 		for key := range data[0] {
-			header = append(header, key)
+			header = append(header, stripAllBOMs(key))
 		}
-		if err := writer.Write(header); err != nil {
-			return err
-		}
+	}
+
+	errorColFound := slices.Contains(header, "Errors")
+	if !errorColFound {
+		header = append(header, "Errors")
+	}
+	if hErr := writer.Write(header); hErr != nil {
+		return hErr
 	}
 
 	// Write map data to CSV
