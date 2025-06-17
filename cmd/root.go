@@ -17,7 +17,6 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
-	"io"
 	stdlog "log"
 	"os"
 	"strings"
@@ -135,6 +134,13 @@ func getServerConfigFromEnv() (*auth_providers.Server, error) {
 	apiPath, aOk := os.LookupEnv(auth_providers.EnvKeyfactorAPIPath)
 	clientId, cOk := os.LookupEnv(auth_providers.EnvKeyfactorClientID)
 	clientSecret, csOk := os.LookupEnv(auth_providers.EnvKeyfactorClientSecret)
+	audience, _ := os.LookupEnv(auth_providers.EnvKeyfactorAuthAudience)
+	scopesCSV, _ := os.LookupEnv(auth_providers.EnvKeyfactorAuthScopes)
+	var scopes []string
+	if scopesCSV != "" {
+		scopes = strings.Split(scopesCSV, ",")
+	}
+
 	tokenUrl, tOk := os.LookupEnv(auth_providers.EnvKeyfactorAuthTokenURL)
 	skipVerify, svOk := os.LookupEnv(auth_providers.EnvKeyfactorSkipVerify)
 	var skipVerifyBool bool
@@ -161,24 +167,44 @@ func getServerConfigFromEnv() (*auth_providers.Server, error) {
 	}
 
 	if isBasicAuth {
-		log.Debug().
-			Str("username", username).
-			Str("password", hashSecretValue(password)).
-			Str("domain", domain).
-			Str("hostname", hostname).
+
+		log.Debug().Str("hostname", hostname).
 			Str("apiPath", apiPath).
 			Bool("skipVerify", skipVerifyBool).
-			Msg("call: basicAuthNoParamsConfig.Authenticate()")
+			Msg("setting up basic auth client base configuration")
 		basicAuthNoParamsConfig.WithCommandHostName(hostname).
 			WithCommandAPIPath(apiPath).
 			WithSkipVerify(skipVerifyBool)
 
-		bErr := basicAuthNoParamsConfig.
+		log.Debug().
+			Str("username", username).
+			Str("password", hashSecretValue(password)).
+			Str("domain", domain).
+			Msg("setting up basic auth configuration")
+		_ = basicAuthNoParamsConfig.
 			WithUsername(username).
 			WithPassword(password).
-			WithDomain(domain).
-			Authenticate()
-		log.Debug().Msg("complete: basicAuthNoParamsConfig.Authenticate()")
+			WithDomain(domain)
+
+		log.Debug().
+			Str("username", basicAuthNoParamsConfig.Username).
+			Str("password", hashSecretValue(password)).
+			Str("domain", basicAuthNoParamsConfig.Domain).
+			Str("hostname", basicAuthNoParamsConfig.CommandHostName).
+			Str("apiPath", basicAuthNoParamsConfig.CommandAPIPath).
+			Bool("skipVerify", basicAuthNoParamsConfig.CommandAuthConfig.SkipVerify).
+			Msg(fmt.Sprintf("%s basicAuthNoParamsConfig.Authenticate()", DebugFuncCall))
+
+		bErr := basicAuthNoParamsConfig.Authenticate()
+		log.Debug().
+			Str("username", basicAuthNoParamsConfig.Username).
+			Str("password", hashSecretValue(password)).
+			Str("domain", basicAuthNoParamsConfig.Domain).
+			Str("hostname", basicAuthNoParamsConfig.CommandHostName).
+			Str("apiPath", basicAuthNoParamsConfig.CommandAPIPath).
+			Bool("skipVerify", basicAuthNoParamsConfig.CommandAuthConfig.SkipVerify).
+			Msg("complete: basicAuthNoParamsConfig.Authenticate()")
+
 		if bErr != nil {
 			log.Error().Err(bErr).Msg("unable to authenticate with provided credentials")
 			return nil, bErr
@@ -187,16 +213,36 @@ func getServerConfigFromEnv() (*auth_providers.Server, error) {
 		return basicAuthNoParamsConfig.GetServerConfig(), nil
 	} else if isOAuth {
 		log.Debug().
-			Str("clientId", clientId).
-			Str("clientSecret", hashSecretValue(clientSecret)).
-			Str("tokenUrl", tokenUrl).
 			Str("hostname", hostname).
 			Str("apiPath", apiPath).
 			Bool("skipVerify", skipVerifyBool).
-			Msg("call: oAuthNoParamsConfig.Authenticate()")
+			Msg("setting up oAuth client base configuration")
 		_ = oAuthNoParamsConfig.CommandAuthConfig.WithCommandHostName(hostname).
 			WithCommandAPIPath(apiPath).
 			WithSkipVerify(skipVerifyBool)
+
+		log.Debug().
+			Str("clientId", clientId).
+			Str("clientSecret", hashSecretValue(clientSecret)).
+			Str("tokenUrl", tokenUrl).
+			Str("audience", audience).
+			Strs("scopes", scopes).
+			Msg("setting up oAuth configuration")
+		_ = oAuthNoParamsConfig.WithClientId(clientId).
+			WithClientSecret(clientSecret).
+			WithTokenUrl(tokenUrl).
+			WithAudience(audience).
+			WithScopes(scopes)
+
+		log.Debug().
+			Str("clientId", oAuthNoParamsConfig.ClientID).
+			Str("clientSecret", hashSecretValue(oAuthNoParamsConfig.ClientSecret)).
+			Str("tokenUrl", oAuthNoParamsConfig.TokenURL).
+			Str("hostname", oAuthNoParamsConfig.CommandHostName).
+			Str("apiPath", oAuthNoParamsConfig.CommandAPIPath).
+			Bool("skipVerify", oAuthNoParamsConfig.SkipVerify).
+			Str("caCert", oAuthNoParamsConfig.CommandCACert).
+			Msg(fmt.Sprintf("%s oAuthNoParamsConfig.Authenticate()", DebugFuncCall))
 		oErr := oAuthNoParamsConfig.Authenticate()
 		log.Debug().Msg("complete: oAuthNoParamsConfig.Authenticate()")
 		if oErr != nil {
@@ -738,7 +784,7 @@ var RootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	stdlog.SetOutput(io.Discard)
+	//stdlog.SetOutput(io.Discard)
 	err := RootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
@@ -880,4 +926,10 @@ func init() {
 	// when this action is called directly.
 
 	RootCmd.AddCommand(makeDocsCmd)
+}
+
+func initStdLogger() {
+	// Redirect standard library's log to zerolog
+	stdlog.SetOutput(zerologWriter{})
+	stdlog.SetFlags(0) // Remove timestamp from standard logger
 }

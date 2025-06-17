@@ -20,12 +20,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
 	"time"
-
-	stdlog "log"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/Keyfactor/keyfactor-go-client/v3/api"
@@ -54,7 +53,7 @@ var storesTypesListCmd = &cobra.Command{
 		if debugErr != nil {
 			return debugErr
 		}
-		stdlog.SetOutput(io.Discard)
+		//stdlog.SetOutput(io.Discard)
 		informDebug(debugFlag)
 
 		// Authenticate
@@ -93,7 +92,6 @@ var storesTypeCreateCmd = &cobra.Command{
 		gitRef, _ := cmd.Flags().GetString(FlagGitRef)
 		gitRepo, _ := cmd.Flags().GetString(FlagGitRepo)
 		creatAll, _ := cmd.Flags().GetBool("all")
-		validStoreTypes := getValidStoreTypes("", gitRef, gitRepo)
 		storeType, _ := cmd.Flags().GetString("name")
 		listTypes, _ := cmd.Flags().GetBool("list")
 		storeTypeConfigFile, _ := cmd.Flags().GetString("from-file")
@@ -105,6 +103,8 @@ var storesTypeCreateCmd = &cobra.Command{
 			return debugErr
 		}
 		informDebug(debugFlag)
+
+		validStoreTypes := getValidStoreTypes("", gitRef, gitRepo)
 
 		// Authenticate
 		kfClient, _ := initClient(false)
@@ -505,7 +505,8 @@ func getStoreTypesInternet(gitRef string, repo string) (map[string]interface{}, 
 		fileName = "integration-manifest.json"
 	}
 
-	url := fmt.Sprintf(baseUrl, repo, gitRef, fileName)
+	escapedGitRef := url.PathEscape(gitRef)
+	url := fmt.Sprintf(baseUrl, repo, escapedGitRef, fileName)
 	log.Debug().
 		Str("url", url).
 		Msg("Getting store types from internet")
