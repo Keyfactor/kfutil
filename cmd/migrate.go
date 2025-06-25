@@ -21,6 +21,7 @@ import (
 
 	// "github.com/Keyfactor/keyfactor-go-client-sdk/v24/api/keyfactor/v2"
 	"github.com/Keyfactor/keyfactor-go-client-sdk/v2/api/keyfactor"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -217,9 +218,15 @@ var migratePamCmd = &cobra.Command{
 						InstanceLevel: &falsevalue,
 					},
 				}
-				// TODO: might need to explicit filter for CyberArk expected params, i.e. not map over Safe
+
 				// append filled out provider type parameter object, which contains the Provider-level parameter values
-				migrationPamProvider.ProviderTypeParamValues = append(migrationPamProvider.ProviderTypeParamValues, providerLevelParameter)
+				// migrationPamProvider.ProviderTypeParamValues = append(migrationPamProvider.ProviderTypeParamValues, providerLevelParameter)
+
+				// TODO: need to explicit filter for CyberArk expected params, i.e. not map over Safe
+				// this needs to be done programatically for other provider types
+				if paramName == "AppId" {
+					migrationPamProvider.ProviderTypeParamValues = append(migrationPamProvider.ProviderTypeParamValues, providerLevelParameter)
+				}
 			}
 		}
 
@@ -241,16 +248,31 @@ var migratePamCmd = &cobra.Command{
 		// providertypeparam should be set to all matching values from GET TYPES
 		// ignoring datatype
 
-		//
-		// TODO: POST PAM PROVIDER
-		//
+		createdPamProvider, httpResponse, rErr := sdkClient.PAMProviderApi.PAMProviderCreatePamProvider(context.Background()).
+			Provider(migrationPamProvider).
+			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
+			Execute()
+
+		if rErr != nil {
+			log.Error().Err(rErr).Send()
+			return returnHttpErr(httpResponse, rErr)
+		}
+
+		fmt.Println("vvv CREATED MIGRATION PAM PROVIDER vvv")
+		jobject, _ = json.MarshalIndent(createdPamProvider, "", "    ")
+		fmt.Println(string(jobject))
+		fmt.Println("^^^ CREATED MIGRATION PAM PROVIDER ^^^")
 
 		// foreach store GUID pass in as a parameter-----
 		// GET Store by GUID (instance GUID matches Store Id GUID)
 		// output some store info to confirm
 
-		// TODO: assign error and check
-		certStore, _ := legacyClient.GetCertificateStoreByID(storeUsingPam)
+		// TODO: use updated client when API endpoint available
+		certStore, rErr := legacyClient.GetCertificateStoreByID(storeUsingPam)
+		if rErr != nil {
+			log.Error().Err(rErr).Send()
+			return rErr
+		}
 
 		jobject, _ = json.MarshalIndent(certStore, "", "    ")
 		fmt.Println(string(jobject))
@@ -277,11 +299,11 @@ var migratePamCmd = &cobra.Command{
 
 					// check if Pam Secret is using our migrating provider
 					if *fromPamProvider.Id == int32(propSecret["ProviderId"].(float64)) {
+						// Pam Secret that Needs to be migrated
+						formattedSecret["Value"] = buildMigratedPamSecret(propSecret, fromProviderLevelParamValues, *createdPamProvider.Id)
+					} else {
 						// reformat to required POST format for properties
 						formattedSecret["Value"] = reformatPamSecretForPost(propSecret)
-					} else {
-						// Pam Secret that Needs to be migrated
-						formattedSecret["Value"] = buildMigratedPamSecret(propSecret, fromProviderLevelParamValues, 0)
 					}
 				} else {
 					// non-managed secret i.e. a KF-encrypted secret, or no value
@@ -293,32 +315,42 @@ var migratePamCmd = &cobra.Command{
 
 				// update Properties object with newly formatted secret, compliant with POST requirements
 				certStore.Properties[propName] = formattedSecret
-
-				jobject, _ = json.MarshalIndent(certStore.Properties, "", "    ")
-				fmt.Println(string(jobject))
-				fmt.Println("^^^ SECRETS REFORMATTED ^^^")
 			}
 		}
 
-		return nil
+		jobject, _ = json.MarshalIndent(certStore.Properties, "", "    ")
+		fmt.Println(string(jobject))
+		fmt.Println("^^^ SECRETS REFORMATTED ^^^")
+
+		// propertiesAsString, _ := json.Marshal(certStore.Properties)
+		// jsonProps := string(propertiesAsString)
+		// escapedProps := strings.ReplaceAll(jsonProps, "\"", "\\\"")
+		// fmt.Println(escapedProps)
 
 		// update property object
-		// foreach ProviderTypeParameterValues
-		// where ProviderTypeParam.Name = first map key (map is map[fieldname]map[InstanceGuid]value)
-		// create new PAM value for this secret
-		// json object:
-		// value: {
-		// provider: integer id of new provider
-		// Parameters: {
-		// fieldname: new value
-		// }}
-		//
-		// leave all other fields untouched
-		// IMPORTANT: other secret fields need to match value:{secretvalue:"*****" or secretvalue:null}
+		// set required fields, and new Properties
+		updateStoreArgs := api.UpdateStoreFctArgs{
+			Id:            certStore.Id,
+			ClientMachine: certStore.ClientMachine,
+			StorePath:     certStore.StorePath,
+			AgentId:       certStore.AgentId,
+			Properties:    certStore.Properties,
+			Password:      &certStore.Password,
+		}
 
-		// marshal json back to string for Properties field
-		// make sure quotes are escaped
-		// submit PUT for updating Store definition
+		// TODO: use updated client when API endpoint available
+		updatedStore, rErr := legacyClient.UpdateStore(&updateStoreArgs)
+
+		if rErr != nil {
+			log.Error().Err(rErr).Send()
+			return rErr
+		}
+
+		jobject, _ = json.MarshalIndent(updatedStore, "", "    ")
+		fmt.Println(string(jobject))
+		fmt.Println("^^^ UPDATED STORE ^^^")
+
+		return nil
 	},
 }
 
@@ -386,7 +418,7 @@ func buildMigratedPamSecret(secretProp map[string]interface{}, fromProviderLevel
 	// TODO: this logic needs to not be hard-coded, and evaluated for actual migrations other than legacy CyberArk
 	reformattedParams["Safe"] = fromProviderLevelValues["Safe"]
 
-	migrated["Properties"] = reformattedParams
+	migrated["Parameters"] = reformattedParams
 
 	return migrated
 }
