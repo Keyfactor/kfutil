@@ -17,6 +17,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	// "github.com/Keyfactor/keyfactor-go-client-sdk/v24/api/keyfactor/v2"
@@ -72,25 +73,15 @@ var migratePamCmd = &cobra.Command{
 		// TODO: assign error and check
 		legacyClient, _ := initClient(false)
 
-		log.Info().Msg("looking up usage of <<from>> PAM Provider")
+		found, fromPamProvider, processedError := getExistingPamProvider(sdkClient, migrateFrom)
 
-		log.Debug().Msg("call: PAMProviderGetPamProviders()")
-		listPamProvidersInUse, httpResponse, rErr := sdkClient.PAMProviderApi.PAMProviderGetPamProviders(context.Background()).
-			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
-			PqQueryString(fmt.Sprintf("name -eq \"%s\"", migrateFrom)).
-			Execute()
-		log.Debug().Msg("returned: PAMProviderGetPamProviders()")
-
-		if rErr != nil {
-			log.Error().Err(rErr).Send()
-			return returnHttpErr(httpResponse, rErr)
+		if processedError != nil {
+			return processedError
 		}
 
-		jobject, _ := json.MarshalIndent(listPamProvidersInUse, "", "    ")
-		fmt.Println(string(jobject))
-
-		// TODO: ensure only 1 returned PAM Provider definition
-		fromPamProvider := listPamProvidersInUse[0]
+		if found == false {
+			return errors.New("Original PAM Provider to migrate from was not found by Name")
+		}
 
 		// get PAM Type definition for PAM Provider migrating <<FROM>>
 		log.Debug().Msg("call: PAMProviderGetPamProviders()")
@@ -151,14 +142,14 @@ var migratePamCmd = &cobra.Command{
 			}
 		}
 
-		jobject, _ = json.MarshalIndent(inUsePamParamValues, "", "    ")
+		jobject, _ := json.MarshalIndent(inUsePamParamValues, "", "    ")
 		fmt.Println(string(jobject))
 
 		// step through list of every defined param value
 		// record unique GUIDs of every param value on InstanceLevel : true
 		// InstanceLevel : true is for per-secret fields
 		// InstanceLevel : false is provider level secrets - these are also recorded for migration
-		for _, pamParam := range listPamProvidersInUse[0].ProviderTypeParamValues {
+		for _, pamParam := range fromPamProvider.ProviderTypeParamValues {
 			// jobject, _ = json.MarshalIndent(pamParam, "", "    ")
 			// fmt.Println(string(jobject))
 			fieldName := *pamParam.ProviderTypeParam.Name
@@ -182,86 +173,23 @@ var migratePamCmd = &cobra.Command{
 		// mark GUID ID for pam type
 		// mark integer IDs for each Parameter type
 
-		// TODO: check that migration target PAM Provider was not already created
+		var migrationTargetPamProvider keyfactor.CSSCMSDataModelModelsProvider
 
-		fmt.Println("creating new Provider of migration target PAM Type")
-		var migrationPamProvider keyfactor.CSSCMSDataModelModelsProvider
-		migrationPamProvider.Name = fromPamProvider.Name + appendName
-		migrationPamProvider.ProviderType = keyfactor.CSSCMSDataModelModelsProviderType{
-			Id: toPamType.Id,
-		}
-		var onevalue int32 = 1
-		migrationPamProvider.Area = &onevalue
-		migrationPamProvider.SecuredAreaId = nil
+		// check if target PAM Provider already exists
+		found, migrationTargetPamProvider, processedError = getExistingPamProvider(sdkClient, fromPamProvider.Name+appendName)
 
-		// need to init AdditionalProperties map when setting value
-		migrationPamProvider.AdditionalProperties = map[string]interface{}{
-			"Remote": false, // this property is not on the model for some reason
+		if processedError != nil {
+			return processedError
 		}
 
-		fmt.Println("getting migration target PAM Type parameter definitions, InstanceLevel : false")
-		// TODO: check typing, have to access "Parameters" instead of ProviderTypeParams
-		for _, pamParamType := range fromPamType.AdditionalProperties["Parameters"].([]interface{}) {
-			if !pamParamType.(map[string]interface{})["InstanceLevel"].(bool) {
-				// found a provider level parameter
-				// need to find the value to map over
-				// then create an object with that value and TypeParam settings
-				paramName := pamParamType.(map[string]interface{})["Name"].(string)
-				paramValue := selectProviderParamValue(paramName, fromPamProvider.ProviderTypeParamValues)
-				paramTypeId := selectProviderTypeParamId(paramName, toPamType.AdditionalProperties["Parameters"].([]interface{}))
-				falsevalue := false
-				providerLevelParameter := keyfactor.CSSCMSDataModelModelsPamProviderTypeParamValue{
-					Value: &paramValue,
-					ProviderTypeParam: &keyfactor.CSSCMSDataModelModelsProviderTypeParam{
-						Id:            &paramTypeId,
-						Name:          &paramName,
-						InstanceLevel: &falsevalue,
-					},
-				}
+		// create PAM Provider if it does not exist already
+		if found == false {
+			migrationTargetPamProvider, processedError = createMigrationTargetPamProvider(sdkClient, fromPamProvider, fromPamType, toPamType, appendName)
 
-				// append filled out provider type parameter object, which contains the Provider-level parameter values
-				// migrationPamProvider.ProviderTypeParamValues = append(migrationPamProvider.ProviderTypeParamValues, providerLevelParameter)
-
-				// TODO: need to explicit filter for CyberArk expected params, i.e. not map over Safe
-				// this needs to be done programatically for other provider types
-				if paramName == "AppId" {
-					migrationPamProvider.ProviderTypeParamValues = append(migrationPamProvider.ProviderTypeParamValues, providerLevelParameter)
-				}
+			if processedError != nil {
+				return processedError
 			}
 		}
-
-		msg := "Created new PAM Provider definition to be created."
-		fmt.Println(msg)
-		log.Info().Msg(msg)
-		jobject, _ = json.MarshalIndent(migrationPamProvider, "", "    ")
-		fmt.Println(string(jobject))
-		fmt.Println("^^^ PAM Provider to be created ^^^")
-
-		// POST new PAM Provider
-		// create new PAM Instance of designated <<TO>> type
-		// set area = 1 or previous value
-		// name = old name plus append parameter
-		// providertype.id = Type GUID
-		// for all provider level values:
-		// set value to migrating value
-		// null for instanceid, instanceguid
-		// providertypeparam should be set to all matching values from GET TYPES
-		// ignoring datatype
-
-		createdPamProvider, httpResponse, rErr := sdkClient.PAMProviderApi.PAMProviderCreatePamProvider(context.Background()).
-			Provider(migrationPamProvider).
-			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
-			Execute()
-
-		if rErr != nil {
-			log.Error().Err(rErr).Send()
-			return returnHttpErr(httpResponse, rErr)
-		}
-
-		fmt.Println("vvv CREATED MIGRATION PAM PROVIDER vvv")
-		jobject, _ = json.MarshalIndent(createdPamProvider, "", "    ")
-		fmt.Println(string(jobject))
-		fmt.Println("^^^ CREATED MIGRATION PAM PROVIDER ^^^")
 
 		// foreach store GUID pass in as a parameter-----
 		// GET Store by GUID (instance GUID matches Store Id GUID)
@@ -300,7 +228,7 @@ var migratePamCmd = &cobra.Command{
 					// check if Pam Secret is using our migrating provider
 					if *fromPamProvider.Id == int32(propSecret["ProviderId"].(float64)) {
 						// Pam Secret that Needs to be migrated
-						formattedSecret["Value"] = buildMigratedPamSecret(propSecret, fromProviderLevelParamValues, *createdPamProvider.Id)
+						formattedSecret["Value"] = buildMigratedPamSecret(propSecret, fromProviderLevelParamValues, *migrationTargetPamProvider.Id)
 					} else {
 						// reformat to required POST format for properties
 						formattedSecret["Value"] = reformatPamSecretForPost(propSecret)
@@ -352,6 +280,119 @@ var migratePamCmd = &cobra.Command{
 
 		return nil
 	},
+}
+
+func getExistingPamProvider(sdkClient *keyfactor.APIClient, name string) (bool, keyfactor.CSSCMSDataModelModelsProvider, error) {
+	var pamProvider keyfactor.CSSCMSDataModelModelsProvider
+
+	logMsg := fmt.Sprintf("Looking up usage of PAM Provider with name %s", name)
+	log.Debug().Msg(logMsg)
+	fmt.Println(logMsg)
+
+	foundProvider, httpResponse, err := sdkClient.PAMProviderApi.PAMProviderGetPamProviders(context.Background()).
+		XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
+		PqQueryString(fmt.Sprintf("name -eq \"%s\"", name)).
+		Execute()
+
+	logMsg = fmt.Sprintf("Reading response for PAM Provider with name %s", name)
+	log.Debug().Msg(logMsg)
+	fmt.Println(logMsg)
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return false, pamProvider, returnHttpErr(httpResponse, err)
+	}
+
+	if len(foundProvider) != 1 {
+		logMsg = "More than one PAM Provider returned for the same name. This is not supported behavior."
+		log.Error().Msg(logMsg)
+		return false, pamProvider, errors.New(logMsg)
+	}
+
+	return true, foundProvider[0], nil
+}
+
+func createMigrationTargetPamProvider(sdkClient *keyfactor.APIClient, fromPamProvider keyfactor.CSSCMSDataModelModelsProvider, fromPamType keyfactor.CSSCMSDataModelModelsProviderType, toPamType keyfactor.CSSCMSDataModelModelsProviderType, appendName string) (keyfactor.CSSCMSDataModelModelsProvider, error) {
+	fmt.Println("creating new Provider of migration target PAM Type")
+	var migrationPamProvider keyfactor.CSSCMSDataModelModelsProvider
+	migrationPamProvider.Name = fromPamProvider.Name + appendName
+	migrationPamProvider.ProviderType = keyfactor.CSSCMSDataModelModelsProviderType{
+		Id: toPamType.Id,
+	}
+	var onevalue int32 = 1
+	migrationPamProvider.Area = &onevalue
+	migrationPamProvider.SecuredAreaId = nil
+
+	// need to init AdditionalProperties map when setting value
+	migrationPamProvider.AdditionalProperties = map[string]interface{}{
+		"Remote": false, // this property is not on the model for some reason
+	}
+
+	fmt.Println("getting migration target PAM Type parameter definitions, InstanceLevel : false")
+	// TODO: check typing, have to access "Parameters" instead of ProviderTypeParams
+	for _, pamParamType := range fromPamType.AdditionalProperties["Parameters"].([]interface{}) {
+		if !pamParamType.(map[string]interface{})["InstanceLevel"].(bool) {
+			// found a provider level parameter
+			// need to find the value to map over
+			// then create an object with that value and TypeParam settings
+			paramName := pamParamType.(map[string]interface{})["Name"].(string)
+			paramValue := selectProviderParamValue(paramName, fromPamProvider.ProviderTypeParamValues)
+			paramTypeId := selectProviderTypeParamId(paramName, toPamType.AdditionalProperties["Parameters"].([]interface{}))
+			falsevalue := false
+			providerLevelParameter := keyfactor.CSSCMSDataModelModelsPamProviderTypeParamValue{
+				Value: &paramValue,
+				ProviderTypeParam: &keyfactor.CSSCMSDataModelModelsProviderTypeParam{
+					Id:            &paramTypeId,
+					Name:          &paramName,
+					InstanceLevel: &falsevalue,
+				},
+			}
+
+			// append filled out provider type parameter object, which contains the Provider-level parameter values
+			// migrationPamProvider.ProviderTypeParamValues = append(migrationPamProvider.ProviderTypeParamValues, providerLevelParameter)
+
+			// TODO: need to explicit filter for CyberArk expected params, i.e. not map over Safe
+			// this needs to be done programatically for other provider types
+			if paramName == "AppId" {
+				migrationPamProvider.ProviderTypeParamValues = append(migrationPamProvider.ProviderTypeParamValues, providerLevelParameter)
+			}
+		}
+	}
+
+	msg := "Created new PAM Provider definition to be created."
+	fmt.Println(msg)
+	log.Info().Msg(msg)
+	jobject, _ := json.MarshalIndent(migrationPamProvider, "", "    ")
+	fmt.Println(string(jobject))
+	fmt.Println("^^^ PAM Provider to be created ^^^")
+
+	// POST new PAM Provider
+	// create new PAM Instance of designated <<TO>> type
+	// set area = 1 or previous value
+	// name = old name plus append parameter
+	// providertype.id = Type GUID
+	// for all provider level values:
+	// set value to migrating value
+	// null for instanceid, instanceguid
+	// providertypeparam should be set to all matching values from GET TYPES
+	// ignoring datatype
+
+	createdPamProvider, httpResponse, rErr := sdkClient.PAMProviderApi.PAMProviderCreatePamProvider(context.Background()).
+		Provider(migrationPamProvider).
+		XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
+		Execute()
+
+	if rErr != nil {
+		log.Error().Err(rErr).Send()
+		return *createdPamProvider, returnHttpErr(httpResponse, rErr)
+	}
+
+	fmt.Println("vvv CREATED MIGRATION PAM PROVIDER vvv")
+	jobject, _ = json.MarshalIndent(createdPamProvider, "", "    ")
+	fmt.Println(string(jobject))
+	fmt.Println("^^^ CREATED MIGRATION PAM PROVIDER ^^^")
+
+	return *createdPamProvider, nil
 }
 
 func selectProviderParamValue(name string, providerParameters []keyfactor.CSSCMSDataModelModelsPamProviderTypeParamValue) string {
