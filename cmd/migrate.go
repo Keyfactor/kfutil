@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	// "github.com/Keyfactor/keyfactor-go-client-sdk/v24/api/keyfactor/v2"
 	"github.com/Keyfactor/keyfactor-go-client-sdk/v2/api/keyfactor"
@@ -33,6 +34,99 @@ var migrateCmd = &cobra.Command{
 	Long: `Migrating to new Types and Extension implementations in Keyfactor is possible but not currently automated
 	in the platform. This tool aims to assist in performing the necessary steps to migrate, in limited scenarios,
 	to new Extension implementations that have definitions that differ from prior releases.`,
+}
+
+var migrateCheckCmd = &cobra.Command{
+	Use:   "check",
+	Short: "Check usage of a feature to migrate. Currently only PAM is supported.",
+	Long:  "Check usage of a feature to migrate. Currently only PAM is supported",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		isExperimental := true
+
+		// load specified flags
+		fromCheck, _ := cmd.Flags().GetString("from") // name of entity, e.g. PAM Provider
+		pamCheck, _ := cmd.Flags().GetBool("pam-usage")
+
+		if pamCheck == false {
+			return errors.New("Flag --pam-usage was not specified, but this is the only currently supported use case.")
+		}
+
+		// Debug + expEnabled checks
+		informDebug(debugFlag)
+		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		if debugErr != nil {
+			return debugErr
+		}
+
+		// Log flags
+		log.Info().Str("from", fromCheck).
+			Bool("pam-usage", pamCheck).
+			Msg("migrate PAM Provider")
+
+		sdkClient, err := initGenClient(false)
+		if err != nil {
+			return err
+		}
+
+		// get all secret GUIDs for PAM Provider
+		found, pamProvider, err := getExistingPamProvider(sdkClient, fromCheck)
+
+		activePamSecretGuids := map[string]bool{}
+		for _, param := range pamProvider.ProviderTypeParamValues {
+			if param.InstanceGuid != nil {
+				// enter every instance guid as a key with value true
+				// represents an active Secret being managed in this pam provider
+				// the same key will be set multiple times for each parameter for a particular Secret, but this should be no issue
+				activePamSecretGuids[*param.InstanceGuid] = true
+			}
+		}
+
+		if err != nil {
+			log.Error().Err(err).Send()
+			return err
+		}
+
+		if found == false {
+			return errors.New("Named entity in 'from' argument was not found, no check can be run.")
+		}
+
+		legacyClient, err := initClient(false)
+		if err != nil {
+			return err
+		}
+
+		// get all certificate stores
+		certStoreList, err := legacyClient.ListCertificateStores(nil)
+
+		if err != nil {
+			log.Error().Err(err).Send()
+			return err
+		}
+
+		certStoreGuids := map[string]bool{}
+		// loop through every found certificate store
+		for _, store := range *certStoreList {
+			// get properties field, as this will contain the Secret GUID for one of our active Instances if the PAM provider is in use
+			storeProperties := store.PropertiesString
+
+			// loop through all found Instance GUIDs of the PAM Provider
+			// if the GUID is present in the Properties field, add this Store ID to the list to return
+			for instanceGuid, _ := range activePamSecretGuids {
+				if strings.Contains(storeProperties, instanceGuid) {
+					certStoreGuids[store.Id] = true
+				}
+			}
+		}
+
+		// print out list of Cert Store GUIDs
+		fmt.Println("\nThe following Cert Store Ids are using the PAM Provider with name '" + fromCheck + "'\n")
+		for storeId, _ := range certStoreGuids {
+			fmt.Println(storeId)
+		}
+
+		return nil
+	},
 }
 
 var migratePamCmd = &cobra.Command{
@@ -303,10 +397,16 @@ func getExistingPamProvider(sdkClient *keyfactor.APIClient, name string) (bool, 
 		return false, pamProvider, returnHttpErr(httpResponse, err)
 	}
 
-	if len(foundProvider) != 1 {
+	if len(foundProvider) > 1 {
 		logMsg = "More than one PAM Provider returned for the same name. This is not supported behavior."
 		log.Error().Msg(logMsg)
 		return false, pamProvider, errors.New(logMsg)
+	}
+
+	if len(foundProvider) == 0 {
+		logMsg = "No PAM Provider was found with the given name."
+		log.Warn().Msg(logMsg)
+		return false, pamProvider, nil
 	}
 
 	return true, foundProvider[0], nil
@@ -465,12 +565,36 @@ func buildMigratedPamSecret(secretProp map[string]interface{}, fromProviderLevel
 }
 
 func init() {
+	RootCmd.AddCommand(migrateCmd)
+
+	// migrate check
+	var pamCheck bool
+	var fromCheck string
+
+	migrateCmd.AddCommand(migrateCheckCmd)
+
+	migrateCheckCmd.Flags().BoolVar(
+		&pamCheck,
+		"pam-usage",
+		true,
+		"Specify this flag to check usage of a PAM Provider named with the 'from' argument. Returns a list of Certificate Store GUIDs using that provider.",
+	)
+
+	migrateCheckCmd.Flags().StringVarP(
+		&fromCheck,
+		"from",
+		"f",
+		"",
+		"The name of the KF entity to search for usage of. Behavior will be different depending on type of check specified.",
+	)
+
+	migrateCheckCmd.MarkFlagRequired("from")
+
+	// migrate pam
 	var from string
 	var to string
 	var appendName string
 	var store string
-
-	RootCmd.AddCommand(migrateCmd)
 
 	migrateCmd.AddCommand(migratePamCmd)
 
