@@ -1,0 +1,22 @@
+{
+  "name": "migrate-from-to",
+  "remote": false,
+  "area": 1, 
+  "providerType": {
+    "id": "c3c99c92-e4c5-442e-8cc1-09bf3eaead9d"
+  },
+  "providerTypeParamValues": [
+    {
+      "value": "appid",
+      "instanceId": null,
+      "instanceGuid": null,
+      "providerTypeParam": {
+        "id": 13,
+        "name": "AppId",
+        "displayName": "Application ID",
+        "instanceLevel": false
+      }
+    }
+  ],
+  "securedAreaId": null
+}

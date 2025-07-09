@@ -1,0 +1,261 @@
+[
+  {
+    "Id": "c3c99c92-e4c5-442e-8cc1-09bf3eaead9d",
+    "Name": "CyberArk-SdkCredentialProvider",
+    "Parameters": [
+      {
+        "Id": 13,
+        "Name": "AppId",
+        "DisplayName": "Application ID",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 14,
+        "Name": "Safe",
+        "DisplayName": "Safe",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": 15,
+        "Name": "Folder",
+        "DisplayName": "Folder",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": 16,
+        "Name": "Object",
+        "DisplayName": "Object",
+        "DataType": 1,
+        "InstanceLevel": true
+      }
+    ]
+  },
+  {
+    "Id": "9ef36d00-d85c-468b-8f38-275e7e5a7b56",
+    "Name": "CyberArk-CentralCredentialProvider",
+    "Parameters": [
+      {
+        "Id": 21,
+        "Name": "AppId",
+        "DisplayName": "Application ID",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 22,
+        "Name": "Host",
+        "DisplayName": "CyberArk Host and Port",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 23,
+        "Name": "Site",
+        "DisplayName": "CyberArk API Site",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 24,
+        "Name": "Safe",
+        "DisplayName": "Safe",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": 25,
+        "Name": "Folder",
+        "DisplayName": "Folder",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": 26,
+        "Name": "Object",
+        "DisplayName": "Object",
+        "DataType": 1,
+        "InstanceLevel": true
+      }
+    ]
+  },
+  {
+    "Id": "c09bbfa5-a081-4194-9dd2-31f3cc3fabcc",
+    "Name": "Thycotic",
+    "Parameters": [
+      {
+        "Id": 5,
+        "Name": "SecretServerUrl",
+        "DisplayName": "Server URL",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 6,
+        "Name": "RuleName",
+        "DisplayName": "Rule Name",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 7,
+        "Name": "SecretId",
+        "DisplayName": "Thycotic Secret ID",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": 8,
+        "Name": "RuleKey",
+        "DisplayName": "Rule Key",
+        "DataType": 2,
+        "InstanceLevel": false
+      }
+    ]
+  },
+  {
+    "Id": "a23ee0a3-b56a-4016-b70e-8ca78e7c3789",
+    "Name": "Hashicorp-Vault",
+    "Parameters": [
+      {
+        "Id": 27,
+        "Name": "Host",
+        "DisplayName": "Vault Host",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 28,
+        "Name": "Token",
+        "DisplayName": "Vault Token",
+        "DataType": 2,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 29,
+        "Name": "Path",
+        "DisplayName": "KV Engine Path",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 30,
+        "Name": "Secret",
+        "DisplayName": "KV Secret Name",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": 31,
+        "Name": "Key",
+        "DisplayName": "KV Secret Key",
+        "DataType": 1,
+        "InstanceLevel": true
+      }
+    ]
+  },
+  {
+    "Id": "74f21632-7581-4156-816b-deb2ce3f5e8e",
+    "Name": "1Password-CLI",
+    "Parameters": [
+      {
+        "Id": 9,
+        "Name": "Vault",
+        "DisplayName": "1Password Secret Vault",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 10,
+        "Name": "Token",
+        "DisplayName": "1Password Service Account Token",
+        "DataType": 2,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 11,
+        "Name": "Item",
+        "DisplayName": "1Password Item Name",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": 12,
+        "Name": "Field",
+        "DisplayName": "Field Name on Item",
+        "DataType": 1,
+        "InstanceLevel": true
+      }
+    ]
+  },
+  {
+    "Id": "16fc28fa-d2e4-4152-9895-ebf261b011b5",
+    "Name": "CyberArk",
+    "Parameters": [
+      {
+        "Id": 1,
+        "Name": "Safe",
+        "DisplayName": "PrivateArk Safe",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 2,
+        "Name": "Folder",
+        "DisplayName": "PrivateArk Folder Name",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": 3,
+        "Name": "Object",
+        "DisplayName": "PrivateArk Protected Password Name",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": 4,
+        "Name": "AppId",
+        "DisplayName": "Application ID",
+        "DataType": 1,
+        "InstanceLevel": false
+      }
+    ]
+  },
+  {
+    "Id": "1ec1e6fc-5c5a-43d8-b285-fb343e6749a0",
+    "Name": "ApiTest",
+    "Parameters": [
+      {
+        "Id": 17,
+        "Name": "Param1",
+        "DisplayName": "Param1",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": 18,
+        "Name": "Param2",
+        "DisplayName": "Param2",
+        "DataType": 1,
+        "InstanceLevel": true
+      },
+      {
+        "Id": 19,
+        "Name": "Param3",
+        "DisplayName": "Param3",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": 20,
+        "Name": "Param4",
+        "DisplayName": "Param4",
+        "DataType": 2,
+        "InstanceLevel": false
+      }
+    ]
+  }
+]

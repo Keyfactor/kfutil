@@ -1,0 +1,35 @@
+{
+  "Id": "917bd052-1507-48b5-917d-dbe638890b77",
+  "ContainerId": null,
+  "DisplayName": "PAM_TEST - PAM_TEST",
+  "ClientMachine": "PAM_TEST",
+  "Storepath": "PAM_TEST",
+  "CertStoreInventoryJobId": null,
+  "CertStoreType": 115,
+  "Approved": true,
+  "CreateIfMissing": false,
+  "Properties": "{\"ServerUsername\":{\"value\":{\"Provider\":9,\"Parameters\":{\"Safe\":\"safe\",\"Folder\":\"folder1-new\",\"Object\":\"object1-new\"}}},\"ServerPassword\":{\"Value\":{\"SecretValue\":\"********************\"}},\"ClientCertificate\":{\"value\":{\"Provider\":9,\"Parameters\":{\"Safe\":\"safe\",\"Folder\":\"folder3-new\",\"Object\":\"object3-new\"}}},\"ClientCertificatePassword\":{\"Value\":{\"SecretValue\":null}},\"AzureCloud\":\"public\",\"ServerUseSsl\":\"true\"}",
+  "AgentId": "cc65a1f8-3db1-4c6a-90fc-3c874888cddf",
+  "AgentAssigned": true,
+  "ContainerName": null,
+  "InventorySchedule": null,
+  "ReenrollmentStatus": {
+    "Data": false,
+    "AgentId": null,
+    "Message": "Key generation is not supported by the agent for this store.",
+    "JobProperties": null,
+    "CustomAliasAllowed": 0,
+    "EntryParameters": []
+  },
+  "SetNewPasswordAllowed": false,
+  "Password": {
+    "Value": null,
+    "SecretTypeGuid": "fe957956-4c32-4144-b896-6f85532a0da1",
+    "InstanceId": null,
+    "InstanceGuid": "917bd052-1507-48b5-917d-dbe638890b77",
+    "ProviderTypeParameterValues": [],
+    "ProviderId": null,
+    "IsManaged": false,
+    "HasValue": false
+  }
+}
