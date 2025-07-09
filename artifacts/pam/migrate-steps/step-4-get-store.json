@@ -1,0 +1,35 @@
+{
+  "Id": "917bd052-1507-48b5-917d-dbe638890b77",
+  "ContainerId": null,
+  "DisplayName": "PAM_TEST - PAM_TEST",
+  "ClientMachine": "PAM_TEST",
+  "Storepath": "PAM_TEST",
+  "CertStoreInventoryJobId": null,
+  "CertStoreType": 115,
+  "Approved": true,
+  "CreateIfMissing": false,
+  "Properties": "{\"ServerUsername\":{\"Value\":null,\"SecretTypeGuid\":\"84372609-f5af-4a3f-8bc0-a4d4b9013b7b\",\"InstanceId\":null,\"InstanceGuid\":\"d4bf0131-8abc-4d61-bc88-8e17551c0fe8\",\"ProviderTypeParameterValues\":[{\"Id\":88,\"Value\":\"folder1\",\"ParameterId\":0,\"InstanceId\":null,\"InstanceGuid\":\"d4bf0131-8abc-4d61-bc88-8e17551c0fe8\",\"Provider\":null,\"ProviderTypeParam\":{\"Id\":2,\"Name\":\"Folder\",\"DisplayName\":\"PrivateArk Folder Name\",\"DataType\":1,\"InstanceLevel\":true,\"ProviderType\":null}},{\"Id\":89,\"Value\":\"name1\",\"ParameterId\":0,\"InstanceId\":null,\"InstanceGuid\":\"d4bf0131-8abc-4d61-bc88-8e17551c0fe8\",\"Provider\":null,\"ProviderTypeParam\":{\"Id\":3,\"Name\":\"Object\",\"DisplayName\":\"PrivateArk Protected Password Name\",\"DataType\":1,\"InstanceLevel\":true,\"ProviderType\":null}}],\"ProviderId\":6,\"IsManaged\":true,\"HasValue\":true},\"ServerPassword\":{\"Value\":\"********************\",\"SecretTypeGuid\":\"84372609-f5af-4a3f-8bc0-a4d4b9013b7b\",\"InstanceId\":null,\"InstanceGuid\":\"22faa8b0-9bcf-4bc0-99de-8168b467ba45\",\"ProviderTypeParameterValues\":[],\"ProviderId\":null,\"IsManaged\":false,\"HasValue\":true},\"ClientCertificate\":{\"Value\":null,\"SecretTypeGuid\":\"84372609-f5af-4a3f-8bc0-a4d4b9013b7b\",\"InstanceId\":null,\"InstanceGuid\":\"a1fa5afc-5057-42c5-b107-bb1420cc946c\",\"ProviderTypeParameterValues\":[{\"Id\":90,\"Value\":\"folder3\",\"ParameterId\":0,\"InstanceId\":null,\"InstanceGuid\":\"a1fa5afc-5057-42c5-b107-bb1420cc946c\",\"Provider\":null,\"ProviderTypeParam\":{\"Id\":2,\"Name\":\"Folder\",\"DisplayName\":\"PrivateArk Folder Name\",\"DataType\":1,\"InstanceLevel\":true,\"ProviderType\":null}},{\"Id\":91,\"Value\":\"name3\",\"ParameterId\":0,\"InstanceId\":null,\"InstanceGuid\":\"a1fa5afc-5057-42c5-b107-bb1420cc946c\",\"Provider\":null,\"ProviderTypeParam\":{\"Id\":3,\"Name\":\"Object\",\"DisplayName\":\"PrivateArk Protected Password Name\",\"DataType\":1,\"InstanceLevel\":true,\"ProviderType\":null}}],\"ProviderId\":6,\"IsManaged\":true,\"HasValue\":true},\"ClientCertificatePassword\":{\"Value\":null,\"SecretTypeGuid\":\"84372609-f5af-4a3f-8bc0-a4d4b9013b7b\",\"InstanceId\":null,\"InstanceGuid\":\"1b80d474-9368-4b52-b723-a9159e2c771c\",\"ProviderTypeParameterValues\":[],\"ProviderId\":null,\"IsManaged\":false,\"HasValue\":false},\"AzureCloud\":\"public\",\"ServerUseSsl\":\"true\"}",
+  "AgentId": "cc65a1f8-3db1-4c6a-90fc-3c874888cddf",
+  "AgentAssigned": true,
+  "ContainerName": null,
+  "InventorySchedule": null,
+  "ReenrollmentStatus": {
+    "Data": false,
+    "AgentId": null,
+    "Message": "Key generation is not supported by the agent for this store.",
+    "JobProperties": null,
+    "CustomAliasAllowed": 0,
+    "EntryParameters": []
+  },
+  "SetNewPasswordAllowed": false,
+  "Password": {
+    "Value": null,
+    "SecretTypeGuid": "fe957956-4c32-4144-b896-6f85532a0da1",
+    "InstanceId": null,
+    "InstanceGuid": "917bd052-1507-48b5-917d-dbe638890b77",
+    "ProviderTypeParameterValues": [],
+    "ProviderId": null,
+    "IsManaged": false,
+    "HasValue": false
+  }
+}
