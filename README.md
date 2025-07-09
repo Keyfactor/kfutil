@@ -298,10 +298,10 @@ set of defined certificates are present in each store that meets a certain set o
 
 ```bash
 echo "Generating cert template file certs_template.csv"
-kfutil stores rot generate-template-rot --type certs
+kfutil stores rot generate-template --type certs
 # edit the certs_template.csv file
 echo "Generating stores template file stores_template.csv"
-kfutil stores rot generate-template-rot --type stores
+kfutil stores rot generate-template --type stores
 # edit the stores_template.csv file
 kfutil stores rot audit --add-certs certs_template.csv --stores stores_template.csv #This will audit the stores and generate a report file
 # review/edit the report file generated `rot_audit.csv`
@@ -317,7 +317,7 @@ For full documentation, see [stores rot generate template](docs/kfutil_stores_ro
 This will write the file `certs_template.csv` to the current directory.
 
 ```bash
-kfutil stores generate-template-rot --type certs
+kfutil stores rot generate-template --type certs
 ```
 
 #### Generate Certificate Store List Template
@@ -327,7 +327,7 @@ For full documentation, see [stores rot generate template](docs/kfutil_stores_ro
 This will write the file `stores_template.csv` to the current directory. For full documentation
 
 ```bash
-kfutil stores generate-template-rot --type stores
+kfutil stores rot generate-template --type stores
 ```
 
 #### Run Root of Trust Audit
