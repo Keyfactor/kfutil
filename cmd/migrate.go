@@ -203,41 +203,46 @@ var migratePamCmd = &cobra.Command{
 		for _, pamType := range pamTypes {
 			if *pamType.Id == *fromPamProvider.ProviderType.Id {
 				fromPamType = pamType
-				// TODO: remove debugging
-				fmt.Println("vvv FROM TYPE vvv")
-				jobject, _ := json.MarshalIndent(pamType, "", "    ")
-				fmt.Println(string(jobject))
-				jobject, _ = json.MarshalIndent(pamType.AdditionalProperties["Parameters"], "", "    ")
-				fmt.Println(string(jobject))
-				fmt.Println("^^^ FROM TYPE ^^^")
+
+				if debugFlag {
+					fmt.Println("vvv FROM TYPE vvv")
+					jobject, _ := json.MarshalIndent(pamType, "", "    ")
+					fmt.Println(string(jobject))
+					jobject, _ = json.MarshalIndent(pamType.AdditionalProperties["Parameters"], "", "    ")
+					fmt.Println(string(jobject))
+					fmt.Println("^^^ FROM TYPE ^^^")
+				}
 			}
 
 			if *pamType.Name == migrateTo {
 				toPamType = pamType
-				// TODO: remove debugging
-				fmt.Println("vvv TO TYPE vvv")
-				jobject, _ := json.MarshalIndent(pamType, "", "    ")
-				fmt.Println(string(jobject))
-				jobject, _ = json.MarshalIndent(pamType.AdditionalProperties["Parameters"], "", "    ")
-				fmt.Println(string(jobject))
-				fmt.Println("^^^ TO TYPE ^^^")
+
+				if debugFlag {
+					fmt.Println("vvv TO TYPE vvv")
+					jobject, _ := json.MarshalIndent(pamType, "", "    ")
+					fmt.Println(string(jobject))
+					jobject, _ = json.MarshalIndent(pamType.AdditionalProperties["Parameters"], "", "    ")
+					fmt.Println(string(jobject))
+					fmt.Println("^^^ TO TYPE ^^^")
+				}
 			}
 		}
 
 		// TODO: check typing, have to access "Parameters" instead of ProviderTypeParams
 		for _, pamParamType := range fromPamType.AdditionalProperties["Parameters"].([]interface{}) {
-			jobject, _ := json.MarshalIndent(pamParamType, "", "    ")
-			fmt.Println(string(jobject))
 			if pamParamType.(map[string]interface{})["InstanceLevel"].(bool) {
 				// found definition of an instance level param for the type in question
 				// create key in map for the field name
 				inUsePamParamValues[pamParamType.(map[string]interface{})["Name"].(string)] = map[string]string{}
-				fmt.Println("made it!")
 			}
 		}
 
-		jobject, _ := json.MarshalIndent(inUsePamParamValues, "", "    ")
-		fmt.Println(string(jobject))
+		if debugFlag {
+			fmt.Println("vvv IN USE PAM PROVIDER PARAMETER INSTANCES vvv")
+			jobject, _ := json.MarshalIndent(inUsePamParamValues, "", "    ")
+			fmt.Println(string(jobject))
+			fmt.Println("^^^ IN USE PAM PROVIDER PARAMETER INSTANCES ^^^")
+		}
 
 		// step through list of every defined param value
 		// record unique GUIDs of every param value on InstanceLevel : true
@@ -254,13 +259,13 @@ var migratePamCmd = &cobra.Command{
 				fromProviderLevelParamValues[fieldName] = *pamParam.Value
 			}
 		}
-		jobject, _ = json.MarshalIndent(inUsePamParamValues, "", "    ")
-		fmt.Println(string(jobject))
 
-		// TODO: make sure every field has the same number of GUIDs tracked
-		// tally GUID count for logging
-
-		// log.Info().Msgf("Found %d PAM Provider usages of Provider %s",)
+		if debugFlag {
+			fmt.Println("vvv IN USE PAM PROVIDER PARAMETER VALUES vvv")
+			jobject, _ := json.MarshalIndent(inUsePamParamValues, "", "    ")
+			fmt.Println(string(jobject))
+			fmt.Println("^^^ IN USE PAM PROVIDER PARAMETER VALUES ^^^")
+		}
 
 		// GET all PAM Types
 		// select array entry with matching Name field of <<TO>>
@@ -296,13 +301,17 @@ var migratePamCmd = &cobra.Command{
 			return rErr
 		}
 
-		jobject, _ = json.MarshalIndent(certStore, "", "    ")
-		fmt.Println(string(jobject))
-		fmt.Println("^^^ found cert store ^^^")
+		if debugFlag {
+			fmt.Println("vvv FOUND CERT STORE vvv")
+			jobject, _ := json.MarshalIndent(certStore, "", "    ")
+			fmt.Println(string(jobject))
+			fmt.Println("^^^ FOUND CERT STORE ^^^")
 
-		jobject, _ = json.MarshalIndent(certStore.Properties, "", "    ")
-		fmt.Println(string(jobject))
-		fmt.Println("^^^ cert store properties ^^^")
+			fmt.Println("vvv CERT STORE PROPERTIES vvv")
+			jobject, _ = json.MarshalIndent(certStore.Properties, "", "    ")
+			fmt.Println(string(jobject))
+			fmt.Println("^^^ CERT STORE PROPERTIES ^^^")
+		}
 
 		// foreach property key (properties is an object not an array)
 		// if value is an object, and object has an InstanceGuid
@@ -340,14 +349,12 @@ var migratePamCmd = &cobra.Command{
 			}
 		}
 
-		jobject, _ = json.MarshalIndent(certStore.Properties, "", "    ")
-		fmt.Println(string(jobject))
-		fmt.Println("^^^ SECRETS REFORMATTED ^^^")
-
-		// propertiesAsString, _ := json.Marshal(certStore.Properties)
-		// jsonProps := string(propertiesAsString)
-		// escapedProps := strings.ReplaceAll(jsonProps, "\"", "\\\"")
-		// fmt.Println(escapedProps)
+		if debugFlag {
+			fmt.Println("vvv SECRETS REFORMATTED vvv")
+			jobject, _ := json.MarshalIndent(certStore.Properties, "", "    ")
+			fmt.Println(string(jobject))
+			fmt.Println("^^^ SECRETS REFORMATTED ^^^")
+		}
 
 		// update property object
 		// set required fields, and new Properties
@@ -368,7 +375,8 @@ var migratePamCmd = &cobra.Command{
 			return rErr
 		}
 
-		jobject, _ = json.MarshalIndent(updatedStore, "", "    ")
+		fmt.Println("vvv UPDATED STORE vvv")
+		jobject, _ := json.MarshalIndent(updatedStore, "", "    ")
 		fmt.Println(string(jobject))
 		fmt.Println("^^^ UPDATED STORE ^^^")
 
@@ -462,9 +470,13 @@ func createMigrationTargetPamProvider(sdkClient *keyfactor.APIClient, fromPamPro
 	msg := "Created new PAM Provider definition to be created."
 	fmt.Println(msg)
 	log.Info().Msg(msg)
-	jobject, _ := json.MarshalIndent(migrationPamProvider, "", "    ")
-	fmt.Println(string(jobject))
-	fmt.Println("^^^ PAM Provider to be created ^^^")
+
+	if debugFlag {
+		fmt.Println("vvv PAM PROVIDER TO BE CREATED vvv")
+		jobject, _ := json.MarshalIndent(migrationPamProvider, "", "    ")
+		fmt.Println(string(jobject))
+		fmt.Println("^^^ PAM PROVIDER TO BE CREATED ^^^")
+	}
 
 	// POST new PAM Provider
 	// create new PAM Instance of designated <<TO>> type
@@ -487,10 +499,12 @@ func createMigrationTargetPamProvider(sdkClient *keyfactor.APIClient, fromPamPro
 		return *createdPamProvider, returnHttpErr(httpResponse, rErr)
 	}
 
-	fmt.Println("vvv CREATED MIGRATION PAM PROVIDER vvv")
-	jobject, _ = json.MarshalIndent(createdPamProvider, "", "    ")
-	fmt.Println(string(jobject))
-	fmt.Println("^^^ CREATED MIGRATION PAM PROVIDER ^^^")
+	if debugFlag {
+		fmt.Println("vvv CREATED MIGRATION PAM PROVIDER vvv")
+		jobject, _ := json.MarshalIndent(createdPamProvider, "", "    ")
+		fmt.Println(string(jobject))
+		fmt.Println("^^^ CREATED MIGRATION PAM PROVIDER ^^^")
+	}
 
 	return *createdPamProvider, nil
 }
