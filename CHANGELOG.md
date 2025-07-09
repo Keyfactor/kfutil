@@ -1,3 +1,12 @@
+# v1.8.0
+
+## Features
+
+### CLI
+
+- `migrate check --pam-usage`: Looks up usage of a named PAM Provider, and returns the store IDs of all stores using the Provider. Used in conjunction with the `migrate pam` command.
+- `migrate pam`: Will migrate legacy CyberArk PAM Provider usage (named "CyberArk") to the "CyberArk-SdkCredentialProvider" type when prompted with a Store ID for a certificate store using a "CyberArk" provider
+
 # v1.7.0
 
 ## Features
