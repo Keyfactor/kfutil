@@ -189,7 +189,7 @@ func informDebug(debugFlag bool) {
 		return
 	}
 	// Else no logs should be emitted
-	zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	zerolog.SetGlobalLevel(zerolog.Disabled)
 }
 
 func initLogger() {
