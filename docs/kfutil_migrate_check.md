@@ -1,19 +1,21 @@
-## kfutil pam types-list
+## kfutil migrate check
 
-Returns a list of all available PAM provider types.
+Check usage of a feature to migrate. Currently only PAM is supported.
 
 ### Synopsis
 
-Returns a list of all available PAM provider types.
+Check usage of a feature to migrate. Currently only PAM is supported
 
 ```
-kfutil pam types-list [flags]
+kfutil migrate check [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for types-list
+  -f, --from string   The name of the KF entity to search for usage of. Behavior will be different depending on type of check specified.
+  -h, --help          help for check
+      --pam-usage     Specify this flag to check usage of a PAM Provider named with the 'from' argument. Returns a list of Certificate Store GUIDs using that provider. (default true)
 ```
 
 ### Options inherited from parent commands
@@ -41,6 +43,6 @@ kfutil pam types-list [flags]
 
 ### SEE ALSO
 
-* [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
+* [kfutil migrate](kfutil_migrate.md)     - Keyfactor Migration Tools.
 
 ###### Auto generated on 15-Jul-2025
