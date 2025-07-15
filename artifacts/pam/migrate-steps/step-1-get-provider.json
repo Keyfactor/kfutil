@@ -1,0 +1,127 @@
+[
+  {
+    "Id": 6,
+    "Name": "migrate-from",
+    "Area": 1,
+    "ProviderType": {
+      "Id": "16fc28fa-d2e4-4152-9895-ebf261b011b5",
+      "Name": "CyberArk",
+      "ProviderTypeParams": [
+        {
+          "Id": 1,
+          "Name": "Safe",
+          "DisplayName": "PrivateArk Safe",
+          "DataType": 1,
+          "InstanceLevel": false,
+          "ProviderType": null
+        },
+        {
+          "Id": 2,
+          "Name": "Folder",
+          "DisplayName": "PrivateArk Folder Name",
+          "DataType": 1,
+          "InstanceLevel": true,
+          "ProviderType": null
+        },
+        {
+          "Id": 3,
+          "Name": "Object",
+          "DisplayName": "PrivateArk Protected Password Name",
+          "DataType": 1,
+          "InstanceLevel": true,
+          "ProviderType": null
+        },
+        {
+          "Id": 4,
+          "Name": "AppId",
+          "DisplayName": "Application ID",
+          "DataType": 1,
+          "InstanceLevel": false,
+          "ProviderType": null
+        }
+      ]
+    },
+    "ProviderTypeParamValues": [
+      {
+        "Id": 69,
+        "Value": "safe",
+        "InstanceId": null,
+        "InstanceGuid": null,
+        "ProviderTypeParam": {
+          "Id": 1,
+          "Name": "Safe",
+          "DisplayName": "PrivateArk Safe",
+          "DataType": 1,
+          "InstanceLevel": false
+        }
+      },
+      {
+        "Id": 70,
+        "Value": "appid",
+        "InstanceId": null,
+        "InstanceGuid": null,
+        "ProviderTypeParam": {
+          "Id": 4,
+          "Name": "AppId",
+          "DisplayName": "Application ID",
+          "DataType": 1,
+          "InstanceLevel": false
+        }
+      },
+      {
+        "Id": 71,
+        "Value": "folder1",
+        "InstanceId": null,
+        "InstanceGuid": "54b3dbea-4e2c-4cb2-9aa3-650b20dc8866",
+        "ProviderTypeParam": {
+          "Id": 2,
+          "Name": "Folder",
+          "DisplayName": "PrivateArk Folder Name",
+          "DataType": 1,
+          "InstanceLevel": true
+        }
+      },
+      {
+        "Id": 72,
+        "Value": "name1",
+        "InstanceId": null,
+        "InstanceGuid": "54b3dbea-4e2c-4cb2-9aa3-650b20dc8866",
+        "ProviderTypeParam": {
+          "Id": 3,
+          "Name": "Object",
+          "DisplayName": "PrivateArk Protected Password Name",
+          "DataType": 1,
+          "InstanceLevel": true
+        }
+      },
+      {
+        "Id": 73,
+        "Value": "folder3",
+        "InstanceId": null,
+        "InstanceGuid": "d64501b9-860f-4eaa-8c35-0b9594da759e",
+        "ProviderTypeParam": {
+          "Id": 2,
+          "Name": "Folder",
+          "DisplayName": "PrivateArk Folder Name",
+          "DataType": 1,
+          "InstanceLevel": true
+        }
+      },
+      {
+        "Id": 74,
+        "Value": "name3",
+        "InstanceId": null,
+        "InstanceGuid": "d64501b9-860f-4eaa-8c35-0b9594da759e",
+        "ProviderTypeParam": {
+          "Id": 3,
+          "Name": "Object",
+          "DisplayName": "PrivateArk Protected Password Name",
+          "DataType": 1,
+          "InstanceLevel": true
+        }
+      }
+    ],
+    "SecuredAreaId": null,
+    "Remote": false
+  }
+]
