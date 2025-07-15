@@ -186,7 +186,10 @@ func informDebug(debugFlag bool) {
 	if debugModeEnabled {
 		//zerolog.SetGlobalLevel(zerolog.InfoLevel)
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		return
 	}
+	// Else no logs should be emitted
+	zerolog.SetGlobalLevel(zerolog.Disabled)
 }
 
 func initLogger() {
@@ -359,7 +362,7 @@ func outputResult(result interface{}, format string) {
 		fmt.Println(fmt.Sprintf("%s", result))
 	}
 	log.Debug().
-		Interface("result", result).
+		Str("result", fmt.Sprintf("%s", result)).
 		Str("format", format).
 		Msg(fmt.Sprintf("%s outputResult", DebugFuncExit))
 }

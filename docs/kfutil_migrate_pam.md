@@ -1,19 +1,23 @@
-## kfutil pam types-list
+## kfutil migrate pam
 
-Returns a list of all available PAM provider types.
+Migrate existing PAM Provider usage to a new PAM Provider
 
 ### Synopsis
 
-Returns a list of all available PAM provider types.
+Migrate existing PAM Provider usage to a new PAM Provider
 
 ```
-kfutil pam types-list [flags]
+kfutil migrate pam [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for types-list
+  -a, --append-name string   Text to append to current PAM Provider Name in newly created Provider
+  -f, --from string          Name of the defined PAM Provider to migrate to a new type
+  -h, --help                 help for pam
+  -s, --store string         GUID of a Certificate Store, using a PAM Provider that should be migrated
+  -t, --to string            Name of the PAM Provider Type to migrate to
 ```
 
 ### Options inherited from parent commands
@@ -41,6 +45,6 @@ kfutil pam types-list [flags]
 
 ### SEE ALSO
 
-* [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
+* [kfutil migrate](kfutil_migrate.md)     - Keyfactor Migration Tools.
 
 ###### Auto generated on 15-Jul-2025
