@@ -359,12 +359,14 @@ var migratePamCmd = &cobra.Command{
 		// update property object
 		// set required fields, and new Properties
 		updateStoreArgs := api.UpdateStoreFctArgs{
-			Id:            certStore.Id,
-			ClientMachine: certStore.ClientMachine,
-			StorePath:     certStore.StorePath,
-			AgentId:       certStore.AgentId,
-			Properties:    certStore.Properties,
-			Password:      &certStore.Password,
+			Id:                      certStore.Id,
+			ClientMachine:           certStore.ClientMachine,
+			StorePath:               certStore.StorePath,
+			AgentId:                 certStore.AgentId,
+			Properties:              certStore.Properties,
+			Password:                &certStore.Password, // TODO: secret field, needs to be processed the same as other secret fields
+			InventorySchedule:       &certStore.InventorySchedule,
+			CertStoreInventoryJobId: &certStore.CertStoreInventoryJobId,
 		}
 
 		// TODO: use updated client when API endpoint available

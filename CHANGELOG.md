@@ -1,3 +1,11 @@
+# v1.8.1
+
+## Fixes
+
+### CLI
+
+- `migrate pam` will correctly preserve Inventory Schedules on targeted certificate stores
+
 # v1.8.0
 
 ## Features
