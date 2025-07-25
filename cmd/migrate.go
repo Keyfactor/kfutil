@@ -110,15 +110,35 @@ var migrateCheckCmd = &cobra.Command{
 			// get properties field, as this will contain the Secret GUID for one of our active Instances if the PAM provider is in use
 			storeProperties := store.PropertiesString
 
+			// need to specifically query each store to get set Password details
+			queryStore, err := legacyClient.GetCertificateStoreByID(store.Id)
+
+			if err != nil {
+				log.Error().Err(err).Send()
+				return err
+			}
+
+			storePasswordSettings := queryStore.Password
+
 			// loop through all found Instance GUIDs of the PAM Provider
 			// if the GUID is present in the Properties field, add this Store ID to the list to return
 			for instanceGuid, _ := range activePamSecretGuids {
 				if strings.Contains(storeProperties, instanceGuid) {
+					if debugFlag {
+						fmt.Println("Found PAM usage in Properties for Store Id: ", store.Id)
+					}
 					certStoreGuids[store.Id] = true
 				}
-			}
 
-			// TODO: check Password field for PAM usage
+				if storePasswordSettings.IsManaged {
+					if *storePasswordSettings.InstanceGuid == instanceGuid {
+						if debugFlag {
+							fmt.Println("Found PAM usage in Store Password for Store Id: ", store.Id)
+						}
+						certStoreGuids[store.Id] = true
+					}
+				}
+			}
 		}
 
 		// print out list of Cert Store GUIDs
