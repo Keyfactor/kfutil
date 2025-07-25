@@ -22,8 +22,8 @@ github.com/Keyfactor/keyfactor-auth-client-go v1.3.0 h1:otC213b6CYzqeN9b3CRlH1Qj
 github.com/Keyfactor/keyfactor-auth-client-go v1.3.0/go.mod h1:97vCisBNkdCK0l2TuvOSdjlpvQa4+GHsMut1UTyv1jo=
 github.com/Keyfactor/keyfactor-go-client-sdk/v2 v2.0.0 h1:ehk5crxEGVBwkC8yXsoQXcyITTDlgbxMEkANrl1dA2Q=
 github.com/Keyfactor/keyfactor-go-client-sdk/v2 v2.0.0/go.mod h1:11WXGG9VVKSV0EPku1IswjHbGGpzHDKqD4pe2vD7vas=
-github.com/Keyfactor/keyfactor-go-client/v3 v3.1.0 h1:DQgb93m3xHZZ0FxWGFS90XI8prwS5fmIGrXNxP2IfHM=
-github.com/Keyfactor/keyfactor-go-client/v3 v3.1.0/go.mod h1:LhIBGzTZeZ6o4i0gNg4qmwpwBnkoI6AfcEz8PLKruvc=
+github.com/Keyfactor/keyfactor-go-client/v3 v3.2.0-rc.5 h1:sDdRCGa94GLSBL6mNFiSOuQZ9e9qZmUL1LYpCzESbXo=
+github.com/Keyfactor/keyfactor-go-client/v3 v3.2.0-rc.5/go.mod h1:a7voCNCgvf+TbQxEno/xQ3wRJ+wlJRJKruhNco50GV8=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2 h1:+vx7roKuyA63nhn5WAunQHLTznkw5W8b1Xc0dNjp83s=
 github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2/go.mod h1:HBCaDeC1lPdgDeDbhX8XFpy1jqjK0IBG8W5K+xYqA0w=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=

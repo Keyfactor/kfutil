@@ -110,11 +110,33 @@ var migrateCheckCmd = &cobra.Command{
 			// get properties field, as this will contain the Secret GUID for one of our active Instances if the PAM provider is in use
 			storeProperties := store.PropertiesString
 
+			// need to specifically query each store to get set Password details
+			queryStore, err := legacyClient.GetCertificateStoreByID(store.Id)
+
+			if err != nil {
+				log.Error().Err(err).Send()
+				return err
+			}
+
+			storePasswordSettings := queryStore.Password
+
 			// loop through all found Instance GUIDs of the PAM Provider
 			// if the GUID is present in the Properties field, add this Store ID to the list to return
 			for instanceGuid, _ := range activePamSecretGuids {
 				if strings.Contains(storeProperties, instanceGuid) {
+					if debugFlag {
+						fmt.Println("Found PAM usage in Properties for Store Id: ", store.Id)
+					}
 					certStoreGuids[store.Id] = true
+				}
+
+				if storePasswordSettings.IsManaged {
+					if *storePasswordSettings.InstanceGuid == instanceGuid {
+						if debugFlag {
+							fmt.Println("Found PAM usage in Store Password for Store Id: ", store.Id)
+						}
+						certStoreGuids[store.Id] = true
+					}
 				}
 			}
 		}
@@ -356,6 +378,38 @@ var migratePamCmd = &cobra.Command{
 			fmt.Println("^^^ SECRETS REFORMATTED ^^^")
 		}
 
+		// check Store Password for PAM field, and process migration if applicable
+		var storePassword *api.UpdateStorePasswordConfig
+		if certStore.Password.IsManaged { // managed secret, i.e. PAM Provider in use
+
+			// check if Pam Secret is using our migrating provider
+			fmt.Println(*fromPamProvider.Id, " <= from id equals store password id => ", int32(certStore.Password.ProviderId))
+			fmt.Println(*fromPamProvider.Id == int32(certStore.Password.ProviderId))
+			if *fromPamProvider.Id == int32(certStore.Password.ProviderId) {
+				// Pam Secret that Needs to be migrated
+				var storePasswordInterface map[string]interface{}
+				// marshal and unmarshal strongly typed store password to match
+				// expected map[string]interface{} typing for helper function
+				storePasswordJson, _ := json.Marshal(certStore.Password)
+				json.Unmarshal(storePasswordJson, &storePasswordInterface)
+
+				// migrate secret using helper function
+				var updateStorePasswordInterface map[string]interface{}
+				updateStorePasswordInterface = buildMigratedPamSecret(storePasswordInterface, fromProviderLevelParamValues, *migrationTargetPamProvider.Id)
+
+				// finally, transform the migrated secret back to the strongly typed input for API client
+				updateStorePasswordJson, _ := json.Marshal(updateStorePasswordInterface)
+				json.Unmarshal(updateStorePasswordJson, &storePassword)
+			} else {
+				// leave Store Password untouched: set to null
+				storePassword = nil
+			}
+		} else {
+			// non-managed secret i.e. a KF-encrypted secret, or no value
+			// instead of reformatting, send null to effect no change
+			storePassword = nil
+		}
+
 		// update property object
 		// set required fields, and new Properties
 		updateStoreArgs := api.UpdateStoreFctArgs{
@@ -364,8 +418,27 @@ var migratePamCmd = &cobra.Command{
 			StorePath:     certStore.StorePath,
 			AgentId:       certStore.AgentId,
 			Properties:    certStore.Properties,
-			Password:      &certStore.Password,
+			Password:      storePassword,
+			// the password should be set to null (omitted) when it is not meant to be updated
+			// however it will need to be migrated if it is a matching PAM secret
+			// check formatting to see if it's a PAM secret
+			// then update to new provider format if it matches
+			// otherwise omit / set to null
+
+			// password PAM format:
+			// { Provider: integer id,
+			//   Parameters: { paramname:value
+			//     Safe: safe,
+			//     Folder: folder,
+			//     Object: object }}
+			InventorySchedule:       &certStore.InventorySchedule,
+			CertStoreInventoryJobId: &certStore.CertStoreInventoryJobId,
 		}
+
+		fmt.Println("vvv REQUESTED UPDATE TO STORE vvv")
+		jobject, _ := json.MarshalIndent(updateStoreArgs, "", "    ")
+		fmt.Println(string(jobject))
+		fmt.Println("^^^ REQUESTED UPDATE TO STORE ^^^")
 
 		// TODO: use updated client when API endpoint available
 		updatedStore, rErr := legacyClient.UpdateStore(&updateStoreArgs)
@@ -376,7 +449,7 @@ var migratePamCmd = &cobra.Command{
 		}
 
 		fmt.Println("vvv UPDATED STORE vvv")
-		jobject, _ := json.MarshalIndent(updatedStore, "", "    ")
+		jobject, _ = json.MarshalIndent(updatedStore, "", "    ")
 		fmt.Println(string(jobject))
 		fmt.Println("^^^ UPDATED STORE ^^^")
 
