@@ -1,3 +1,13 @@
+# v1.8.1
+
+## Fixes
+
+### CLI
+
+- `migrate pam` will correctly preserve Inventory Schedules on targeted certificate stores
+- `migrate pam` will migrate matching PAM usages in the Store Password field, or leave value unchanged
+- `migrate check` will reveal matching PAM usages in the Store Password field
+
 # v1.8.0
 
 ## Features
