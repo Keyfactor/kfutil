@@ -11,7 +11,7 @@ require (
 	github.com/Jeffail/gabs v1.4.0
 	github.com/Keyfactor/keyfactor-auth-client-go v1.3.0
 	github.com/Keyfactor/keyfactor-go-client-sdk/v2 v2.0.0
-	github.com/Keyfactor/keyfactor-go-client/v3 v3.1.0
+	github.com/Keyfactor/keyfactor-go-client/v3 v3.2.0-rc.5
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/creack/pty v1.1.24
 	github.com/google/go-cmp v0.7.0
