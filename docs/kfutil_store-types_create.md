@@ -18,7 +18,7 @@ kfutil store-types create [flags]
   -b, --git-ref string     The git branch or tag to reference when pulling store-types from the internet. (default "main")
   -h, --help               help for create
   -l, --list               List valid store types.
-  -n, --name string        Short name of the certificate store type to get. Valid choices are: AKV, AWS-ACM, Akamai, AppGwBin, AzureApp, AzureApp2, AzureAppGw, AzureSP, AzureSP2, BIPCamera, CiscoAsa, CitrixAdc, DataPower, F5-BigIQ, F5-CA-REST, F5-SL-REST, F5-WS-REST, FortiWeb, Fortigate, GCPLoadBal, GcpApigee, GcpCertMgr, HCVKV, HCVKVJKS, HCVKVP12, HCVKVPEM, HCVKVPFX, HCVPKI, HPiLO, IISU, Imperva, K8SCert, K8SCluster, K8SJKS, K8SNS, K8SPKCS12, K8SSecret, K8STLSSecr, MOST, Nmap, PaloAlto, RFDER, RFJKS, RFKDB, RFORA, RFPEM, RFPkcs12, SAMPLETYPE, Signum, VMware-NSX, WinCerMgmt, WinCert, WinSql, f5WafCa, f5WafTls, iDRAC
+  -n, --name string        Short name of the certificate store type to get. Valid choices are: AKV, AWS-ACM, AWS-ACM-v3, Akamai, AlteonLB, AppGwBin, AzureApp, AzureApp2, AzureAppGw, AzureSP, AzureSP2, BIPCamera, CiscoAsa, CitrixAdc, DataPower, F5-BigIQ, F5-CA-REST, F5-SL-REST, F5-WS-REST, FortiWeb, Fortigate, GCPLoadBal, GcpApigee, GcpCertMgr, HCVKV, HCVKVJKS, HCVKVP12, HCVKVPEM, HCVKVPFX, HCVPKI, HPiLO, IISU, Imperva, K8SCert, K8SCluster, K8SJKS, K8SNS, K8SPKCS12, K8SSecret, K8STLSSecr, Nmap, PaloAlto, RFDER, RFJKS, RFKDB, RFORA, RFPEM, RFPkcs12, SAMPLETYPE, Signum, VMware-NSX, WinCerMgmt, WinCert, WinSql, f5WafCa, f5WafTls, iDRAC
   -r, --repo string        The repository to pull store-types definitions from. (default "kfutil")
 ```
 
@@ -49,4 +49,4 @@ kfutil store-types create [flags]
 
 * [kfutil store-types](kfutil_store-types.md)	 - Keyfactor certificate store types APIs and utilities.
 
-###### Auto generated on 15-Jul-2025
+###### Auto generated on 31-Jul-2025

@@ -45,4 +45,4 @@ kfutil store-types templates-fetch [flags]
 
 * [kfutil store-types](kfutil_store-types.md)	 - Keyfactor certificate store types APIs and utilities.
 
-###### Auto generated on 15-Jul-2025
+###### Auto generated on 31-Jul-2025

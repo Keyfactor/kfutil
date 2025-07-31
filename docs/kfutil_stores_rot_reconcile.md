@@ -56,4 +56,4 @@ kfutil stores rot reconcile [flags]
 
 * [kfutil stores rot](kfutil_stores_rot.md)	 - Root of trust utility
 
-###### Auto generated on 15-Jul-2025
+###### Auto generated on 31-Jul-2025

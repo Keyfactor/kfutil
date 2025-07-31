@@ -94,4 +94,4 @@ kfutil stores import csv --file <file name to import> --store-type-id <store typ
 * [kfutil stores import](kfutil_stores_import.md)     - Import a file with certificate store definitions and create them
   in Keyfactor Command.
 
-###### Auto generated on 15-Jul-2025
+###### Auto generated on 31-Jul-2025
