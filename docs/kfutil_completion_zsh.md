@@ -66,4 +66,4 @@ kfutil completion zsh [flags]
 
 * [kfutil completion](kfutil_completion.md)	 - Generate the autocompletion script for the specified shell
 
-###### Auto generated on 17-Jun-2025
+###### Auto generated on 15-Jul-2025

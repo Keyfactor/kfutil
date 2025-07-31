@@ -42,4 +42,4 @@ Commands related to certificate store inventory management
 * [kfutil stores inventory remove](kfutil_stores_inventory_remove.md)	 - Removes a certificate from the certificate store inventory.
 * [kfutil stores inventory show](kfutil_stores_inventory_show.md)	 - Show the inventory of a certificate store.
 
-###### Auto generated on 17-Jun-2025
+###### Auto generated on 15-Jul-2025
