@@ -1,3 +1,20 @@
+# v1.8.2
+
+## Fixes
+
+### CLI
+
+- Silence logging of initial `store-type` fetch
+- `store-types`: Update internal definitions to latest from Keyfactor GitHub repos.
+- `version` update internal version to `1.8.2`
+
+### Chores
+
+- `docs`: Add `migration` auto docs
+- `docs`: Refresh auto docs
+- `deps`: Update all deps to latest versions
+
+
 # v1.8.1
 
 ## Fixes

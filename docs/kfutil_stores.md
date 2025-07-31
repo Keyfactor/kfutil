@@ -47,4 +47,4 @@ A collections of APIs and utilities for interacting with Keyfactor certificate s
 * [kfutil stores list](kfutil_stores_list.md)	 - List certificate stores.
 * [kfutil stores rot](kfutil_stores_rot.md)     - Root of trust utility
 
-###### Auto generated on 17-Jun-2025
+###### Auto generated on 31-Jul-2025
