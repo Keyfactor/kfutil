@@ -636,10 +636,11 @@ func readStoreTypesConfig(fp, gitRef string, gitRepo string, offline bool) (map[
 }
 
 func init() {
-	offline = true    // temporarily set to true as it runs before the flag is set
-	debugFlag = false // temporarily set to false as it runs before the flag is set
+	offline = true // temporarily set to true as it runs before the flag is set
 	var gitRef string
 	var gitRepo string
+
+	informDebug(false) // Do not output debug information for initial setup of store-types command
 	validTypesString := strings.Join(getValidStoreTypes("", DefaultGitRef, DefaultGitRepo), ", ")
 	offline = false //revert this so that flag is not set to true by default
 	RootCmd.AddCommand(storeTypesCmd)

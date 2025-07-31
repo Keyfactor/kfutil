@@ -1,19 +1,17 @@
-## kfutil pam types-list
+## kfutil migrate
 
-Returns a list of all available PAM provider types.
+Keyfactor Migration Tools.
 
 ### Synopsis
 
-Returns a list of all available PAM provider types.
-
-```
-kfutil pam types-list [flags]
-```
+Migrating to new Types and Extension implementations in Keyfactor is possible but not currently automated
+in the platform. This tool aims to assist in performing the necessary steps to migrate, in limited scenarios,
+to new Extension implementations that have definitions that differ from prior releases.
 
 ### Options
 
 ```
-  -h, --help   help for types-list
+  -h, --help   help for migrate
 ```
 
 ### Options inherited from parent commands
@@ -41,6 +39,9 @@ kfutil pam types-list [flags]
 
 ### SEE ALSO
 
-* [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
+* [kfutil](kfutil.md)     - Keyfactor CLI utilities
+* [kfutil migrate check](kfutil_migrate_check.md)     - Check usage of a feature to migrate. Currently only PAM is
+  supported.
+* [kfutil migrate pam](kfutil_migrate_pam.md)     - Migrate existing PAM Provider usage to a new PAM Provider
 
 ###### Auto generated on 15-Jul-2025
