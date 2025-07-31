@@ -422,34 +422,6 @@
     "StorePathDescription": "A single specified AWS Region the store will operate in. Additional regions should get their own store defined."
   },
   {
-    "Name": "Airlock Application Firewall Certificate",
-    "ShortName": "AirlockWAF",
-    "Capability": "AirlockWAF",
-    "LocalStore": false,
-    "SupportedOperations": {
-      "Add": false,
-      "Create": false,
-      "Discovery": true,
-      "Enrollment": false,
-      "Remove": false
-    },
-    "Properties": [],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": true,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "",
-    "PrivateKeyAllowed": "Required",
-    "JobProperties": [],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Allowed"
-  },
-  {
     "Name": "Akamai Certificate Provisioning Service",
     "ShortName": "Akamai",
     "Capability": "Akamai",
@@ -959,6 +931,46 @@
     "CustomAliasAllowed": "Forbidden",
     "ClientMachineDescription": "The Client Machine field is the Akamai REST API URL. This should be equal to the the \"host\" value from the API credentials file.",
     "StorePathDescription": "The Akamai network the certificate will be managed from. Value can be either \"Production\" or \"Staging\"."
+  },
+  {
+    "Name": "Alteon Load Balancer",
+    "ShortName": "AlteonLB",
+    "Capability": "AlteonLB",
+    "ClientMachineDescription": "The Alteon Load Balancer Server and port",
+    "StorePathDescription": "This value isn't used for this integration (other than to uniquely identify the cert store in certificate searches).",
+    "SupportedOperations": {
+      "Add": true,
+      "Remove": true,
+      "Enrollment": false,
+      "Discovery": false,
+      "Inventory": true
+    },
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "Description": "Alteon user ID with sufficient permissions to manage certs in the Alteon Load Balancer.",
+        "Required": true
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "Description": "Password associated with Alteon user ID entered above.",
+        "Required": true
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Optional",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Optional"
   },
   {
     "Name": "Azure Application Gateway Certificate Binding",
@@ -2060,7 +2072,23 @@
         "Description": "True if using https to access the F5 device. False if using http."
       }
     ],
-    "EntryParameters": []
+    "EntryParameters": [
+      {
+        "Name": "SSLProfiles",
+        "DisplayName": "SSL Profiles",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": "",
+        "Description": "One to many comma delimited F5 SSL Profile names the certificate is bound to"
+      }
+    ]
   },
   {
     "Name": "F5 WS Profiles REST",
@@ -3572,51 +3600,6 @@
     "CustomAliasAllowed": "Forbidden"
   },
   {
-    "Name": "MyOrchestratorStoreType",
-    "ShortName": "MOST",
-    "Capability": "MOST",
-    "LocalStore": false,
-    "SupportedOperations": {
-      "Add": false,
-      "Create": false,
-      "Discovery": true,
-      "Enrollment": false,
-      "Remove": false
-    },
-    "Properties": [
-      {
-        "Name": "CustomField1",
-        "DisplayName": "CustomField1",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": "default",
-        "Required": true
-      },
-      {
-        "Name": "CustomField2",
-        "DisplayName": "CustomField2",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
-      }
-    ],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "",
-    "PrivateKeyAllowed": "Forbidden",
-    "JobProperties": [],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden"
-  },
-  {
     "Name": "Nmap Orchestrator",
     "ShortName": "Nmap",
     "Capability": "Nmap",
@@ -3696,7 +3679,7 @@
         "DefaultValue": "",
         "Required": false,
         "IsPAMEligible": false,
-        "Description": "Device Group on Panorama that changes will be pushed to."
+        "Description": "A semicolon delimited list of Device Groups that Panorama will push changes to (i.e. 'Group 1', 'Group 1;Group 2', or 'Group 1; Group 2', etc.)."
       },
       {
         "Name": "InventoryTrustedCerts",
@@ -4471,33 +4454,6 @@
     "EntryParameters": [],
     "ClientMachineDescription": "The Client Machine field should contain the DNS name or IP address of the remote orchestrated server for Linux orchestrated servers, formatted as a URL (protocol://dns-or-ip:port) for Windows orchestrated servers, or '1.1.1.1|LocalMachine' for local agents. Example: 'https://myserver.mydomain.com:5986' or '1.1.1.1|LocalMachine' for local access.",
     "StorePathDescription": "The Store Path field should contain the full path and file name, including file extension if applicable, beginning with a forward slash (/) for Linux orchestrated servers or a drive letter (i.e., c:\\folder\\path\\storename.p12) for Windows orchestrated servers. Example: '/folder/path/storename.p12' or 'c:\\folder\\path\\storename.p12'."
-  },
-  {
-    "Name": "SampleStoreType",
-    "ShortName": "SAMPLETYPE",
-    "Capability": "SAMPLETYPE",
-    "SupportedOperations": {
-      "Add": false,
-      "Create": false,
-      "Discovery": false,
-      "Enrollment": false,
-      "Remove": false
-    },
-    "Properties": [],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "",
-    "PrivateKeyAllowed": "Forbidden",
-    "JobProperties": [],
-    "ServerRequired": false,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden"
   },
   {
     "Name": "Signum",
