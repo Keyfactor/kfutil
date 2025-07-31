@@ -1,20 +1,17 @@
-## kfutil pam create
+## kfutil migrate
 
-Create a new PAM Provider, currently only supported from file.
+Keyfactor Migration Tools.
 
 ### Synopsis
 
-Create a new PAM Provider, currently only supported from file.
-
-```
-kfutil pam create [flags]
-```
+Migrating to new Types and Extension implementations in Keyfactor is possible but not currently automated
+in the platform. This tool aims to assist in performing the necessary steps to migrate, in limited scenarios,
+to new Extension implementations that have definitions that differ from prior releases.
 
 ### Options
 
 ```
-  -f, --from-file string   Path to a JSON file containing the PAM Provider Object Data.
-  -h, --help               help for create
+  -h, --help   help for migrate
 ```
 
 ### Options inherited from parent commands
@@ -42,6 +39,9 @@ kfutil pam create [flags]
 
 ### SEE ALSO
 
-* [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
+* [kfutil](kfutil.md)     - Keyfactor CLI utilities
+* [kfutil migrate check](kfutil_migrate_check.md)     - Check usage of a feature to migrate. Currently only PAM is
+  supported.
+* [kfutil migrate pam](kfutil_migrate_pam.md)     - Migrate existing PAM Provider usage to a new PAM Provider
 
 ###### Auto generated on 31-Jul-2025
