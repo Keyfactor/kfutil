@@ -1,20 +1,23 @@
-## kfutil pam create
+## kfutil migrate pam
 
-Create a new PAM Provider, currently only supported from file.
+Migrate existing PAM Provider usage to a new PAM Provider
 
 ### Synopsis
 
-Create a new PAM Provider, currently only supported from file.
+Migrate existing PAM Provider usage to a new PAM Provider
 
 ```
-kfutil pam create [flags]
+kfutil migrate pam [flags]
 ```
 
 ### Options
 
 ```
-  -f, --from-file string   Path to a JSON file containing the PAM Provider Object Data.
-  -h, --help               help for create
+  -a, --append-name string   Text to append to current PAM Provider Name in newly created Provider
+  -f, --from string          Name of the defined PAM Provider to migrate to a new type
+  -h, --help                 help for pam
+  -s, --store string         GUID of a Certificate Store, using a PAM Provider that should be migrated
+  -t, --to string            Name of the PAM Provider Type to migrate to
 ```
 
 ### Options inherited from parent commands
@@ -42,6 +45,6 @@ kfutil pam create [flags]
 
 ### SEE ALSO
 
-* [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
+* [kfutil migrate](kfutil_migrate.md)     - Keyfactor Migration Tools.
 
 ###### Auto generated on 31-Jul-2025

@@ -39,6 +39,7 @@ A CLI wrapper around the Keyfactor Platform API.
 * [kfutil import](kfutil_import.md)	 - Keyfactor instance import utilities.
 * [kfutil login](kfutil_login.md)	 - User interactive login to Keyfactor. Stores the credentials in the config file '$HOME/.keyfactor/command_config.json'.
 * [kfutil logout](kfutil_logout.md)     - Unsets environment variables and removes the stored credentials file.
+* [kfutil migrate](kfutil_migrate.md)     - Keyfactor Migration Tools.
 * [kfutil orchs](kfutil_orchs.md)	 - Keyfactor agents/orchestrators APIs and utilities.
 * [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
 * [kfutil status](kfutil_status.md)	 - List the status of Keyfactor services.
@@ -46,4 +47,4 @@ A CLI wrapper around the Keyfactor Platform API.
 * [kfutil stores](kfutil_stores.md)	 - Keyfactor certificate stores APIs and utilities.
 * [kfutil version](kfutil_version.md)	 - Shows version of kfutil
 
-###### Auto generated on 17-Jun-2025
+###### Auto generated on 31-Jul-2025
