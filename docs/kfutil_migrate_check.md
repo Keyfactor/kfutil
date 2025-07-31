@@ -1,20 +1,21 @@
-## kfutil pam create
+## kfutil migrate check
 
-Create a new PAM Provider, currently only supported from file.
+Check usage of a feature to migrate. Currently only PAM is supported.
 
 ### Synopsis
 
-Create a new PAM Provider, currently only supported from file.
+Check usage of a feature to migrate. Currently only PAM is supported
 
 ```
-kfutil pam create [flags]
+kfutil migrate check [flags]
 ```
 
 ### Options
 
 ```
-  -f, --from-file string   Path to a JSON file containing the PAM Provider Object Data.
-  -h, --help               help for create
+  -f, --from string   The name of the KF entity to search for usage of. Behavior will be different depending on type of check specified.
+  -h, --help          help for check
+      --pam-usage     Specify this flag to check usage of a PAM Provider named with the 'from' argument. Returns a list of Certificate Store GUIDs using that provider. (default true)
 ```
 
 ### Options inherited from parent commands
@@ -42,6 +43,6 @@ kfutil pam create [flags]
 
 ### SEE ALSO
 
-* [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
+* [kfutil migrate](kfutil_migrate.md)     - Keyfactor Migration Tools.
 
 ###### Auto generated on 31-Jul-2025
