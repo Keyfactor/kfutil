@@ -1,3 +1,9 @@
+# v1.8.3
+
+## Chores
+
+- `store-types`: Add `vCenter` store type and update internal definitions to latest from Keyfactor GitHub repos.
+
 # v1.8.2
 
 ## Fixes
