@@ -191,7 +191,13 @@ jobs:
             console.log("Commit to ${{env.KFUTIL_ARG}} for PR")
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const baseBranch = context.ref.replace('refs/heads/', 'main'); // Default base branch is main
+
+            // Get the current branch name that the workflow is running on
+            const baseBranch = context.payload.ref ? 
+              context.payload.ref.replace('refs/heads/', '') : 'main';
+            
+            console.log(`Base branch for PR: ${baseBranch}`);
+            
             const newBranch = '${{env.KFUTIL_ARG}}';
             const response = await github.rest.pulls.create({
               owner,
