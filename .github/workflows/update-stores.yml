@@ -187,7 +187,7 @@ jobs:
             console.log("Commit to ${{env.KFUTIL_ARG}} for PR")
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const baseBranch = 'main';
+            const baseBranch = context.ref.replace('refs/heads/', 'main'); // Default base branch is main
             const newBranch = '${{env.KFUTIL_ARG}}';
             const response = await github.rest.pulls.create({
               owner,
