@@ -191,7 +191,7 @@ jobs:
             console.log("Commit to ${{env.KFUTIL_ARG}} for PR")
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            
+
             // Get the current branch name that the workflow is running on
             const baseBranch = context.payload.ref ? 
               context.payload.ref.replace('refs/heads/', '') : 'main';
