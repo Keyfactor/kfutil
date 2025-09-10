@@ -106,7 +106,8 @@ jobs:
           ls -la
           ls -la ../
           ls -la ../../
-          cp -f store_types.json ../../cmd/store_types.json
+          ls -la ../../../
+          cp -f store_types.json ../../../cmd/store_types.json
         env:
           GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN }}
 
@@ -187,7 +188,7 @@ jobs:
             console.log("Commit to ${{env.KFUTIL_ARG}} for PR")
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const baseBranch = 'main';
+            const baseBranch = context.ref.replace('refs/heads/', 'main'); // Default base branch is main
             const newBranch = '${{env.KFUTIL_ARG}}';
             const response = await github.rest.pulls.create({
               owner,
