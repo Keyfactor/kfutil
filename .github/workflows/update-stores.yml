@@ -102,8 +102,11 @@ jobs:
         working-directory: ./tools/store-type-merge
         run: |
           python main.py --repo-name ${{ env.KFUTIL_ARG }} --ref ${{ env.TARGET_REPO_BRANCH }}
-          cat store_types.json
-          cp -f store_types.json cmd/store_types.json
+          pwd
+          ls -la
+          ls -la ../
+          ls -la ../../
+          cp -f store_types.json ../../cmd/store_types.json
         env:
           GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN }}
 
