@@ -69,6 +69,7 @@ jobs:
           repository: 'keyfactor/kfutil'
           sparse-checkout: |
             .github
+            cmd
           path: './merge-folder/'
           token: ${{ secrets.V2BUILDTOKEN }}
           ref: '${{env.KFUTIL_ARG}}'
@@ -81,6 +82,7 @@ jobs:
           repository: 'keyfactor/kfutil'
           sparse-checkout: |
             .github
+            cmd
           path: './merge-folder/'
           token: ${{ secrets.V2BUILDTOKEN }}
 
@@ -102,11 +104,6 @@ jobs:
         working-directory: ./tools/store-type-merge
         run: |
           python main.py --repo-name ${{ env.KFUTIL_ARG }} --ref ${{ env.TARGET_REPO_BRANCH }}
-          pwd
-          ls -la
-          ls -la ../
-          ls -la ../../
-          cp -f store_types.json ../../cmd/store_types.json
         env:
           GITHUB_TOKEN: ${{ secrets.V2BUILDTOKEN }}
 
@@ -138,7 +135,10 @@ jobs:
         run: |
           echo "Saving original store_types.json as store_types.sav.json"
           cp -f ./tools/store-type-merge/store_types.json  ./merge-folder/store_types.json
+          mkdir -p ./merge-folder/cmd || true
           cp -f ./tools/store-type-merge/store_types.json  ./merge-folder/cmd/store_types.json # this necessary?
+          ls -la ./merge-folder/
+          ls -la ./merge-folder/cmd/
 
       # Diff the new json against the saved copy and set an UPDATE_FILE variable
       - name: Diff the results
@@ -159,7 +159,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SDK_SYNC_PAT }}
         with:
-          add: store_types.json cmd/store_types.json --force
+          add: |
+            store_types.json 
+            ./cmd/store_types.json --force
           message: Update store_types.json for ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}}
           author_name: Keyfactor
           author_email: keyfactor@keyfactor.github.io
@@ -172,7 +174,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SDK_SYNC_PAT }}
         with:
-          add: store_types.json cmd/store_types.json --force
+          add: |
+            store_types.json 
+            ./cmd/store_types.json --force
           message: Update store_types.json for ${{env.KFUTIL_ARG}}:${{env.TARGET_REPO_BRANCH}}
           author_name: Keyfactor
           author_email: keyfactor@keyfactor.github.io
@@ -187,7 +191,13 @@ jobs:
             console.log("Commit to ${{env.KFUTIL_ARG}} for PR")
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const baseBranch = 'main';
+            
+            // Get the current branch name that the workflow is running on
+            const baseBranch = context.payload.ref ? 
+              context.payload.ref.replace('refs/heads/', '') : 'main';
+            
+            console.log(`Base branch for PR: ${baseBranch}`);
+            
             const newBranch = '${{env.KFUTIL_ARG}}';
             const response = await github.rest.pulls.create({
               owner,
