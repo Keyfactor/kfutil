@@ -422,6 +422,34 @@
     "StorePathDescription": "A single specified AWS Region the store will operate in. Additional regions should get their own store defined."
   },
   {
+    "Name": "Airlock Application Firewall Certificate",
+    "ShortName": "AirlockWAF",
+    "Capability": "AirlockWAF",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": true,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Required",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Allowed"
+  },
+  {
     "Name": "Akamai Certificate Provisioning Service",
     "ShortName": "Akamai",
     "Capability": "Akamai",
@@ -2086,7 +2114,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Options": "",
-        "Description": "One to many comma delimited F5 SSL Profile names the certificate is bound to"
+        "Description": "One to many comma delimited F5 SSL Profiles to bind the certificate to (new certificates ONLY)"
       }
     ]
   },
@@ -3619,6 +3647,51 @@
     "CustomAliasAllowed": "Forbidden"
   },
   {
+    "Name": "MyOrchestratorStoreType",
+    "ShortName": "MOST",
+    "Capability": "MOST",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [
+      {
+        "Name": "CustomField1",
+        "DisplayName": "CustomField1",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "default",
+        "Required": true
+      },
+      {
+        "Name": "CustomField2",
+        "DisplayName": "CustomField2",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  {
     "Name": "Nmap Orchestrator",
     "ShortName": "Nmap",
     "Capability": "Nmap",
@@ -3646,6 +3719,135 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Optional"
+  },
+  {
+    "Name": "OktaApp",
+    "ShortName": "OktaApp",
+    "LocalStore": false,
+    "StorePathDescription": "This should contain the Okta App ID (please see overview for description).",
+    "ClientMachineDescription": "This should contain your Okta URL (e.g. https://trial-1111.okta.com).",
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": true,
+      "Remove": false
+    },
+    "Properties": [
+      {
+        "Name": "DefaultValidityYears",
+        "DisplayName": "DefaultValidityYears",
+        "Type": "String",
+        "DependsOn": null,
+        "DefaultValue": "1",
+        "Required": true,
+        "Description": "Number of years the certificate will be valid for by default. Required by Okta."
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "SANList",
+        "DisplayName": "SANList",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": "",
+        "Description": "This is a comma-separated list of Subject Alternative Names (SANs) to be included in the certificate. Required by Okta. Must contain at least one SAN."
+      },
+      {
+        "Name": "ActivateCredential",
+        "DisplayName": "ActivateCredential",
+        "Type": "Bool",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Options": "",
+        "Description": "This is a boolean indicating whether to activate the certificate in Okta after reenrollment/ODKG."
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Forbidden",
+    "ServerRequired": true,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  {
+    "Name": "OktaIdP",
+    "ShortName": "OktaIdP",
+    "StorePathDescription": "This should contain the Okta IdP ID (please see overview for description).",
+    "ClientMachineDescription": "This should contain your Okta URL (e.g. https://trial-1111.okta.com).",
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": true,
+      "Remove": false
+    },
+    "Properties": [
+      {
+        "Name": "DefaultValidityYears",
+        "DisplayName": "DefaultValidityYears",
+        "Type": "String",
+        "DependsOn": null,
+        "DefaultValue": "1",
+        "Required": true,
+        "Description": "Number of years the certificate will be valid for by default. Required by Okta."
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "SANList",
+        "DisplayName": "SANList",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": "",
+        "Description": "This is a comma-separated list of Subject Alternative Names (SANs) to be included in the certificate. Required by Okta. Must contain at least one SAN."
+      },
+      {
+        "Name": "ActivateCredential",
+        "DisplayName": "ActivateCredential",
+        "Type": "Bool",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Options": "",
+        "Description": "This is a boolean indicating whether to activate the certificate in Okta after reenrollment/ODKG."
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Forbidden",
+    "ServerRequired": true,
+    "CustomAliasAllowed": "Forbidden"
   },
   {
     "Name": "PaloAlto",
@@ -4473,6 +4675,119 @@
     "EntryParameters": [],
     "ClientMachineDescription": "The Client Machine field should contain the DNS name or IP address of the remote orchestrated server for Linux orchestrated servers, formatted as a URL (protocol://dns-or-ip:port) for Windows orchestrated servers, or '1.1.1.1|LocalMachine' for local agents. Example: 'https://myserver.mydomain.com:5986' or '1.1.1.1|LocalMachine' for local access.",
     "StorePathDescription": "The Store Path field should contain the full path and file name, including file extension if applicable, beginning with a forward slash (/) for Linux orchestrated servers or a drive letter (i.e., c:\\folder\\path\\storename.p12) for Windows orchestrated servers. Example: '/folder/path/storename.p12' or 'c:\\folder\\path\\storename.p12'."
+  },
+  {
+    "Name": "Sample Orchestrator Solution",
+    "ShortName": "SOS",
+    "Capability": "SOS",
+    "LocalStore": false,
+    "StorePathDescription": "Path points to a local .json file. Orchestrator and its account should have read/write access.",
+    "ClientMachineDescription": "Runs on a Windows based machine.",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": true,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "StoreNameString",
+        "DisplayName": "Store Name",
+        "Type": "String",
+        "Required": false,
+        "Description": "The Store name for the particular SOS store."
+      },
+      {
+        "Name": "ForTestingOnlyBool",
+        "DisplayName": "For Testing Only",
+        "Type": "Bool",
+        "DefaultValue": "true",
+        "Required": false,
+        "Description": "Test bool variable."
+      },
+      {
+        "Name": "CollectionNameMultipleChoice",
+        "DisplayName": "Collection Name",
+        "Type": "MultipleChoice",
+        "DefaultValue": "internal",
+        "Options": "internal,public,single use,ssl",
+        "Required": true,
+        "Description": "A test collection."
+      },
+      {
+        "Name": "PrivateDetailsSecret",
+        "DisplayName": "Private Details",
+        "Type": "Secret",
+        "Required": false,
+        "DefaultValue": "test",
+        "Description": "A test secret."
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "CommaSeparatedSansString",
+        "DisplayName": "SANs",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "Description": "SAN string."
+      },
+      {
+        "Name": "CertColorMultipleChoice",
+        "DisplayName": "Certificate Color",
+        "Type": "MultipleChoice",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": "red",
+        "Options": "red,green,blue,orange",
+        "Description": "A test variable with multiple choice."
+      },
+      {
+        "Name": "ForTestingOnlyBool",
+        "DisplayName": "For Testing Only",
+        "Type": "Bool",
+        "RequiredWhen": {
+          "HasPrivateKey": true,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": "true",
+        "Description": "Another test boolean."
+      },
+      {
+        "Name": "PrivateCertDetailsSecret",
+        "DisplayName": "Private Cert Details",
+        "Type": "Secret",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": "test",
+        "Description": "A per cert secret."
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": true,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Optional",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Optional"
   },
   {
     "Name": "Signum",
