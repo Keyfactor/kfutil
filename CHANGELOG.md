@@ -1,3 +1,17 @@
+# v1.8.5
+
+## Chores
+
+- `store-types`: Rename `BIPCamera` to `BoschIPCamera` store type.
+- `store-types`: Add `AxisIPCamera` store-type.
+- `store-types`: Update internal definitions to latest from Keyfactor GitHub repos.
+
+# v1.8.4
+
+## Chores
+
+- `store-types`: Update internal definitions to latest from Keyfactor GitHub repos.
+
 # v1.8.3
 
 ## Chores
