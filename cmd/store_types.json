@@ -17,6 +17,19 @@
           "OnRemove": false,
           "OnReenrollment": false
         }
+      },
+      {
+        "Name": "PreserveExistingTags",
+        "DisplayName": "Preserve Existing Tags",
+        "Description": "If true, this will perform a union of any tags provided with enrollment with the tags on the existing cert with the same alias and apply the result to the new certificate.",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
       }
     ],
     "JobProperties": [],
@@ -957,7 +970,7 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Forbidden",
-    "ClientMachineDescription": "The Client Machine field is the Akamai REST API URL. This should be equal to the the \"host\" value from the API credentials file.",
+    "ClientMachineDescription": "The Client Machine field is the Akamai REST API URL. This should be equal to the \"host\" value from the API credentials file.",
     "StorePathDescription": "The Akamai network the certificate will be managed from. Value can be either \"Production\" or \"Staging\"."
   },
   {
@@ -1063,6 +1076,77 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Required"
+  },
+  {
+    "Name": "Axis IP Camera",
+    "ShortName": "AxisIPCamera",
+    "Capability": "AxisIPCamera",
+    "ServerRequired": true,
+    "BlueprintAllowed": false,
+    "PowerShell": false,
+    "CustomAliasAllowed": "Required",
+    "PrivateKeyAllowed": "Forbidden",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": true,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "Description": "Enter the username of the configured \"service\" user on the camera"
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "Description": "Enter the password of the configured \"service\" user on the camera"
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true,
+        "Description": "Select True or False depending on if SSL (HTTPS) should be used to communicate with the camera. This should always be \"True\""
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "CertUsage",
+        "DisplayName": "Certificate Usage",
+        "Type": "MultipleChoice",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": false,
+          "OnReenrollment": true
+        },
+        "Options": "HTTPS,IEEE802.X,MQTT,Trust,Other",
+        "Description": "The Certificate Usage to assign to the cert after enrollment. Can be left 'Other' to be assigned later."
+      }
+    ],
+    "ClientMachineDescription": "The IP address of the Camera. Sample is \"192.167.231.174:44444\". Include the port if necessary.",
+    "StorePathDescription": "Enter the Serial Number of the camera e.g. `0b7c3d2f9e8a`",
+    "StorePathType": "",
+    "StorePathValue": "",
+    "JobProperties": []
   },
   {
     "Name": "Azure App Registration (Application)",
@@ -1390,8 +1474,8 @@
   },
   {
     "Name": "Bosch IP Camera",
-    "ShortName": "BIPCamera",
-    "Capability": "BIPCamera",
+    "ShortName": "BoschIPCamera",
+    "Capability": "BoschIPCamera",
     "PrivateKeyAllowed": "Optional",
     "ServerRequired": true,
     "PowerShell": false,
@@ -3133,7 +3217,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Options": "",
-        "Description": "Name of the Windows cryptographic provider to use during reenrollment jobs when generating and storing the private keys. If not specified, defaults to 'Microsoft Strong Cryptographic Provider'. This value would typically be specified when leveraging a Hardware Security Module (HSM). The specified cryptographic provider must be available on the target server being managed. The list of installed cryptographic providers can be obtained by running 'certutil -csplist' on the target Server."
+        "Description": "Name of the Windows cryptographic service provider to use when generating and storing private keys. For more information, refer to the section 'Using Crypto Service Providers'"
       },
       {
         "Name": "SAN",
@@ -4055,6 +4139,15 @@
         "Type": "String",
         "DefaultValue": "",
         "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "UseShellCommands",
+        "DisplayName": "Use Shell Commands",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "True",
+        "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
       }
     ],
     "EntryParameters": [],
@@ -4169,6 +4262,15 @@
         "Type": "String",
         "DefaultValue": "",
         "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "UseShellCommands",
+        "DisplayName": "Use Shell Commands",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "True",
+        "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
       }
     ],
     "EntryParameters": [],
@@ -4283,6 +4385,15 @@
         "Type": "String",
         "DefaultValue": "",
         "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "UseShellCommands",
+        "DisplayName": "Use Shell Commands",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "True",
+        "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
       }
     ],
     "EntryParameters": [],
@@ -4406,6 +4517,15 @@
         "Type": "String",
         "DefaultValue": "",
         "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "UseShellCommands",
+        "DisplayName": "Use Shell Commands",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "True",
+        "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
       }
     ],
     "EntryParameters": [],
@@ -4556,6 +4676,15 @@
         "Type": "String",
         "DefaultValue": "",
         "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "UseShellCommands",
+        "DisplayName": "Use Shell Commands",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "True",
+        "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
       }
     ],
     "EntryParameters": [],
@@ -4670,6 +4799,15 @@
         "Type": "String",
         "DefaultValue": "",
         "Description": "Integer value representing the port that should be used when connecting to Linux servers over SSH.  Overrides SSHPort [config.json](#post-installation) setting."
+      },
+      {
+        "Name": "UseShellCommands",
+        "DisplayName": "Use Shell Commands",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "True",
+        "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
       }
     ],
     "EntryParameters": [],
@@ -5015,7 +5153,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Options": "",
-        "Description": "Name of the Windows cryptographic provider to use during reenrollment jobs when generating and storing the private keys. If not specified, defaults to 'Microsoft Strong Cryptographic Provider'. This value would typically be specified when leveraging a Hardware Security Module (HSM). The specified cryptographic provider must be available on the target server being managed. The list of installed cryptographic providers can be obtained by running 'certutil -csplist' on the target Server."
+        "Description": "Name of the Windows cryptographic service provider to use when generating and storing private keys. For more information, refer to the section 'Using Crypto Service Providers'"
       },
       {
         "Name": "SAN",
@@ -5150,7 +5288,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Options": "",
-        "Description": "Optional string value specifying the name of the Windows cryptographic provider to use during reenrollment jobs when generating and storing private keys. Example: 'Microsoft Strong Cryptographic Provider'."
+        "Description": "Name of the Windows cryptographic service provider to use when generating and storing private keys. For more information, refer to the section 'Using Crypto Service Providers'"
       },
       {
         "Name": "SAN",
