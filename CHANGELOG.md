@@ -1,3 +1,9 @@
+# v1.8.4
+
+## Chores
+
+- `store-types`: Update internal definitions to latest from Keyfactor GitHub repos.
+
 # v1.8.3
 
 ## Chores
