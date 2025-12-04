@@ -435,34 +435,6 @@
     "StorePathDescription": "A single specified AWS Region the store will operate in. Additional regions should get their own store defined."
   },
   {
-    "Name": "Airlock Application Firewall Certificate",
-    "ShortName": "AirlockWAF",
-    "Capability": "AirlockWAF",
-    "LocalStore": false,
-    "SupportedOperations": {
-      "Add": false,
-      "Create": false,
-      "Discovery": true,
-      "Enrollment": false,
-      "Remove": false
-    },
-    "Properties": [],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": true,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "",
-    "PrivateKeyAllowed": "Required",
-    "JobProperties": [],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Allowed"
-  },
-  {
     "Name": "Akamai Certificate Provisioning Service",
     "ShortName": "Akamai",
     "Capability": "Akamai",
@@ -1904,53 +1876,7 @@
         "Description": "Login password for the F5 Big IQ device."
       }
     ],
-    "EntryParameters": [
-      {
-        "Name": "Alias",
-        "DisplayName": "Alias (Reenrollment only)",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": true
-        },
-        "DependsOn": "",
-        "DefaultValue": "",
-        "Options": "",
-        "Description": "The name F5 Big IQ uses to identify the certificate"
-      },
-      {
-        "Name": "Overwrite",
-        "DisplayName": "Overwrite (Reenrollment only)",
-        "Type": "Bool",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": true
-        },
-        "DependsOn": "",
-        "DefaultValue": "False",
-        "Options": "",
-        "Description": "Allow overwriting an existing certificate when reenrolling?"
-      },
-      {
-        "Name": "SANs",
-        "DisplayName": "SANs (Reenrollment only)",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": false
-        },
-        "DependsOn": "",
-        "DefaultValue": "",
-        "Options": "",
-        "Description": "External SANs for the requested certificate. Each SAN must be prefixed with the type (DNS: or IP:) and multiple SANs must be delimitted by an ampersand (&). Example: DNS:server.domain.com&IP:127.0.0.1&DNS:server2.domain.com.  This is an optional field."
-      }
-    ]
+    "EntryParameters": []
   },
   {
     "Name": "F5 CA Profiles REST",
@@ -3731,49 +3657,63 @@
     "CustomAliasAllowed": "Forbidden"
   },
   {
-    "Name": "MyOrchestratorStoreType",
-    "ShortName": "MOST",
-    "Capability": "MOST",
+    "Name": "Kemp",
+    "ShortName": "Kemp",
+    "Capability": "Kemp",
     "LocalStore": false,
     "SupportedOperations": {
-      "Add": false,
+      "Add": true,
       "Create": false,
-      "Discovery": true,
+      "Discovery": false,
       "Enrollment": false,
-      "Remove": false
+      "Remove": true
     },
     "Properties": [
       {
-        "Name": "CustomField1",
-        "DisplayName": "CustomField1",
-        "Type": "String",
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": "default",
-        "Required": true
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "Not used."
       },
       {
-        "Name": "CustomField2",
-        "DisplayName": "CustomField2",
-        "Type": "String",
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
-        "Required": true
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "Kemp Api Password. (or valid PAM key if the username is stored in a KF Command configured PAM integration)."
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "Should be true, http is not supported."
       }
     ],
     "EntryParameters": [],
+    "ClientMachineDescription": "Kemp Load Balancer Client Machine and port example TestKemp:8443.",
+    "StorePathDescription": "Not used just put a /",
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
       "Style": "Default"
     },
-    "StorePathType": "",
-    "StorePathValue": "",
-    "PrivateKeyAllowed": "Forbidden",
+    "PrivateKeyAllowed": "Optional",
     "JobProperties": [],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Forbidden"
+    "CustomAliasAllowed": "Required"
   },
   {
     "Name": "Nmap Orchestrator",
@@ -4035,7 +3975,7 @@
       "Add": true,
       "Create": true,
       "Discovery": true,
-      "Enrollment": false,
+      "Enrollment": true,
       "Remove": true
     },
     "PasswordOptions": {
@@ -4123,15 +4063,6 @@
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
       },
       {
-        "Name": "FileTransferProtocol",
-        "DisplayName": "File Transfer Protocol to Use",
-        "Required": false,
-        "DependsOn": "",
-        "Type": "MultipleChoice",
-        "DefaultValue": ",SCP,SFTP,Both",
-        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
-      },
-      {
         "Name": "SSHPort",
         "DisplayName": "SSH Port",
         "Required": false,
@@ -4167,7 +4098,7 @@
       "Add": true,
       "Create": true,
       "Discovery": true,
-      "Enrollment": false,
+      "Enrollment": true,
       "Remove": true
     },
     "PasswordOptions": {
@@ -4244,15 +4175,6 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
-      },
-      {
-        "Name": "FileTransferProtocol",
-        "DisplayName": "File Transfer Protocol to Use",
-        "Required": false,
-        "DependsOn": "",
-        "Type": "MultipleChoice",
-        "DefaultValue": ",SCP,SFTP,Both",
-        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -4367,15 +4289,6 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
-      },
-      {
-        "Name": "FileTransferProtocol",
-        "DisplayName": "File Transfer Protocol to Use",
-        "Required": false,
-        "DependsOn": "",
-        "Type": "MultipleChoice",
-        "DefaultValue": ",SCP,SFTP,Both",
-        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -4501,15 +4414,6 @@
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
       },
       {
-        "Name": "FileTransferProtocol",
-        "DisplayName": "File Transfer Protocol to Use",
-        "Required": false,
-        "DependsOn": "",
-        "Type": "MultipleChoice",
-        "DefaultValue": ",SCP,SFTP,Both",
-        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
-      },
-      {
         "Name": "SSHPort",
         "DisplayName": "SSH Port",
         "Required": false,
@@ -4545,7 +4449,7 @@
       "Add": true,
       "Create": true,
       "Discovery": true,
-      "Enrollment": false,
+      "Enrollment": true,
       "Remove": true
     },
     "PasswordOptions": {
@@ -4660,15 +4564,6 @@
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
       },
       {
-        "Name": "FileTransferProtocol",
-        "DisplayName": "File Transfer Protocol to Use",
-        "Required": false,
-        "DependsOn": "",
-        "Type": "MultipleChoice",
-        "DefaultValue": ",SCP,SFTP,Both",
-        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
-      },
-      {
         "Name": "SSHPort",
         "DisplayName": "SSH Port",
         "Required": false,
@@ -4704,7 +4599,7 @@
       "Add": true,
       "Create": true,
       "Discovery": true,
-      "Enrollment": false,
+      "Enrollment": true,
       "Remove": true
     },
     "PasswordOptions": {
@@ -4781,15 +4676,6 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
-      },
-      {
-        "Name": "FileTransferProtocol",
-        "DisplayName": "File Transfer Protocol to Use",
-        "Required": false,
-        "DependsOn": "",
-        "Type": "MultipleChoice",
-        "DefaultValue": ",SCP,SFTP,Both",
-        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
