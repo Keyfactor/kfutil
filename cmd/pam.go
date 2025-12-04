@@ -24,14 +24,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Keyfactor/keyfactor-go-client-sdk/v2/api/keyfactor"
+	keyfactor "github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
 type JSONImportableObject interface {
-	keyfactor.KeyfactorApiPAMProviderTypeCreateRequest |
-		keyfactor.CSSCMSDataModelModelsProvider
+	keyfactor.Provider |
+		keyfactor.ProviderType |
+		keyfactor.ProviderTypeCreateRequest
 }
 
 const (
@@ -44,6 +45,76 @@ var pamCmd = &cobra.Command{
 	Long: `Privileged Access Management (PAM) functionality in Keyfactor Web APIs allows for configuration of third 
 party PAM providers to secure certificate stores. The PAM component of the Keyfactor API includes methods necessary to 
 programmatically create, delete, edit, and list PAM Providers.`,
+}
+
+var pamTypesGetCmd = &cobra.Command{
+	Use:   "types-get",
+	Short: "Get a specific defined PAM Provider type by ID or Name.",
+	Long:  "Get a specific defined PAM Provider type by ID or Name.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		isExperimental := false
+		// Specific flags
+		pamProviderTypeId, _ := cmd.Flags().GetString("id")
+		pamProviderTypeName, _ := cmd.Flags().GetString("name")
+		// Debug + expEnabled checks
+		informDebug(debugFlag)
+		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		if debugErr != nil {
+			return debugErr
+		}
+		// Log flags
+		log.Info().Str("name", pamProviderTypeName).
+			Str("id", pamProviderTypeId).
+			Msg("get PAM Provider Type")
+		// Authenticate
+		kfClient, cErr := initClient(false)
+		if cErr != nil {
+			return cErr
+		}
+		if pamProviderTypeId == "" && pamProviderTypeName == "" {
+			cmd.Usage()
+			return fmt.Errorf("must supply either a PAM Provider Type `--id` or `--name` to get")
+		}
+
+		// CLI Logic
+		if pamProviderTypeId == "" && pamProviderTypeName != "" {
+			// Get ID from Name
+			log.Debug().Str("pamProviderTypeName", pamProviderTypeName).
+				Msg("call: GetPAMProviderTypeByName()")
+			pamProviderType, getErr := kfClient.GetPAMProviderTypeByName(pamProviderTypeName)
+			log.Debug().Msg("returned: GetPAMProviderTypeByName()")
+			if getErr != nil {
+				log.Error().Err(getErr).Send()
+				return getErr
+			}
+			if pamProviderType != nil {
+				output, mErr := json.Marshal(pamProviderType)
+				if mErr != nil {
+					log.Error().Err(mErr).Send()
+					return mErr
+				}
+				log.Info().Str("output", string(output)).
+					Msg("successfully retrieved PAM provider type")
+				outputResult(output, outputFormat)
+				return nil
+			}
+		}
+		pamProviderType, getErr := kfClient.GetPAMProviderType(pamProviderTypeId)
+		if getErr != nil {
+			log.Error().Err(getErr).Send()
+			return getErr
+		}
+		output, mErr := json.Marshal(pamProviderType)
+		if mErr != nil {
+			log.Error().Err(mErr).Send()
+			return mErr
+		}
+		log.Info().Str("output", string(output)).
+			Msg("successfully retrieved PAM provider type")
+		outputResult(output, outputFormat)
+		return nil
+	},
 }
 
 var pamTypesListCmd = &cobra.Command{
@@ -64,30 +135,22 @@ var pamTypesListCmd = &cobra.Command{
 		log.Info().Msg("list PAM Provider Types")
 
 		// Authenticate
-		sdkClient, clientErr := initGenClient(false)
+		kfClient, clientErr := initClient(false)
 		if clientErr != nil {
 			return clientErr
 		}
 
-		// CLI Logic
-		log.Debug().Msg("call: PAMProviderGetPamProviderTypes()")
-		pamTypes, httpResponse, err := sdkClient.PAMProviderApi.
-			PAMProviderGetPamProviderTypes(context.Background()).
-			XKeyfactorRequestedWith(XKeyfactorRequestedWith).
-			XKeyfactorApiVersion(XKeyfactorApiVersion).
-			Execute()
+		//// CLI Logic
+		//log.Debug().Msg("call: PAMProviderGetPamProviderTypes()")
+		//pamTypes, httpResponse, err := sdkClient.PAMProviderApi.
+		//	PAMProviderGetPamProviderTypes(context.Background()).
+		//	XKeyfactorRequestedWith(XKeyfactorRequestedWith).
+		//	XKeyfactorApiVersion(XKeyfactorApiVersion).
+		//	Execute()
+		pamTypes, err := kfClient.ListPAMProviderTypes()
 		log.Debug().Msg("returned: PAMProviderGetPamProviderTypes()")
-		log.Trace().Interface("httpResponse", httpResponse).
-			Msg("PAMProviderGetPamProviderTypes")
 		if err != nil {
-			var status string
-			if httpResponse != nil {
-				status = httpResponse.Status
-			} else {
-				status = "No HTTP response received from Keyfactor Command."
-			}
 			log.Error().Err(err).
-				Str("httpResponseCode", status).
 				Msg("error listing PAM provider types")
 			return err
 		}
@@ -137,8 +200,8 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 			Msg("create PAM Provider Type")
 
 		// Authenticate
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
-		sdkClient, cErr := initGenClient(false)
+		kfClient, cErr := initClient(false)
+		//sdkClient, cErr := initGenClient(false)
 		if cErr != nil {
 			return cErr
 		}
@@ -154,7 +217,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 
 		// CLI Logic
 
-		var pamProviderType *keyfactor.KeyfactorApiPAMProviderTypeCreateRequest
+		var pamProviderType *keyfactor.ProviderTypeCreateRequest
 		var err error
 		if repoName != "" {
 			// get JSON config from integration-manifest on GitHub
@@ -188,15 +251,11 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 			Msg("creating PAM provider type")
 
 		log.Debug().Msg("call: PAMProviderCreatePamProviderType()")
-		createdPamProviderType, httpResponse, rErr := sdkClient.PAMProviderApi.PAMProviderCreatePamProviderType(context.Background()).
-			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
-			Type_(*pamProviderType).
-			Execute()
+		createdPamProviderType, rErr := kfClient.CreatePAMProviderType(pamProviderType)
 		log.Debug().Msg("returned: PAMProviderCreatePamProviderType()")
-		log.Trace().Interface("httpResponse", httpResponse).Msg("PAMProviderCreatePamProviderType")
 		if rErr != nil {
 			log.Error().Err(rErr).Send()
-			return returnHttpErr(httpResponse, rErr)
+			return rErr
 		}
 
 		log.Debug().Msg("Converting PAM Provider Type response to JSON")
@@ -208,6 +267,97 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 		log.Info().Str("output", string(jsonString)).
 			Msg("successfully created PAM provider type")
 		outputResult(jsonString, outputFormat)
+		return nil
+	},
+}
+
+var pamTypesDeleteCmd = &cobra.Command{
+	Use:   "types-delete",
+	Short: "Deletes a defined PAM Provider type by ID or Name.",
+	Long:  "Deletes a defined PAM Provider type by ID or Name.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		isExperimental := false
+		// Specific flags
+		pamProviderTypeId, _ := cmd.Flags().GetString("id")
+		pamProviderTypeName, _ := cmd.Flags().GetString("name")
+		deleteAll, _ := cmd.Flags().GetBool("all")
+		// Debug + expEnabled checks
+		informDebug(debugFlag)
+		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
+		if debugErr != nil {
+			return debugErr
+
+		}
+		// Log flags
+		log.Info().Str("name", pamProviderTypeName).
+			Str("id", pamProviderTypeId).
+			Msg("delete PAM Provider Type")
+		// Authenticate
+		kfClient, cErr := initClient(false)
+		if cErr != nil {
+			return cErr
+		}
+		// CLI Logic
+
+		if deleteAll {
+			log.Info().Msg("deleting ALL PAM Provider Types")
+			pamProviderTypes, listErr := kfClient.ListPAMProviderTypes()
+			if listErr != nil {
+				log.Error().Err(listErr).Send()
+				return listErr
+			}
+			if pamProviderTypes == nil || len(*pamProviderTypes) == 0 {
+				log.Info().Msg("no PAM provider types to delete")
+				outputResult("No PAM provider types to delete", outputFormat)
+			}
+			for _, pamProviderType := range *pamProviderTypes {
+				log.Debug().Str("pamProviderTypeId", pamProviderType.Id).
+					Msg("call: PAMProviderDeletePamProviderType()")
+				delErr := kfClient.DeletePAMProviderType(pamProviderType.Id)
+				if delErr != nil {
+					log.Error().Err(delErr).Send()
+					outputError(delErr, false, outputFormat)
+					continue
+				}
+				log.Info().Str("id", pamProviderType.Id).Str("name", *pamProviderType.Name).
+					Msg("successfully deleted PAM provider type")
+				outputResult(fmt.Sprintf("Deleted PAM provider type with ID %s", pamProviderType.Id), outputFormat)
+			}
+			log.Info().Msg("successfully deleted ALL PAM provider types")
+			outputResult(fmt.Sprintf("Deleted ALL %d PAM provider types", len(*pamProviderTypes)), outputFormat)
+			return nil
+		}
+		if pamProviderTypeId == "" && pamProviderTypeName == "" {
+			cmd.Usage()
+			return fmt.Errorf("must supply either a PAM Provider Type `--id` or `--name` to delete")
+		}
+
+		if pamProviderTypeId == "" && pamProviderTypeName != "" {
+			// Get ID from Name
+			log.Debug().Str("pamProviderTypeName", pamProviderTypeName).
+				Msg("call: GetPAMProviderTypeByName()")
+			pamProviderType, getErr := kfClient.GetPAMProviderTypeByName(pamProviderTypeName)
+			log.Debug().Msg("returned: GetPAMProviderTypeByName()")
+			if getErr != nil {
+				log.Error().Err(getErr).Send()
+				return getErr
+			}
+			pamProviderTypeId = pamProviderType.Id
+		}
+
+		log.Debug().Str("pamProviderTypeId", pamProviderTypeId).
+			Msg("call: PAMProviderDeletePamProviderType()")
+		delErr := kfClient.DeletePAMProviderType(pamProviderTypeId)
+		if delErr != nil {
+			log.Error().Err(delErr).Send()
+			return delErr
+		}
+
+		log.Info().Str("name", pamProviderTypeName).
+			Str("id", pamProviderTypeId).
+			Msg("successfully deleted PAM provider type")
+		outputResult(fmt.Sprintf("Deleted PAM provider type with ID %s", pamProviderTypeId), outputFormat)
 		return nil
 	},
 }
@@ -369,25 +519,25 @@ var pamProvidersCreateCmd = &cobra.Command{
 			Msg("create PAM Provider from file")
 
 		// Authenticate
-		// kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
-		sdkClient, cErr := initGenClient(false)
+		kfClient, cErr := initClient(false)
+		//sdkClient, cErr := initGenClient(false)
 
-		_, cmdResp, sErr := sdkClient.StatusApi.StatusGetEndpoints(context.Background()).Execute()
-		if sErr != nil {
-			log.Error().Err(sErr).Msg("failed to get Keyfactor Command version")
-		} else {
-			bug63171 := checkBug63171(cmdResp, "CREATE")
-			if bug63171 != nil {
-				return bug63171
-			}
-		}
+		//_, cmdResp, sErr := sdkClient.StatusApi.StatusGetEndpoints(context.Background()).Execute()
+		//if sErr != nil {
+		//	log.Error().Err(sErr).Msg("failed to get Keyfactor Command version")
+		//} else {
+		//	bug63171 := checkBug63171(cmdResp, "CREATE")
+		//	if bug63171 != nil {
+		//		return bug63171
+		//	}
+		//}
 
 		if cErr != nil {
 			return cErr
 		}
 
 		// CLI Logic
-		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
+		var pamProvider *keyfactor.Provider
 		log.Debug().Msg("call: GetTypeFromConfigFile()")
 		pamProvider, err := GetTypeFromConfigFile(pamConfigFile, pamProvider)
 		log.Debug().Msg("returned: GetTypeFromConfigFile()")
@@ -399,16 +549,21 @@ var pamProvidersCreateCmd = &cobra.Command{
 		}
 
 		log.Debug().Msg("call: PAMProviderCreatePamProvider()")
-		createdPamProvider, httpResponse, cErr := sdkClient.PAMProviderApi.PAMProviderCreatePamProvider(context.Background()).
-			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
-			Provider(*pamProvider).
-			Execute()
+		createRequest := keyfactor.ProviderCreateRequest{
+			Name:                    pamProvider.Name,
+			Remote:                  pamProvider.Remote,
+			Area:                    pamProvider.Area,
+			ProviderType:            pamProvider.ProviderType,
+			ProviderTypeParamValues: pamProvider.ProviderTypeParamValues,
+			SecuredAreaId:           pamProvider.SecuredAreaId,
+		}
+
+		createdPamProvider, cErr := kfClient.CreatePAMProvider(&createRequest)
 		log.Debug().Msg("returned: PAMProviderCreatePamProvider()")
-		log.Trace().Interface("httpResponse", httpResponse).Msg("PAMProviderCreatePamProvider")
 		if cErr != nil {
 			// output response body
 			log.Debug().Msg("Converting PAM Provider response body to string")
-			return returnHttpErr(httpResponse, cErr)
+			return cErr
 		}
 
 		log.Debug().Msg(convertResponseMsg)
@@ -446,24 +601,14 @@ var pamProvidersUpdateCmd = &cobra.Command{
 			Msg("update PAM Provider from file")
 
 		// Authenticate
-		//kfClient, _ := initClient(configFile, profile, providerType, providerProfile, noPrompt, authConfig, false)
-		sdkClient, cErr := initGenClient(false)
+		kfClient, cErr := initClient(false)
+		//sdkClient, cErr := initGenClient(false)
 		if cErr != nil {
 			return cErr
 		}
 
-		_, cmdResp, sErr := sdkClient.StatusApi.StatusGetEndpoints(context.Background()).Execute()
-		if sErr != nil {
-			log.Error().Err(sErr).Msg("failed to get Keyfactor Command version")
-		} else {
-			bug63171 := checkBug63171(cmdResp, "UPDATE")
-			if bug63171 != nil {
-				return bug63171
-			}
-		}
-
 		// CLI Logic
-		var pamProvider *keyfactor.CSSCMSDataModelModelsProvider
+		var pamProvider *keyfactor.Provider
 		log.Debug().Str("file", pamConfigFile).
 			Msg("call: GetTypeFromConfigFile()")
 		pamProvider, err := GetTypeFromConfigFile(pamConfigFile, pamProvider)
@@ -475,18 +620,24 @@ var pamProvidersUpdateCmd = &cobra.Command{
 		}
 
 		log.Debug().Msg("call: PAMProviderUpdatePamProvider()")
-		createdPamProvider, httpResponse, err := sdkClient.PAMProviderApi.PAMProviderUpdatePamProvider(context.Background()).
-			XKeyfactorRequestedWith(XKeyfactorRequestedWith).XKeyfactorApiVersion(XKeyfactorApiVersion).
-			Provider(*pamProvider).
-			Execute()
+		updateRequest := keyfactor.ProviderUpdateRequestLegacy{
+			Name:                    pamProvider.Name,
+			Remote:                  pamProvider.Remote,
+			Area:                    pamProvider.Area,
+			ProviderType:            pamProvider.ProviderType,
+			ProviderTypeParamValues: pamProvider.ProviderTypeParamValues,
+			SecuredAreaId:           pamProvider.SecuredAreaId,
+		}
+
+		updatedPamProvider, cErr := kfClient.UpdatePAMProvider(&updateRequest)
+
 		log.Debug().Msg("returned: PAMProviderUpdatePamProvider()")
-		log.Trace().Interface("httpResponse", httpResponse).Msg("PAMProviderUpdatePamProvider")
 		if err != nil {
-			return returnHttpErr(httpResponse, err)
+			return err
 		}
 
 		log.Debug().Msg(convertResponseMsg)
-		jsonString, mErr := json.Marshal(createdPamProvider)
+		jsonString, mErr := json.Marshal(updatedPamProvider)
 		if mErr != nil {
 			log.Error().Err(mErr).Msg("invalid API response from Keyfactor Command")
 			return mErr
@@ -672,10 +823,60 @@ func GetTypeFromConfigFile[T JSONImportableObject](filename string, returnType *
 		return new(T), err
 	}
 
+	var rawData map[string]interface{}
+	decoder := json.NewDecoder(file)
+	dErr := decoder.Decode(&rawData)
+	if dErr != nil {
+		log.Error().Err(dErr).Send()
+		return new(T), dErr
+	}
+
+	if _, ok := rawData["about"]; ok {
+		// If the file contains the full manifest, extract the PAM type config
+		log.Debug().Msg("Parsing PAM Type config from manifest file")
+		about := rawData["about"].(map[string]interface{})
+		pam := about["pam"].(map[string]interface{})
+		pamTypes := pam["pam_types"].(map[string]interface{})
+		var pamTypeConfig interface{}
+		if len(pamTypes) == 1 {
+			for _, v := range pamTypes {
+				pamTypeConfig = v
+			}
+		} else {
+			return new(T), fmt.Errorf("multiple PAM types found in manifest file, please provide a file with a single PAM type definition")
+		}
+
+		log.Debug().Msg("Converting PAM Type config from manifest to bytes")
+		pamTypeConfigBytes, jErr := json.Marshal(pamTypeConfig)
+		if jErr != nil {
+			log.Error().Err(jErr).Send()
+			return new(T), jErr
+		}
+
+		var objectFromManifest T
+		log.Debug().Msg("Converting PAM Type config from bytes to JSON")
+		mErr := json.Unmarshal(pamTypeConfigBytes, &objectFromManifest)
+		if mErr != nil {
+			log.Error().Err(mErr).Send()
+			return new(T), mErr
+		}
+
+		log.Debug().Msg("returning: GetTypeFromConfigFile()")
+		return &objectFromManifest, nil
+	}
+
+	// Rewind file pointer to beginning
+	_, sErr := file.Seek(0, io.SeekStart)
+	if sErr != nil {
+		log.Error().Err(sErr).Send()
+		return new(T), sErr
+	}
+
+	// If the file contains only the PAM type config
 	var objectFromFile T
 	log.Debug().Msg("Decoding PAM Type config file")
-	decoder := json.NewDecoder(file)
-	dErr := decoder.Decode(&objectFromFile)
+	decoder = json.NewDecoder(file)
+	dErr = decoder.Decode(&objectFromFile)
 	if dErr != nil {
 		log.Error().Err(dErr).Send()
 		return new(T), dErr
@@ -691,7 +892,14 @@ func init() {
 	var repo string
 	var branch string
 	var id int32
+	var providerTypeId string
+	var all bool
 	RootCmd.AddCommand(pamCmd)
+
+	pamCmd.AddCommand(pamTypesGetCmd)
+	pamTypesGetCmd.Flags().StringVarP(&providerTypeId, "id", "i", "", "ID of the PAM Provider Type.")
+	pamTypesGetCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the PAM Provider Type.")
+	pamTypesGetCmd.MarkFlagsMutuallyExclusive("id", "name")
 
 	// PAM Provider Types List
 	pamCmd.AddCommand(pamTypesListCmd)
@@ -714,6 +922,12 @@ func init() {
 		"",
 		"Branch name for the repository. Defaults to 'main'.",
 	)
+
+	pamTypesDeleteCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the PAM Provider Type.")
+	pamTypesDeleteCmd.Flags().StringVarP(&providerTypeId, "id", "i", "", "ID of the PAM Provider Type.")
+	pamTypesDeleteCmd.Flags().BoolVarP(&all, "all", "a", false, "Delete all PAM Provider Types.")
+	pamTypesDeleteCmd.MarkFlagsMutuallyExclusive("id", "name", "all")
+	pamCmd.AddCommand(pamTypesDeleteCmd)
 
 	// PAM Providers
 	pamCmd.AddCommand(pamProvidersListCmd)
