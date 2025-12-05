@@ -698,7 +698,7 @@ func initClient(saveConfig bool) (*api.Client, error) {
 		false,
 		false,
 		configFile,
-	) // TODO: don't save config and don't prompt on already known values
+	) // don't save config and don't prompt on already known values
 	if iErr == nil {
 		if profile == "" {
 			profile = auth_providers.DefaultConfigProfile
@@ -806,7 +806,13 @@ func initGenClient(
 	}
 
 	conf, _ := getServerConfigFromFile(configFile, profile)
-	iConfig, iErr := authInteractive(conf, profile, false, false, configFile)
+	iConfig, iErr := authInteractive(
+		conf,
+		profile,
+		false,
+		false,
+		configFile,
+	) // don't save config and don't prompt on already known values
 	if iErr == nil {
 		if profile == "" {
 			profile = auth_providers.DefaultConfigProfile
