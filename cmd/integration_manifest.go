@@ -19,7 +19,8 @@ type IntegrationManifest struct {
 }
 
 type About struct {
-	Orchestrator Orchestrator `json:"orchestrator"`
+	Orchestrator Orchestrator `json:"orchestrator,omitempty"`
+	PAM          PAM          `json:"pam,omitempty"`
 }
 
 type Orchestrator struct {
@@ -27,4 +28,12 @@ type Orchestrator struct {
 	PAMSupport               bool                       `json:"pam_support"`
 	KeyfactorPlatformVersion string                     `json:"keyfactor_platform_version"`
 	StoreTypes               []api.CertificateStoreType `json:"store_types"`
+}
+
+type PAM struct {
+	Name                    string                          `json:"providerName"`
+	AssemblyName            string                          `json:"assemblyName"`
+	DBName                  string                          `json:"dbName"`
+	FullyQualifiedClassName string                          `json:"fullyQualifiedClassName"`
+	PAMTypes                []api.ProviderTypeCreateRequest `json:"pam_types"`
 }

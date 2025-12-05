@@ -21,6 +21,7 @@ const (
 	DefaultAPIPath            = "KeyfactorAPI"
 	DefaultConfigFileName     = "command_config.json"
 	DefaultStoreTypesFileName = "store_types.json"
+	DefaultPAMTypesFileName   = "pam_types.json"
 	DefaultGitRepo            = "kfutil"
 	DefaultGitRef             = "main"
 	FailedAuthMsg             = "Login failed!"

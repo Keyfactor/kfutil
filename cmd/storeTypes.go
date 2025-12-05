@@ -91,10 +91,10 @@ var storesTypeCreateCmd = &cobra.Command{
 		// Specific flags
 		gitRef, _ := cmd.Flags().GetString(FlagGitRef)
 		gitRepo, _ := cmd.Flags().GetString(FlagGitRepo)
-		creatAll, _ := cmd.Flags().GetBool("all")
+		createAll, _ := cmd.Flags().GetBool("all")
 		storeType, _ := cmd.Flags().GetString("name")
 		listTypes, _ := cmd.Flags().GetBool("list")
-		storeTypeConfigFile, _ := cmd.Flags().GetString("from-file")
+		storeTypeConfigFile, _ := cmd.Flags().GetString(FlagFromFile)
 
 		// Debug + expEnabled checks
 		isExperimental := false
@@ -121,7 +121,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		log.Debug().Str("storeType", storeType).
 			Bool("listTypes", listTypes).
 			Str("storeTypeConfigFile", storeTypeConfigFile).
-			Bool("creatAll", creatAll).
+			Bool("createAll", createAll).
 			Str("gitRef", gitRef).
 			Str("gitRepo", gitRepo).
 			Strs("validStoreTypes", validStoreTypes).
@@ -150,7 +150,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			return nil
 		}
 
-		if storeType == "" && !creatAll {
+		if storeType == "" && !createAll {
 			prompt := &survey.Select{
 				Message: "Choose an option:",
 				Options: validStoreTypes,
@@ -164,7 +164,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			storeType = selected
 		}
 		for _, v := range validStoreTypes {
-			if strings.EqualFold(v, strings.ToUpper(storeType)) || creatAll {
+			if strings.EqualFold(v, strings.ToUpper(storeType)) || createAll {
 				log.Debug().Str("storeType", storeType).Msg("Store type is valid")
 				storeTypeIsValid = true
 				break
@@ -183,7 +183,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			return fmt.Errorf("invalid store type: %s", storeType)
 		}
 		var typesToCreate []string
-		if !creatAll {
+		if !createAll {
 			typesToCreate = []string{storeType}
 		} else {
 			typesToCreate = validStoreTypes
