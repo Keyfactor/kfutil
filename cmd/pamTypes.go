@@ -22,8 +22,14 @@ import (
 //go:embed pam_types.json
 var EmbeddedPAMTypesJSON []byte
 
+var pamTypesCmd = &cobra.Command{
+	Use:   "pam-types",
+	Short: "Keyfactor PAM types APIs and utilities.",
+	Long:  `A collections of APIs and utilities for interacting with Keyfactor PAM types.`,
+}
+
 var pamTypesGetCmd = &cobra.Command{
-	Use:   "types-get",
+	Use:   "get",
 	Short: "Get a specific defined PAM Provider type by ID or Name.",
 	Long:  "Get a specific defined PAM Provider type by ID or Name.",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -93,7 +99,7 @@ var pamTypesGetCmd = &cobra.Command{
 }
 
 var pamTypesListCmd = &cobra.Command{
-	Use:   "types-list",
+	Use:   "list",
 	Short: "Returns a list of all available PAM provider types.",
 	Long:  "Returns a list of all available PAM provider types.",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -144,7 +150,7 @@ var pamTypesListCmd = &cobra.Command{
 }
 
 var pamTypesCreateCmd = &cobra.Command{
-	Use:   "types-create",
+	Use:   "create",
 	Short: "Creates a new PAM provider type.",
 	Long: `Creates a new PAM Provider type, currently only supported from JSON file and from GitHub. To install from 
 Github. To install from GitHub, use the --repo flag to specify the GitHub repository and optionally the branch to use. 
@@ -354,7 +360,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 }
 
 var pamTypesDeleteCmd = &cobra.Command{
-	Use:   "types-delete",
+	Use:   "delete",
 	Short: "Deletes a defined PAM Provider type by ID or Name.",
 	Long:  "Deletes a defined PAM Provider type by ID or Name.",
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -383,6 +389,17 @@ var pamTypesDeleteCmd = &cobra.Command{
 		// CLI Logic
 
 		if deleteAll {
+			if !noPrompt {
+				confirmDelete := promptForInteractiveYesNo(
+					"Are you sure you want to delete ALL PAM Provider Types? This action" +
+						" cannot be undone.",
+				)
+				if !confirmDelete {
+					log.Info().Msg("aborting delete of ALL PAM Provider Types")
+					outputResult("Aborted delete of ALL PAM Provider Types", outputFormat)
+					return nil
+				}
+			}
 			log.Info().Msg("deleting ALL PAM Provider Types")
 			pamProviderTypes, listErr := kfClient.ListPAMProviderTypes()
 			if listErr != nil {
@@ -874,4 +891,53 @@ func checkBug63171(cmdResp *http.Response, operation string) error {
 		}
 	}
 	return nil
+}
+
+func init() {
+	var (
+		filePath string
+		name     string
+		id       string
+		repo     string
+		branch   string
+		all      bool
+	)
+	// PAM Provider Types
+	RootCmd.AddCommand(pamTypesCmd)
+
+	// PAM Provider Types Get
+	pamTypesCmd.AddCommand(pamTypesGetCmd)
+	pamTypesGetCmd.Flags().StringVarP(&id, "id", "i", "", "ID of the PAM Provider Type.")
+	pamTypesGetCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the PAM Provider Type.")
+	pamTypesGetCmd.MarkFlagsMutuallyExclusive("id", "name")
+
+	// PAM Provider Types List
+	pamTypesCmd.AddCommand(pamTypesListCmd)
+
+	// PAM Provider Types Create
+	pamTypesCmd.AddCommand(pamTypesCreateCmd)
+	pamTypesCreateCmd.Flags().StringVarP(
+		&filePath,
+		FlagFromFile,
+		"f",
+		"",
+		"Path to a JSON file containing the PAM Type Object Data.",
+	)
+	pamTypesCreateCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the PAM Provider Type.")
+	pamTypesCreateCmd.Flags().BoolVarP(&all, "all", "a", false, "Create all PAM Provider Types.")
+	pamTypesCreateCmd.Flags().StringVarP(&repo, "repo", "r", "", "Keyfactor repository name of the PAM Provider Type.")
+	pamTypesCreateCmd.Flags().StringVarP(
+		&branch,
+		"branch",
+		"b",
+		"",
+		"Branch name for the repository. Defaults to 'main'.",
+	)
+
+	// PAM Provider Types Delete
+	pamTypesCmd.AddCommand(pamTypesDeleteCmd)
+	pamTypesDeleteCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the PAM Provider Type.")
+	pamTypesDeleteCmd.Flags().StringVarP(&id, "id", "i", "", "ID of the PAM Provider Type.")
+	pamTypesDeleteCmd.Flags().BoolVarP(&all, "all", "a", false, "Delete all PAM Provider Types.")
+	pamTypesDeleteCmd.MarkFlagsMutuallyExclusive("id", "name", "all")
 }
