@@ -264,20 +264,34 @@ func getServerConfigFromEnv() (*auth_providers.Server, error) {
 }
 
 // authViaConfigFile authenticates using the configuration file
-func authViaConfigFile(cfgFile string, cfgProfile string) (*api.Client, error) {
+func authViaConfigFile(cfgFile string, cfgProfile string, cfgObj *auth_providers.Config) (*api.Client, error) {
 	var (
 		c    *api.Client
 		cErr error
 	)
-	log.Debug().Msg("call: getServerConfigFromFile()")
-	conf, err := getServerConfigFromFile(cfgFile, cfgProfile)
-	log.Debug().Msg("complete: getServerConfigFromFile()")
-	if err != nil {
-		log.Error().
-			Err(err).
-			Msg("unable to get server config from file")
-		return nil, err
+	var (
+		conf *auth_providers.Server
+		err  error
+	)
+	if cfgObj != nil {
+		cp, ok := cfgObj.Servers[cfgProfile]
+		if !ok {
+			log.Error().Str("profile", cfgProfile).Msg("invalid profile")
+			return nil, fmt.Errorf("invalid profile: %s", cfgProfile)
+		}
+		conf = &cp
+	} else {
+		log.Debug().Msg("call: getServerConfigFromFile()")
+		conf, err = getServerConfigFromFile(cfgFile, cfgProfile)
+		log.Debug().Msg("complete: getServerConfigFromFile()")
+		if err != nil {
+			log.Error().
+				Err(err).
+				Msg("unable to get server config from file")
+			return nil, err
+		}
 	}
+
 	if conf != nil {
 		if conf.AuthProvider.Type != "" {
 			switch conf.AuthProvider.Type {
@@ -307,20 +321,36 @@ func authViaConfigFile(cfgFile string, cfgProfile string) (*api.Client, error) {
 }
 
 // authSdkViaConfigFile authenticates using the configuration file
-func authSdkViaConfigFile(cfgFile string, cfgProfile string) (*keyfactor.APIClient, error) {
+func authSdkViaConfigFile(cfgFile string, cfgProfile string, cfgObj *auth_providers.Config) (
+	*keyfactor.APIClient,
+	error,
+) {
 	var (
 		c    *keyfactor.APIClient
+		conf *auth_providers.Server
 		cErr error
+		err  error
 	)
-	log.Debug().Msg("call: getServerConfigFromFile()")
-	conf, err := getServerConfigFromFile(cfgFile, cfgProfile)
-	log.Debug().Msg("complete: getServerConfigFromFile()")
-	if err != nil {
-		log.Error().
-			Err(err).
-			Msg("unable to get server config from file")
-		return nil, err
+
+	if cfgObj != nil {
+		cp, ok := cfgObj.Servers[cfgProfile]
+		if !ok {
+			log.Error().Str("profile", cfgProfile).Msg("invalid profile")
+			return nil, fmt.Errorf("invalid profile: %s", cfgProfile)
+		}
+		conf = &cp
+	} else {
+		log.Debug().Msg("call: getServerConfigFromFile()")
+		conf, err = getServerConfigFromFile(cfgFile, cfgProfile)
+		log.Debug().Msg("complete: getServerConfigFromFile()")
+		if err != nil {
+			log.Error().
+				Err(err).
+				Msg("unable to get server config from file")
+			return nil, err
+		}
 	}
+
 	if conf != nil {
 		if conf.AuthProvider.Type != "" {
 			switch conf.AuthProvider.Type {
@@ -622,7 +652,7 @@ func initClient(saveConfig bool) (*api.Client, error) {
 			Str("configFile", configFile).
 			Str("profile", profile).
 			Msg("authenticating via config file")
-		c, explicitCfgErr = authViaConfigFile(configFile, profile)
+		c, explicitCfgErr = authViaConfigFile(configFile, profile, nil)
 		if explicitCfgErr == nil {
 			log.Info().
 				Str("configFile", configFile).
@@ -652,13 +682,29 @@ func initClient(saveConfig bool) (*api.Client, error) {
 		Str("profile", "default").
 		Msg("implicit authenticating via config file using default profile")
 	log.Debug().Msg("call: authViaConfigFile()")
-	c, cfgErr = authViaConfigFile("", "")
+	c, cfgErr = authViaConfigFile("", "", nil)
 	if cfgErr == nil {
 		log.Info().
 			Str("configFile", DefaultConfigFileName).
 			Str("profile", "default").
 			Msgf("authenticated implictly via config file '%s' using 'default' profile", DefaultConfigFileName)
 		return c, nil
+	}
+
+	conf, _ := getServerConfigFromFile(configFile, profile)
+	iConfig, iErr := authInteractive(conf, profile, !noPrompt, false, configFile)
+	if iErr == nil {
+		if profile == "" {
+			profile = auth_providers.DefaultConfigProfile
+		}
+		log.Info().Str("profile", profile).Msg("Creating client from interactive configuration")
+		c, cfgErr = authViaConfigFile("", profile, &iConfig)
+		if cfgErr == nil {
+			log.Info().
+				Str("profile", profile).
+				Msg("authenticated via interactive configuration")
+			return c, nil
+		}
 	}
 
 	log.Error().
@@ -668,11 +714,12 @@ func initClient(saveConfig bool) (*api.Client, error) {
 	log.Debug().Msg("return: initClient()")
 
 	//combine envCfgErr and cfgErr and return
-	outErr := fmt.Errorf(
-		"Environment Authentication Error:\r\n%s\r\n\r\nConfiguration File Authentication Error:\r\n%s",
-		envCfgErr,
-		cfgErr,
-	)
+	//outErr := fmt.Errorf(
+	//	"Environment Authentication Error:\r\n%s\r\n\r\nConfiguration File Authentication Error:\r\n%s",
+	//	envCfgErr,
+	//	cfgErr,
+	//)
+	outErr := fmt.Errorf("unable to authenticate to Keyfactor Command with provided credentials, please check your configuration")
 
 	return nil, outErr
 }
@@ -719,7 +766,7 @@ func initGenClient(
 			Str("configFile", configFile).
 			Str("profile", profile).
 			Msg("authenticating via config file")
-		c, cfErr = authSdkViaConfigFile(configFile, profile)
+		c, cfErr = authSdkViaConfigFile(configFile, profile, nil)
 		if cfErr == nil {
 			log.Info().
 				Str("configFile", configFile).
@@ -743,13 +790,29 @@ func initGenClient(
 		Str("profile", "default").
 		Msg("implicit authenticating via config file using default profile")
 	log.Debug().Msg("call: authViaConfigFile()")
-	c, cfErr = authSdkViaConfigFile("", "")
+	c, cfErr = authSdkViaConfigFile("", "", nil)
 	if cfErr == nil {
 		log.Info().
 			Str("configFile", DefaultConfigFileName).
 			Str("profile", "default").
 			Msgf("authenticated implictly via config file '%s' using 'default' profile", DefaultConfigFileName)
 		return c, nil
+	}
+
+	conf, _ := getServerConfigFromFile(configFile, profile)
+	iConfig, iErr := authInteractive(conf, profile, !noPrompt, false, configFile)
+	if iErr == nil {
+		if profile == "" {
+			profile = auth_providers.DefaultConfigProfile
+		}
+		log.Info().Str("profile", profile).Msg("Creating client from interactive configuration")
+		c, cfErr = authSdkViaConfigFile("", profile, &iConfig)
+		if cfErr == nil {
+			log.Info().
+				Str("profile", profile).
+				Msg("authenticated via interactive configuration")
+			return c, nil
+		}
 	}
 
 	log.Error().

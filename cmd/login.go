@@ -433,6 +433,9 @@ func authInteractive(
 	saveConfig bool,
 	configPath string,
 ) (auth_providers.Config, error) {
+	if noPrompt && !forcePrompt {
+		return auth_providers.Config{}, fmt.Errorf("no-prompt flag is set, cannot run interactive login")
+	}
 	if serverConf == nil {
 		serverConf = &auth_providers.Server{}
 	}
