@@ -312,7 +312,7 @@ func Test_StoreTypes_Mock_ListAllTypes(t *testing.T) {
 	storeTypes := loadStoreTypesFromJSON(t)
 
 	// Pre-populate server with first 5 store types
-	maxTypes := 5
+	maxTypes := 500
 	if len(storeTypes) < maxTypes {
 		maxTypes = len(storeTypes)
 	}
@@ -392,7 +392,7 @@ func Test_StoreTypes_Mock_DeleteAllTypes(t *testing.T) {
 	storeTypes := loadStoreTypesFromJSON(t)
 
 	// Pre-populate server with first 5 store types
-	maxTypes := 5
+	maxTypes := 500
 	if len(storeTypes) < maxTypes {
 		maxTypes = len(storeTypes)
 	}
@@ -532,7 +532,7 @@ func Test_StoreTypes_Mock_FullLifecycle(t *testing.T) {
 	storeTypes := loadStoreTypesFromJSON(t)
 
 	// Test first 3 store types
-	maxTypes := 3
+	maxTypes := 500
 	if len(storeTypes) < maxTypes {
 		maxTypes = len(storeTypes)
 	}
@@ -660,7 +660,7 @@ func Test_StoreTypes_Mock_Summary(t *testing.T) {
 	server := NewStoreTypeTestServer(t)
 
 	// Test first 10 store types
-	maxTypes := 10
+	maxTypes := 500
 	if len(storeTypes) < maxTypes {
 		maxTypes = len(storeTypes)
 	}
