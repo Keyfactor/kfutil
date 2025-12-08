@@ -138,7 +138,7 @@ jobs:
           
           # Calculate tested counts (first 10 for store types based on test implementation)
           PAM_TESTED=$PAM_TYPES_TOTAL
-          STORE_TESTED=10
+          STORE_TESTED=$STORE_TYPES_TOTAL
           
           # Calculate percentages
           PAM_PERCENT=$((100 * PAM_TESTED / PAM_TYPES_TOTAL))
