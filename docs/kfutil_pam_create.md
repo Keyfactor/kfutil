@@ -44,4 +44,4 @@ kfutil pam create [flags]
 
 * [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
 
-###### Auto generated on 5-Dec-2025
+###### Auto generated on 8-Dec-2025
