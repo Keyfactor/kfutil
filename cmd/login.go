@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2025 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -196,7 +196,7 @@ WARNING: This will write the environmental credentials to disk and will be store
 
 		if !noPrompt {
 			log.Debug().Msg("prompting for interactive login")
-			iConfig, iErr := authInteractive(outputServer, profile, !noPrompt, true, configFile)
+			iConfig, iErr := authInteractive(outputServer, profile, true, true, configFile)
 			if iErr != nil {
 				log.Error().Err(iErr)
 				return iErr
@@ -433,6 +433,9 @@ func authInteractive(
 	saveConfig bool,
 	configPath string,
 ) (auth_providers.Config, error) {
+	if noPrompt && !forcePrompt {
+		return auth_providers.Config{}, fmt.Errorf("no-prompt flag is set, cannot run interactive login")
+	}
 	if serverConf == nil {
 		serverConf = &auth_providers.Server{}
 	}
@@ -454,6 +457,7 @@ func authInteractive(
 		}
 	}
 	if serverConf.AuthType == "basic" {
+
 		if serverConf.Username == "" || forcePrompt {
 			serverConf.Username = promptForInteractiveParameter("Keyfactor Command Username", serverConf.Username)
 		}
@@ -468,6 +472,13 @@ func authInteractive(
 				serverConf.Domain = userDomain
 			}
 		}
+		// Unset oauth parameters
+		serverConf.OAuthTokenUrl = ""
+		serverConf.ClientID = ""
+		serverConf.ClientSecret = ""
+		serverConf.AccessToken = ""
+		serverConf.Scopes = []string{}
+		serverConf.Audience = ""
 	} else if serverConf.AuthType == "oauth" {
 		if serverConf.AccessToken == "" || forcePrompt {
 			log.Debug().Msg("prompting for OAuth access token")
@@ -528,6 +539,10 @@ func authInteractive(
 				Str("serverConf.AccessToken", hashSecretValue(serverConf.AccessToken)).
 				Msg("using provided OAuth access token")
 		}
+		// Unset basic auth parameters
+		serverConf.Username = ""
+		serverConf.Password = ""
+		serverConf.Domain = ""
 	}
 
 	if serverConf.APIPath == "" || forcePrompt {
