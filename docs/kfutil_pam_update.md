@@ -44,4 +44,4 @@ kfutil pam update [flags]
 
 * [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
 
-###### Auto generated on 31-Jul-2025
+###### Auto generated on 5-Dec-2025

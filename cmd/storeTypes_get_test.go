@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The Keyfactor Command Authors.
+Copyright 2025 The Keyfactor Command Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,9 +21,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"kfutil/pkg/cmdtest"
 	manifestv1 "kfutil/pkg/keyfactor/v1"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_StoreTypesGet(t *testing.T) {

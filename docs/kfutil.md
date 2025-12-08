@@ -42,9 +42,10 @@ A CLI wrapper around the Keyfactor Platform API.
 * [kfutil migrate](kfutil_migrate.md)     - Keyfactor Migration Tools.
 * [kfutil orchs](kfutil_orchs.md)	 - Keyfactor agents/orchestrators APIs and utilities.
 * [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
+* [kfutil pam-types](kfutil_pam-types.md)     - Keyfactor PAM types APIs and utilities.
 * [kfutil status](kfutil_status.md)	 - List the status of Keyfactor services.
 * [kfutil store-types](kfutil_store-types.md)	 - Keyfactor certificate store types APIs and utilities.
 * [kfutil stores](kfutil_stores.md)	 - Keyfactor certificate stores APIs and utilities.
 * [kfutil version](kfutil_version.md)	 - Shows version of kfutil
 
-###### Auto generated on 31-Jul-2025
+###### Auto generated on 5-Dec-2025
