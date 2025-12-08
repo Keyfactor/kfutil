@@ -581,7 +581,11 @@ func getValidStoreTypes(fp string, gitRef string, gitRepo string) []string {
 	for k := range validStoreTypes {
 		validStoreTypesList = append(validStoreTypesList, k)
 	}
-	sort.Strings(validStoreTypesList)
+	sort.SliceStable(
+		validStoreTypesList, func(i, j int) bool {
+			return strings.ToLower(validStoreTypesList[i]) < strings.ToLower(validStoreTypesList[j])
+		},
+	)
 	return validStoreTypesList
 }
 
