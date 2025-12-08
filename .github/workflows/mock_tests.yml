@@ -1,5 +1,8 @@
 name: Mock Tests
 
+permissions:
+  contents: read
+
 on:
   push:
     paths:
