@@ -2,7 +2,6 @@ name: Mock Tests
 
 on:
   push:
-    branches: [ main, develop ]
     paths:
       - 'cmd/pamTypes_mock_test.go'
       - 'cmd/storeTypes_mock_test.go'
@@ -12,7 +11,6 @@ on:
       - 'cmd/store_types.json'
       - '.github/workflows/mock_tests.yml'
   pull_request:
-    branches: [ main, develop ]
     paths:
       - 'cmd/pamTypes_mock_test.go'
       - 'cmd/storeTypes_mock_test.go'
