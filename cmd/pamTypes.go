@@ -312,7 +312,7 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 			for _, e := range createErrors {
 				errStr += fmt.Sprintf("%s\n", e)
 			}
-			return fmt.Errorf(errStr)
+			return fmt.Errorf("%s", errStr)
 		}
 
 		//var err error
@@ -880,11 +880,10 @@ func checkBug63171(cmdResp *http.Response, operation string) error {
 		majorVersion, err := strconv.Atoi(majorVersionStr)
 		if err == nil && majorVersion >= 12 {
 			// TODO: Pending resolution of this bug: https://dev.azure.com/Keyfactor/Engineering/_workitems/edit/63171
-			errMsg := fmt.Sprintf(
+			oErr := fmt.Errorf(
 				"PAM Provider %s is not supported in Keyfactor Command version 12 and later, "+
 					"please use the Keyfactor Command UI to create PAM Providers", operation,
 			)
-			oErr := fmt.Errorf(errMsg)
 			log.Error().Err(oErr).Send()
 			outputError(oErr, true, outputFormat)
 			return oErr
