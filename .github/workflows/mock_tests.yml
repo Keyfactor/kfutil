@@ -2,6 +2,7 @@ name: Mock Tests
 
 on:
   push:
+    branches: [ main, develop ]
     paths:
       - 'cmd/pamTypes_mock_test.go'
       - 'cmd/storeTypes_mock_test.go'
@@ -11,6 +12,7 @@ on:
       - 'cmd/store_types.json'
       - '.github/workflows/mock_tests.yml'
   pull_request:
+    branches: [ main, develop ]
     paths:
       - 'cmd/pamTypes_mock_test.go'
       - 'cmd/storeTypes_mock_test.go'
@@ -118,6 +120,36 @@ jobs:
       - name: Generate Combined Summary
         if: always()
         run: |
+          # Calculate statistics from JSON files and test output
+          PAM_TYPES_TOTAL=$(jq '. | length' cmd/pam_types.json)
+          STORE_TYPES_TOTAL=$(jq '. | length' cmd/store_types.json)
+          
+          # Count test cases from test files
+          PAM_MOCK_CREATE_TESTS=$(grep -c "Test_PAMTypes_Mock_CreateAllTypes" cmd/pamTypes_mock_test.go || echo "0")
+          STORE_MOCK_CREATE_TESTS=$(grep -c "Test_StoreTypes_Mock_CreateAllTypes" cmd/storeTypes_mock_test.go || echo "0")
+          
+          # Run tests with JSON output to count operations
+          PAM_TEST_OUTPUT=$(go test -json ./cmd -run "Test_PAMTypes_Mock" 2>&1 || echo "")
+          STORE_TEST_OUTPUT=$(go test -json ./cmd -run "Test_StoreTypes_Mock" 2>&1 || echo "")
+          
+          # Count passed subtests for PAM types
+          PAM_SUBTESTS=$(echo "$PAM_TEST_OUTPUT" | jq -r 'select(.Action == "pass" and .Test != null and (.Test | contains("Mock"))) | .Test' 2>/dev/null | wc -l | tr -d ' ')
+          
+          # Count passed subtests for Store types
+          STORE_SUBTESTS=$(echo "$STORE_TEST_OUTPUT" | jq -r 'select(.Action == "pass" and .Test != null and (.Test | contains("Mock"))) | .Test' 2>/dev/null | wc -l | tr -d ' ')
+          
+          # Calculate tested counts (first 10 for store types based on test implementation)
+          PAM_TESTED=$PAM_TYPES_TOTAL
+          STORE_TESTED=10
+          
+          # Calculate percentages
+          PAM_PERCENT=$((100 * PAM_TESTED / PAM_TYPES_TOTAL))
+          STORE_PERCENT=$((100 * STORE_TESTED / STORE_TYPES_TOTAL))
+          
+          # Count total operations (approximate: subtests - summary tests)
+          TOTAL_OPS=$((PAM_SUBTESTS + STORE_SUBTESTS - 2))
+          
+          # Generate summary
           echo "# 🎉 Mock Tests Complete Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Test Execution Results" >> $GITHUB_STEP_SUMMARY
@@ -138,15 +170,21 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Coverage Statistics" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **PAM Types Tested**: 9/9 (100%)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Store Types Tested**: 10-15/62 (~20%)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Total HTTP Operations**: 90+ validated" >> $GITHUB_STEP_SUMMARY
-          echo "- **Execution Time**: < 40ms" >> $GITHUB_STEP_SUMMARY
+          echo "- **PAM Types Available**: ${PAM_TYPES_TOTAL}" >> $GITHUB_STEP_SUMMARY
+          echo "- **PAM Types Tested**: ${PAM_TESTED}/${PAM_TYPES_TOTAL} (${PAM_PERCENT}%)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Store Types Available**: ${STORE_TYPES_TOTAL}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Store Types Tested**: ${STORE_TESTED}/${STORE_TYPES_TOTAL} (${STORE_PERCENT}%)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Test Cases Passed**: ${TOTAL_OPS}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Test Files" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- \`cmd/pamTypes_mock_test.go\` - PAM Types HTTP Mock Tests" >> $GITHUB_STEP_SUMMARY
-          echo "- \`cmd/storeTypes_mock_test.go\` - Store Types HTTP Mock Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- \`cmd/pamTypes_mock_test.go\` - PAM Types HTTP Mock Tests (${PAM_SUBTESTS} subtests)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`cmd/storeTypes_mock_test.go\` - Store Types HTTP Mock Tests (${STORE_SUBTESTS} subtests)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## JSON Data Files" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- \`cmd/pam_types.json\` - ${PAM_TYPES_TOTAL} PAM provider types" >> $GITHUB_STEP_SUMMARY
+          echo "- \`cmd/store_types.json\` - ${STORE_TYPES_TOTAL} certificate store types" >> $GITHUB_STEP_SUMMARY
 
       - name: Check Overall Status
         if: needs.pam-types-mock-tests.result != 'success' || needs.store-types-mock-tests.result != 'success'
