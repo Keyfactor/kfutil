@@ -196,7 +196,7 @@ WARNING: This will write the environmental credentials to disk and will be store
 
 		if !noPrompt {
 			log.Debug().Msg("prompting for interactive login")
-			iConfig, iErr := authInteractive(outputServer, profile, !noPrompt, true, configFile)
+			iConfig, iErr := authInteractive(outputServer, profile, true, true, configFile)
 			if iErr != nil {
 				log.Error().Err(iErr)
 				return iErr

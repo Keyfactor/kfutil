@@ -30,18 +30,18 @@ import (
 func Test_PAMHelpCmd(t *testing.T) {
 	// Test root help
 	testCmd := RootCmd
-	testCmd.SetArgs([]string{"pam", "--help"})
+	testCmd.SetArgs([]string{"pam-types", "--help"})
 	err := testCmd.Execute()
 
 	assert.NoError(t, err)
 
 	// test root halp
-	testCmd.SetArgs([]string{"pam", "-h"})
+	testCmd.SetArgs([]string{"pam-types", "-h"})
 	err = testCmd.Execute()
 	assert.NoError(t, err)
 
 	// test root halp
-	testCmd.SetArgs([]string{"pam", "--halp"})
+	testCmd.SetArgs([]string{"pam-types", "--halp"})
 	err = testCmd.Execute()
 
 	assert.Error(t, err)
@@ -70,7 +70,7 @@ func Test_PAMTypesListCmd(t *testing.T) {
 	testCmd := RootCmd
 	// test
 	var err error
-	testCmd.SetArgs([]string{"pam", "types-list"})
+	testCmd.SetArgs([]string{"pam-types", "list"})
 	output := captureOutput(
 		func() {
 			err = testCmd.Execute()
@@ -159,7 +159,7 @@ func Test_PAMGetCmd(t *testing.T) {
 			// test
 			idInt := int(providerConfig["Id"].(float64))
 			idStr := strconv.Itoa(idInt)
-			testCmd.SetArgs([]string{"pam", "get", "--id", idStr})
+			testCmd.SetArgs([]string{"pam-types", "get", "--id", idStr})
 			output := captureOutput(
 				func() {
 					err := testCmd.Execute()
@@ -188,7 +188,7 @@ func Test_PAMTypesCreateCmd(t *testing.T) {
 	// test
 	randomName := generateRandomUUID()
 	t.Logf("randomName: %s", randomName)
-	testCmd.SetArgs([]string{"pam", "types-create", "--repo", "hashicorp-vault-pam", "--name", randomName})
+	testCmd.SetArgs([]string{"pam-types", "create", "--repo", "hashicorp-vault-pam", "--name", randomName})
 	output := captureOutput(
 		func() {
 			err := testCmd.Execute()
@@ -306,7 +306,7 @@ func Test_PAMUpdateCmd(t *testing.T) {
 
 	testCmd := RootCmd
 	// test
-	testCmd.SetArgs([]string{"pam", "update", "--from-file", updatedFileName})
+	testCmd.SetArgs([]string{"pam-types", "update", "--from-file", updatedFileName})
 	output := captureOutput(
 		func() {
 			err := testCmd.Execute()
@@ -420,7 +420,7 @@ func testListPamProviders(t *testing.T) ([]interface{}, error) {
 		"Listing PAM provider instances", func(t *testing.T) {
 			testCmd := RootCmd
 			// test
-			testCmd.SetArgs([]string{"pam", "list"})
+			testCmd.SetArgs([]string{"pam-types", "list"})
 			output = captureOutput(
 				func() {
 					err = testCmd.Execute()
@@ -490,7 +490,7 @@ func testCreatePamProvider(t *testing.T, fileName string, providerName string, a
 		testName, func(t *testing.T) {
 			testCmd := RootCmd
 
-			args := []string{"pam", "create", "--from-file", fileName}
+			args := []string{"pam-types", "create", "--from-file", fileName}
 			// log the args as a string
 			t.Logf("args: %s", args)
 			testCmd.SetArgs(args)
@@ -544,7 +544,7 @@ func testDeletePamProvider(t *testing.T, pID int, allowFail bool) error {
 		fmt.Sprintf("Deleting PAM provider %d", pID), func(t *testing.T) {
 			testCmd := RootCmd
 
-			testCmd.SetArgs([]string{"pam", "delete", "--id", strconv.Itoa(pID)})
+			testCmd.SetArgs([]string{"pam-types", "delete", "--id", strconv.Itoa(pID)})
 			output = captureOutput(
 				func() {
 					err = testCmd.Execute()
@@ -572,7 +572,7 @@ func testListPamProviderTypes(t *testing.T, name string, allowFail bool, allowEm
 
 	testCmd := RootCmd
 	// test
-	testCmd.SetArgs([]string{"pam", "types-list"})
+	testCmd.SetArgs([]string{"pam-types", "list"})
 	output = captureOutput(
 		func() {
 			err = testCmd.Execute()

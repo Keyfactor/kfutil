@@ -223,7 +223,7 @@ var storesTypeCreateCmd = &cobra.Command{
 			for _, e := range createErrors {
 				errStr += fmt.Sprintf("%s\n", e)
 			}
-			return fmt.Errorf(errStr)
+			return fmt.Errorf("%s", errStr)
 		}
 
 		return nil
@@ -351,7 +351,7 @@ var storesTypeDeleteCmd = &cobra.Command{
 			for _, e := range removalErrors {
 				errStr += fmt.Sprintf("%s\n", e)
 			}
-			return fmt.Errorf(errStr)
+			return fmt.Errorf("%s", errStr)
 		}
 		return nil
 	},

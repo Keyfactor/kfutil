@@ -185,7 +185,7 @@ func Test_Stores_ImportCmd(t *testing.T) {
 
 		// write modifiedCSVData to file
 		outFileName := strings.Replace(f, "export", "import", 1)
-		convErr := mapToCSV(modifiedCSVData, outFileName)
+		convErr := mapToCSV(modifiedCSVData, outFileName, []string{})
 		assert.NoError(t, convErr)
 
 		testCmd := RootCmd

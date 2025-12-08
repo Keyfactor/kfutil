@@ -341,7 +341,7 @@ func outputError(err error, isFatal bool, format string) {
 		if format == "json" {
 			fmt.Println(fmt.Sprintf("{\"error\": \"%s\"}", err))
 		} else {
-			fmt.Errorf(fmt.Sprintf("Fatal error: %s", err))
+			fmt.Errorf("fatal error: %s", err)
 		}
 	}
 	if format == "json" {
