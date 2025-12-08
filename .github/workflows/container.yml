@@ -19,7 +19,6 @@ jobs:
         platform:
           - linux/386
           - linux/amd64
-          - linux/arm/v6
           - linux/arm/v7
           - linux/arm64/v8
           - linux/ppc64le
@@ -91,11 +90,17 @@ jobs:
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
+      - name: Set artifact name
+        run: |
+          echo "ARTIFACT_NAME=digests-${MATRIX_PLATFORM//\//-}" >>${GITHUB_ENV}
+        env:
+          MATRIX_PLATFORM: ${{ matrix.platform }}
+
       # Upload digest
       - name: Upload digest
         uses: actions/upload-artifact@v5
         with:
-          name: digests
+          name: ${{ env.ARTIFACT_NAME }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -115,8 +120,9 @@ jobs:
       - name: Download digests
         uses: actions/download-artifact@v6
         with:
-          name: digests
           path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
 
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
