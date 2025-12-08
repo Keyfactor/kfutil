@@ -1,42 +1,21 @@
-## kfutil completion zsh
+## kfutil pam-types get
 
-Generate the autocompletion script for zsh
+Get a specific defined PAM Provider type by ID or Name.
 
 ### Synopsis
 
-Generate the autocompletion script for the zsh shell.
-
-If shell completion is not already enabled in your environment you will need
-to enable it.  You can execute the following once:
-
-	echo "autoload -U compinit; compinit" >> ~/.zshrc
-
-To load completions in your current shell session:
-
-	source <(kfutil completion zsh)
-
-To load completions for every new session, execute once:
-
-#### Linux:
-
-	kfutil completion zsh > "${fpath[1]}/_kfutil"
-
-#### macOS:
-
-	kfutil completion zsh > $(brew --prefix)/share/zsh/site-functions/_kfutil
-
-You will need to start a new shell for this setup to take effect.
-
+Get a specific defined PAM Provider type by ID or Name.
 
 ```
-kfutil completion zsh [flags]
+kfutil pam-types get [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help              help for zsh
-      --no-descriptions   disable completion descriptions
+  -h, --help          help for get
+  -i, --id string     ID of the PAM Provider Type.
+  -n, --name string   Name of the PAM Provider Type.
 ```
 
 ### Options inherited from parent commands
@@ -64,6 +43,6 @@ kfutil completion zsh [flags]
 
 ### SEE ALSO
 
-* [kfutil completion](kfutil_completion.md)	 - Generate the autocompletion script for the specified shell
+* [kfutil pam-types](kfutil_pam-types.md)     - Keyfactor PAM types APIs and utilities.
 
 ###### Auto generated on 5-Dec-2025

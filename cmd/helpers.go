@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2025 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -341,7 +341,7 @@ func outputError(err error, isFatal bool, format string) {
 		if format == "json" {
 			fmt.Println(fmt.Sprintf("{\"error\": \"%s\"}", err))
 		} else {
-			fmt.Errorf(fmt.Sprintf("Fatal error: %s", err))
+			fmt.Errorf("fatal error: %s", err)
 		}
 	}
 	if format == "json" {

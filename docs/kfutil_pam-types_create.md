@@ -1,4 +1,4 @@
-## kfutil pam types-create
+## kfutil pam-types create
 
 Creates a new PAM provider type.
 
@@ -11,15 +11,16 @@ https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.
 --from-file to specify the path to the JSON file.
 
 ```
-kfutil pam types-create [flags]
+kfutil pam-types create [flags]
 ```
 
 ### Options
 
 ```
+  -a, --all                Create all PAM Provider Types.
   -b, --branch string      Branch name for the repository. Defaults to 'main'.
   -f, --from-file string   Path to a JSON file containing the PAM Type Object Data.
-  -h, --help               help for types-create
+  -h, --help               help for create
   -n, --name string        Name of the PAM Provider Type.
   -r, --repo string        Keyfactor repository name of the PAM Provider Type.
 ```
@@ -49,6 +50,6 @@ kfutil pam types-create [flags]
 
 ### SEE ALSO
 
-* [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
+* [kfutil pam-types](kfutil_pam-types.md)     - Keyfactor PAM types APIs and utilities.
 
-###### Auto generated on 31-Jul-2025
+###### Auto generated on 5-Dec-2025

@@ -51,4 +51,4 @@ kfutil stores rot audit [flags]
 
 * [kfutil stores rot](kfutil_stores_rot.md)	 - Root of trust utility
 
-###### Auto generated on 31-Jul-2025
+###### Auto generated on 5-Dec-2025
