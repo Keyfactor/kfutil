@@ -2854,6 +2854,7 @@
     "StorePathValue": "/",
     "SupportedOperations": {
       "Add": false,
+      "Inventory": true,
       "Create": false,
       "Discovery": false,
       "Enrollment": false,
@@ -3747,6 +3748,7 @@
   {
     "Name": "OktaApp",
     "ShortName": "OktaApp",
+    "Capability": "OktaApp",
     "LocalStore": false,
     "StorePathDescription": "This should contain the Okta App ID (please see overview for description).",
     "ClientMachineDescription": "This should contain your Okta URL (e.g. https://trial-1111.okta.com).",
@@ -3812,6 +3814,7 @@
   {
     "Name": "OktaIdP",
     "ShortName": "OktaIdP",
+    "Capability": "OktaIdP",
     "StorePathDescription": "This should contain the Okta IdP ID (please see overview for description).",
     "ClientMachineDescription": "This should contain your Okta URL (e.g. https://trial-1111.okta.com).",
     "SupportedOperations": {
@@ -4824,6 +4827,7 @@
     "PrivateKeyAllowed": "Required",
     "SupportedOperations": {
       "Add": false,
+      "Inventory": true,
       "Create": false,
       "Discovery": false,
       "Enrollment": false,
