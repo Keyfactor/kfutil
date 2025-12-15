@@ -1,26 +1,28 @@
-## kfutil helm uo
+## kfutil pam-types create
 
-Configure the Keyfactor Universal Orchestrator Helm Chart
+Creates a new PAM provider type.
 
 ### Synopsis
 
-Configure the Keyfactor Universal Orchestrator Helm Chart by prompting the user for configuration values and outputting a YAML file that can be used with the Helm CLI to install the chart.
-
-Also supported is the ability specify extensions and skip the interactive prompts.
-
+Creates a new PAM Provider type, currently only supported from JSON file and from GitHub. To install from 
+Github. To install from GitHub, use the --repo flag to specify the GitHub repository and optionally the branch to use. 
+NOTE: the file from Github must be named integration-manifest.json and must use the same schema as 
+https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.json. To install from a local file, use
+--from-file to specify the path to the JSON file.
 
 ```
-kfutil helm uo [-t <token>] [-o <path>] [-f <file, url, or '-'>] [-e <extension name>@<version>]... [flags]
+kfutil pam-types create [flags]
 ```
 
 ### Options
 
 ```
-  -e, --extension strings   List of extensions to install. Should be in the format <extension name>@<version>. If no version is specified, the latest version will be downloaded.
-  -h, --help                help for uo
-  -o, --out string          Path to output the modified values.yaml file. This file can then be used with helm install -f <file> to override the default values.
-  -t, --token string        Token used for related authentication - required for private repositories
-  -f, --values strings      Filename, directory, or URL to a default values.yaml file to use for the chart
+  -a, --all                Create all PAM Provider Types.
+  -b, --branch string      Branch name for the repository. Defaults to 'main'.
+  -f, --from-file string   Path to a JSON file containing the PAM Type Object Data.
+  -h, --help               help for create
+  -n, --name string        Name of the PAM Provider Type.
+  -r, --repo string        Keyfactor repository name of the PAM Provider Type.
 ```
 
 ### Options inherited from parent commands
@@ -48,6 +50,6 @@ kfutil helm uo [-t <token>] [-o <path>] [-f <file, url, or '-'>] [-e <extension 
 
 ### SEE ALSO
 
-* [kfutil helm](kfutil_helm.md)	 - Helm utilities for configuring Keyfactor Helm charts
+* [kfutil pam-types](kfutil_pam-types.md)     - Keyfactor PAM types APIs and utilities.
 
 ###### Auto generated on 8-Dec-2025

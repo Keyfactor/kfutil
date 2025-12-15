@@ -1,6 +1,7 @@
 # Auth Providers
-What is an `auth provider` in the conext of `kfutil`? It's a way to source credentials needed to connect to a Keyfactor
-product or service from a secure location rather than a file on disk or environment variables. 
+
+What is an `auth provider` in the context of `kfutil`? It's a way to source credentials needed to connect to a Keyfactor
+Command API from a secure location rather than a file on disk or environment variables.
 
 * [Available Auth Providers](#available-auth-providers)
 * [Azure Key Vault](#azure-key-vault)
@@ -28,8 +29,8 @@ file and will be used by `kfutil` to source credentials for the Keyfactor produc
         "type": "azid",
         "profile": "default",
         "parameters": {
-          "secret_name": "command-config-1021",
-          "vault_name": "kfutil"
+          "secret_name": "kfutil-credentials",
+          "vault_name": "keyfactor-command-secrets"
         }
       }
     }
@@ -40,6 +41,8 @@ file and will be used by `kfutil` to source credentials for the Keyfactor produc
 ### Azure Key Vault Secret Format
 The format of the Azure Key Vault secret should be the same as if you were to run `kfutil login` and go through the 
 interactive auth flow. Here's an example of what that would look like:
+
+#### Basic Auth Example
 ```json
 {
   "servers": {
@@ -53,6 +56,23 @@ interactive auth flow. Here's an example of what that would look like:
   }
 }
 ```
+
+#### oAuth Client Credentials Example
+
+```json
+{
+  "servers": {
+    "default": {
+      "host": "my.kfcommand.domain",
+      "client_id": "my_oauth_client_id",
+      "client_secret": "my_oauth_client_secret",
+      "token_url": "https://my_oauth_token_url",
+      "api_path": "Keyfactor/API"
+    }
+  }
+}
+```
+
 #### Usage
 
 ##### Default
