@@ -392,7 +392,7 @@ var migratePamCmd = &cobra.Command{
 		}
 
 		// check Store Password for PAM field, and process migration if applicable
-		var storePassword *api.UpdateStorePasswordConfig
+		var storePassword *api.StorePasswordConfig
 		if certStore.Password.IsManaged { // managed secret, i.e. PAM Provider in use
 
 			// check if Pam Secret is using our migrating provider
