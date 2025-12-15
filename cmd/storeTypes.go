@@ -221,7 +221,7 @@ var storesTypeCreateCmd = &cobra.Command{
 		if len(createErrors) > 0 {
 			errStr := "while creating store types:\n"
 			for _, e := range createErrors {
-				errStr += fmt.Sprintf("%s\n", e)
+				errStr += fmt.Sprintf("- %s\n", e)
 			}
 			return fmt.Errorf("%s", errStr)
 		}
