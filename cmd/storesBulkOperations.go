@@ -303,7 +303,12 @@ If you do not wish to include credentials in your CSV file they can be provided 
 		}
 
 		log.Info().Msgf("Processing CSV rows from file '%s'", filePath)
-		var inputHeader []string
+		var (
+			inputHeader  []string
+			totalUpdates int
+			totalCreates int
+		)
+
 		for idx, row := range inFile {
 			log.Debug().Msgf("Processing row '%d'", idx)
 			originalMap = append(originalMap, row)
@@ -359,9 +364,8 @@ If you do not wish to include credentials in your CSV file they can be provided 
 					Value: &storePassword,
 				}
 			}
-			mJSON := stripAllBOMs(reqJson.String())
 
-			var createStoreReqParameters api.CreateStoreFctArgs
+			mJSON := stripAllBOMs(reqJson.String())
 			if storeId != "" && allowUpdates {
 				updateReqParameters := api.UpdateStoreFctArgs{}
 				conversionError := json.Unmarshal([]byte(mJSON), &updateReqParameters)
@@ -388,9 +392,11 @@ If you do not wish to include credentials in your CSV file they can be provided 
 					log.Info().Msgf("Successfully updated store from row '%d' as '%s'", idx, res.Id)
 					resultsMap = append(resultsMap, []string{fmt.Sprintf("%s", res.Id)})
 					inputMap[idx-1]["Id"] = res.Id
+					totalUpdates++
 				}
 				continue
 			}
+			var createStoreReqParameters api.CreateStoreFctArgs
 			conversionError := json.Unmarshal([]byte(mJSON), &createStoreReqParameters)
 
 			if conversionError != nil {
@@ -419,6 +425,7 @@ If you do not wish to include credentials in your CSV file they can be provided 
 				log.Info().Msgf("Successfully created store from row '%d' as '%s'", idx, res.Id)
 				resultsMap = append(resultsMap, []string{fmt.Sprintf("%s", res.Id)})
 				inputMap[idx-1]["Id"] = res.Id
+				totalCreates++
 			}
 		}
 
@@ -433,6 +440,7 @@ If you do not wish to include credentials in your CSV file they can be provided 
 			originalMap[oIdx] = extendedRow
 		}
 		totalRows := len(resultsMap)
+
 		totalSuccess := totalRows - errorCount
 		log.Debug().Int("totalRows", totalRows).
 			Int("totalSuccess", totalSuccess).Send()
@@ -448,7 +456,13 @@ If you do not wish to include credentials in your CSV file they can be provided 
 		outputResult(fmt.Sprintf("%d records processed.", totalRows), outputFormat)
 		if totalSuccess > 0 {
 			//fmt.Printf("\n%d certificate stores successfully created.", totalSuccess)
-			outputResult(fmt.Sprintf("%d certificate stores successfully created.", totalSuccess), outputFormat)
+			if totalCreates > 0 {
+				outputResult(fmt.Sprintf("%d certificate stores successfully created.", totalCreates), outputFormat)
+			}
+			if totalUpdates > 0 {
+				outputResult(fmt.Sprintf("%d certificate stores successfully updated.", totalUpdates), outputFormat)
+			}
+
 		}
 		if errorCount > 0 {
 			//fmt.Printf("\n%d rows had errors.", errorCount)
