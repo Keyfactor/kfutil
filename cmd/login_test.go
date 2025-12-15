@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2025 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ func Test_LoginFileNoPrompt(t *testing.T) {
 				func() {
 					noPromptErr := npfCmd.Execute()
 					if noPromptErr != nil {
-						t.Errorf(noPromptErr.Error())
+						t.Errorf("%s", noPromptErr.Error())
 						t.FailNow()
 					}
 				},
@@ -233,7 +233,7 @@ func testConfigExists(t *testing.T, filePath string, allowExist bool) {
 		testName = "Config file does not exist"
 	}
 	t.Run(
-		fmt.Sprintf(testName), func(t *testing.T) {
+		fmt.Sprintf("%s", testName), func(t *testing.T) {
 			_, fErr := os.Stat(filePath)
 			if allowExist {
 				assert.True(t, allowExist && fErr == nil)
