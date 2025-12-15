@@ -1,26 +1,21 @@
-## kfutil helm uo
+## kfutil pam-types get
 
-Configure the Keyfactor Universal Orchestrator Helm Chart
+Get a specific defined PAM Provider type by ID or Name.
 
 ### Synopsis
 
-Configure the Keyfactor Universal Orchestrator Helm Chart by prompting the user for configuration values and outputting a YAML file that can be used with the Helm CLI to install the chart.
-
-Also supported is the ability specify extensions and skip the interactive prompts.
-
+Get a specific defined PAM Provider type by ID or Name.
 
 ```
-kfutil helm uo [-t <token>] [-o <path>] [-f <file, url, or '-'>] [-e <extension name>@<version>]... [flags]
+kfutil pam-types get [flags]
 ```
 
 ### Options
 
 ```
-  -e, --extension strings   List of extensions to install. Should be in the format <extension name>@<version>. If no version is specified, the latest version will be downloaded.
-  -h, --help                help for uo
-  -o, --out string          Path to output the modified values.yaml file. This file can then be used with helm install -f <file> to override the default values.
-  -t, --token string        Token used for related authentication - required for private repositories
-  -f, --values strings      Filename, directory, or URL to a default values.yaml file to use for the chart
+  -h, --help          help for get
+  -i, --id string     ID of the PAM Provider Type.
+  -n, --name string   Name of the PAM Provider Type.
 ```
 
 ### Options inherited from parent commands
@@ -48,6 +43,6 @@ kfutil helm uo [-t <token>] [-o <path>] [-f <file, url, or '-'>] [-e <extension 
 
 ### SEE ALSO
 
-* [kfutil helm](kfutil_helm.md)	 - Helm utilities for configuring Keyfactor Helm charts
+* [kfutil pam-types](kfutil_pam-types.md)     - Keyfactor PAM types APIs and utilities.
 
 ###### Auto generated on 8-Dec-2025
