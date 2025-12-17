@@ -437,7 +437,23 @@ func authInteractive(
 		return auth_providers.Config{}, fmt.Errorf("no-prompt flag is set, cannot run interactive login")
 	}
 	if serverConf == nil {
-		serverConf = &auth_providers.Server{}
+		serverConf = &auth_providers.Server{
+			Host:          os.Getenv(auth_providers.EnvKeyfactorHostName),
+			APIPath:       os.Getenv(auth_providers.EnvKeyfactorAPIPath),
+			Username:      os.Getenv(auth_providers.EnvKeyfactorUsername),
+			Password:      os.Getenv(auth_providers.EnvKeyfactorPassword),
+			Domain:        os.Getenv(auth_providers.EnvKeyfactorDomain),
+			OAuthTokenUrl: os.Getenv(auth_providers.EnvKeyfactorAuthTokenURL),
+			ClientID:      os.Getenv(auth_providers.EnvKeyfactorClientID),
+			ClientSecret:  os.Getenv(auth_providers.EnvKeyfactorClientSecret),
+			AccessToken:   os.Getenv(auth_providers.EnvKeyfactorAccessToken),
+			Audience:      os.Getenv(auth_providers.EnvKeyfactorAuthAudience),
+			CACertPath:    os.Getenv(auth_providers.EnvAuthCACert),
+			//SkipTLSVerify: skipVerifyFlag,
+			//AuthType:      os.Getenv(auth_providers.EnvKeyfactorAuthType),
+			//AuthProvider: os.Getenv(auth_providers.EnvKeyfactorAuthProvider),
+			//Scopes:       os.Getenv(auth_providers.EnvKeyfactorAuthScopes),
+		}
 	}
 
 	if serverConf.Host == "" || forcePrompt {
@@ -457,7 +473,6 @@ func authInteractive(
 		}
 	}
 	if serverConf.AuthType == "basic" {
-
 		if serverConf.Username == "" || forcePrompt {
 			serverConf.Username = promptForInteractiveParameter("Keyfactor Command Username", serverConf.Username)
 		}
