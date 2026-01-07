@@ -813,6 +813,13 @@ var storesExportCmd = &cobra.Command{
 					csvData[store.Id]["InventorySchedule.Daily.Time"] = store.InventorySchedule.Daily.Time
 				}
 
+				prpErr := formatStoreProperties(store)
+				if prpErr != nil {
+					log.Error().Err(prpErr).Msg("formatting store properties")
+					errs = append(errs, prpErr)
+					continue
+				}
+
 				log.Debug().Msg("checking Properties")
 				for name, prop := range store.Properties {
 					log.Debug().Str("name", name).
@@ -823,8 +830,23 @@ var storesExportCmd = &cobra.Command{
 						prop = strconv.Itoa(prop.(int))
 					}
 					switch prop.(type) {
+					case map[string]map[string]interface{}:
+						if name == "ServerUsername" || name == "ServerPassword" {
+							secretPropErr := storeEmbeddedPropToCSV(
+								prop.(map[string]map[string]interface{}),
+								store.Id,
+								name,
+								&csvData,
+							)
+							if secretPropErr != nil {
+								log.Error().Err(secretPropErr).Msg("storing embedded property to CSV")
+								errs = append(errs, secretPropErr)
+								//continue
+							}
+						}
 					case map[string]interface{}:
 						for k, v := range prop.(map[string]interface{}) {
+
 							csvData[store.Id][fmt.Sprintf("Properties.%s.%s", name, k)] = v
 						}
 
@@ -834,24 +856,30 @@ var storesExportCmd = &cobra.Command{
 				}
 
 				//// conditionally set secret values
-				//if storeType.PasswordOptions.StoreRequired {
-				//	log.Debug().Str("storePassword", hashSecretValue(store.Password.Value)).
-				//		Msg("setting store password")
-				//
-				//	//csvData[store.Id]["Password"] = parseSecretField(store.Password) // todo: find parseSecretField
-				//	csvData[store.Id]["Password"] = store.Password.Value
-				//}
-				//// add ServerUsername and ServerPassword Properties if required for type
-				//if storeType.ServerRequired {
-				//	log.Debug().Interface("store.ServerUsername", store.Properties["ServerUsername"]).
-				//		Str("store.Password", hashSecretValue(store.Password.Value)).
-				//		Msg("setting store.ServerUsername")
-				//	//csvData[store.Id]["Properties.ServerUsername"] = parseSecretField(store.Properties["ServerUsername"]) // todo: find parseSecretField
-				//	//csvData[store.Id]["Properties.ServerPassword"] = parseSecretField(store.Properties["ServerPassword"]) // todo: find parseSecretField
-				//	csvData[store.Id]["Properties.ServerUsername"] = store.Properties["ServerUsername"]
-				//	csvData[store.Id]["Properties.ServerPassword"] = store.Properties["ServerPassword"]
-				//}
+				if storeType.PasswordOptions.StoreRequired {
+					spErr := storePasswordPropToCSV(store, &csvData)
+					if spErr != nil {
+						log.Error().Err(spErr).Msg("storing password property to CSV")
+						errs = append(errs, spErr)
+						continue
+					}
+				}
 			}
+
+			if len(csvData) == 0 {
+				log.Error().Msg("No stores found for type, skipping export")
+				outputError(
+					fmt.Errorf("no stores found for type %s (%d), skipping export", typeName, typeID),
+					false,
+					outputFormat,
+				)
+				continue
+			}
+
+			// get the first csv data entry to check for any additional headers not already present
+			log.Debug().Msg("updating csvHeaders with any missing headers from csvData")
+
+			//_ = updateCSVHeader(&csvData, &csvHeaders)
 
 			// write csv file header row
 			var filePath string
@@ -863,15 +891,10 @@ var storesExportCmd = &cobra.Command{
 			log.Debug().Str("filePath", filePath).Msg("Writing export file")
 
 			var csvContent [][]string
-			headerRow := make([]string, len(csvHeaders))
-
-			log.Debug().Msg("Writing header row")
-			for k, v := range csvHeaders {
-				headerRow[k] = v
-			}
-			log.Trace().Interface("row", headerRow).Send()
-			csvContent = append(csvContent, headerRow)
 			index := 1
+
+			headerRow := createCSVHeader(&csvData, &csvHeaders)
+			csvContent = append(csvContent, headerRow)
 
 			log.Debug().Msg("Writing data rows")
 			for _, data := range csvData {

@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -460,4 +461,158 @@ func returnHttpErr(resp *http.Response, err error) error {
 	log.Error().Err(err).Str("httpResponseCode", resp.Status).
 		Msg("unable to create PAM provider")
 	return err
+}
+
+func createCSVHeader(data *map[string]map[string]interface{}, existingHeader *map[int]string) []string {
+	if data == nil {
+		return nil
+	}
+
+	seen := make(map[string]struct{})
+	var ordered []string
+
+	// collect unique keys in insertion order
+	for _, row := range *data {
+		for key := range row {
+			k := stripAllBOMs(key)
+			if _, ok := seen[k]; !ok {
+				seen[k] = struct{}{}
+				ordered = append(ordered, k)
+			}
+		}
+	}
+
+	if len(ordered) == 0 {
+		return nil
+	}
+	// sort the keys alphabetically
+	slices.Sort(ordered)
+
+	if existingHeader == nil {
+		existingHeader = &map[int]string{}
+	}
+	for i, k := range ordered {
+		(*existingHeader)[i] = k
+	}
+
+	return ordered
+}
+
+func formatStoreProperties(certStore *api.GetCertificateStoreResponse) error {
+	// foreach property key (properties is an object not an array)
+	// if value is an object, and object has an InstanceGuid
+	// property object is a match for a secret
+	// instead, can check if there is a ProviderId set, and if that
+	// matches integer id of original Provider <<FROM>>
+
+	for propName, prop := range certStore.Properties {
+		propSecret, isSecret := prop.(map[string]interface{})
+		if isSecret {
+			formattedSecret := map[string]map[string]interface{}{
+				"Value": {},
+			}
+			isManaged := propSecret["IsManaged"].(bool)
+			if isManaged { // managed secret, i.e. PAM Provider in use
+				formattedSecret["Value"] = reformatPamSecretForPost(propSecret)
+			} else {
+				// non-managed secret i.e. a KF-encrypted secret, or no value
+				// still needs to be reformatted to required POST format
+				formattedSecret["Value"] = map[string]interface{}{
+					"SecretValue": propSecret["Value"],
+				}
+			}
+
+			// update Properties object with newly formatted secret, compliant with POST requirements
+			certStore.Properties[propName] = formattedSecret
+		}
+	}
+	return nil
+}
+
+func storePasswordPropToCSV(
+	store *api.GetCertificateStoreResponse,
+	csvData *map[string]map[string]interface{},
+) error {
+	if csvData == nil {
+		return fmt.Errorf("csvData map is nil")
+	}
+	if *csvData == nil {
+		*csvData = make(map[string]map[string]interface{})
+	}
+	row, ok := (*csvData)[store.Id]
+	if !ok || row == nil {
+		row = make(map[string]interface{})
+		(*csvData)[store.Id] = row
+	}
+	if store.Password.IsManaged {
+		row["Password.ProviderId"] = store.Password.ProviderId
+		if store.Password.ProviderTypeParameterValues != nil {
+			for _, v := range *store.Password.ProviderTypeParameterValues {
+				paramName := *v.ProviderTypeParam.Name
+				row[fmt.Sprintf("Password.Parameters.%s", paramName)] = *v.Value
+			}
+		}
+	} else if store.Password.Value != nil {
+		row["Password"] = store.Password.Value
+	}
+
+	return nil
+}
+
+func storeEmbeddedPropToCSV(
+	prop map[string]map[string]interface{},
+	storeId string,
+	topLevelParamName string,
+	csvData *map[string]map[string]interface{},
+) error {
+	if csvData == nil {
+		return fmt.Errorf("csvData map is nil")
+	}
+	if *csvData == nil {
+		*csvData = make(map[string]map[string]interface{})
+	}
+
+	row, ok := (*csvData)[storeId]
+	if !ok || row == nil {
+		row = make(map[string]interface{})
+		(*csvData)[storeId] = row
+	}
+
+	for propName, propVal := range prop {
+		if propName == "Value" {
+			for paramName, paramValue := range propVal {
+				if paramName == "Parameters" {
+					switch t := paramValue.(type) {
+					case map[string]string:
+						for subParamName, subParamVal := range t {
+							row[fmt.Sprintf(
+								"Properties.%s.%s.%s",
+								topLevelParamName,
+								paramName,
+								subParamName,
+							)] = subParamVal
+						}
+					case map[string]interface{}:
+						for subParamName, subParamVal := range t {
+							row[fmt.Sprintf(
+								"Properties.%s.%s.%s",
+								topLevelParamName,
+								paramName,
+								subParamName,
+							)] = subParamVal
+						}
+					default:
+						row[fmt.Sprintf("Properties.%s.%s", topLevelParamName, paramName)] = paramValue
+					}
+					continue
+				}
+				row[fmt.Sprintf("Properties.%s.%s", topLevelParamName, paramName)] = paramValue
+			}
+		} else {
+			for subParamName, subParamVal := range propVal {
+				row[fmt.Sprintf("Properties.%s.%s", topLevelParamName, subParamName)] = subParamVal
+			}
+		}
+	}
+	return nil
 }
