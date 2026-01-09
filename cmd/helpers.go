@@ -463,9 +463,9 @@ func returnHttpErr(resp *http.Response, err error) error {
 	return err
 }
 
-func createCSVHeader(data *map[string]map[string]interface{}, existingHeader *map[int]string) []string {
+func createCSVHeader(data *map[string]map[string]interface{}) ([]string, map[int]string) {
 	if data == nil {
-		return nil
+		return nil, nil
 	}
 
 	seen := make(map[string]struct{})
@@ -483,19 +483,19 @@ func createCSVHeader(data *map[string]map[string]interface{}, existingHeader *ma
 	}
 
 	if len(ordered) == 0 {
-		return nil
+		return nil, nil
 	}
 	// sort the keys alphabetically
 	slices.Sort(ordered)
 
-	if existingHeader == nil {
-		existingHeader = &map[int]string{}
-	}
+	//if existingHeader == nil {
+	headerColMap := map[int]string{}
+	//}
 	for i, k := range ordered {
-		(*existingHeader)[i] = k
+		headerColMap[i] = k
 	}
 
-	return ordered
+	return ordered, headerColMap
 }
 
 func formatStoreProperties(certStore *api.GetCertificateStoreResponse) error {

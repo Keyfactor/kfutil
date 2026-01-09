@@ -932,14 +932,14 @@ var storesExportCmd = &cobra.Command{
 			var csvContent [][]string
 			index := 1
 
-			headerRow := createCSVHeader(&csvData, &csvHeaders)
+			headerRow, headerColMap := createCSVHeader(&csvData)
 			csvContent = append(csvContent, headerRow)
 
 			log.Debug().Msg("Writing data rows")
 			for _, data := range csvData {
 				log.Debug().Int("index", index).Msg("processing data row")
-				row := make([]string, len(csvHeaders)) // reset row
-				for i, header := range csvHeaders {
+				row := make([]string, len(headerColMap)) // reset row
+				for i, header := range headerColMap {
 					log.Trace().Int("index", i).
 						Str("header", header).
 						Msg("processing header")
