@@ -392,7 +392,7 @@ var migratePamCmd = &cobra.Command{
 		}
 
 		// check Store Password for PAM field, and process migration if applicable
-		var storePassword *api.StorePasswordConfig
+		var storePassword *api.UpdateStorePasswordConfig
 		if certStore.Password.IsManaged { // managed secret, i.e. PAM Provider in use
 
 			// check if Pam Secret is using our migrating provider
@@ -643,21 +643,38 @@ func selectProviderTypeParamId(name string, pamTypeParameterDefinitions []interf
 }
 
 func reformatPamSecretForPost(secretProp map[string]interface{}) map[string]interface{} {
-	reformatted := map[string]interface{}{
-		"Provider": secretProp["ProviderId"],
+
+	reformatted := map[string]interface{}{}
+	// check if secretProp has a "SecretValue" key
+	if secVal, ok := secretProp["SecretValue"]; ok && secVal != nil {
+		// add top level "value" key with SecretValue
+		formattedVal := make(map[string]interface{})
+		formattedVal["SecretValue"] = secVal
+		// convert formattedVal into escaped JSON string
+		jsonVal, _ := json.Marshal(formattedVal)
+		reformatted["value"] = string(jsonVal)
+		//reformatted["value"] = formattedVal
 	}
 
-	providerParams := secretProp["ProviderTypeParameterValues"].([]interface{})
-	reformattedParams := map[string]string{}
+	// check if secretProp has a "ProviderId" key
+	if prId, ok := secretProp["ProviderId"]; ok && prId != nil {
+		reformatted["Provider"] = prId
+	}
+	// check if secretProp has a "ProviderTypeParameterValues" key
+	if vals, valsOk := secretProp["ProviderTypeParameterValues"]; valsOk && vals != nil {
+		providerParams := secretProp["ProviderTypeParameterValues"].([]interface{})
+		reformattedParams := map[string]string{}
 
-	for _, param := range providerParams {
-		providerTypeParam := param.(map[string]interface{})["ProviderTypeParam"].(map[string]interface{})
-		name := providerTypeParam["Name"].(string)
-		value := param.(map[string]interface{})["Value"].(string)
-		reformattedParams[name] = value
+		for _, param := range providerParams {
+			providerTypeParam := param.(map[string]interface{})["ProviderTypeParam"].(map[string]interface{})
+			name := providerTypeParam["Name"].(string)
+			value := param.(map[string]interface{})["Value"].(string)
+			reformattedParams[name] = value
+		}
+
+		reformatted["Parameters"] = reformattedParams
 	}
 
-	reformatted["Parameters"] = reformattedParams
 	return reformatted
 }
 

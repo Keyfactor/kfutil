@@ -552,8 +552,8 @@ func storePasswordPropToCSV(
 				row[fmt.Sprintf("Password.Parameters.%s", paramName)] = *v.Value
 			}
 		}
-	} else if store.Password.Value != nil {
-		row["Password"] = store.Password.Value
+	} else if store.Password.HasValue && store.Password.Value != nil {
+		row["Password"] = fmt.Sprintf("%s", *store.Password.Value)
 	}
 
 	return nil
