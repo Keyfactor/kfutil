@@ -491,8 +491,16 @@ func createCSVHeader(data *map[string]map[string]interface{}, existingHeader *ma
 	if existingHeader == nil {
 		existingHeader = &map[int]string{}
 	}
-	for i, k := range ordered {
-		(*existingHeader)[i] = k
+
+	// merge ordered keys into existingHeader map
+	existingHeadersMap := make(map[string]bool)
+	for _, v := range *existingHeader {
+		existingHeadersMap[v] = true
+	}
+	for _, k := range ordered {
+		if !existingHeadersMap[k] {
+			(*existingHeader)[len(*existingHeader)] = k
+		}
 	}
 
 	return ordered
