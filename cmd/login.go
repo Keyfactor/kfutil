@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2025 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -196,7 +196,7 @@ WARNING: This will write the environmental credentials to disk and will be store
 
 		if !noPrompt {
 			log.Debug().Msg("prompting for interactive login")
-			iConfig, iErr := authInteractive(outputServer, profile, !noPrompt, true, configFile)
+			iConfig, iErr := authInteractive(outputServer, profile, true, true, configFile)
 			if iErr != nil {
 				log.Error().Err(iErr)
 				return iErr
@@ -433,8 +433,27 @@ func authInteractive(
 	saveConfig bool,
 	configPath string,
 ) (auth_providers.Config, error) {
+	if noPrompt && !forcePrompt {
+		return auth_providers.Config{}, fmt.Errorf("no-prompt flag is set, cannot run interactive login")
+	}
 	if serverConf == nil {
-		serverConf = &auth_providers.Server{}
+		serverConf = &auth_providers.Server{
+			Host:          os.Getenv(auth_providers.EnvKeyfactorHostName),
+			APIPath:       os.Getenv(auth_providers.EnvKeyfactorAPIPath),
+			Username:      os.Getenv(auth_providers.EnvKeyfactorUsername),
+			Password:      os.Getenv(auth_providers.EnvKeyfactorPassword),
+			Domain:        os.Getenv(auth_providers.EnvKeyfactorDomain),
+			OAuthTokenUrl: os.Getenv(auth_providers.EnvKeyfactorAuthTokenURL),
+			ClientID:      os.Getenv(auth_providers.EnvKeyfactorClientID),
+			ClientSecret:  os.Getenv(auth_providers.EnvKeyfactorClientSecret),
+			AccessToken:   os.Getenv(auth_providers.EnvKeyfactorAccessToken),
+			Audience:      os.Getenv(auth_providers.EnvKeyfactorAuthAudience),
+			CACertPath:    os.Getenv(auth_providers.EnvAuthCACert),
+			//SkipTLSVerify: skipVerifyFlag,
+			//AuthType:      os.Getenv(auth_providers.EnvKeyfactorAuthType),
+			//AuthProvider: os.Getenv(auth_providers.EnvKeyfactorAuthProvider),
+			//Scopes:       os.Getenv(auth_providers.EnvKeyfactorAuthScopes),
+		}
 	}
 
 	if serverConf.Host == "" || forcePrompt {
@@ -468,6 +487,13 @@ func authInteractive(
 				serverConf.Domain = userDomain
 			}
 		}
+		// Unset oauth parameters
+		serverConf.OAuthTokenUrl = ""
+		serverConf.ClientID = ""
+		serverConf.ClientSecret = ""
+		serverConf.AccessToken = ""
+		serverConf.Scopes = []string{}
+		serverConf.Audience = ""
 	} else if serverConf.AuthType == "oauth" {
 		if serverConf.AccessToken == "" || forcePrompt {
 			log.Debug().Msg("prompting for OAuth access token")
@@ -528,6 +554,10 @@ func authInteractive(
 				Str("serverConf.AccessToken", hashSecretValue(serverConf.AccessToken)).
 				Msg("using provided OAuth access token")
 		}
+		// Unset basic auth parameters
+		serverConf.Username = ""
+		serverConf.Password = ""
+		serverConf.Domain = ""
 	}
 
 	if serverConf.APIPath == "" || forcePrompt {

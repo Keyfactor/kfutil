@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2025 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -72,35 +72,21 @@ func formatProperties(json *gabs.Container, reqPropertiesForStoreType []string) 
 			log.Debug().Str("name", name).Msg("Property is nil")
 			continue
 		}
-		if intValue, isInt := prop.Data().(int); isInt {
+		switch prop.Data().(type) {
+		case int:
 			log.Debug().Str("name", name).Msg("Property is an int")
-			asStr := strconv.Itoa(intValue)
+			asStr := strconv.Itoa(prop.Data().(int))
 			// Use gabs' Set method to update the property value
 			json.Set(asStr, "Properties", name)
+		case map[string]interface{}:
+			if name == "ServerUsername" || name == "ServerPassword" {
+				reformatted := reformatPamSecretForPost(prop.Data().(map[string]interface{}))
+				json.Set(reformatted["value"], "Properties", name)
+				break
+			}
 		}
 	}
 	return json
-}
-
-func serializeStoreFromTypeDef(storeTypeName string, input string) (string, error) {
-	// check if storetypename is an integer
-	storeTypes, _ := readStoreTypesConfig("", DefaultGitRef, DefaultGitRepo, offline)
-	log.Debug().
-		Str("storeTypeName", storeTypeName).
-		Msg("checking if storeTypeName is an integer")
-	sTypeId, err := strconv.Atoi(storeTypeName)
-	if err == nil {
-		log.Debug().
-			Int("storeTypeId", sTypeId).
-			Msg("storeTypeName is an integer")
-	}
-	for _, st := range storeTypes {
-		log.Debug().
-			Interface("st", st).
-			Msg("iterating through store types")
-	}
-	return "", nil
-
 }
 
 var importStoresCmd = &cobra.Command{
@@ -163,6 +149,7 @@ If you do not wish to include credentials in your CSV file they can be provided 
 		serverUsername, _ := cmd.Flags().GetString("server-username")
 		serverPassword, _ := cmd.Flags().GetString("server-password")
 		storePassword, _ := cmd.Flags().GetString("store-password")
+		allowUpdates, _ := cmd.Flags().GetBool("sync")
 
 		if serverUsername == "" {
 			serverUsername = os.Getenv(EnvStoresImportCSVServerUsername)
@@ -173,12 +160,6 @@ If you do not wish to include credentials in your CSV file they can be provided 
 		if storePassword == "" {
 			storePassword = os.Getenv(EnvStoresImportCSVStorePassword)
 		}
-
-		//// Flag Checks
-		//inputErr := storeTypeIdentifierFlagCheck(cmd)
-		//if inputErr != nil {
-		//	return inputErr
-		//}
 
 		// expEnabled checks
 		isExperimental := false
@@ -285,11 +266,19 @@ If you do not wish to include credentials in your CSV file they can be provided 
 			exists := false
 			for _, headerField := range headerRow {
 				log.Debug().Msgf("Checking for required field %s in header '%s'", reqField, headerField)
-				if strings.EqualFold(headerField, "Properties."+reqField) {
+				if strings.EqualFold(headerField, "Properties."+reqField) || strings.HasPrefix(
+					headerField, "Properties."+reqField,
+				) {
 					log.Debug().Msgf("Found required field %s in header '%s'", reqField, headerField)
 					exists = true
 					continue
 				}
+				if strings.EqualFold(reqField, "Password") && strings.Contains(headerField, "Password.") {
+					log.Debug().Msgf("Found required field %s in header '%s'", reqField, headerField)
+					exists = true
+					continue
+				}
+
 			}
 			if !exists {
 				log.Debug().Msgf("Missing required field '%s'", reqField)
@@ -329,7 +318,12 @@ If you do not wish to include credentials in your CSV file they can be provided 
 		}
 
 		log.Info().Msgf("Processing CSV rows from file '%s'", filePath)
-		var inputHeader []string
+		var (
+			inputHeader  []string
+			totalUpdates int
+			totalCreates int
+		)
+
 		for idx, row := range inFile {
 			log.Debug().Msgf("Processing row '%d'", idx)
 			originalMap = append(originalMap, row)
@@ -351,11 +345,20 @@ If you do not wish to include credentials in your CSV file they can be provided 
 				log.Debug().Msgf("ContainerId is 0, omitting from request")
 				reqJson.Set(nil, "ContainerId")
 			}
+
+			storeId := reqJson.S("Id").String()
+			if storeId == "{}" {
+				storeId = ""
+			}
+			if storeId != "" && allowUpdates {
+				log.Debug().Str("storeId", storeId).Msgf("Store Id present in row, will attempt update operation")
+			}
 			//log.Debug().Msgf("Request JSON: %s", reqJson.String())
 
 			// parse properties
-			var createStoreReqParameters api.CreateStoreFctArgs
 			props := unmarshalPropertiesString(reqJson.S("Properties").String())
+
+			//props = formatStoreProperties(props)
 
 			//check if ServerUsername is present in the properties
 			_, uOk := props["ServerUsername"]
@@ -368,20 +371,71 @@ If you do not wish to include credentials in your CSV file they can be provided 
 				props["ServerPassword"] = serverPassword
 			}
 
-			rowStorePassword := reqJson.S("Password").String()
 			reqJson.Delete("Properties") // todo: why is this deleting the properties from the request json?
-			var passwdParams *api.StorePasswordConfig
-			if rowStorePassword != "" {
-				reqJson.Delete("Password")
-				passwdParams = &api.StorePasswordConfig{
-					Value: &rowStorePassword,
+
+			rowStorePassword := reqJson.S("Password").Data()
+			passwdParams := api.UpdateStorePasswordConfig{
+				SecretValue: nil,
+			}
+			switch rowStorePassword.(type) {
+			case string:
+				if rowStorePassword != "" {
+					reqJson.Delete("Password")
+					passwdValue := rowStorePassword.(string)
+					passwdParams.SecretValue = &passwdValue
 				}
-			} else {
-				passwdParams = &api.StorePasswordConfig{
-					Value: &storePassword,
+			case map[string]interface{}:
+				// try to convert it to api.UpdateStorePasswordConfig
+				rowPasswordMap := rowStorePassword.(map[string]interface{})
+				if providerId, ok := rowPasswordMap["ProviderId"].(int); ok {
+					passwdParams.Provider = providerId
+				}
+				if params, ok := rowPasswordMap["Parameters"].(map[string]interface{}); ok {
+					for k, v := range params {
+						if passwdParams.Parameters == nil {
+							passwdParams.Parameters = make(map[string]string)
+						}
+						passwdParams.Parameters[k] = fmt.Sprintf("%v", v)
+					}
 				}
 			}
+
 			mJSON := stripAllBOMs(reqJson.String())
+			if storeId != "" && allowUpdates {
+				updateReqParameters := api.UpdateStoreFctArgs{}
+				conversionError := json.Unmarshal([]byte(mJSON), &updateReqParameters)
+				if conversionError != nil {
+					//outputError(conversionError, true, outputFormat)
+					log.Error().Err(conversionError).Msgf(
+						"Unable to convert the json into the request parameters object.  %s",
+						conversionError.Error(),
+					)
+					return conversionError
+				}
+
+				updateReqParameters.Password = &api.UpdateStorePasswordConfig{
+					Provider:    passwdParams.Provider,
+					Parameters:  nil,
+					SecretValue: passwdParams.SecretValue,
+				}
+				updateReqParameters.Properties = props
+				log.Info().Msgf("Calling Command to update store from row '%d'", idx)
+				res, err := kfClient.UpdateStore(&updateReqParameters)
+				if err != nil {
+					log.Error().Err(err).Msgf("Error updating store from row '%d'", idx)
+					resultsMap = append(resultsMap, []string{err.Error()})
+					inputMap[idx-1]["Errors"] = err.Error()
+					inputMap[idx-1]["Id"] = "error"
+					errorCount++
+				} else {
+					log.Info().Msgf("Successfully updated store from row '%d' as '%s'", idx, res.Id)
+					resultsMap = append(resultsMap, []string{fmt.Sprintf("%s", res.Id)})
+					inputMap[idx-1]["Id"] = res.Id
+					totalUpdates++
+				}
+				continue
+			}
+			var createStoreReqParameters api.CreateStoreFctArgs
 			conversionError := json.Unmarshal([]byte(mJSON), &createStoreReqParameters)
 
 			if conversionError != nil {
@@ -390,26 +444,33 @@ If you do not wish to include credentials in your CSV file they can be provided 
 					"Unable to convert the json into the request parameters object.  %s",
 					conversionError.Error(),
 				)
-				return conversionError
 			}
 
-			createStoreReqParameters.Password = passwdParams
+			createStoreReqParameters.Password = &passwdParams
+
+			//if storePassword == "" {
+			//	storePassword = "meow123!" // default password if none provided
+			//}
+			//createStoreReqParameters.Password = &api.UpdateStorePasswordConfig{
+			//	SecretValue: &storePassword,
+			//}
 			createStoreReqParameters.Properties = props
 			//log.Debug().Msgf("Request parameters: %v", createStoreReqParameters)
 
 			log.Info().Msgf("Calling Command to create store from row '%d'", idx)
-			res, err := kfClient.CreateStore(&createStoreReqParameters)
+			res, cErr := kfClient.CreateStore(&createStoreReqParameters)
 
-			if err != nil {
-				log.Error().Err(err).Msgf("Error creating store from row '%d'", idx)
-				resultsMap = append(resultsMap, []string{err.Error()})
-				inputMap[idx-1]["Errors"] = err.Error()
+			if cErr != nil {
+				log.Error().Err(cErr).Msgf("Error creating store from row '%d'", idx)
+				resultsMap = append(resultsMap, []string{cErr.Error()})
+				inputMap[idx-1]["Errors"] = cErr.Error()
 				inputMap[idx-1]["Id"] = "error"
 				errorCount++
 			} else {
 				log.Info().Msgf("Successfully created store from row '%d' as '%s'", idx, res.Id)
 				resultsMap = append(resultsMap, []string{fmt.Sprintf("%s", res.Id)})
 				inputMap[idx-1]["Id"] = res.Id
+				totalCreates++
 			}
 		}
 
@@ -424,6 +485,7 @@ If you do not wish to include credentials in your CSV file they can be provided 
 			originalMap[oIdx] = extendedRow
 		}
 		totalRows := len(resultsMap)
+
 		totalSuccess := totalRows - errorCount
 		log.Debug().Int("totalRows", totalRows).
 			Int("totalSuccess", totalSuccess).Send()
@@ -439,7 +501,13 @@ If you do not wish to include credentials in your CSV file they can be provided 
 		outputResult(fmt.Sprintf("%d records processed.", totalRows), outputFormat)
 		if totalSuccess > 0 {
 			//fmt.Printf("\n%d certificate stores successfully created.", totalSuccess)
-			outputResult(fmt.Sprintf("%d certificate stores successfully created.", totalSuccess), outputFormat)
+			if totalCreates > 0 {
+				outputResult(fmt.Sprintf("%d certificate stores successfully created.", totalCreates), outputFormat)
+			}
+			if totalUpdates > 0 {
+				outputResult(fmt.Sprintf("%d certificate stores successfully updated.", totalUpdates), outputFormat)
+			}
+
 		}
 		if errorCount > 0 {
 			//fmt.Printf("\n%d rows had errors.", errorCount)
@@ -464,11 +532,6 @@ Store type IDs can be found by running the "store-types" command.`,
 		storeTypeName, _ := cmd.Flags().GetString("store-type-name")
 		storeTypeID, _ := cmd.Flags().GetInt("store-type-id")
 		outpath, _ := cmd.Flags().GetString("outpath")
-
-		//inputErr := storeTypeIdentifierFlagCheck(cmd)
-		//if inputErr != nil {
-		//	return inputErr
-		//}
 
 		// expEnabled checks
 		isExperimental := false
@@ -548,7 +611,6 @@ Store type IDs can be found by running the "store-types" command.`,
 			sTypeShortName = storeTypeName
 		}
 
-		// write csv file header row
 		var filePath string
 		if outpath != "" {
 			filePath = outpath
@@ -619,7 +681,15 @@ var storesExportCmd = &cobra.Command{
 
 		// Authenticate
 
-		kfClient, _ := initClient(false)
+		kfClient, cErr := initClient(false)
+		if cErr != nil {
+			log.Error().Err(cErr).Msg("Error initializing client")
+			return cErr
+		}
+		if kfClient == nil {
+			log.Error().Msg("Keyfactor client is nil after initialization")
+			return fmt.Errorf("Keyfactor client is nil after initialization")
+		}
 
 		// CLI Logic
 		log.Info().
@@ -782,6 +852,13 @@ var storesExportCmd = &cobra.Command{
 					csvData[store.Id]["InventorySchedule.Daily.Time"] = store.InventorySchedule.Daily.Time
 				}
 
+				prpErr := formatStoreProperties(store)
+				if prpErr != nil {
+					log.Error().Err(prpErr).Msg("formatting store properties")
+					errs = append(errs, prpErr)
+					continue
+				}
+
 				log.Debug().Msg("checking Properties")
 				for name, prop := range store.Properties {
 					log.Debug().Str("name", name).
@@ -791,30 +868,57 @@ var storesExportCmd = &cobra.Command{
 					if _, isInt := prop.(int); isInt {
 						prop = strconv.Itoa(prop.(int))
 					}
-					if name != "ServerUsername" && name != "ServerPassword" { // Don't add ServerUsername and ServerPassword to properties as they can't be exported via API
+					switch prop.(type) {
+					case map[string]map[string]interface{}:
+						if name == "ServerUsername" || name == "ServerPassword" {
+							secretPropErr := storeEmbeddedPropToCSV(
+								prop.(map[string]map[string]interface{}),
+								store.Id,
+								name,
+								&csvData,
+							)
+							if secretPropErr != nil {
+								log.Error().Err(secretPropErr).Msg("storing embedded property to CSV")
+								errs = append(errs, secretPropErr)
+								//continue
+							}
+						}
+					case map[string]interface{}:
+						for k, v := range prop.(map[string]interface{}) {
+
+							csvData[store.Id][fmt.Sprintf("Properties.%s.%s", name, k)] = v
+						}
+
+					default:
 						csvData[store.Id]["Properties."+name] = prop
 					}
 				}
 
 				//// conditionally set secret values
-				//if storeType.PasswordOptions.StoreRequired {
-				//	log.Debug().Str("storePassword", hashSecretValue(store.Password.Value)).
-				//		Msg("setting store password")
-				//
-				//	//csvData[store.Id]["Password"] = parseSecretField(store.Password) // todo: find parseSecretField
-				//	csvData[store.Id]["Password"] = store.Password.Value
-				//}
-				//// add ServerUsername and ServerPassword Properties if required for type
-				//if storeType.ServerRequired {
-				//	log.Debug().Interface("store.ServerUsername", store.Properties["ServerUsername"]).
-				//		Str("store.Password", hashSecretValue(store.Password.Value)).
-				//		Msg("setting store.ServerUsername")
-				//	//csvData[store.Id]["Properties.ServerUsername"] = parseSecretField(store.Properties["ServerUsername"]) // todo: find parseSecretField
-				//	//csvData[store.Id]["Properties.ServerPassword"] = parseSecretField(store.Properties["ServerPassword"]) // todo: find parseSecretField
-				//	csvData[store.Id]["Properties.ServerUsername"] = store.Properties["ServerUsername"]
-				//	csvData[store.Id]["Properties.ServerPassword"] = store.Properties["ServerPassword"]
-				//}
+				if storeType.PasswordOptions.StoreRequired {
+					spErr := storePasswordPropToCSV(store, &csvData)
+					if spErr != nil {
+						log.Error().Err(spErr).Msg("storing password property to CSV")
+						errs = append(errs, spErr)
+						continue
+					}
+				}
 			}
+
+			if len(csvData) == 0 {
+				log.Error().Msg("No stores found for type, skipping export")
+				outputError(
+					fmt.Errorf("no stores found for type %s (%d), skipping export", typeName, typeID),
+					false,
+					outputFormat,
+				)
+				continue
+			}
+
+			// get the first csv data entry to check for any additional headers not already present
+			log.Debug().Msg("updating csvHeaders with any missing headers from csvData")
+
+			//_ = updateCSVHeader(&csvData, &csvHeaders)
 
 			// write csv file header row
 			var filePath string
@@ -826,15 +930,10 @@ var storesExportCmd = &cobra.Command{
 			log.Debug().Str("filePath", filePath).Msg("Writing export file")
 
 			var csvContent [][]string
-			headerRow := make([]string, len(csvHeaders))
-
-			log.Debug().Msg("Writing header row")
-			for k, v := range csvHeaders {
-				headerRow[k] = v
-			}
-			log.Trace().Interface("row", headerRow).Send()
-			csvContent = append(csvContent, headerRow)
 			index := 1
+
+			headerRow := createCSVHeader(&csvData, &csvHeaders)
+			csvContent = append(csvContent, headerRow)
 
 			log.Debug().Msg("Writing data rows")
 			for _, data := range csvData {
@@ -992,10 +1091,15 @@ func getRequiredProperties(id interface{}, kfClient api.Client) (int64, []string
 	reqProps := make([]string, 0)
 	for _, prop := range properties {
 		if prop.S("Required").Data() == true {
+			log.Debug().Str("property", prop.S("Name").Data().(string)).
+				Msg("Is required")
 			name := prop.S("Name")
 			reqProps = append(reqProps, name.Data().(string))
 		}
 	}
+	//if storeType.PasswordOptions.StoreRequired {
+	//	reqProps = append(reqProps, "Password")
+	//}
 	intId, _ := jsonParsedObj.S("StoreType").Data().(json.Number).Int64()
 
 	return intId, reqProps, nil
@@ -1025,44 +1129,6 @@ func unmarshalPropertiesString(properties string) map[string]interface{} {
 
 	return make(map[string]interface{})
 }
-
-//func parseSecretField(secretField interface{}) interface{} {
-//	var secret api.StorePasswordConfig
-//	secretByte, errors := json.Marshal(secretField)
-//	if errors != nil {
-//		log.Printf("Error in Marshalling: %s", errors)
-//		fmt.Printf("Error in Marshalling: %s\n", errors)
-//		panic("error marshalling secret field as StorePasswordConfig")
-//	}
-//
-//	errors = json.Unmarshal(secretByte, &secret)
-//	if errors != nil {
-//		log.Printf("Error in Unmarshalling: %s", errors)
-//		fmt.Printf("Error in Unmarshalling: %s\n", errors)
-//		panic("error unmarshalling secret field as StorePasswordConfig")
-//	}
-//
-//	if secret.IsManaged {
-//		params := make(map[string]string)
-//		for _, p := range *secret.ProviderTypeParameterValues {
-//			params[*p.ProviderTypeParam.Name] = *p.Value
-//		}
-//		return map[string]interface{}{
-//			"Provider":   secret.ProviderId,
-//			"Parameters": params,
-//		}
-//	} else {
-//		if secret.Value != "" {
-//			return map[string]string{
-//				"SecretValue": secret.Value,
-//			}
-//		} else {
-//			return map[string]*string{
-//				"SecretValue": nil,
-//			}
-//		}
-//	}
-//}
 
 func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 	log.Debug().Msgf("Getting JSON for request")
@@ -1160,6 +1226,8 @@ func init() {
 		file          string
 		resultsPath   string
 		exportAll     bool
+		sync          bool
+		dryRun        bool
 	)
 
 	storesCmd.AddCommand(importStoresCmd)
@@ -1239,7 +1307,15 @@ func init() {
 
 	storesCreateFromCSVCmd.Flags().StringVarP(&file, "file", "f", "", "CSV file containing cert stores to create.")
 	storesCreateFromCSVCmd.MarkFlagRequired("file")
-	storesCreateFromCSVCmd.Flags().BoolP("dry-run", "d", false, "Do not import, just check for necessary fields.")
+	storesCreateFromCSVCmd.Flags().BoolVarP(
+		&dryRun, "dry-run", "d", false, "Do not import, "+
+			"just check for necessary fields.",
+	)
+	storesCreateFromCSVCmd.Flags().BoolVarP(
+		&sync,
+		"sync", "z", false, "Create or update existing stores. "+
+			"NOTE: Use this w/ --dry-run to view changes.",
+	)
 	storesCreateFromCSVCmd.Flags().StringVarP(
 		&resultsPath,
 		"results-path",

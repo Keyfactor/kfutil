@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2025 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ var getOrchestratorCmd = &cobra.Command{
 	Short: "Get orchestrator by machine/client name.",
 	Long:  `Get orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		isExperimental := true
+		isExperimental := false
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -68,7 +68,7 @@ var approveOrchestratorCmd = &cobra.Command{
 	Short: "Approve orchestrator by machine/client name.",
 	Long:  `Approve orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		isExperimental := true
+		isExperimental := false
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -106,7 +106,7 @@ var disapproveOrchestratorCmd = &cobra.Command{
 	Long:  `Disapprove orchestrator by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		isExperimental := true
+		isExperimental := false
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -153,7 +153,7 @@ var getLogsOrchestratorCmd = &cobra.Command{
 	Short: "Get orchestrator logs by machine/client name.",
 	Long:  `Get orchestrator logs by machine/client name.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		isExperimental := true
+		isExperimental := false
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {
@@ -191,7 +191,7 @@ var listOrchestratorsCmd = &cobra.Command{
 	Short: "List orchestrators.",
 	Long:  `Returns a JSON list of Keyfactor orchestrators.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		isExperimental := true
+		isExperimental := false
 
 		_, expErr := isExperimentalFeatureEnabled(expEnabled, isExperimental)
 		if expErr != nil {

@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2025 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -512,7 +512,7 @@ func isRootStore(
 		Int("minCerts", minCerts).
 		Int("maxKeys", maxKeys).
 		Int("maxLeaf", maxLeaf).
-		Msg(fmt.Sprintf(DebugFuncExit, "isRootStore"))
+		Msg(fmt.Sprintf("%s isRootStore", DebugFuncExit))
 
 	if invs == nil || len(*invs) == 0 {
 		nullInvErr := fmt.Errorf("nil inventory response from Keyfactor Command for store '%s'", st.Id)
@@ -579,7 +579,7 @@ func isRootStore(
 		Int("minCerts", minCerts).
 		Msg("store is a root store")
 
-	log.Debug().Msg(fmt.Sprintf(DebugFuncExit, "isRootStore"))
+	log.Debug().Msg(fmt.Sprintf("%s isRootStore", DebugFuncExit))
 	return true
 }
 
@@ -1055,13 +1055,14 @@ the utility will first generate an audit report and then execute the add/remove 
 					if !tpOk && !cidOk {
 						outputError(
 							fmt.Errorf(
-								fmt.Sprintf(
-									"Missing Thumbprint or CertID for row '%d' in report file '%s'",
-									ri,
-									reportFile,
-								),
-							), false, outputFormat,
+								"Missing Thumbprint or CertID for row '%d' in report file '%s'",
+								ri,
+								reportFile,
+							),
+							false,
+							outputFormat,
 						)
+
 						log.Error().
 							Str("reportFile", reportFile).
 							Int("row", ri).Msg("missing thumbprint or certID for row")
