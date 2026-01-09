@@ -13,8 +13,9 @@ kfutil pam get [flags]
 ### Options
 
 ```
-  -h, --help       help for get
-  -i, --id int32   Integer ID of the PAM Provider.
+  -h, --help          help for get
+  -i, --id int32      Integer ID of the PAM Provider.
+  -n, --name string   Name of the PAM Provider.
 ```
 
 ### Options inherited from parent commands
@@ -44,4 +45,4 @@ kfutil pam get [flags]
 
 * [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
 
-###### Auto generated on 31-Jul-2025
+###### Auto generated on 8-Dec-2025
