@@ -44,8 +44,6 @@ programmatically create, delete, edit, and list PAM Providers.
 * [kfutil pam delete](kfutil_pam_delete.md)	 - Delete a defined PAM Provider by ID.
 * [kfutil pam get](kfutil_pam_get.md)	 - Get a specific defined PAM Provider by ID.
 * [kfutil pam list](kfutil_pam_list.md)	 - Returns a list of all the configured PAM providers.
-* [kfutil pam types-create](kfutil_pam_types-create.md)	 - Creates a new PAM provider type.
-* [kfutil pam types-list](kfutil_pam_types-list.md)	 - Returns a list of all available PAM provider types.
 * [kfutil pam update](kfutil_pam_update.md)	 - Updates an existing PAM Provider, currently only supported from file.
 
-###### Auto generated on 31-Jul-2025
+###### Auto generated on 8-Dec-2025
