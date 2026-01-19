@@ -55,18 +55,18 @@ func stripAllBOMs(s string) string {
 
 // formatProperties will iterate through the properties of a json object and convert any "int" values to strings
 // this is required because the Keyfactor API expects all properties to be strings
-func formatProperties(json *gabs.Container, reqPropertiesForStoreType []string) *gabs.Container {
+func formatProperties(propsJson *gabs.Container, reqPropertiesForStoreType []string) *gabs.Container {
 	// Iterate through required properties and add to JSON
 	for _, reqProp := range reqPropertiesForStoreType {
-		if json.ExistsP("Properties." + reqProp) {
-			log.Debug().Str("reqProp", reqProp).Msg("Property exists in json")
+		if propsJson.ExistsP("Properties." + reqProp) {
+			log.Debug().Str("reqProp", reqProp).Msg("Property exists in propsJson")
 			continue
 		}
-		json.Set("", "Properties", reqProp) // Correctly add the required property
+		propsJson.Set("", "Properties", reqProp) // Correctly add the required property
 	}
 
 	// Iterate through properties and convert any "int" values to strings
-	properties, _ := json.S("Properties").ChildrenMap()
+	properties, _ := propsJson.S("Properties").ChildrenMap()
 	for name, prop := range properties {
 		if prop.Data() == nil {
 			log.Debug().Str("name", name).Msg("Property is nil")
@@ -77,16 +77,25 @@ func formatProperties(json *gabs.Container, reqPropertiesForStoreType []string) 
 			log.Debug().Str("name", name).Msg("Property is an int")
 			asStr := strconv.Itoa(prop.Data().(int))
 			// Use gabs' Set method to update the property value
-			json.Set(asStr, "Properties", name)
+			propsJson.Set(asStr, "Properties", name)
 		case map[string]interface{}:
 			if name == "ServerUsername" || name == "ServerPassword" {
 				reformatted := reformatPamSecretForPost(prop.Data().(map[string]interface{}))
-				json.Set(reformatted["value"], "Properties", name)
+				if reformatted != nil {
+					if _, ok := reformatted["value"].(string); ok {
+						propsJson.Set(reformatted["value"], "Properties", name)
+					} else {
+						jsonVal, _ := json.Marshal(reformatted)
+						reformatted["value"] = string(jsonVal)
+						propsJson.Set(reformatted, "Properties", name)
+					}
+				}
+
 				break
 			}
 		}
 	}
-	return json
+	return propsJson
 }
 
 var importStoresCmd = &cobra.Command{

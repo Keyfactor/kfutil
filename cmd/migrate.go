@@ -659,6 +659,9 @@ func reformatPamSecretForPost(secretProp map[string]interface{}) map[string]inte
 	// check if secretProp has a "ProviderId" key
 	if prId, ok := secretProp["ProviderId"]; ok && prId != nil {
 		reformatted["Provider"] = prId
+	} else if prId, ok := secretProp["Provider"]; ok && prId != nil {
+		reformatted["Provider"] = prId
+		reformatted["ProviderId"] = prId
 	}
 	// check if secretProp has a "ProviderTypeParameterValues" key
 	if vals, valsOk := secretProp["ProviderTypeParameterValues"]; valsOk && vals != nil {
@@ -672,6 +675,15 @@ func reformatPamSecretForPost(secretProp map[string]interface{}) map[string]inte
 			reformattedParams[name] = value
 		}
 
+		reformatted["Parameters"] = reformattedParams
+	} else if vals, valsOk := secretProp["Parameters"]; valsOk && vals != nil {
+		// already in Parameters format, just cast and set
+		//reformatted["Parameters"] = vals
+		providerParams := vals.(map[string]interface{})
+		reformattedParams := map[string]string{}
+		for name, param := range providerParams {
+			reformattedParams[name] = fmt.Sprintf("%v", param)
+		}
 		reformatted["Parameters"] = reformattedParams
 	}
 
