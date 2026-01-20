@@ -114,7 +114,7 @@ jobs:
           echo "LATEST_TAG=${{ env.LATEST_TAG }}" | tee -a "$GITHUB_OUTPUT"
 
   call-starter-workflow:
-    uses: keyfactor/actions/.github/workflows/starter.yml@refs/heads/v4.1
+    uses: keyfactor/actions/.github/workflows/starter.yml@v4.1
     needs: get-versions
     secrets:
       token: ${{ secrets.V2BUILDTOKEN}}
