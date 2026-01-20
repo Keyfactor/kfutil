@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The Keyfactor Command Authors.
+Copyright 2026 The Keyfactor Command Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,14 +20,15 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"kfutil/pkg/cmdutil/flags"
+	"kfutil/pkg/keyfactor/v1"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
-	"kfutil/pkg/cmdutil/flags"
-	"kfutil/pkg/keyfactor/v1"
 )
 
 // Ensure that StoreTypesGetFlags implements Flags
