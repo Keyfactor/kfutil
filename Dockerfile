@@ -1,5 +1,5 @@
 # Build the kfutil binary
-FROM golang:1.20 as builder
+FROM golang:1.25 as builder
 ARG TARGETOS
 ARG TARGETARCH
 

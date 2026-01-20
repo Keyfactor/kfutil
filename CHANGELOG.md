@@ -1,3 +1,20 @@
+# v1.9.0
+
+## Features
+
+### CLI
+
+- `stores import csv`: Add flag `--sync` to allow updating existing stores from CSV.
+- `pam-types`: New sub CLI to manage PAM Types in Keyfactor Command. [docs](docs/kfutil_pam-types.md)
+- `pam delete`: Delete PAM provider by Name now supported. [docs](docs/kfutil_pam_delete.md)
+- `auth`: Prompt for missing auth parameters when `--no-prompt` is not set and auth config is incomplete and/or missing,
+  this allows for password input for each command without storing password in config file or env var.
+
+### Fixes
+
+- `store-types`: Sort store-types list case-insensitively
+- `login`: Will clear out basic/oauth params if auth type changes for a profile.
+
 # v1.8.5
 
 ## Chores

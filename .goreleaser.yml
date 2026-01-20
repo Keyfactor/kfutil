@@ -5,10 +5,9 @@ before:
     # this is just an example and not a requirement for provider building/publishing
     - go mod tidy
 builds:
-  - env:
-      # goreleaser does not work with CGO, it could also complicate
-      # usage by users in CI/CD systems like Terraform Cloud where
-      # they are unable to install libraries.
+  # CLI-only build (no GUI, no CGO required) - builds for all platforms
+  - id: kfutil-cli
+    env:
       - CGO_ENABLED=0
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
@@ -16,18 +15,63 @@ builds:
     ldflags:
       - "-s -w -X 'kfutil/pkg/version.VERSION={{ .Version }}' -X 'kfutil/pkg/version.COMMIT={{ .Commit }}' -X 'kfutil/pkg/version.BUILD_DATE={{ .CommitTimestamp }}'"
     goos:
-      - freebsd
-      - windows
       - linux
-      - darwin
+    #      - darwin
+    #      - windows
+    #      - freebsd
     goarch:
       - amd64
-      - arm
+    #      - arm
+    #      - arm64
+    #      - '386'
+    ignore:
+      - goos: darwin
+        goarch: '386'
+      - goos: darwin
+        goarch: arm
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+      - goos: freebsd
+        goarch: arm64
+    binary: 'kfutil'
+
+  # GUI-enabled build (requires CGO) - limited platforms
+  # Note: Cross-compilation with CGO is complex; these builds may need
+  # platform-specific CI runners or docker images
+  - id: kfutil-gui
+    env:
+      - CGO_ENABLED=1
+    tags:
+      - gui
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - '-trimpath'
+    ldflags:
+      - "-s -w -X 'kfutil/pkg/version.VERSION={{ .Version }}' -X 'kfutil/pkg/version.COMMIT={{ .Commit }}' -X 'kfutil/pkg/version.BUILD_DATE={{ .CommitTimestamp }}'"
+    goos:
+      - linux
+      #      - darwin
+      # - windows  # Windows GUI builds need special handling for CGO
+    goarch:
+      - amd64
       - arm64
+    ignore:
+      - goos: linux
+        goarch: arm64  # Linux ARM64 CGO cross-compile is complex
     binary: 'kfutil'
 archives:
-  - format: zip
+  - id: cli-archive
+    builds:
+      - kfutil-cli
+    format: zip
     name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+  - id: gui-archive
+    builds:
+      - kfutil-gui
+    format: zip
+    name_template: '{{ .ProjectName }}-gui_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
 checksum:
   extra_files:
     - glob: 'integration-manifest.json'
