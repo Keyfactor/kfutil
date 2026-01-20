@@ -1,4 +1,4 @@
-//go:build gui
+//go:build !gui
 
 // Copyright 2026 Keyfactor
 //
@@ -17,48 +17,30 @@
 package cmd
 
 import (
-	"kfutil/pkg/gui"
+	"fmt"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
-// guiCmd represents the gui command
+// guiCmd represents the gui command (stub for CLI-only builds)
 var guiCmd = &cobra.Command{
 	Use:   "gui",
-	Short: "Launch the graphical user interface",
-	Long: `Launch the kfutil graphical user interface (GUI) for managing
-certificate store types.
+	Short: "Launch the graphical user interface (not available in this build)",
+	Long: `The GUI is not available in this build of kfutil.
+
+To use the graphical user interface, you need to install the GUI-enabled version:
+- Download 'kfutil-gui' from the releases page
+- Or build from source with: go build -tags gui
 
 The GUI provides a visual interface for:
 - Configuring authentication to Keyfactor Command
 - Viewing and managing installed store types
 - Browsing and deploying store types from the internal catalog
 - Importing and exporting store type configurations
-
-Example:
-  kfutil gui
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
-		log.Debug().Msg("Launching GUI...")
-
-		isExperimental := true
-
-		informDebug(debugFlag)
-		debugErr := warnExperimentalFeature(expEnabled, isExperimental)
-		if debugErr != nil {
-			return debugErr
-		}
-
-		err := gui.LaunchApp()
-		if err != nil {
-			log.Error().Err(err).Msg("GUI exited with error")
-			return err
-		}
-
-		log.Debug().Msg("GUI closed normally")
-		return nil
+		return fmt.Errorf("GUI is not available in this build. Install 'kfutil-gui' or build with '-tags gui'")
 	},
 }
 
