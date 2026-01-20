@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2025 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
+
 	"kfutil/pkg/version"
+
+	"github.com/spf13/cobra"
 )
 
 // versionCmd represents the version command

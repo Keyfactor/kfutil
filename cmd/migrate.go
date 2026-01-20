@@ -122,7 +122,7 @@ var migrateCheckCmd = &cobra.Command{
 
 			// loop through all found Instance GUIDs of the PAM Provider
 			// if the GUID is present in the Properties field, add this Store ID to the list to return
-			for instanceGuid, _ := range activePamSecretGuids {
+			for instanceGuid := range activePamSecretGuids {
 				if strings.Contains(storeProperties, instanceGuid) {
 					if debugFlag {
 						fmt.Println("Found PAM usage in Properties for Store Id: ", store.Id)
@@ -143,7 +143,7 @@ var migrateCheckCmd = &cobra.Command{
 
 		// print out list of Cert Store GUIDs
 		fmt.Println("\nThe following Cert Store Ids are using the PAM Provider with name '" + fromCheck + "'\n")
-		for storeId, _ := range certStoreGuids {
+		for storeId := range certStoreGuids {
 			fmt.Println(storeId)
 		}
 
@@ -297,7 +297,10 @@ var migratePamCmd = &cobra.Command{
 		var migrationTargetPamProvider keyfactor.CSSCMSDataModelModelsProvider
 
 		// check if target PAM Provider already exists
-		found, migrationTargetPamProvider, processedError = getExistingPamProvider(sdkClient, fromPamProvider.Name+appendName)
+		found, migrationTargetPamProvider, processedError = getExistingPamProvider(
+			sdkClient,
+			fromPamProvider.Name+appendName,
+		)
 
 		if processedError != nil {
 			return processedError
@@ -305,7 +308,13 @@ var migratePamCmd = &cobra.Command{
 
 		// create PAM Provider if it does not exist already
 		if found == false {
-			migrationTargetPamProvider, processedError = createMigrationTargetPamProvider(sdkClient, fromPamProvider, fromPamType, toPamType, appendName)
+			migrationTargetPamProvider, processedError = createMigrationTargetPamProvider(
+				sdkClient,
+				fromPamProvider,
+				fromPamType,
+				toPamType,
+				appendName,
+			)
 
 			if processedError != nil {
 				return processedError
@@ -345,7 +354,7 @@ var migratePamCmd = &cobra.Command{
 			propSecret, isSecret := prop.(map[string]interface{})
 			if isSecret {
 				formattedSecret := map[string]map[string]interface{}{
-					"Value": map[string]interface{}{},
+					"Value": {},
 				}
 				isManaged := propSecret["IsManaged"].(bool)
 				if isManaged { // managed secret, i.e. PAM Provider in use
@@ -353,7 +362,11 @@ var migratePamCmd = &cobra.Command{
 					// check if Pam Secret is using our migrating provider
 					if *fromPamProvider.Id == int32(propSecret["ProviderId"].(float64)) {
 						// Pam Secret that Needs to be migrated
-						formattedSecret["Value"] = buildMigratedPamSecret(propSecret, fromProviderLevelParamValues, *migrationTargetPamProvider.Id)
+						formattedSecret["Value"] = buildMigratedPamSecret(
+							propSecret,
+							fromProviderLevelParamValues,
+							*migrationTargetPamProvider.Id,
+						)
 					} else {
 						// reformat to required POST format for properties
 						formattedSecret["Value"] = reformatPamSecretForPost(propSecret)
@@ -383,7 +396,11 @@ var migratePamCmd = &cobra.Command{
 		if certStore.Password.IsManaged { // managed secret, i.e. PAM Provider in use
 
 			// check if Pam Secret is using our migrating provider
-			fmt.Println(*fromPamProvider.Id, " <= from id equals store password id => ", int32(certStore.Password.ProviderId))
+			fmt.Println(
+				*fromPamProvider.Id,
+				" <= from id equals store password id => ",
+				int32(certStore.Password.ProviderId),
+			)
 			fmt.Println(*fromPamProvider.Id == int32(certStore.Password.ProviderId))
 			if *fromPamProvider.Id == int32(certStore.Password.ProviderId) {
 				// Pam Secret that Needs to be migrated
@@ -395,7 +412,11 @@ var migratePamCmd = &cobra.Command{
 
 				// migrate secret using helper function
 				var updateStorePasswordInterface map[string]interface{}
-				updateStorePasswordInterface = buildMigratedPamSecret(storePasswordInterface, fromProviderLevelParamValues, *migrationTargetPamProvider.Id)
+				updateStorePasswordInterface = buildMigratedPamSecret(
+					storePasswordInterface,
+					fromProviderLevelParamValues,
+					*migrationTargetPamProvider.Id,
+				)
 
 				// finally, transform the migrated secret back to the strongly typed input for API client
 				updateStorePasswordJson, _ := json.Marshal(updateStorePasswordInterface)
@@ -457,7 +478,11 @@ var migratePamCmd = &cobra.Command{
 	},
 }
 
-func getExistingPamProvider(sdkClient *keyfactor.APIClient, name string) (bool, keyfactor.CSSCMSDataModelModelsProvider, error) {
+func getExistingPamProvider(sdkClient *keyfactor.APIClient, name string) (
+	bool,
+	keyfactor.CSSCMSDataModelModelsProvider,
+	error,
+) {
 	var pamProvider keyfactor.CSSCMSDataModelModelsProvider
 
 	logMsg := fmt.Sprintf("Looking up usage of PAM Provider with name %s", name)
@@ -493,7 +518,13 @@ func getExistingPamProvider(sdkClient *keyfactor.APIClient, name string) (bool, 
 	return true, foundProvider[0], nil
 }
 
-func createMigrationTargetPamProvider(sdkClient *keyfactor.APIClient, fromPamProvider keyfactor.CSSCMSDataModelModelsProvider, fromPamType keyfactor.CSSCMSDataModelModelsProviderType, toPamType keyfactor.CSSCMSDataModelModelsProviderType, appendName string) (keyfactor.CSSCMSDataModelModelsProvider, error) {
+func createMigrationTargetPamProvider(
+	sdkClient *keyfactor.APIClient,
+	fromPamProvider keyfactor.CSSCMSDataModelModelsProvider,
+	fromPamType keyfactor.CSSCMSDataModelModelsProviderType,
+	toPamType keyfactor.CSSCMSDataModelModelsProviderType,
+	appendName string,
+) (keyfactor.CSSCMSDataModelModelsProvider, error) {
 	fmt.Println("creating new Provider of migration target PAM Type")
 	var migrationPamProvider keyfactor.CSSCMSDataModelModelsProvider
 	migrationPamProvider.Name = fromPamProvider.Name + appendName
@@ -518,7 +549,10 @@ func createMigrationTargetPamProvider(sdkClient *keyfactor.APIClient, fromPamPro
 			// then create an object with that value and TypeParam settings
 			paramName := pamParamType.(map[string]interface{})["Name"].(string)
 			paramValue := selectProviderParamValue(paramName, fromPamProvider.ProviderTypeParamValues)
-			paramTypeId := selectProviderTypeParamId(paramName, toPamType.AdditionalProperties["Parameters"].([]interface{}))
+			paramTypeId := selectProviderTypeParamId(
+				paramName,
+				toPamType.AdditionalProperties["Parameters"].([]interface{}),
+			)
 			falsevalue := false
 			providerLevelParameter := keyfactor.CSSCMSDataModelModelsPamProviderTypeParamValue{
 				Value: &paramValue,
@@ -535,7 +569,10 @@ func createMigrationTargetPamProvider(sdkClient *keyfactor.APIClient, fromPamPro
 			// TODO: need to explicit filter for CyberArk expected params, i.e. not map over Safe
 			// this needs to be done programatically for other provider types
 			if paramName == "AppId" {
-				migrationPamProvider.ProviderTypeParamValues = append(migrationPamProvider.ProviderTypeParamValues, providerLevelParameter)
+				migrationPamProvider.ProviderTypeParamValues = append(
+					migrationPamProvider.ProviderTypeParamValues,
+					providerLevelParameter,
+				)
 			}
 		}
 	}
@@ -582,7 +619,10 @@ func createMigrationTargetPamProvider(sdkClient *keyfactor.APIClient, fromPamPro
 	return *createdPamProvider, nil
 }
 
-func selectProviderParamValue(name string, providerParameters []keyfactor.CSSCMSDataModelModelsPamProviderTypeParamValue) string {
+func selectProviderParamValue(
+	name string,
+	providerParameters []keyfactor.CSSCMSDataModelModelsPamProviderTypeParamValue,
+) string {
 	for _, parameter := range providerParameters {
 		if name == *parameter.ProviderTypeParam.Name {
 			return *parameter.Value
@@ -603,21 +643,50 @@ func selectProviderTypeParamId(name string, pamTypeParameterDefinitions []interf
 }
 
 func reformatPamSecretForPost(secretProp map[string]interface{}) map[string]interface{} {
-	reformatted := map[string]interface{}{
-		"Provider": secretProp["ProviderId"],
+
+	reformatted := map[string]interface{}{}
+	// check if secretProp has a "SecretValue" key
+	if secVal, ok := secretProp["SecretValue"]; ok && secVal != nil {
+		// add top level "value" key with SecretValue
+		formattedVal := make(map[string]interface{})
+		formattedVal["SecretValue"] = secVal
+		// convert formattedVal into escaped JSON string
+		jsonVal, _ := json.Marshal(formattedVal)
+		reformatted["value"] = string(jsonVal)
+		//reformatted["value"] = formattedVal
 	}
 
-	providerParams := secretProp["ProviderTypeParameterValues"].([]interface{})
-	reformattedParams := map[string]string{}
+	// check if secretProp has a "ProviderId" key
+	if prId, ok := secretProp["ProviderId"]; ok && prId != nil {
+		reformatted["Provider"] = prId
+	} else if prId, ok := secretProp["Provider"]; ok && prId != nil {
+		reformatted["Provider"] = prId
+		reformatted["ProviderId"] = prId
+	}
+	// check if secretProp has a "ProviderTypeParameterValues" key
+	if vals, valsOk := secretProp["ProviderTypeParameterValues"]; valsOk && vals != nil {
+		providerParams := secretProp["ProviderTypeParameterValues"].([]interface{})
+		reformattedParams := map[string]string{}
 
-	for _, param := range providerParams {
-		providerTypeParam := param.(map[string]interface{})["ProviderTypeParam"].(map[string]interface{})
-		name := providerTypeParam["Name"].(string)
-		value := param.(map[string]interface{})["Value"].(string)
-		reformattedParams[name] = value
+		for _, param := range providerParams {
+			providerTypeParam := param.(map[string]interface{})["ProviderTypeParam"].(map[string]interface{})
+			name := providerTypeParam["Name"].(string)
+			value := param.(map[string]interface{})["Value"].(string)
+			reformattedParams[name] = value
+		}
+
+		reformatted["Parameters"] = reformattedParams
+	} else if vals, valsOk := secretProp["Parameters"]; valsOk && vals != nil {
+		// already in Parameters format, just cast and set
+		//reformatted["Parameters"] = vals
+		providerParams := vals.(map[string]interface{})
+		reformattedParams := map[string]string{}
+		for name, param := range providerParams {
+			reformattedParams[name] = fmt.Sprintf("%v", param)
+		}
+		reformatted["Parameters"] = reformattedParams
 	}
 
-	reformatted["Parameters"] = reformattedParams
 	return reformatted
 }
 
@@ -626,7 +695,11 @@ func reformatPamSecretForPost(secretProp map[string]interface{}) map[string]inte
 // migratingValues: map of existing values for matched GUID of this field
 // fromProvider: previous provider, to get type level values
 // pamProvider: newly created Pam Provider for the migration, with Provider Id
-func buildMigratedPamSecret(secretProp map[string]interface{}, fromProviderLevelValues map[string]string, providerId int32) map[string]interface{} {
+func buildMigratedPamSecret(
+	secretProp map[string]interface{},
+	fromProviderLevelValues map[string]string,
+	providerId int32,
+) map[string]interface{} {
 	migrated := map[string]interface{}{
 		"Provider": providerId,
 	}
