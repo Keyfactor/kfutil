@@ -1,4 +1,4 @@
-// Copyright 2025 Keyfactor
+// Copyright 2026 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 package views
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -38,6 +39,22 @@ func NewSettingsView(authService *services.AuthService, showNotification func(st
 	var lastConfigPath string
 	homeDir, _ := os.UserHomeDir()
 	defaultConfigPath := filepath.Join(homeDir, ".keyfactor", "command_config.json")
+
+	// Profile selector
+	profileSelect := widget.NewSelect([]string{}, nil)
+	currentProfileLabel := widget.NewLabel("Current Profile: " + authService.GetCurrentProfile())
+
+	// Load available profiles
+	refreshProfiles := func() {
+		profiles, err := authService.ListProfiles("")
+		if err != nil || len(profiles) == 0 {
+			profileSelect.Options = []string{"default"}
+		} else {
+			profileSelect.Options = profiles
+		}
+		profileSelect.SetSelected(authService.GetCurrentProfile())
+		currentProfileLabel.SetText("Current Profile: " + authService.GetCurrentProfile())
+	}
 
 	// Auth type selector
 	authTypeSelect := widget.NewSelect([]string{"Basic Auth", "OAuth2 Client Credentials", "OAuth2 Access Token"}, nil)
@@ -353,6 +370,121 @@ func NewSettingsView(authService *services.AuthService, showNotification func(st
 		accessTokenEntry.SetText(cfg.AccessToken)
 	}
 
+	// Profile selection handler
+	profileSelect.OnChanged = func(selected string) {
+		if selected == "" {
+			return
+		}
+		err := authService.LoadProfile("", selected)
+		if err != nil {
+			statusLabel.SetText("Failed to load profile: " + err.Error())
+			return
+		}
+		cfg := authService.GetConfig()
+		updateFormFromConfig(cfg)
+		currentProfileLabel.SetText("Current Profile: " + selected)
+		statusLabel.SetText("Loaded profile: " + selected)
+	}
+
+	// Initialize profiles list
+	refreshProfiles()
+
+	// New profile button
+	newProfileBtn := widget.NewButton(
+		"New Profile", func() {
+			// Create entry for new profile name
+			nameEntry := widget.NewEntry()
+			nameEntry.SetPlaceHolder("Enter profile name")
+
+			dialog.ShowForm(
+				"Create New Profile", "Create", "Cancel",
+				[]*widget.FormItem{
+					widget.NewFormItem("Profile Name", nameEntry),
+				},
+				func(confirmed bool) {
+					if !confirmed || nameEntry.Text == "" {
+						return
+					}
+					profileName := strings.TrimSpace(nameEntry.Text)
+					if profileName == "" {
+						return
+					}
+
+					// Check if profile already exists
+					profiles, _ := authService.ListProfiles("")
+					for _, p := range profiles {
+						if p == profileName {
+							dialog.ShowError(
+								fmt.Errorf("profile '%s' already exists", profileName),
+								fyne.CurrentApp().Driver().AllWindows()[0],
+							)
+							return
+						}
+					}
+
+					// Set as current profile and clear form for new config
+					authService.SetCurrentProfile(profileName)
+					authService.SetConfig(
+						services.AuthConfig{
+							Port:    443,
+							APIPath: "KeyfactorAPI",
+						},
+					)
+
+					// Clear form
+					hostnameEntry.SetText("")
+					portEntry.SetText("443")
+					apiPathEntry.SetText("KeyfactorAPI")
+					skipTLSCheck.SetChecked(false)
+					clearAuthFields()
+					authTypeSelect.SetSelected("Basic Auth")
+
+					// Refresh profile list and select new profile
+					refreshProfiles()
+					profileSelect.SetSelected(profileName)
+					currentProfileLabel.SetText("Current Profile: " + profileName)
+					statusLabel.SetText("New profile created: " + profileName + " (not saved yet)")
+				},
+				fyne.CurrentApp().Driver().AllWindows()[0],
+			)
+		},
+	)
+
+	// Delete profile button
+	deleteProfileBtn := widget.NewButton(
+		"Delete Profile", func() {
+			currentProfile := authService.GetCurrentProfile()
+			if currentProfile == "" {
+				return
+			}
+
+			dialog.ShowConfirm(
+				"Delete Profile",
+				fmt.Sprintf("Are you sure you want to delete the profile '%s'?", currentProfile),
+				func(confirmed bool) {
+					if !confirmed {
+						return
+					}
+
+					err := authService.DeleteProfile("", currentProfile)
+					if err != nil {
+						dialog.ShowError(err, fyne.CurrentApp().Driver().AllWindows()[0])
+						return
+					}
+
+					// Reload config to get another profile
+					authService.LoadConfigFromFile("")
+					cfg := authService.GetConfig()
+					updateFormFromConfig(cfg)
+					refreshProfiles()
+					statusLabel.SetText("Profile deleted: " + currentProfile)
+					showNotification("Deleted", "Profile '"+currentProfile+"' deleted")
+				},
+				fyne.CurrentApp().Driver().AllWindows()[0],
+			)
+		},
+	)
+
 	// Load from file button with file picker
 	loadBtn := widget.NewButton(
 		"Load from File", func() {
@@ -374,6 +506,7 @@ func NewSettingsView(authService *services.AuthService, showNotification func(st
 
 					cfg := authService.GetConfig()
 					updateFormFromConfig(cfg)
+					refreshProfiles()
 					statusLabel.SetText("Configuration loaded from: " + filePath)
 				}, fyne.CurrentApp().Driver().AllWindows()[0],
 			)
@@ -405,6 +538,7 @@ func NewSettingsView(authService *services.AuthService, showNotification func(st
 			} else {
 				cfg := authService.GetConfig()
 				updateFormFromConfig(cfg)
+				refreshProfiles()
 				statusLabel.SetText("Configuration loaded from default location")
 			}
 		},
@@ -508,6 +642,14 @@ func NewSettingsView(authService *services.AuthService, showNotification func(st
 	// Main form layout
 	form := container.NewVBox(
 		widget.NewLabelWithStyle("Authentication Settings", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		widget.NewSeparator(),
+
+		// Profile section
+		widget.NewLabelWithStyle("Profile", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		currentProfileLabel,
+		container.NewBorder(nil, nil, widget.NewLabel("Select Profile:"), nil, profileSelect),
+		container.NewGridWithColumns(2, newProfileBtn, deleteProfileBtn),
+
 		widget.NewSeparator(),
 
 		widget.NewLabel("Authentication Type"),

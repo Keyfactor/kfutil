@@ -1,4 +1,4 @@
-// Copyright 2025 Keyfactor
+// Copyright 2026 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,11 +51,12 @@ type AuthConfig struct {
 
 // AuthService handles authentication operations
 type AuthService struct {
-	mu          sync.RWMutex
-	config      *AuthConfig
-	client      *api.Client
-	isConnected bool
-	lastError   error
+	mu             sync.RWMutex
+	config         *AuthConfig
+	client         *api.Client
+	isConnected    bool
+	lastError      error
+	currentProfile string // Name of the currently loaded profile
 }
 
 // NewAuthService creates a new auth service instance
@@ -249,8 +250,16 @@ func (s *AuthService) LoadConfigFromFile(path string) error {
 		return fmt.Errorf("failed to parse config file: %w", err)
 	}
 
-	// Use default profile
-	if server, ok := cmdConfig.Servers["default"]; ok {
+	// Find which profile to load - prefer "default", otherwise use first available
+	profileToLoad := "default"
+	if _, ok := cmdConfig.Servers["default"]; !ok && len(cmdConfig.Servers) > 0 {
+		for name := range cmdConfig.Servers {
+			profileToLoad = name
+			break
+		}
+	}
+
+	if server, ok := cmdConfig.Servers[profileToLoad]; ok {
 		s.config = &AuthConfig{
 			Hostname:      server.Host,
 			Port:          server.Port,
@@ -283,6 +292,7 @@ func (s *AuthService) LoadConfigFromFile(path string) error {
 			s.config.APIPath = "KeyfactorAPI"
 		}
 
+		s.currentProfile = profileToLoad
 		s.client = nil
 		s.isConnected = false
 	}
@@ -290,50 +300,10 @@ func (s *AuthService) LoadConfigFromFile(path string) error {
 	return nil
 }
 
-// SaveConfigToFile saves the current configuration to a JSON file
+// SaveConfigToFile saves the current configuration to a JSON file using the current profile
 func (s *AuthService) SaveConfigToFile(path string) error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	if path == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
-		dir := filepath.Join(homeDir, ".keyfactor")
-		if err := os.MkdirAll(dir, 0700); err != nil {
-			return err
-		}
-		path = filepath.Join(dir, "command_config.json")
-	}
-
-	// Save in command_config.json format for CLI compatibility
-	cmdConfig := map[string]interface{}{
-		"servers": map[string]interface{}{
-			"default": map[string]interface{}{
-				"host":            s.config.Hostname,
-				"port":            s.config.Port,
-				"api_path":        s.config.APIPath,
-				"username":        s.config.Username,
-				"password":        s.config.Password,
-				"domain":          s.config.Domain,
-				"client_id":       s.config.ClientID,
-				"client_secret":   s.config.ClientSecret,
-				"token_url":       s.config.TokenURL,
-				"audience":        s.config.Audience,
-				"scopes":          s.config.Scopes,
-				"access_token":    s.config.AccessToken,
-				"skip_tls_verify": s.config.SkipTLSVerify,
-			},
-		},
-	}
-
-	data, err := json.MarshalIndent(cmdConfig, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(path, data, 0600)
+	profileName := s.GetCurrentProfile()
+	return s.SaveConfigToFileWithProfile(path, profileName)
 }
 
 // GenerateExampleConfig generates an example config file content
@@ -422,6 +392,298 @@ func maskValue(value string) string {
 		return "****"
 	}
 	return value[:2] + "****" + value[len(value)-2:]
+}
+
+// GetCurrentProfile returns the name of the currently loaded profile
+func (s *AuthService) GetCurrentProfile() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.currentProfile == "" {
+		return "default"
+	}
+	return s.currentProfile
+}
+
+// SetCurrentProfile sets the current profile name
+func (s *AuthService) SetCurrentProfile(name string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.currentProfile = name
+}
+
+// ListProfiles returns a list of profile names from the config file
+func (s *AuthService) ListProfiles(path string) ([]string, error) {
+	if path == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return nil, err
+		}
+		path = filepath.Join(homeDir, ".keyfactor", "command_config.json")
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return nil, err
+	}
+
+	var cmdConfig struct {
+		Servers map[string]interface{} `json:"servers"`
+	}
+
+	if err := json.Unmarshal(data, &cmdConfig); err != nil {
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	var profiles []string
+	for name := range cmdConfig.Servers {
+		profiles = append(profiles, name)
+	}
+
+	return profiles, nil
+}
+
+// LoadProfile loads a specific profile from the config file
+func (s *AuthService) LoadProfile(path, profileName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if path == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		path = filepath.Join(homeDir, ".keyfactor", "command_config.json")
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	var cmdConfig struct {
+		Servers map[string]struct {
+			Host          string   `json:"host"`
+			Port          int      `json:"port"`
+			Username      string   `json:"username"`
+			Password      string   `json:"password"`
+			Domain        string   `json:"domain"`
+			APIPath       string   `json:"api_path"`
+			ClientID      string   `json:"client_id"`
+			ClientSecret  string   `json:"client_secret"`
+			TokenURL      string   `json:"token_url"`
+			Audience      string   `json:"audience"`
+			Scopes        []string `json:"scopes"`
+			AccessToken   string   `json:"access_token"`
+			SkipTLSVerify bool     `json:"skip_tls_verify"`
+			AuthType      string   `json:"auth_type"`
+		} `json:"servers"`
+	}
+
+	if err := json.Unmarshal(data, &cmdConfig); err != nil {
+		return fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	server, ok := cmdConfig.Servers[profileName]
+	if !ok {
+		return fmt.Errorf("profile '%s' not found", profileName)
+	}
+
+	s.config = &AuthConfig{
+		Hostname:      server.Host,
+		Port:          server.Port,
+		APIPath:       server.APIPath,
+		Username:      server.Username,
+		Password:      server.Password,
+		Domain:        server.Domain,
+		ClientID:      server.ClientID,
+		ClientSecret:  server.ClientSecret,
+		TokenURL:      server.TokenURL,
+		Audience:      server.Audience,
+		Scopes:        server.Scopes,
+		AccessToken:   server.AccessToken,
+		SkipTLSVerify: server.SkipTLSVerify,
+	}
+
+	// Determine auth type from explicit field or infer from credentials
+	if server.AuthType == "oauth" || server.AuthType == AuthTypeOAuthClient {
+		s.config.AuthType = AuthTypeOAuthClient
+	} else if server.AuthType == AuthTypeOAuthToken {
+		s.config.AuthType = AuthTypeOAuthToken
+	} else if server.AccessToken != "" {
+		s.config.AuthType = AuthTypeOAuthToken
+	} else if server.ClientID != "" && server.ClientSecret != "" {
+		s.config.AuthType = AuthTypeOAuthClient
+	} else if server.Username != "" {
+		s.config.AuthType = AuthTypeBasic
+	}
+
+	if s.config.Port == 0 {
+		s.config.Port = 443
+	}
+	if s.config.APIPath == "" {
+		s.config.APIPath = "KeyfactorAPI"
+	}
+
+	s.currentProfile = profileName
+	s.client = nil
+	s.isConnected = false
+
+	return nil
+}
+
+// SaveConfigToFileWithProfile saves the current configuration to a specific profile
+// It preserves other profiles in the file
+func (s *AuthService) SaveConfigToFileWithProfile(path, profileName string) error {
+	s.mu.RLock()
+	config := s.config
+	s.mu.RUnlock()
+
+	if path == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		dir := filepath.Join(homeDir, ".keyfactor")
+		if err := os.MkdirAll(dir, 0700); err != nil {
+			return err
+		}
+		path = filepath.Join(dir, "command_config.json")
+	}
+
+	// Load existing config to preserve other profiles
+	var cmdConfig map[string]interface{}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+		// File doesn't exist, create new structure
+		cmdConfig = map[string]interface{}{
+			"servers": map[string]interface{}{},
+		}
+	} else {
+		if err := json.Unmarshal(data, &cmdConfig); err != nil {
+			// File exists but invalid, create new structure
+			cmdConfig = map[string]interface{}{
+				"servers": map[string]interface{}{},
+			}
+		}
+	}
+
+	// Ensure servers key exists
+	servers, ok := cmdConfig["servers"].(map[string]interface{})
+	if !ok {
+		servers = map[string]interface{}{}
+		cmdConfig["servers"] = servers
+	}
+
+	// Build the profile data
+	profileData := map[string]interface{}{
+		"host":            config.Hostname,
+		"port":            config.Port,
+		"api_path":        config.APIPath,
+		"skip_tls_verify": config.SkipTLSVerify,
+	}
+
+	// Add auth-type specific fields
+	switch config.AuthType {
+	case AuthTypeBasic:
+		if config.Username != "" {
+			profileData["username"] = config.Username
+		}
+		if config.Password != "" {
+			profileData["password"] = config.Password
+		}
+		if config.Domain != "" {
+			profileData["domain"] = config.Domain
+		}
+	case AuthTypeOAuthClient:
+		profileData["auth_type"] = "oauth"
+		if config.ClientID != "" {
+			profileData["client_id"] = config.ClientID
+		}
+		if config.ClientSecret != "" {
+			profileData["client_secret"] = config.ClientSecret
+		}
+		if config.TokenURL != "" {
+			profileData["token_url"] = config.TokenURL
+		}
+		if config.Audience != "" {
+			profileData["audience"] = config.Audience
+		}
+		if len(config.Scopes) > 0 {
+			profileData["scopes"] = config.Scopes
+		}
+	case AuthTypeOAuthToken:
+		profileData["auth_type"] = "oauth_token"
+		if config.AccessToken != "" {
+			profileData["access_token"] = config.AccessToken
+		}
+		if config.Audience != "" {
+			profileData["audience"] = config.Audience
+		}
+		if len(config.Scopes) > 0 {
+			profileData["scopes"] = config.Scopes
+		}
+	}
+
+	// Update the profile
+	servers[profileName] = profileData
+
+	// Save the file
+	newData, err := json.MarshalIndent(cmdConfig, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	// Update current profile name
+	s.mu.Lock()
+	s.currentProfile = profileName
+	s.mu.Unlock()
+
+	return os.WriteFile(path, newData, 0600)
+}
+
+// DeleteProfile removes a profile from the config file
+func (s *AuthService) DeleteProfile(path, profileName string) error {
+	if path == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return err
+		}
+		path = filepath.Join(homeDir, ".keyfactor", "command_config.json")
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	var cmdConfig map[string]interface{}
+	if err := json.Unmarshal(data, &cmdConfig); err != nil {
+		return fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	servers, ok := cmdConfig["servers"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("invalid config file format")
+	}
+
+	if _, exists := servers[profileName]; !exists {
+		return fmt.Errorf("profile '%s' not found", profileName)
+	}
+
+	delete(servers, profileName)
+
+	newData, err := json.MarshalIndent(cmdConfig, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, newData, 0600)
 }
 
 // Disconnect clears the current connection

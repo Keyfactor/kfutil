@@ -1,4 +1,4 @@
-// Copyright 2025 Keyfactor
+// Copyright 2026 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"sync/atomic"
 
 	"kfutil/pkg/gui/services"
 	"kfutil/pkg/gui/widgets"
@@ -30,6 +31,11 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 )
+
+// tableDataSnapshot holds an immutable snapshot of table data for thread-safe access
+type tableDataSnapshot struct {
+	items []services.StoreTypeInfo
+}
 
 // NewStoreManagerView creates the store type manager view for installed store types
 func NewStoreManagerView(
@@ -74,14 +80,28 @@ func NewStoreManagerView(
 		// View mode state - use shared state for persistence
 		// (SharedViewState.IsGridView is used directly)
 
-		// Store types data
+		// Store types data - use atomic pointer for thread-safe access from table callbacks
+		// This avoids creating new widgets from goroutines which causes race conditions
+		var tableSnapshot atomic.Pointer[tableDataSnapshot]
+		tableSnapshot.Store(&tableDataSnapshot{items: nil})
+
+		// Also keep the full unfiltered list for filtering operations (protected by mutex)
+		var dataMutex sync.Mutex
 		var storeTypes []services.StoreTypeInfo
-		var filteredTypes []services.StoreTypeInfo
 
 		// Multi-select: track selected indices using a map for O(1) lookup
 		// Use mutex to protect concurrent access from goroutines and Fyne's renderer
 		var selMutex sync.Mutex
 		selectedIndices := make(map[int]bool)
+
+		// Helper to get current snapshot safely
+		getSnapshot := func() []services.StoreTypeInfo {
+			snap := tableSnapshot.Load()
+			if snap == nil {
+				return nil
+			}
+			return snap.items
+		}
 
 		// Helper to get selected count (must be called with lock held or in safe context)
 		getSelectedCount := func() int {
@@ -90,14 +110,15 @@ func NewStoreManagerView(
 			return len(selectedIndices)
 		}
 
-		// Helper to get selected IDs (must be called with lock held or in safe context)
+		// Helper to get selected IDs (uses snapshot)
 		getSelectedIDs := func() []int {
 			selMutex.Lock()
 			defer selMutex.Unlock()
+			items := getSnapshot()
 			var ids []int
 			for idx := range selectedIndices {
-				if idx >= 0 && idx < len(filteredTypes) {
-					ids = append(ids, filteredTypes[idx].ID)
+				if idx >= 0 && idx < len(items) {
+					ids = append(ids, items[idx].ID)
 				}
 			}
 			return ids
@@ -120,20 +141,154 @@ func NewStoreManagerView(
 			}
 		}
 
-		// Grid view - uses a scrollable grid of cards with checkboxes
-		var createGridView func() fyne.CanvasObject
-		createGridView = func() fyne.CanvasObject {
-			if len(filteredTypes) == 0 {
-				return container.NewCenter(widget.NewLabel("No store types found"))
+		// Create a PERSISTENT table that reads from the atomic snapshot
+		// This avoids creating new widgets from goroutines which causes race conditions
+		var persistentTable *widget.Table
+		var emptyLabel *widget.Label
+		var gridContainer *fyne.Container
+		var gridScroll *container.Scroll
+
+		emptyLabel = widget.NewLabel("No store types found")
+
+		persistentTable = widget.NewTable(
+			func() (int, int) {
+				items := getSnapshot()
+				if len(items) == 0 {
+					return 0, 0
+				}
+				return len(items) + 1, 6 // +1 for header, 6 columns (checkbox + 5 data)
+			},
+			func() fyne.CanvasObject {
+				// Create a container with both a label and checkbox - we'll show/hide as needed
+				return container.NewMax(widget.NewLabel(""), widget.NewCheck("", nil))
+			},
+			func(id widget.TableCellID, cell fyne.CanvasObject) {
+				cont := cell.(*fyne.Container)
+				items := getSnapshot()
+
+				// Get label and check from container
+				var label *widget.Label
+				var check *widget.Check
+				for _, obj := range cont.Objects {
+					if l, ok := obj.(*widget.Label); ok {
+						label = l
+					}
+					if c, ok := obj.(*widget.Check); ok {
+						check = c
+					}
+				}
+
+				if id.Row == 0 {
+					// Header row - show label, hide check
+					if check != nil {
+						check.Hide()
+					}
+					if label != nil {
+						label.Show()
+						headers := []string{"", "ID", "Name", "ShortName", "Capability", "Version"}
+						label.TextStyle = fyne.TextStyle{Bold: true}
+						label.SetText(headers[id.Col])
+					}
+				} else {
+					rowIdx := id.Row - 1
+
+					if id.Col == 0 {
+						// Checkbox column - show check, hide label
+						if label != nil {
+							label.Hide()
+						}
+						if check != nil {
+							check.Show()
+							check.OnChanged = func(checked bool) {
+								selMutex.Lock()
+								if checked {
+									selectedIndices[rowIdx] = true
+								} else {
+									delete(selectedIndices, rowIdx)
+								}
+								selMutex.Unlock()
+								updateSelectionLabel()
+							}
+							if rowIdx < len(items) {
+								selMutex.Lock()
+								isSelected := selectedIndices[rowIdx]
+								selMutex.Unlock()
+								check.SetChecked(isSelected)
+							}
+						}
+					} else {
+						// Data columns - show label, hide check
+						if check != nil {
+							check.Hide()
+						}
+						if label != nil {
+							label.Show()
+							label.TextStyle = fyne.TextStyle{Bold: false}
+							if rowIdx < len(items) {
+								st := items[rowIdx]
+								switch id.Col {
+								case 1:
+									label.SetText(fmt.Sprintf("%d", st.ID))
+								case 2:
+									label.SetText(st.Name)
+								case 3:
+									label.SetText(st.ShortName)
+								case 4:
+									label.SetText(st.Capability)
+								case 5:
+									label.SetText(st.Version)
+								}
+							} else {
+								label.SetText("")
+							}
+						}
+					}
+				}
+			},
+		)
+
+		persistentTable.SetColumnWidth(0, 40)  // Checkbox
+		persistentTable.SetColumnWidth(1, 60)  // ID
+		persistentTable.SetColumnWidth(2, 350) // Name (wider to accommodate long names)
+		persistentTable.SetColumnWidth(3, 150) // ShortName
+		persistentTable.SetColumnWidth(4, 120) // Capability
+		persistentTable.SetColumnWidth(5, 80)  // Version
+
+		// Double-click to view details
+		persistentTable.OnSelected = func(id widget.TableCellID) {
+			if id.Row > 0 && id.Col > 0 {
+				rowIdx := id.Row - 1
+				items := getSnapshot()
+				if rowIdx < len(items) {
+					showDetail(items[rowIdx].ID)
+				}
+			}
+		}
+
+		// Grid container - we'll rebuild grid content only from main thread (button clicks)
+		gridContainer = container.NewGridWithColumns(4)
+		gridScroll = container.NewScroll(gridContainer)
+
+		// Function to rebuild grid view - ONLY call from main thread (button handlers)
+		rebuildGridView := func() {
+			items := getSnapshot()
+			gridContainer.Objects = nil
+
+			if len(items) == 0 {
+				return
 			}
 
-			// Create cards for each store type with checkbox
-			var cardObjects []fyne.CanvasObject
-			for i, st := range filteredTypes {
-				idx := i // capture for closure
-				card := widgets.NewStoreCard(st.ID, st.Name, st.ShortName, st.Description, st.Capability)
+			for i, st := range items {
+				idx := i
+				stCopy := st
+				card := widgets.NewStoreCard(
+					stCopy.ID,
+					stCopy.Name,
+					stCopy.ShortName,
+					stCopy.Description,
+					stCopy.Capability,
+				)
 
-				// Checkbox for selection
 				check := widget.NewCheck(
 					"", func(checked bool) {
 						selMutex.Lock()
@@ -152,125 +307,61 @@ func NewStoreManagerView(
 				check.SetChecked(isSelected)
 
 				card.OnDoubleTapped = func() {
-					showDetail(filteredTypes[idx].ID)
+					showDetail(stCopy.ID)
 				}
 
-				// Wrap card with checkbox
 				cardWithCheck := container.NewBorder(nil, nil, check, nil, card)
-				cardObjects = append(cardObjects, container.NewPadded(cardWithCheck))
+				gridContainer.Objects = append(gridContainer.Objects, container.NewPadded(cardWithCheck))
 			}
-
-			// Create a grid with 4 columns
-			grid := container.NewGridWithColumns(4, cardObjects...)
-			return container.NewScroll(grid)
-		}
-
-		// Table view creator - creates a fresh table each time to avoid race conditions
-		// with Fyne's internal table renderer state
-		var createTableView func() fyne.CanvasObject
-		createTableView = func() fyne.CanvasObject {
-			if len(filteredTypes) == 0 {
-				return container.NewCenter(widget.NewLabel("No store types found"))
-			}
-
-			table := widget.NewTable(
-				func() (int, int) {
-					return len(filteredTypes) + 1, 6 // +1 for header, 6 columns (checkbox + 5 data)
-				},
-				func() fyne.CanvasObject {
-					// Create a container that can hold either a label or checkbox
-					return container.NewMax(widget.NewCheck("", nil))
-				},
-				func(id widget.TableCellID, cell fyne.CanvasObject) {
-					cont := cell.(*fyne.Container)
-
-					if id.Row == 0 {
-						// Header row
-						cont.Objects = []fyne.CanvasObject{}
-						headers := []string{"", "ID", "Name", "ShortName", "Capability", "Version"}
-						label := widget.NewLabel(headers[id.Col])
-						label.TextStyle = fyne.TextStyle{Bold: true}
-						cont.Add(label)
-					} else {
-						cont.Objects = []fyne.CanvasObject{}
-						rowIdx := id.Row - 1
-
-						if id.Col == 0 {
-							// Checkbox column
-							check := widget.NewCheck(
-								"", func(checked bool) {
-									selMutex.Lock()
-									if checked {
-										selectedIndices[rowIdx] = true
-									} else {
-										delete(selectedIndices, rowIdx)
-									}
-									selMutex.Unlock()
-									updateSelectionLabel()
-								},
-							)
-							if rowIdx < len(filteredTypes) {
-								selMutex.Lock()
-								isSelected := selectedIndices[rowIdx]
-								selMutex.Unlock()
-								check.SetChecked(isSelected)
-							}
-							cont.Add(check)
-						} else {
-							// Data columns
-							label := widget.NewLabel("")
-							if rowIdx < len(filteredTypes) {
-								st := filteredTypes[rowIdx]
-								switch id.Col {
-								case 1:
-									label.SetText(fmt.Sprintf("%d", st.ID))
-								case 2:
-									label.SetText(st.Name)
-								case 3:
-									label.SetText(st.ShortName)
-								case 4:
-									label.SetText(st.Capability)
-								case 5:
-									label.SetText(st.Version)
-								}
-							}
-							cont.Add(label)
-						}
-					}
-					cont.Refresh()
-				},
-			)
-
-			table.SetColumnWidth(0, 40)  // Checkbox
-			table.SetColumnWidth(1, 60)  // ID
-			table.SetColumnWidth(2, 350) // Name (wider to accommodate long names)
-			table.SetColumnWidth(3, 150) // ShortName
-			table.SetColumnWidth(4, 120) // Capability
-			table.SetColumnWidth(5, 80)  // Version
-
-			// Double-click to view details
-			table.OnSelected = func(id widget.TableCellID) {
-				if id.Row > 0 && id.Col > 0 {
-					// Double-click on data cells opens detail
-					rowIdx := id.Row - 1
-					if rowIdx < len(filteredTypes) {
-						showDetail(filteredTypes[rowIdx].ID)
-					}
-				}
-			}
-
-			return table
+			gridContainer.Refresh()
 		}
 
 		// Function to update the view based on current mode
-		var updateView func()
-		updateView = func() {
-			if SharedViewState.IsGridView {
-				viewContainer.Objects = []fyne.CanvasObject{createGridView()}
-			} else {
-				viewContainer.Objects = []fyne.CanvasObject{createTableView()}
+		// CRITICAL: When fromGoroutine=true, we ONLY refresh the table widget
+		// We NEVER modify viewContainer.Objects from a goroutine as it causes race conditions
+		var updateView func(fromGoroutine bool)
+		updateView = func(fromGoroutine bool) {
+			if fromGoroutine {
+				// From goroutine: ONLY refresh the table if we're in table mode
+				// Do NOT modify any container objects - this causes race conditions with Fyne's renderer
+				if !SharedViewState.IsGridView {
+					persistentTable.UnselectAll()
+					persistentTable.ScrollToTop()
+					persistentTable.Refresh()
+				}
+				// For grid mode, the user must click Refresh button (main thread) to see updates
+				return
 			}
-			viewContainer.Refresh()
+
+			// From main thread: safe to modify UI structure
+			items := getSnapshot()
+			hasData := len(items) > 0
+
+			if SharedViewState.IsGridView {
+				// Grid mode
+				rebuildGridView()
+				if hasData {
+					viewContainer.Objects = []fyne.CanvasObject{gridScroll}
+				} else {
+					viewContainer.Objects = []fyne.CanvasObject{container.NewCenter(emptyLabel)}
+				}
+				viewContainer.Refresh()
+			} else {
+				// Table mode
+				if hasData {
+					viewContainer.Objects = []fyne.CanvasObject{persistentTable}
+				} else {
+					viewContainer.Objects = []fyne.CanvasObject{container.NewCenter(emptyLabel)}
+				}
+				viewContainer.Refresh()
+
+				// Table refresh - clear selection and scroll to top to force re-render
+				persistentTable.UnselectAll()
+				if hasData {
+					persistentTable.ScrollToTop()
+				}
+				persistentTable.Refresh()
+			}
 		}
 
 		// View toggle button - set initial text based on current state
@@ -285,44 +376,86 @@ func NewStoreManagerView(
 			} else {
 				viewToggleBtn.SetText("Grid View")
 			}
-			updateView()
+			updateView(false) // Called from main thread (button handler)
 		}
 
-		// Refresh function
+		// loadData fetches store types and updates the snapshot (can be called sync or async)
+		loadData := func() error {
+			types, err := storeService.ListInstalledStoreTypes(authService)
+			if err != nil {
+				return err
+			}
+
+			// Update data under lock, then store atomic snapshot
+			dataMutex.Lock()
+			storeTypes = types
+			filtered := storeService.FilterStoreTypes(storeTypes, searchEntry.Text)
+			dataMutex.Unlock()
+
+			// Store new snapshot atomically
+			tableSnapshot.Store(&tableDataSnapshot{items: filtered})
+
+			// Clear selections on refresh - protected by mutex
+			selMutex.Lock()
+			selectedIndices = make(map[int]bool)
+			selMutex.Unlock()
+
+			return nil
+		}
+
+		// initialLoad does a synchronous load on first render so the view has data immediately
+		initialLoad := func() {
+			statusLabel.SetText("Loading...")
+			err := loadData()
+			if err != nil {
+				statusLabel.SetText("Error: " + err.Error())
+				return
+			}
+			items := getSnapshot()
+			statusLabel.SetText(fmt.Sprintf("Loaded %d store types", len(items)))
+		}
+
+		// refreshList does an async refresh (for button clicks after initial load)
 		var refreshList func()
 		refreshList = func() {
 			statusLabel.SetText("Loading...")
 
 			go func() {
-				types, err := storeService.ListInstalledStoreTypes(authService)
+				err := loadData()
 				if err != nil {
 					statusLabel.SetText("Error: " + err.Error())
 					return
 				}
 
-				storeTypes = types
-				filteredTypes = storeService.FilterStoreTypes(storeTypes, searchEntry.Text)
-
-				// Clear selections on refresh - protected by mutex
-				selMutex.Lock()
-				selectedIndices = make(map[int]bool)
-				selMutex.Unlock()
 				updateSelectionLabel()
+				items := getSnapshot()
+				statusLabel.SetText(fmt.Sprintf("Loaded %d store types", len(items)))
 
-				statusLabel.SetText(fmt.Sprintf("Loaded %d store types", len(storeTypes)))
-				updateView()
+				// For grid mode, we need to navigate to refresh the view since we can't
+				// safely rebuild the grid from a goroutine (it creates widgets and modifies containers)
+				// For table mode, we can just refresh the table widget
+				if SharedViewState.IsGridView {
+					// Navigate to trigger a fresh view creation on the main thread
+					navigateTo("Store Types")
+				} else {
+					updateView(true) // Called from goroutine - only refreshes table
+				}
 			}()
 		}
 
 		// Search handler
 		searchEntry.OnChanged = func(query string) {
-			filteredTypes = storeService.FilterStoreTypes(storeTypes, query)
+			dataMutex.Lock()
+			filtered := storeService.FilterStoreTypes(storeTypes, query)
+			dataMutex.Unlock()
+			// Store new snapshot atomically
+			tableSnapshot.Store(&tableDataSnapshot{items: filtered})
 			// Clear selections when search changes
 			selMutex.Lock()
 			selectedIndices = make(map[int]bool)
 			selMutex.Unlock()
 			updateSelectionLabel()
-			updateView()
+			updateView(false) // Called from main thread (UI callback)
 		}
 
 		// Clear selection button
@@ -332,7 +465,7 @@ func NewStoreManagerView(
 				selectedIndices = make(map[int]bool)
 				selMutex.Unlock()
 				updateSelectionLabel()
-				updateView()
+				updateView(false) // Called from main thread (button handler)
 			},
 		)
 
@@ -381,10 +514,11 @@ func NewStoreManagerView(
 
 				ids := getSelectedIDs()
 				var names []string
+				items := getSnapshot()
 				selMutex.Lock()
 				for idx := range selectedIndices {
-					if idx >= 0 && idx < len(filteredTypes) {
-						names = append(names, filteredTypes[idx].Name)
+					if idx >= 0 && idx < len(items) {
+						names = append(names, items[idx].Name)
 					}
 				}
 				selMutex.Unlock()
@@ -465,11 +599,12 @@ func NewStoreManagerView(
 				title := "Export Store Types"
 				defaultFilename := "store_types.json"
 				if count == 1 {
+					items := getSnapshot()
 					selMutex.Lock()
 					for idx := range selectedIndices {
-						if idx >= 0 && idx < len(filteredTypes) {
-							title = "Export Store Type - " + filteredTypes[idx].Name
-							defaultFilename = filteredTypes[idx].ShortName + ".json"
+						if idx >= 0 && idx < len(items) {
+							title = "Export Store Type - " + items[idx].Name
+							defaultFilename = items[idx].ShortName + ".json"
 							break
 						}
 					}
@@ -651,8 +786,12 @@ func NewStoreManagerView(
 			clearSelectionBtn,
 		)
 
-		// Initial load
-		refreshList()
+		// Do initial data load synchronously so the view has data immediately
+		// This ensures grid view works correctly on first render
+		initialLoad()
+
+		// Now set up the view with the loaded data (runs on main thread)
+		updateView(false)
 
 		// Main layout with selection info
 		content := container.NewBorder(
@@ -669,45 +808,51 @@ func NewStoreManagerView(
 		return container.NewPadded(content)
 	}
 
-	// Function to check authentication and show appropriate view
-	checkAuthAndLoad := func() {
+	// Initial auth check - MUST be synchronous to avoid race conditions with Fyne's renderer
+	// Modifying container.Objects and calling Refresh() from a goroutine causes concurrent map writes
+	initialAuthCheck := func() {
+		// Check if already authenticated - this is a quick in-memory check
+		if authService.IsAuthenticated() {
+			// Show main content directly (no goroutine needed)
+			mainContainer.Objects = []fyne.CanvasObject{buildMainContent()}
+			return
+		}
+
+		// Not authenticated - show auth check view with option to retry
+		authStatusLabel.SetText("Not authenticated")
+		authErrorLabel.SetText("Please configure authentication in Settings or click Retry to attempt connection.")
+		retryBtn.Enable()
+		mainContainer.Objects = []fyne.CanvasObject{authCheckView}
+	}
+
+	// Retry function - uses goroutine for network call but avoids modifying containers from goroutine
+	retryAuth := func() {
 		authStatusLabel.SetText("Checking authentication...")
 		authErrorLabel.SetText("")
 		retryBtn.Disable()
 
-		mainContainer.Objects = []fyne.CanvasObject{authCheckView}
-		mainContainer.Refresh()
-
 		go func() {
-			// Check if already authenticated
-			if authService.IsAuthenticated() {
-				// Show main content
-				mainContainer.Objects = []fyne.CanvasObject{buildMainContent()}
-				mainContainer.Refresh()
-				return
-			}
-
 			// Try to test connection
 			err := authService.TestConnection()
 			if err != nil {
+				// Update labels (safe from goroutine - Fyne widgets handle their own sync)
 				authStatusLabel.SetText("Authentication failed")
 				authErrorLabel.SetText(err.Error())
 				retryBtn.Enable()
-				mainContainer.Refresh()
 				return
 			}
 
-			// Authentication successful, show main content
-			mainContainer.Objects = []fyne.CanvasObject{buildMainContent()}
-			mainContainer.Refresh()
+			// Authentication successful - navigate to trigger fresh view creation
+			// This avoids modifying container objects from a goroutine which causes race conditions
+			navigateTo("Store Types")
 		}()
 	}
 
 	// Set up retry button action
-	retryBtn.OnTapped = checkAuthAndLoad
+	retryBtn.OnTapped = retryAuth
 
-	// Initial auth check
-	checkAuthAndLoad()
+	// Initial auth check (synchronous - safe)
+	initialAuthCheck()
 
 	return mainContainer
 }
