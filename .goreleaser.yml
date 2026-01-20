@@ -56,7 +56,7 @@ builds:
       # - windows  # Windows GUI builds need special handling for CGO
     goarch:
       - amd64
-      - arm64
+    #      - arm64
     ignore:
       - goos: linux
         goarch: arm64  # Linux ARM64 CGO cross-compile is complex
