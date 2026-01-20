@@ -40,27 +40,27 @@ builds:
   # GUI-enabled build (requires CGO) - limited platforms
   # Note: Cross-compilation with CGO is complex; these builds may need
   # platform-specific CI runners or docker images
-#  - id: kfutil-gui
-#    env:
-#      - CGO_ENABLED=1
-#    tags:
-#      - gui
-#    mod_timestamp: '{{ .CommitTimestamp }}'
-#    flags:
-#      - '-trimpath'
-#    ldflags:
-#      - "-s -w -X 'kfutil/pkg/version.VERSION={{ .Version }}' -X 'kfutil/pkg/version.COMMIT={{ .Commit }}' -X 'kfutil/pkg/version.BUILD_DATE={{ .CommitTimestamp }}'"
-#    goos:
-#      - linux
-#      - darwin
-#      # - windows  # Windows GUI builds need special handling for CGO
-#    goarch:
-#      - amd64
+  - id: kfutil-gui
+    env:
+      - CGO_ENABLED=1
+    tags:
+      - gui
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - '-trimpath'
+    ldflags:
+      - "-s -w -X 'kfutil/pkg/version.VERSION={{ .Version }}' -X 'kfutil/pkg/version.COMMIT={{ .Commit }}' -X 'kfutil/pkg/version.BUILD_DATE={{ .CommitTimestamp }}'"
+    goos:
+      - linux
+      - darwin
+      # - windows  # Windows GUI builds need special handling for CGO
+    goarch:
+      - amd64
 #      - arm64
-#    ignore:
-#      - goos: linux
-#        goarch: arm64  # Linux ARM64 CGO cross-compile is complex
-#    binary: 'kfutil-gui'
+    ignore:
+      - goos: linux
+        goarch: arm64  # Linux ARM64 CGO cross-compile is complex
+    binary: 'kfutil-gui'
 archives:
   - id: cli-archive
     builds:
