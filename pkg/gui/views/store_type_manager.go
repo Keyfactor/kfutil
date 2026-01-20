@@ -436,7 +436,7 @@ func NewStoreManagerView(
 				// For table mode, we can just refresh the table widget
 				if SharedViewState.IsGridView {
 					// Navigate to trigger a fresh view creation on the main thread
-					navigateTo("Store Types")
+					navigateTo("Installed Store Types")
 				} else {
 					updateView(true) // Called from goroutine - only refreshes table
 				}
@@ -769,8 +769,8 @@ func NewStoreManagerView(
 
 		// Open catalog button
 		catalogBtn := widget.NewButton(
-			"Open Catalog", func() {
-				navigateTo("Catalog")
+			"Open Store Type Catalog", func() {
+				navigateTo("Store Type Catalog")
 			},
 		)
 
@@ -844,7 +844,7 @@ func NewStoreManagerView(
 
 			// Authentication successful - navigate to trigger fresh view creation
 			// This avoids modifying container objects from a goroutine which causes race conditions
-			navigateTo("Store Types")
+			navigateTo("Installed Store Types")
 		}()
 	}
 

@@ -27,8 +27,8 @@ import (
 const (
 	NavHome       = "Home"
 	NavSettings   = "Settings"
-	NavStoreTypes = "Store Types"
-	NavCatalog    = "Catalog"
+	NavStoreTypes = "Installed Store Types"
+	NavCatalog    = "Store Type Catalog"
 )
 
 // App represents the main GUI application

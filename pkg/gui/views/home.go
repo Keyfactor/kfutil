@@ -53,13 +53,13 @@ func NewHomeView(authService *services.AuthService, navigateTo func(string)) fyn
 
 	storeTypesBtn := widget.NewButton(
 		"Manage Store Types", func() {
-			navigateTo("Store Types")
+			navigateTo("Installed Store Types")
 		},
 	)
 
 	catalogBtn := widget.NewButton(
 		"Browse Catalog", func() {
-			navigateTo("Catalog")
+			navigateTo("Store Type Catalog")
 		},
 	)
 

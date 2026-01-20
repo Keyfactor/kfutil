@@ -30,18 +30,22 @@ func NewKeyfactorTheme() fyne.Theme {
 }
 
 // Color returns the color for the specified theme color name
-func (t *KeyfactorTheme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
+// We force dark mode by always using VariantDark regardless of OS setting
+func (t *KeyfactorTheme) Color(name fyne.ThemeColorName, _ fyne.ThemeVariant) color.Color {
+	// Always use dark variant for consistent appearance across platforms
+	darkVariant := theme.VariantDark
+
 	switch name {
 	case theme.ColorNamePrimary:
-		return color.NRGBA{R: 0, G: 122, B: 204, A: 255} // Keyfactor blue
+		return color.NRGBA{R: 95, G: 87, B: 255, A: 255} // Keyfactor purple
 	case theme.ColorNameButton:
-		return color.NRGBA{R: 0, G: 122, B: 204, A: 255}
+		return color.NRGBA{R: 95, G: 87, B: 255, A: 255}
 	case theme.ColorNameFocus:
-		return color.NRGBA{R: 0, G: 150, B: 230, A: 255}
+		return color.NRGBA{R: 180, G: 160, B: 255, A: 255}
 	case theme.ColorNameSelection:
-		return color.NRGBA{R: 0, G: 122, B: 204, A: 100}
+		return color.NRGBA{R: 180, G: 160, B: 255, A: 255}
 	default:
-		return theme.DefaultTheme().Color(name, variant)
+		return theme.DefaultTheme().Color(name, darkVariant)
 	}
 }
 
