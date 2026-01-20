@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The Keyfactor Command Authors.
+Copyright 2026 The Keyfactor Command Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@ limitations under the License.
 package cmd
 
 import (
+	"kfutil/pkg/cmdutil/flags"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"kfutil/pkg/cmdutil/flags"
 )
 
 // Ensure that HelmFlags implements Flags
