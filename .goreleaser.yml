@@ -16,14 +16,14 @@ builds:
       - "-s -w -X 'kfutil/pkg/version.VERSION={{ .Version }}' -X 'kfutil/pkg/version.COMMIT={{ .Commit }}' -X 'kfutil/pkg/version.BUILD_DATE={{ .CommitTimestamp }}'"
     goos:
       - linux
-      - darwin
-      - windows
-      - freebsd
+    #      - darwin
+    #      - windows
+    #      - freebsd
     goarch:
       - amd64
-      - arm
-      - arm64
-      - '386'
+    #      - arm
+    #      - arm64
+    #      - '386'
     ignore:
       - goos: darwin
         goarch: '386'
@@ -60,7 +60,7 @@ builds:
     ignore:
       - goos: linux
         goarch: arm64  # Linux ARM64 CGO cross-compile is complex
-    binary: 'kfutil-gui'
+    binary: 'kfutil'
 archives:
   - id: cli-archive
     builds:
