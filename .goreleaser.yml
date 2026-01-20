@@ -16,8 +16,8 @@ builds:
     ldflags:
       - "-s -w -X 'kfutil/pkg/version.VERSION={{ .Version }}' -X 'kfutil/pkg/version.COMMIT={{ .Commit }}' -X 'kfutil/pkg/version.BUILD_DATE={{ .CommitTimestamp }}'"
     goos:
-      - freebsd
-      - windows
+      #      - freebsd
+      #      - windows
       - linux
       - darwin
     goarch:
