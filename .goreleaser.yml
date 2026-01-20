@@ -52,11 +52,11 @@ builds:
       - "-s -w -X 'kfutil/pkg/version.VERSION={{ .Version }}' -X 'kfutil/pkg/version.COMMIT={{ .Commit }}' -X 'kfutil/pkg/version.BUILD_DATE={{ .CommitTimestamp }}'"
     goos:
       - linux
-      - darwin
+      #      - darwin
       # - windows  # Windows GUI builds need special handling for CGO
     goarch:
       - amd64
-#      - arm64
+      - arm64
     ignore:
       - goos: linux
         goarch: arm64  # Linux ARM64 CGO cross-compile is complex
