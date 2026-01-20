@@ -1,5 +1,5 @@
 /*
-Copyright 2024 The Keyfactor Command Authors.
+Copyright 2026 The Keyfactor Command Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,16 +18,21 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/pflag"
-	"gopkg.in/yaml.v3"
+	"os"
+	"testing"
+
 	"kfutil/pkg/cmdtest"
 	"kfutil/pkg/cmdutil/extensions"
 	"kfutil/pkg/helm"
-	"os"
-	"testing"
+
+	"github.com/spf13/pflag"
+	"gopkg.in/yaml.v3"
 )
 
-var filename = fmt.Sprintf("https://raw.githubusercontent.com/Keyfactor/containerized-uo-deployment-dev/main/universal-orchestrator/values.yaml?token=%s", os.Getenv("TOKEN"))
+var filename = fmt.Sprintf(
+	"https://raw.githubusercontent.com/Keyfactor/containerized-uo-deployment-dev/main/universal-orchestrator/values.yaml?token=%s",
+	os.Getenv("TOKEN"),
+)
 
 func TestHelmUo_SaveAndExit(t *testing.T) {
 	t.Skip()
@@ -54,26 +59,30 @@ func TestHelmUo_SaveAndExit(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
-			var output []byte
-			var err error
+		t.Run(
+			test.Name, func(t *testing.T) {
+				var output []byte
+				var err error
 
-			cmdtest.RunTest(t, test.Procedure, func() error {
-				output, err = cmdtest.TestExecuteCommand(t, RootCmd, test.CommandArguments...)
-				if err != nil {
-					return err
+				cmdtest.RunTest(
+					t, test.Procedure, func() error {
+						output, err = cmdtest.TestExecuteCommand(t, RootCmd, test.CommandArguments...)
+						if err != nil {
+							return err
+						}
+
+						return nil
+					},
+				)
+
+				if test.CheckProcedure != nil {
+					err = test.CheckProcedure(output)
+					if err != nil {
+						t.Error(err)
+					}
 				}
-
-				return nil
-			})
-
-			if test.CheckProcedure != nil {
-				err = test.CheckProcedure(output)
-				if err != nil {
-					t.Error(err)
-				}
-			}
-		})
+			},
+		)
 	}
 }
 

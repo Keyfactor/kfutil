@@ -20,8 +20,16 @@ TEMP_TOC_FILE := temp_toc.md
 
 default: build
 
+# Build CLI-only version (no GUI, no CGO required)
 build: fmt
-	go install
+	CGO_ENABLED=0 go install
+
+# Build GUI-enabled version (requires CGO)
+build-gui: fmt
+	CGO_ENABLED=1 go install -tags gui
+
+# Build both versions locally
+build-all: build build-gui
 
 release:
 	mkdir -p ./bin/${BINARY}_${VERSION}_darwin_amd64
@@ -44,8 +52,19 @@ release:
 	GOOS=windows GOARCH=386 go build -o ./bin/${BINARY}_${VERSION}_windows_386
 	GOOS=windows GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_windows_amd64
 
+# Install CLI-only version
 install: fmt
-	go build -o ${BINARY}
+	CGO_ENABLED=0 go build -o ${BINARY}
+	rm -rf ${INSTALLDIR}/${BINARY}
+	mkdir -p ${INSTALLDIR}
+	chmod oug+x ${BINARY}
+	cp ${BINARY} ${INSTALLDIR}
+	mkdir -p ${HOME}/.local/bin || true
+	mv ${BINARY} ${HOME}/.local/bin/${BINARY}
+
+# Install GUI-enabled version
+install-gui: fmt
+	CGO_ENABLED=1 go build -tags gui -o ${BINARY}
 	rm -rf ${INSTALLDIR}/${BINARY}
 	mkdir -p ${INSTALLDIR}
 	chmod oug+x ${BINARY}
@@ -84,4 +103,4 @@ generate_toc:
 	markdown-toc -i $(MARKDOWN_FILE) --skip 'Table of Contents'
 
 
-.PHONY: build prerelease release install test fmt vendor version setversion
+.PHONY: build build-gui build-all prerelease release install install-gui test fmt vendor version setversion

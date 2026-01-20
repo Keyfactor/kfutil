@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2026 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ const (
 	DefaultAPIPath            = "KeyfactorAPI"
 	DefaultConfigFileName     = "command_config.json"
 	DefaultStoreTypesFileName = "store_types.json"
+	DefaultPAMTypesFileName   = "pam_types.json"
 	DefaultGitRepo            = "kfutil"
 	DefaultGitRef             = "main"
 	FailedAuthMsg             = "Login failed!"
