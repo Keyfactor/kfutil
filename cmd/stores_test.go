@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2026 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -185,7 +185,7 @@ func Test_Stores_ImportCmd(t *testing.T) {
 
 		// write modifiedCSVData to file
 		outFileName := strings.Replace(f, "export", "import", 1)
-		convErr := mapToCSV(modifiedCSVData, outFileName)
+		convErr := mapToCSV(modifiedCSVData, outFileName, []string{})
 		assert.NoError(t, convErr)
 
 		testCmd := RootCmd
