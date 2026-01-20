@@ -36,7 +36,7 @@ The GUI provides a visual interface for:
 - Configuring authentication to Keyfactor Command
 - Viewing and managing installed store types
 - Browsing and deploying store types from the internal catalog
-- Importing and exporting store type configurations
+- Importing and exporting store type configurations 
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.SilenceUsage = true
