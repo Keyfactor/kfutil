@@ -2334,7 +2334,7 @@
       }
     },
     "ClientMachineDescription": "The IP address or DNS of the Fortigate server",
-    "StorePathDescription": "This is not used in this integration, but is a required field in the UI. Just enter any value here"
+    "StorePathDescription": "Value must contain the VDOM this certificate store will be managing.  `root` must be entered to manage the default 'root' VDOM."
   },
   {
     "Name": "GCP Load Balancer",
@@ -2372,6 +2372,57 @@
     "ClientMachineDescription": "Not used, but required when creating a store.  Just enter any value.",
     "StorePathDescription": "Your Google Cloud Project ID only if you choose to use global resources.  Append a forward slash '/' and valid GCP region to process against a specific [GCP region](https://gist.github.com/rpkim/084046e02fd8c452ba6ddef3a61d5d59).",
     "EntryParameters": []
+  },
+  {
+    "Name": "GCPScrtMgr",
+    "ShortName": "GCPScrtMgr",
+    "Capability": "GCPScrtMgr",
+    "ServerRequired": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Optional",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": true,
+      "Style": "Default",
+      "StorePassword": {
+        "Description": "Password used to encrypt the private key of ALL certificate secrets.  Please see [Certificate Encryption Details](#certificate-encryption-details) for more information",
+        "IsPAMEligible": true
+      }
+    },
+    "Properties": [
+      {
+        "Name": "PasswordSecretSuffix",
+        "DisplayName": "Password Secret Location Suffix",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "If storing a certificate with an encrypted private key, this is the suffix to add to the certificate (secret) alias name where the encrypted private key password will be stored.  Please see [Certificate Encryption Details](#certificate-encryption-details) for more information"
+      },
+      {
+        "Name": "IncludeChain",
+        "DisplayName": "Include Chain",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "True",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "Determines whether to include the certificate chain when adding a certificate as a secret."
+      }
+    ],
+    "EntryParameters": [],
+    "ClientMachineDescription": "Not used",
+    "StorePathDescription": "The Project ID of the Google Secret Manager being managed."
   },
   {
     "Name": "Google Cloud Provider Apigee",
@@ -3018,7 +3069,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false,
-        "Description": "Username used to log into the target server for establishing the WinRM session. Example: 'administrator' or 'domain\\username'."
+        "Description": "Username used to log into the target server for establishing the WinRM session. Example: 'administrator' or 'domain\\username'. (This field is automatically created)"
       },
       {
         "Name": "ServerPassword",
@@ -3027,7 +3078,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false,
-        "Description": "Password corresponding to the Server Username used to log into the target server.  When establishing a SSH session from a Linux environment, the password must include the full SSH Private key."
+        "Description": "Password corresponding to the Server Username used to log into the target server.  When establishing a SSH session from a Linux environment, the password must include the full SSH Private key. (This field is automatically created)"
       },
       {
         "Name": "ServerUseSsl",
@@ -3209,6 +3260,7 @@
     "Name": "K8SCert",
     "ShortName": "K8SCert",
     "Capability": "K8SCert",
+    "ClientMachineDescription": "This can be anything useful, recommend using the k8s cluster name or identifier.",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": false,
@@ -3219,8 +3271,27 @@
     },
     "Properties": [
       {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Description": "This should be no value or `kubeconfig`",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Description": "The credentials to use to connect to the K8S cluster API. This needs to be in `kubeconfig` format. Example: https://github.com/Keyfactor/k8s-orchestrator/tree/main/scripts/kubernetes#example-service-account-json",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      },
+      {
         "Name": "KubeNamespace",
         "DisplayName": "KubeNamespace",
+        "Description": "The K8S namespace to use to manage the K8S secret object.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "default",
@@ -3229,21 +3300,23 @@
       {
         "Name": "KubeSecretName",
         "DisplayName": "KubeSecretName",
+        "Description": "The name of the K8S secret object.",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
         "Name": "KubeSecretType",
         "DisplayName": "KubeSecretType",
+        "Description": "This defaults to and must be `csr`",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "cert",
         "Required": true
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -3262,6 +3335,7 @@
     "Name": "K8SCluster",
     "ShortName": "K8SCluster",
     "Capability": "K8SCluster",
+    "ClientMachineDescription": "This can be anything useful, recommend using the k8s cluster name or identifier.",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
@@ -3272,21 +3346,43 @@
     },
     "Properties": [
       {
-        "Name": "SeparateChain",
-        "DisplayName": "Separate Certificate Chain",
-        "Type": "Bool",
-        "DefaultValue": "false",
-        "Required": false
-      },
-      {
         "Name": "IncludeCertChain",
         "DisplayName": "Include Certificate Chain",
         "Type": "Bool",
+        "DependsOn": null,
         "DefaultValue": "true",
+        "Required": false,
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
+      },
+      {
+        "Name": "SeparateChain",
+        "DisplayName": "Separate Chain",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "Will default to `false` if not set. Set this to `true` if you want to deploy certificate chain to the `ca.crt` field for Opaque and tls secrets."
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Description": "This should be no value or `kubeconfig`",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Description": "The credentials to use to connect to the K8S cluster API. This needs to be in `kubeconfig` format. Example: https://github.com/Keyfactor/k8s-orchestrator/tree/main/scripts/kubernetes#example-service-account-json",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
         "Required": false
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -3305,6 +3401,7 @@
     "Name": "K8SJKS",
     "ShortName": "K8SJKS",
     "Capability": "K8SJKS",
+    "ClientMachineDescription": "This can be anything useful, recommend using the k8s cluster name or identifier.",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
@@ -3317,6 +3414,7 @@
       {
         "Name": "KubeNamespace",
         "DisplayName": "KubeNamespace",
+        "Description": "The K8S namespace to use to manage the K8S secret object.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "default",
@@ -3325,6 +3423,7 @@
       {
         "Name": "KubeSecretName",
         "DisplayName": "KubeSecretName",
+        "Description": "The name of the K8S secret object.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": null,
@@ -3333,6 +3432,7 @@
       {
         "Name": "KubeSecretType",
         "DisplayName": "KubeSecretType",
+        "Description": "This defaults to and must be `jks`",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "jks",
@@ -3341,14 +3441,16 @@
       {
         "Name": "CertificateDataFieldName",
         "DisplayName": "CertificateDataFieldName",
+        "Description": "The field name to use when looking for certificate data in the K8S secret.",
         "Type": "String",
         "DependsOn": "",
-        "DefaultValue": ".jks",
-        "Required": true
+        "DefaultValue": null,
+        "Required": false
       },
       {
         "Name": "PasswordFieldName",
         "DisplayName": "PasswordFieldName",
+        "Description": "The field name to use when looking for the JKS keystore password in the K8S secret. This is either the field name to look at on the same secret, or if `PasswordIsK8SSecret` is set to `true`, the field name to look at on the secret specified in `StorePasswordPath`.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "password",
@@ -3356,25 +3458,54 @@
       },
       {
         "Name": "PasswordIsK8SSecret",
-        "DisplayName": "Password Is K8S Secret",
+        "DisplayName": "PasswordIsK8SSecret",
+        "Description": "Indicates whether the password to the JKS keystore is stored in a separate K8S secret.",
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
         "Required": false
       },
       {
+        "Name": "IncludeCertChain",
+        "DisplayName": "Include Certificate Chain",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "true",
+        "Required": false,
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
+      },
+      {
         "Name": "StorePasswordPath",
         "DisplayName": "StorePasswordPath",
+        "Description": "The path to the K8S secret object to use as the password to the JKS keystore. Example: `<namespace>/<secret_name>`",
         "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Description": "This should be no value or `kubeconfig`",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Description": "The credentials to use to connect to the K8S cluster API. This needs to be in `kubeconfig` format. Example: https://github.com/Keyfactor/k8s-orchestrator/tree/main/scripts/kubernetes#example-service-account-json",
+        "Type": "Secret",
         "DependsOn": "",
         "DefaultValue": null,
         "Required": false
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
-      "StoreRequired": false,
+      "StoreRequired": true,
       "Style": "Default"
     },
     "StorePathType": "",
@@ -3390,6 +3521,7 @@
     "Name": "K8SNS",
     "ShortName": "K8SNS",
     "Capability": "K8SNS",
+    "ClientMachineDescription": "This can be anything useful, recommend using the k8s cluster name or identifier.",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
@@ -3402,27 +3534,50 @@
       {
         "Name": "KubeNamespace",
         "DisplayName": "Kube Namespace",
+        "Description": "The K8S namespace to use to manage the K8S secret object.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "default",
         "Required": false
       },
       {
-        "Name": "SeparateChain",
-        "DisplayName": "Separate Certificate Chain",
-        "Type": "Bool",
-        "DefaultValue": "false",
-        "Required": false
-      },
-      {
         "Name": "IncludeCertChain",
         "DisplayName": "Include Certificate Chain",
         "Type": "Bool",
+        "DependsOn": null,
         "DefaultValue": "true",
+        "Required": false,
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
+      },
+      {
+        "Name": "SeparateChain",
+        "DisplayName": "Separate Chain",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "Will default to `false` if not set. Set this to `true` if you want to deploy certificate chain to the `ca.crt` field for Opaque and tls secrets."
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Description": "This should be no value or `kubeconfig`",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Description": "The credentials to use to connect to the K8S cluster API. This needs to be in `kubeconfig` format. Example: https://github.com/Keyfactor/k8s-orchestrator/tree/main/scripts/kubernetes#example-service-account-json",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
         "Required": false
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -3441,6 +3596,7 @@
     "Name": "K8SPKCS12",
     "ShortName": "K8SPKCS12",
     "Capability": "K8SPKCS12",
+    "ClientMachineDescription": "This can be anything useful, recommend using the k8s cluster name or identifier.",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
@@ -3451,12 +3607,13 @@
     },
     "Properties": [
       {
-        "Name": "KubeSecretType",
-        "DisplayName": "Kube Secret Type",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": "pkcs12",
-        "Required": true
+        "Name": "IncludeCertChain",
+        "DisplayName": "Include Certificate Chain",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "true",
+        "Required": false,
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
       },
       {
         "Name": "CertificateDataFieldName",
@@ -3469,6 +3626,7 @@
       {
         "Name": "PasswordFieldName",
         "DisplayName": "Password Field Name",
+        "Description": "The field name to use when looking for the PKCS12 keystore password in the K8S secret. This is either the field name to look at on the same secret, or if `PasswordIsK8SSecret` is set to `true`, the field name to look at on the secret specified in `StorePasswordPath`.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "password",
@@ -3477,6 +3635,7 @@
       {
         "Name": "PasswordIsK8SSecret",
         "DisplayName": "Password Is K8S Secret",
+        "Description": "Indicates whether the password to the PKCS12 keystore is stored in a separate K8S secret object.",
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
@@ -3485,6 +3644,7 @@
       {
         "Name": "KubeNamespace",
         "DisplayName": "Kube Namespace",
+        "Description": "The K8S namespace to use to manage the K8S secret object.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "default",
@@ -3493,24 +3653,53 @@
       {
         "Name": "KubeSecretName",
         "DisplayName": "Kube Secret Name",
+        "Description": "The name of the K8S secret object.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": null,
         "Required": false
       },
       {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Description": "This should be no value or `kubeconfig`",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Description": "The credentials to use to connect to the K8S cluster API. This needs to be in `kubeconfig` format. Example: https://github.com/Keyfactor/k8s-orchestrator/tree/main/scripts/kubernetes#example-service-account-json",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "KubeSecretType",
+        "DisplayName": "Kube Secret Type",
+        "Description": "This defaults to and must be `pkcs12`",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "pkcs12",
+        "Required": true
+      },
+      {
         "Name": "StorePasswordPath",
         "DisplayName": "StorePasswordPath",
+        "Description": "The path to the K8S secret object to use as the password to the PFX/PKCS12 data. Example: `<namespace>/<secret_name>`",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": null,
         "Required": false
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
-      "StoreRequired": false,
+      "StoreRequired": true,
       "Style": "Default"
     },
     "StorePathType": "",
@@ -3526,6 +3715,7 @@
     "Name": "K8SSecret",
     "ShortName": "K8SSecret",
     "Capability": "K8SSecret",
+    "ClientMachineDescription": "This can be anything useful, recommend using the k8s cluster name or identifier.",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
@@ -3538,6 +3728,7 @@
       {
         "Name": "KubeNamespace",
         "DisplayName": "KubeNamespace",
+        "Description": "The K8S namespace to use to manage the K8S secret object.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": null,
@@ -3546,6 +3737,7 @@
       {
         "Name": "KubeSecretName",
         "DisplayName": "KubeSecretName",
+        "Description": "The name of the K8S secret object.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": null,
@@ -3554,27 +3746,50 @@
       {
         "Name": "KubeSecretType",
         "DisplayName": "KubeSecretType",
+        "Description": "This defaults to and must be `secret`",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "secret",
         "Required": true
       },
       {
-        "Name": "SeparateChain",
-        "DisplayName": "Separate Certificate Chain",
-        "Type": "Bool",
-        "DefaultValue": "false",
-        "Required": false
-      },
-      {
         "Name": "IncludeCertChain",
         "DisplayName": "Include Certificate Chain",
         "Type": "Bool",
+        "DependsOn": null,
         "DefaultValue": "true",
+        "Required": false,
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
+      },
+      {
+        "Name": "SeparateChain",
+        "DisplayName": "Separate Chain",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "Will default to `false` if not set. Set this to `true` if you want to deploy certificate chain to the `ca.crt` field for Opaque and tls secrets."
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Description": "This should be no value or `kubeconfig`",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Description": "The credentials to use to connect to the K8S cluster API. This needs to be in `kubeconfig` format. Example: https://github.com/Keyfactor/k8s-orchestrator/tree/main/scripts/kubernetes#example-service-account-json",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
         "Required": false
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -3593,6 +3808,7 @@
     "Name": "K8STLSSecr",
     "ShortName": "K8STLSSecr",
     "Capability": "K8STLSSecr",
+    "ClientMachineDescription": "This can be anything useful, recommend using the k8s cluster name or identifier.",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": true,
@@ -3605,6 +3821,7 @@
       {
         "Name": "KubeNamespace",
         "DisplayName": "KubeNamespace",
+        "Description": "The K8S namespace to use to manage the K8S secret object.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": null,
@@ -3613,6 +3830,7 @@
       {
         "Name": "KubeSecretName",
         "DisplayName": "KubeSecretName",
+        "Description": "The name of the K8S secret object.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": null,
@@ -3621,27 +3839,50 @@
       {
         "Name": "KubeSecretType",
         "DisplayName": "KubeSecretType",
+        "Description": "This defaults to and must be `tls_secret`",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "tls_secret",
         "Required": true
       },
       {
-        "Name": "SeparateChain",
-        "DisplayName": "Separate Certificate Chain",
-        "Type": "Bool",
-        "DefaultValue": "false",
-        "Required": false
-      },
-      {
         "Name": "IncludeCertChain",
         "DisplayName": "Include Certificate Chain",
         "Type": "Bool",
+        "DependsOn": null,
         "DefaultValue": "true",
+        "Required": false,
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
+      },
+      {
+        "Name": "SeparateChain",
+        "DisplayName": "Separate Chain",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "Will default to `false` if not set. Set this to `true` if you want to deploy certificate chain to the `ca.crt` field for Opaque and tls secrets."
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Description": "This should be no value or `kubeconfig`",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Description": "The credentials to use to connect to the K8S cluster API. This needs to be in `kubeconfig` format. Example: https://github.com/Keyfactor/k8s-orchestrator/tree/main/scripts/kubernetes#example-service-account-json",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": null,
         "Required": false
       }
     ],
-    "EntryParameters": null,
+    "EntryParameters": [],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
@@ -3714,6 +3955,51 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Required"
+  },
+  {
+    "Name": "MyOrchestratorStoreType",
+    "ShortName": "MOST",
+    "Capability": "MOST",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [
+      {
+        "Name": "CustomField1",
+        "DisplayName": "CustomField1",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "default",
+        "Required": true
+      },
+      {
+        "Name": "CustomField2",
+        "DisplayName": "CustomField2",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": null,
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
   },
   {
     "Name": "Nmap Orchestrator",
@@ -5004,7 +5290,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false,
-        "Description": "Username used to log into the target server for establishing the WinRM session. Example: 'administrator' or 'domain\\username'."
+        "Description": "Username used to log into the target server for establishing the WinRM session. Example: 'administrator' or 'domain\\username'.  (This field is automatically created)"
       },
       {
         "Name": "ServerPassword",
@@ -5013,7 +5299,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false,
-        "Description": "Password corresponding to the Server Username used to log into the target server.  When establishing a SSH session from a Linux environment, the password must include the full SSH Private key."
+        "Description": "Password corresponding to the Server Username used to log into the target server.  When establishing a SSH session from a Linux environment, the password must include the full SSH Private key. (This field is automatically created)"
       },
       {
         "Name": "ServerUseSsl",
@@ -5118,7 +5404,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false,
-        "Description": "Username used to log into the target server for establishing the WinRM session. Example: 'administrator' or 'domain\\username'."
+        "Description": "Username used to log into the target server for establishing the WinRM session. Example: 'administrator' or 'domain\\username'. (This field is automatically created)"
       },
       {
         "Name": "ServerPassword",
@@ -5127,7 +5413,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false,
-        "Description": "Password corresponding to the Server Username used to log into the target server.  When establishing a SSH session from a Linux environment, the password must include the full SSH Private key."
+        "Description": "Password corresponding to the Server Username used to log into the target server.  When establishing a SSH session from a Linux environment, the password must include the full SSH Private key. (This field is automatically created)"
       },
       {
         "Name": "ServerUseSsl",
@@ -5387,7 +5673,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": true,
-        "IsPamEligable": false,
+        "IsPamEligable": true,
         "Description": "The vCenter username used to manage the vCenter connection"
       },
       {
@@ -5397,7 +5683,7 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": true,
-        "IsPamEligable": false,
+        "IsPamEligable": true,
         "Description": "The secret vCenter password used to manage the vCenter connection"
       }
     ]
