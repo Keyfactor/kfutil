@@ -46,4 +46,4 @@ programmatically create, delete, edit, and list PAM Providers.
 * [kfutil pam list](kfutil_pam_list.md)	 - Returns a list of all the configured PAM providers.
 * [kfutil pam update](kfutil_pam_update.md)	 - Updates an existing PAM Provider, currently only supported from file.
 
-###### Auto generated on 8-Dec-2025
+###### Auto generated on 26-Jan-2026

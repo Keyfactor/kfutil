@@ -45,4 +45,4 @@ See each sub-command's help for details on how to use the generated script.
 * [kfutil completion powershell](kfutil_completion_powershell.md)	 - Generate the autocompletion script for powershell
 * [kfutil completion zsh](kfutil_completion_zsh.md)	 - Generate the autocompletion script for zsh
 
-###### Auto generated on 8-Dec-2025
+###### Auto generated on 26-Jan-2026
