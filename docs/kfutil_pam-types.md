@@ -1,27 +1,15 @@
-## kfutil pam types-create
+## kfutil pam-types
 
-Creates a new PAM provider type.
+Keyfactor PAM types APIs and utilities.
 
 ### Synopsis
 
-Creates a new PAM Provider type, currently only supported from JSON file and from GitHub. To install from 
-Github. To install from GitHub, use the --repo flag to specify the GitHub repository and optionally the branch to use. 
-NOTE: the file from Github must be named integration-manifest.json and must use the same schema as 
-https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.json. To install from a local file, use
---from-file to specify the path to the JSON file.
-
-```
-kfutil pam types-create [flags]
-```
+A collections of APIs and utilities for interacting with Keyfactor PAM types.
 
 ### Options
 
 ```
-  -b, --branch string      Branch name for the repository. Defaults to 'main'.
-  -f, --from-file string   Path to a JSON file containing the PAM Type Object Data.
-  -h, --help               help for types-create
-  -n, --name string        Name of the PAM Provider Type.
-  -r, --repo string        Keyfactor repository name of the PAM Provider Type.
+  -h, --help   help for pam-types
 ```
 
 ### Options inherited from parent commands
@@ -49,6 +37,10 @@ kfutil pam types-create [flags]
 
 ### SEE ALSO
 
-* [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
+* [kfutil](kfutil.md)     - Keyfactor CLI utilities
+* [kfutil pam-types create](kfutil_pam-types_create.md)     - Creates a new PAM provider type.
+* [kfutil pam-types delete](kfutil_pam-types_delete.md)     - Deletes a defined PAM Provider type by ID or Name.
+* [kfutil pam-types get](kfutil_pam-types_get.md)     - Get a specific defined PAM Provider type by ID or Name.
+* [kfutil pam-types list](kfutil_pam-types_list.md)     - Returns a list of all available PAM provider types.
 
-###### Auto generated on 31-Jul-2025
+###### Auto generated on 26-Jan-2026

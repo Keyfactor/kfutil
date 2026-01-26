@@ -1,19 +1,22 @@
-## kfutil pam types-list
+## kfutil pam-types delete
 
-Returns a list of all available PAM provider types.
+Deletes a defined PAM Provider type by ID or Name.
 
 ### Synopsis
 
-Returns a list of all available PAM provider types.
+Deletes a defined PAM Provider type by ID or Name.
 
 ```
-kfutil pam types-list [flags]
+kfutil pam-types delete [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for types-list
+  -a, --all           Delete all PAM Provider Types.
+  -h, --help          help for delete
+  -i, --id string     ID of the PAM Provider Type.
+  -n, --name string   Name of the PAM Provider Type.
 ```
 
 ### Options inherited from parent commands
@@ -41,6 +44,6 @@ kfutil pam types-list [flags]
 
 ### SEE ALSO
 
-* [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
+* [kfutil pam-types](kfutil_pam-types.md)     - Keyfactor PAM types APIs and utilities.
 
-###### Auto generated on 31-Jul-2025
+###### Auto generated on 26-Jan-2026
