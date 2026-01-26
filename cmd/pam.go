@@ -41,6 +41,34 @@ party PAM providers to secure certificate stores. The PAM component of the Keyfa
 programmatically create, delete, edit, and list PAM Providers.`,
 }
 
+var deprecatedPamTypesListCmd = &cobra.Command{
+	Use:        "types-list",
+	Deprecated: "use `pam types list`.",
+	Short:      "Returns a list of all available PAM provider types.",
+	Long:       "Returns a list of all available PAM provider types.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		deprecationErr := fmt.Errorf("this command is deprecated; use `pam types list`")
+		return deprecationErr
+	},
+}
+
+var deprecatedPamTypesCreateCmd = &cobra.Command{
+	Use:        "types-create",
+	Deprecated: "use `pam types create`.",
+	Short:      "Creates a new PAM provider type.",
+	Long: `Creates a new PAM Provider type, currently only supported from JSON file and from GitHub. To install from 
+Github. To install from GitHub, use the --repo flag to specify the GitHub repository and optionally the branch to use. 
+NOTE: the file from Github must be named integration-manifest.json and must use the same schema as 
+https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.json. To install from a local file, use
+--from-file to specify the path to the JSON file.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cmd.SilenceUsage = true
+		deprecationErr := fmt.Errorf("this command is deprecated; use `pam types create`")
+		return deprecationErr
+	},
+}
+
 var pamProvidersListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Returns a list of all the configured PAM providers.",
@@ -411,9 +439,39 @@ func init() {
 		filePath string
 		name     string
 		id       int32
+		repo     string
+		branch   string
 	)
 
 	RootCmd.AddCommand(pamCmd)
+
+	// PAM Provider Types List
+	pamCmd.AddCommand(deprecatedPamTypesListCmd)
+
+	// PAM Provider Types Create
+	pamCmd.AddCommand(deprecatedPamTypesCreateCmd)
+	deprecatedPamTypesCreateCmd.Flags().StringVarP(
+		&filePath,
+		FlagFromFile,
+		"f",
+		"",
+		"Path to a JSON file containing the PAM Type Object Data.",
+	)
+	deprecatedPamTypesCreateCmd.Flags().StringVarP(&name, "name", "n", "", "Name of the PAM Provider Type.")
+	deprecatedPamTypesCreateCmd.Flags().StringVarP(
+		&repo,
+		"repo",
+		"r",
+		"",
+		"Keyfactor repository name of the PAM Provider Type.",
+	)
+	deprecatedPamTypesCreateCmd.Flags().StringVarP(
+		&branch,
+		"branch",
+		"b",
+		"",
+		"Branch name for the repository. Defaults to 'main'.",
+	)
 
 	// PAM Providers
 
