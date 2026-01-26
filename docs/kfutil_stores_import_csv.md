@@ -64,6 +64,7 @@ kfutil stores import csv --file <file name to import> --store-type-id <store typ
   -s, --store-password Password                     The credential information Keyfactor Command will use to access the certificates in a specific certificate store (the store password). This is different from credential information Keyfactor Command uses to access a certificate store host. This field can be specified in the CSV file in the column Password. This value can also be sourced from the environmental variable `KFUTIL_CSV_STORE_PASSWORD`. *NOTE* a value provided in the CSV file will override any other input value
   -i, --store-type-id int                           The ID of the cert store type for the stores. (default -1)
   -n, --store-type-name string                      The name of the cert store type.  Use if store-type-id is unknown.
+  -z, --sync                                        Create or update existing stores. NOTE: Use this w/ --dry-run to view changes.
 ```
 
 ### Options inherited from parent commands
@@ -94,4 +95,4 @@ kfutil stores import csv --file <file name to import> --store-type-id <store typ
 * [kfutil stores import](kfutil_stores_import.md)     - Import a file with certificate store definitions and create them
   in Keyfactor Command.
 
-###### Auto generated on 31-Jul-2025
+###### Auto generated on 26-Jan-2026
