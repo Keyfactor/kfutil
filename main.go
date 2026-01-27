@@ -17,8 +17,9 @@ package main
 import (
 	_ "embed"
 
-	"github.com/spf13/cobra/doc"
 	"kfutil/cmd"
+
+	"github.com/spf13/cobra/doc"
 )
 
 func main() {
