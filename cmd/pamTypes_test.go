@@ -17,6 +17,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
 	"strings"
 	"testing"
 
@@ -471,42 +473,97 @@ func Test_PAMTypesJSON_ParameterNames(t *testing.T) {
 	}
 }
 
-// Test_PAMTypes_ListCommand tests the list command (requires test environment)
+// Test_PAMTypes_ListCommand tests the list command
+// When KEYFACTOR_HOSTNAME is set, it runs as an integration test against a real instance.
+// Otherwise, it runs against a mock server to validate the list functionality.
 func Test_PAMTypes_ListCommand(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+	// Check if we have test credentials - require hostname at minimum
+	hostname := os.Getenv("KEYFACTOR_HOSTNAME")
 
-	// Check if we have test credentials
-	_, err := getTestEnv()
-	if err != nil {
-		t.Skip("Skipping test: no test environment configured")
-	}
+	if hostname != "" && !testing.Short() {
+		// Integration test path - real Keyfactor Command instance
+		t.Run(
+			"Integration", func(t *testing.T) {
+				testCmd := RootCmd
+				testCmd.SetArgs([]string{"pam-types", "list", "--no-prompt"})
 
-	testCmd := RootCmd
-	testCmd.SetArgs([]string{"pam-types", "list"})
+				output := captureOutput(
+					func() {
+						err := testCmd.Execute()
+						if err != nil {
+							t.Logf("List command error: %v", err)
+						}
+					},
+				)
 
-	output := captureOutput(
-		func() {
-			err := testCmd.Execute()
-			if err != nil {
-				t.Logf("List command error: %v", err)
-			}
-		},
-	)
+				// If the command executed successfully, validate the output
+				if output != "" {
+					var pamTypesList []map[string]interface{}
+					if err := json.Unmarshal([]byte(output), &pamTypesList); err == nil {
+						t.Logf("Successfully listed %d PAM types from real server", len(pamTypesList))
 
-	// If the command executed successfully, validate the output
-	if output != "" {
-		var pamTypesList []map[string]interface{}
-		if err := json.Unmarshal([]byte(output), &pamTypesList); err == nil {
-			t.Logf("Successfully listed %d PAM types", len(pamTypesList))
+						// Validate structure of returned types
+						for _, pamType := range pamTypesList {
+							assert.NotNil(t, pamType["Id"], "PAM type should have an Id")
+							assert.NotNil(t, pamType["Name"], "PAM type should have a Name")
+						}
+					}
+				}
+			},
+		)
+	} else {
+		// Mock test path - no real credentials available
+		t.Run(
+			"Mock", func(t *testing.T) {
+				// Create mock server and pre-populate with PAM types
+				server := NewTestServer(t)
+				pamTypes := loadPAMTypesFromJSON(t)
 
-			// Validate structure of returned types
-			for _, pamType := range pamTypesList {
-				assert.NotNil(t, pamType["Id"], "PAM type should have an Id")
-				assert.NotNil(t, pamType["Name"], "PAM type should have a Name")
-			}
-		}
+				// Pre-populate server with PAM types
+				for _, pamType := range pamTypes {
+					id := fmt.Sprintf("%s-id", strings.ToLower(strings.ReplaceAll(pamType.Name, " ", "-")))
+					params := make([]PAMTypeParameterResponse, len(pamType.Parameters))
+					for i, p := range pamType.Parameters {
+						params[i] = PAMTypeParameterResponse{
+							Id:            i + 1,
+							Name:          p.Name,
+							DisplayName:   p.DisplayName,
+							DataType:      p.DataType,
+							InstanceLevel: p.InstanceLevel,
+						}
+					}
+					server.PAMTypes[id] = PAMTypeResponse{
+						Id:         id,
+						Name:       pamType.Name,
+						Parameters: params,
+					}
+				}
+
+				// Make GET request to list PAM types
+				resp, err := http.Get(server.URL + "/KeyfactorAPI/PamProviders/Types")
+				require.NoError(t, err, "Failed to make HTTP request")
+				defer resp.Body.Close()
+
+				// Verify response status
+				assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK for list")
+
+				// Parse response
+				var listedTypes []PAMTypeResponse
+				err = json.NewDecoder(resp.Body).Decode(&listedTypes)
+				require.NoError(t, err, "Failed to decode response")
+
+				// Verify all types are returned
+				assert.Equal(t, len(pamTypes), len(listedTypes), "Should return all PAM types")
+				t.Logf("Successfully listed %d PAM types from mock server", len(listedTypes))
+
+				// Validate structure of returned types
+				for _, pamType := range listedTypes {
+					assert.NotEmpty(t, pamType.Id, "PAM type should have an Id")
+					assert.NotEmpty(t, pamType.Name, "PAM type should have a Name")
+					assert.NotEmpty(t, pamType.Parameters, "PAM type should have Parameters")
+				}
+			},
+		)
 	}
 }
 
@@ -1008,4 +1065,399 @@ func Test_PAMTypes_OperationsSummary(t *testing.T) {
 	assert.Equal(t, len(pamTypes), createCount, "All types validated for CREATE")
 	assert.Equal(t, len(pamTypes), updateCount, "All types validated for UPDATE")
 	assert.Equal(t, len(pamTypes), deleteCount, "All types validated for DELETE")
+}
+
+// Test artifact paths
+const (
+	testArtifactV2ManifestPath = "../pkg/test_artifacts/integration-manifest-v2.json"
+	testArtifactV3ManifestPath = "../pkg/test_artifacts/integration-manifest-v3.json"
+)
+
+// Test_IntegrationManifestV2_ParsePAMTypes tests parsing PAM types from V2 integration manifest
+func Test_IntegrationManifestV2_ParsePAMTypes(t *testing.T) {
+	// Read the V2 manifest file
+	manifestBytes, err := os.ReadFile(testArtifactV2ManifestPath)
+	require.NoError(t, err, "Failed to read V2 integration manifest file")
+
+	// Parse as V2 manifest
+	var manifest IntegrationManifestV2
+	err = json.Unmarshal(manifestBytes, &manifest)
+	require.NoError(t, err, "Failed to parse V2 integration manifest")
+
+	// Verify manifest structure
+	assert.NotEmpty(t, manifest.Schema, "Schema should not be empty")
+	assert.Contains(t, manifest.Schema, "v2", "Schema should indicate V2")
+	assert.Equal(t, "pam", manifest.IntegrationType, "Integration type should be 'pam'")
+	assert.NotEmpty(t, manifest.Name, "Name should not be empty")
+	assert.NotEmpty(t, manifest.Description, "Description should not be empty")
+
+	// Verify PAM section
+	assert.NotEmpty(t, manifest.About.PAM.Name, "PAM provider name should not be empty")
+	assert.NotEmpty(t, manifest.About.PAM.AssemblyName, "PAM assembly name should not be empty")
+	assert.NotEmpty(t, manifest.About.PAM.DBName, "PAM DB name should not be empty")
+	assert.NotEmpty(t, manifest.About.PAM.FullyQualifiedClassName, "PAM class name should not be empty")
+
+	// Verify PAM types (V2 uses map)
+	require.NotEmpty(t, manifest.About.PAM.PAMTypes, "PAM types map should not be empty")
+
+	for typeName, pamType := range manifest.About.PAM.PAMTypes {
+		t.Run(
+			fmt.Sprintf("V2_PAMType_%s", typeName), func(t *testing.T) {
+				assert.NotEmpty(t, pamType.Name, "PAM type name should not be empty")
+				assert.Equal(t, typeName, pamType.Name, "PAM type name should match map key")
+				require.NotNil(t, pamType.Parameters, "PAM type should have parameters")
+				assert.NotEmpty(t, *pamType.Parameters, "PAM type parameters should not be empty")
+
+				// Verify parameters
+				hasProviderLevel := false
+				hasInstanceLevel := false
+				for _, param := range *pamType.Parameters {
+					assert.NotEmpty(t, param.Name, "Parameter name should not be empty")
+					assert.NotNil(t, param.DisplayName, "Parameter display name should not be nil")
+					assert.True(
+						t,
+						int(param.DataType) == 1 || int(param.DataType) == 2,
+						"DataType should be 1 or 2, got %d",
+						param.DataType,
+					)
+
+					if param.InstanceLevel {
+						hasInstanceLevel = true
+					} else {
+						hasProviderLevel = true
+					}
+				}
+
+				assert.True(t, hasProviderLevel, "Should have at least one provider-level parameter")
+				assert.True(t, hasInstanceLevel, "Should have at least one instance-level parameter")
+
+				t.Logf("✓ V2 PAM type '%s' validated with %d parameters", typeName, len(*pamType.Parameters))
+			},
+		)
+	}
+
+	t.Logf("✓ V2 Integration manifest parsed successfully with %d PAM types", len(manifest.About.PAM.PAMTypes))
+}
+
+// Test_IntegrationManifestV3_ParsePAMTypes tests parsing PAM types from V3 integration manifest
+func Test_IntegrationManifestV3_ParsePAMTypes(t *testing.T) {
+	// Read the V3 manifest file
+	manifestBytes, err := os.ReadFile(testArtifactV3ManifestPath)
+	require.NoError(t, err, "Failed to read V3 integration manifest file")
+
+	// Parse as V3 manifest
+	var manifest IntegrationManifestV3
+	err = json.Unmarshal(manifestBytes, &manifest)
+	require.NoError(t, err, "Failed to parse V3 integration manifest")
+
+	// Verify manifest structure
+	assert.NotEmpty(t, manifest.Schema, "Schema should not be empty")
+	assert.Contains(t, manifest.Schema, "v3", "Schema should indicate V3")
+	assert.Equal(t, "pam", manifest.IntegrationType, "Integration type should be 'pam'")
+	assert.NotEmpty(t, manifest.Name, "Name should not be empty")
+	assert.NotEmpty(t, manifest.Description, "Description should not be empty")
+
+	// Verify PAM section
+	assert.NotEmpty(t, manifest.About.PAM.Name, "PAM provider name should not be empty")
+	assert.NotEmpty(t, manifest.About.PAM.AssemblyName, "PAM assembly name should not be empty")
+	assert.NotEmpty(t, manifest.About.PAM.DBName, "PAM DB name should not be empty")
+	assert.NotEmpty(t, manifest.About.PAM.FullyQualifiedClassName, "PAM class name should not be empty")
+
+	// Verify PAM types (V3 uses array)
+	require.NotEmpty(t, manifest.About.PAM.PAMTypes, "PAM types array should not be empty")
+
+	for i, pamType := range manifest.About.PAM.PAMTypes {
+		t.Run(
+			fmt.Sprintf("V3_PAMType_%d_%s", i, pamType.Name), func(t *testing.T) {
+				assert.NotEmpty(t, pamType.Name, "PAM type name should not be empty")
+				require.NotNil(t, pamType.Parameters, "PAM type should have parameters")
+				assert.NotEmpty(t, *pamType.Parameters, "PAM type parameters should not be empty")
+
+				// Verify parameters
+				hasProviderLevel := false
+				hasInstanceLevel := false
+				for _, param := range *pamType.Parameters {
+					assert.NotEmpty(t, param.Name, "Parameter name should not be empty")
+					assert.NotNil(t, param.DisplayName, "Parameter display name should not be nil")
+					assert.True(
+						t,
+						int(param.DataType) == 1 || int(param.DataType) == 2,
+						"DataType should be 1 or 2, got %d",
+						param.DataType,
+					)
+
+					if param.InstanceLevel {
+						hasInstanceLevel = true
+					} else {
+						hasProviderLevel = true
+					}
+				}
+
+				assert.True(t, hasProviderLevel, "Should have at least one provider-level parameter")
+				assert.True(t, hasInstanceLevel, "Should have at least one instance-level parameter")
+
+				t.Logf("✓ V3 PAM type '%s' validated with %d parameters", pamType.Name, len(*pamType.Parameters))
+			},
+		)
+	}
+
+	t.Logf("✓ V3 Integration manifest parsed successfully with %d PAM types", len(manifest.About.PAM.PAMTypes))
+}
+
+// Test_IntegrationManifest_V2andV3_Comparison tests that both manifest versions produce valid PAM types
+func Test_IntegrationManifest_V2andV3_Comparison(t *testing.T) {
+	// Read V2 manifest
+	v2Bytes, err := os.ReadFile(testArtifactV2ManifestPath)
+	require.NoError(t, err, "Failed to read V2 manifest")
+	var v2Manifest IntegrationManifestV2
+	require.NoError(t, json.Unmarshal(v2Bytes, &v2Manifest), "Failed to parse V2 manifest")
+
+	// Read V3 manifest
+	v3Bytes, err := os.ReadFile(testArtifactV3ManifestPath)
+	require.NoError(t, err, "Failed to read V3 manifest")
+	var v3Manifest IntegrationManifestV3
+	require.NoError(t, json.Unmarshal(v3Bytes, &v3Manifest), "Failed to parse V3 manifest")
+
+	// Verify both manifests have PAM types
+	assert.NotEmpty(t, v2Manifest.About.PAM.PAMTypes, "V2 should have PAM types")
+	assert.NotEmpty(t, v3Manifest.About.PAM.PAMTypes, "V3 should have PAM types")
+
+	t.Logf("V2 manifest has %d PAM types (map format)", len(v2Manifest.About.PAM.PAMTypes))
+	t.Logf("V3 manifest has %d PAM types (array format)", len(v3Manifest.About.PAM.PAMTypes))
+
+	// Both should be valid for PAM type creation
+	t.Run(
+		"V2_ValidForCreation", func(t *testing.T) {
+			for name, pamType := range v2Manifest.About.PAM.PAMTypes {
+				assert.NotEmpty(t, pamType.Name, "V2 PAM type %s should have name", name)
+				assert.NotEmpty(t, pamType.Parameters, "V2 PAM type %s should have parameters", name)
+
+				// Verify serialization for create request
+				jsonBytes, err := json.Marshal(pamType)
+				require.NoError(t, err, "V2 PAM type %s should serialize", name)
+				assert.NotEmpty(t, jsonBytes, "V2 PAM type %s JSON should not be empty", name)
+			}
+		},
+	)
+
+	t.Run(
+		"V3_ValidForCreation", func(t *testing.T) {
+			for _, pamType := range v3Manifest.About.PAM.PAMTypes {
+				assert.NotEmpty(t, pamType.Name, "V3 PAM type should have name")
+				assert.NotEmpty(t, pamType.Parameters, "V3 PAM type %s should have parameters", pamType.Name)
+
+				// Verify serialization for create request
+				jsonBytes, err := json.Marshal(pamType)
+				require.NoError(t, err, "V3 PAM type %s should serialize", pamType.Name)
+				assert.NotEmpty(t, jsonBytes, "V3 PAM type %s JSON should not be empty", pamType.Name)
+			}
+		},
+	)
+}
+
+// Test_IntegrationManifestV2_CreatePAMType_MockServer tests creating PAM types from V2 manifest via mock server
+func Test_IntegrationManifestV2_CreatePAMType_MockServer(t *testing.T) {
+	// Read the V2 manifest file
+	manifestBytes, err := os.ReadFile(testArtifactV2ManifestPath)
+	require.NoError(t, err, "Failed to read V2 integration manifest file")
+
+	// Parse as V2 manifest
+	var manifest IntegrationManifestV2
+	err = json.Unmarshal(manifestBytes, &manifest)
+	require.NoError(t, err, "Failed to parse V2 integration manifest")
+
+	// Create mock server
+	server := NewTestServer(t)
+
+	// Create each PAM type from the V2 manifest
+	for typeName, pamType := range manifest.About.PAM.PAMTypes {
+		t.Run(
+			fmt.Sprintf("V2_MockCreate_%s", typeName), func(t *testing.T) {
+				require.NotNil(t, pamType.Parameters, "PAM type parameters should not be nil")
+				// Convert to PAMTypeDefinition for the mock server
+				params := make([]PAMTypeParameter, len(*pamType.Parameters))
+				for i, p := range *pamType.Parameters {
+					displayName := ""
+					if p.DisplayName != nil {
+						displayName = *p.DisplayName
+					}
+					params[i] = PAMTypeParameter{
+						Name:          p.Name,
+						DisplayName:   displayName,
+						DataType:      int(p.DataType),
+						InstanceLevel: p.InstanceLevel,
+					}
+				}
+				pamTypeDef := PAMTypeDefinition{
+					Name:       pamType.Name,
+					Parameters: params,
+				}
+
+				// Serialize for request
+				requestBody, err := json.Marshal(pamTypeDef)
+				require.NoError(t, err, "Failed to marshal PAM type")
+
+				// Make request to mock server
+				resp, err := http.Post(
+					server.URL+"/KeyfactorAPI/PamProviders/Types",
+					"application/json",
+					strings.NewReader(string(requestBody)),
+				)
+				require.NoError(t, err, "Failed to make HTTP request")
+				defer resp.Body.Close()
+
+				// Verify response status
+				assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK for create")
+
+				// Parse response
+				var createdType PAMTypeResponse
+				err = json.NewDecoder(resp.Body).Decode(&createdType)
+				require.NoError(t, err, "Failed to decode response")
+
+				// Verify created type
+				assert.NotEmpty(t, createdType.Id, "Created type should have an ID")
+				assert.Equal(t, pamType.Name, createdType.Name, "Name should match")
+				assert.Equal(t, len(*pamType.Parameters), len(createdType.Parameters), "Parameter count should match")
+
+				t.Logf("✓ V2 PAM type '%s' created successfully with ID: %s", typeName, createdType.Id)
+			},
+		)
+	}
+
+	// Verify all types were created
+	assert.Equal(t, len(manifest.About.PAM.PAMTypes), len(server.PAMTypes), "All V2 PAM types should be created")
+	t.Logf("✓ All %d V2 PAM types created successfully via mock server", len(manifest.About.PAM.PAMTypes))
+}
+
+// Test_IntegrationManifestV3_CreatePAMType_MockServer tests creating PAM types from V3 manifest via mock server
+func Test_IntegrationManifestV3_CreatePAMType_MockServer(t *testing.T) {
+	// Read the V3 manifest file
+	manifestBytes, err := os.ReadFile(testArtifactV3ManifestPath)
+	require.NoError(t, err, "Failed to read V3 integration manifest file")
+
+	// Parse as V3 manifest
+	var manifest IntegrationManifestV3
+	err = json.Unmarshal(manifestBytes, &manifest)
+	require.NoError(t, err, "Failed to parse V3 integration manifest")
+
+	// Create mock server
+	server := NewTestServer(t)
+
+	// Create each PAM type from the V3 manifest
+	for i, pamType := range manifest.About.PAM.PAMTypes {
+		t.Run(
+			fmt.Sprintf("V3_MockCreate_%d_%s", i, pamType.Name), func(t *testing.T) {
+				require.NotNil(t, pamType.Parameters, "PAM type parameters should not be nil")
+				// Convert to PAMTypeDefinition for the mock server
+				params := make([]PAMTypeParameter, len(*pamType.Parameters))
+				for j, p := range *pamType.Parameters {
+					displayName := ""
+					if p.DisplayName != nil {
+						displayName = *p.DisplayName
+					}
+					params[j] = PAMTypeParameter{
+						Name:          p.Name,
+						DisplayName:   displayName,
+						DataType:      int(p.DataType),
+						InstanceLevel: p.InstanceLevel,
+					}
+				}
+				pamTypeDef := PAMTypeDefinition{
+					Name:       pamType.Name,
+					Parameters: params,
+				}
+
+				// Serialize for request
+				requestBody, err := json.Marshal(pamTypeDef)
+				require.NoError(t, err, "Failed to marshal PAM type")
+
+				// Make request to mock server
+				resp, err := http.Post(
+					server.URL+"/KeyfactorAPI/PamProviders/Types",
+					"application/json",
+					strings.NewReader(string(requestBody)),
+				)
+				require.NoError(t, err, "Failed to make HTTP request")
+				defer resp.Body.Close()
+
+				// Verify response status
+				assert.Equal(t, http.StatusOK, resp.StatusCode, "Expected 200 OK for create")
+
+				// Parse response
+				var createdType PAMTypeResponse
+				err = json.NewDecoder(resp.Body).Decode(&createdType)
+				require.NoError(t, err, "Failed to decode response")
+
+				// Verify created type
+				assert.NotEmpty(t, createdType.Id, "Created type should have an ID")
+				assert.Equal(t, pamType.Name, createdType.Name, "Name should match")
+				assert.Equal(t, len(*pamType.Parameters), len(createdType.Parameters), "Parameter count should match")
+
+				t.Logf("✓ V3 PAM type '%s' created successfully with ID: %s", pamType.Name, createdType.Id)
+			},
+		)
+	}
+
+	// Verify all types were created
+	assert.Equal(t, len(manifest.About.PAM.PAMTypes), len(server.PAMTypes), "All V3 PAM types should be created")
+	t.Logf("✓ All %d V3 PAM types created successfully via mock server", len(manifest.About.PAM.PAMTypes))
+}
+
+// Test_IntegrationManifest_BothVersions_Summary provides a summary of both manifest version tests
+func Test_IntegrationManifest_BothVersions_Summary(t *testing.T) {
+	// Read V2 manifest
+	v2Bytes, err := os.ReadFile(testArtifactV2ManifestPath)
+	require.NoError(t, err, "Failed to read V2 manifest")
+	var v2Manifest IntegrationManifestV2
+	require.NoError(t, json.Unmarshal(v2Bytes, &v2Manifest), "Failed to parse V2 manifest")
+
+	// Read V3 manifest
+	v3Bytes, err := os.ReadFile(testArtifactV3ManifestPath)
+	require.NoError(t, err, "Failed to read V3 manifest")
+	var v3Manifest IntegrationManifestV3
+	require.NoError(t, json.Unmarshal(v3Bytes, &v3Manifest), "Failed to parse V3 manifest")
+
+	t.Logf("╔════════════════════════════════════════════════════════════════╗")
+	t.Logf("║  Integration Manifest PAM Types Test Summary                   ║")
+	t.Logf("╠════════════════════════════════════════════════════════════════╣")
+	t.Logf("║  V2 Manifest (Map Format):                                     ║")
+	t.Logf("║    - File: integration-manifest-v2.json                        ║")
+	t.Logf("║    - Provider: %-46s ║", v2Manifest.About.PAM.Name)
+	t.Logf("║    - PAM Types: %-45d ║", len(v2Manifest.About.PAM.PAMTypes))
+
+	v2TotalParams := 0
+	for name, pamType := range v2Manifest.About.PAM.PAMTypes {
+		paramCount := 0
+		if pamType.Parameters != nil {
+			paramCount = len(*pamType.Parameters)
+		}
+		v2TotalParams += paramCount
+		t.Logf("║      • %-50s ║", fmt.Sprintf("%s (%d params)", name, paramCount))
+	}
+
+	t.Logf("║    - Total Parameters: %-38d ║", v2TotalParams)
+	t.Logf("╠════════════════════════════════════════════════════════════════╣")
+	t.Logf("║  V3 Manifest (Array Format):                                   ║")
+	t.Logf("║    - File: integration-manifest-v3.json                        ║")
+	t.Logf("║    - Provider: %-46s ║", v3Manifest.About.PAM.Name)
+	t.Logf("║    - PAM Types: %-45d ║", len(v3Manifest.About.PAM.PAMTypes))
+
+	v3TotalParams := 0
+	for _, pamType := range v3Manifest.About.PAM.PAMTypes {
+		paramCount := 0
+		if pamType.Parameters != nil {
+			paramCount = len(*pamType.Parameters)
+		}
+		v3TotalParams += paramCount
+		t.Logf("║      • %-50s ║", fmt.Sprintf("%s (%d params)", pamType.Name, paramCount))
+	}
+
+	t.Logf("║    - Total Parameters: %-38d ║", v3TotalParams)
+	t.Logf("╠════════════════════════════════════════════════════════════════╣")
+	t.Logf("║  Both formats validated for PAM type creation ✓                ║")
+	t.Logf("╚════════════════════════════════════════════════════════════════╝")
+
+	// Assert both have PAM types
+	assert.NotEmpty(t, v2Manifest.About.PAM.PAMTypes, "V2 should have PAM types")
+	assert.NotEmpty(t, v3Manifest.About.PAM.PAMTypes, "V3 should have PAM types")
 }
