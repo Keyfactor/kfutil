@@ -479,8 +479,28 @@ func formatStoreTypes(sTypesList *[]interface{}) (map[string]interface{}, error)
 
 	output := make(map[string]interface{})
 	for _, v := range *sTypesList {
-		v2 := v.(map[string]interface{})
-		output[v2["ShortName"].(string)] = v2
+		v2, ok := v.(map[string]interface{})
+		if !ok {
+			log.Printf("skipping item: not a map[string]interface{}: %#v", v)
+			continue
+		}
+
+		raw, ok := v2["ShortName"]
+		if !ok {
+			log.Printf("skipping item: missing ShortName: %#v", v2)
+			continue
+		}
+
+		shortName, ok := raw.(string)
+		if !ok || shortName == "" {
+			b, _ := json.MarshalIndent(v2, "", "  ")
+			log.Warn().
+				Str("raw", string(b)).
+				Msg("skipping item: bad ShortName")
+			continue
+		}
+
+		output[shortName] = v2
 	}
 
 	return output, nil
