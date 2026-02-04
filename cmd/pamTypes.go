@@ -570,7 +570,7 @@ func getPAMTypesInternet(gitRef string, repo string) (map[string]interface{}, er
 	url := fmt.Sprintf(baseUrl, repo, escapedGitRef, fileName)
 	log.Debug().
 		Str("url", url).
-		Msg("Getting store types from internet")
+		Msg("Getting PAM types from internet")
 
 	// Define the timeout duration
 	timeout := MinHttpTimeout * time.Second
@@ -610,7 +610,7 @@ func getPAMTypesInternet(gitRef string, repo string) (map[string]interface{}, er
 		}
 		return output, nil
 	}
-	output, sErr := formatStoreTypes(&result)
+	output, sErr := formatPAMTypes(&result)
 	if sErr != nil {
 		return nil, err
 	} else if output == nil {
