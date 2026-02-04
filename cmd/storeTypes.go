@@ -439,7 +439,7 @@ func createStoreTypeFromFile(filename string, kfClient *api.Client) ([]api.Certi
 	if err != nil || (sType.ShortName == "" && sType.Capability == "") {
 		log.Warn().Err(err).Msg("Unable to decode JSON file, attempting to parse an integration manifest")
 		// Attempt to parse as an integration manifest
-		var manifest IntegrationManifest
+		var manifest IntegrationManifestV2
 		log.Debug().Msg("Decoding JSON file as integration manifest")
 		// Reset the file pointer
 		_, err = file.Seek(0, 0)
@@ -553,7 +553,7 @@ func getStoreTypesInternet(gitRef string, repo string) (map[string]interface{}, 
 	if jErr != nil {
 		log.Warn().Err(jErr).Msg("Unable to decode JSON file, attempting to parse an integration manifest")
 		// Attempt to parse as an integration manifest
-		var manifest IntegrationManifest
+		var manifest IntegrationManifestV2
 		log.Debug().Msg("Decoding JSON file as integration manifest")
 		// Reset the file pointer
 
