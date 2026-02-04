@@ -1,3 +1,11 @@
+# v1.9.1
+
+## Fixes
+
+### CLI
+
+- `pam-types`: Fix issue that caused CLI to crash when attempting to read pam-types as store-types
+
 # v1.9.0
 
 ## Features
