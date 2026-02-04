@@ -18,23 +18,42 @@ import (
 	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 )
 
-type IntegrationManifest struct {
-	Schema          string `json:"$schema"`
-	IntegrationType string `json:"integration_type"`
-	Name            string `json:"name"`
-	Status          string `json:"status"`
-	LinkGithub      bool   `json:"link_github"`
-	UpdateCatalog   bool   `json:"update_catalog"`
-	SupportLevel    string `json:"support_level"`
-	ReleaseDir      string `json:"release_dir"`
-	ReleaseProject  string `json:"release_project"`
-	Description     string `json:"description"`
-	About           About  `json:"about"`
+type IntegrationManifestV2 struct {
+	Schema          string  `json:"$schema"`
+	IntegrationType string  `json:"integration_type"`
+	Name            string  `json:"name"`
+	Status          string  `json:"status"`
+	LinkGithub      bool    `json:"link_github"`
+	UpdateCatalog   bool    `json:"update_catalog"`
+	SupportLevel    string  `json:"support_level"`
+	ReleaseDir      string  `json:"release_dir"`
+	ReleaseProject  string  `json:"release_project"`
+	Description     string  `json:"description"`
+	About           AboutV2 `json:"about"`
 }
 
-type About struct {
+type IntegrationManifestV3 struct {
+	Schema          string  `json:"$schema"`
+	IntegrationType string  `json:"integration_type"`
+	Name            string  `json:"name"`
+	Status          string  `json:"status"`
+	LinkGithub      bool    `json:"link_github"`
+	UpdateCatalog   bool    `json:"update_catalog"`
+	SupportLevel    string  `json:"support_level"`
+	ReleaseDir      string  `json:"release_dir"`
+	ReleaseProject  string  `json:"release_project"`
+	Description     string  `json:"description"`
+	About           AboutV3 `json:"about"`
+}
+
+type AboutV2 struct {
 	Orchestrator Orchestrator `json:"orchestrator,omitempty"`
-	PAM          PAM          `json:"pam,omitempty"`
+	PAM          PAMV2        `json:"pam,omitempty"`
+}
+
+type AboutV3 struct {
+	Orchestrator Orchestrator `json:"orchestrator,omitempty"`
+	PAM          PAMV3        `json:"pam,omitempty"`
 }
 
 type Orchestrator struct {
@@ -44,7 +63,15 @@ type Orchestrator struct {
 	StoreTypes               []api.CertificateStoreType `json:"store_types"`
 }
 
-type PAM struct {
+type PAMV2 struct {
+	Name                    string                                   `json:"providerName"`
+	AssemblyName            string                                   `json:"assemblyName"`
+	DBName                  string                                   `json:"dbName"`
+	FullyQualifiedClassName string                                   `json:"fullyQualifiedClassName"`
+	PAMTypes                map[string]api.ProviderTypeCreateRequest `json:"pam_types"`
+}
+
+type PAMV3 struct {
 	Name                    string                          `json:"providerName"`
 	AssemblyName            string                          `json:"assemblyName"`
 	DBName                  string                          `json:"dbName"`
