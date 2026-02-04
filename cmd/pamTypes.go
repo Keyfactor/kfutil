@@ -594,7 +594,7 @@ func getPAMTypesInternet(gitRef string, repo string) (map[string]interface{}, er
 	if jErr != nil {
 		log.Warn().Err(jErr).Msg("Unable to decode JSON file, attempting to parse an integration manifest")
 		// Attempt to parse as an integration manifest
-		var manifest IntegrationManifest
+		var manifest IntegrationManifestV2
 		log.Debug().Msg("Decoding JSON file as integration manifest")
 		// Reset the file pointer
 
@@ -842,22 +842,38 @@ func createPAMTypeFromFile(filename string, kfClient *keyfactor.Client) ([]keyfa
 	if err != nil || (pamType.Name == "" || pamType.Parameters == nil) {
 		log.Warn().Err(err).Msg("Unable to decode JSON file, attempting to parse an integration manifest")
 		// Attempt to parse as an integration manifest
-		var manifest IntegrationManifest
+		var manifest IntegrationManifestV3
 		log.Debug().Msg("Decoding JSON file as integration manifest")
 		// Reset the file pointer
 		_, err = file.Seek(0, 0)
 		decoder = json.NewDecoder(file)
 		mErr := decoder.Decode(&manifest)
 		if mErr != nil {
-			return nil, err
+			log.Error().Err(err).Msg("Unable to decode JSON file as integration manifest V3")
+			log.Debug().Msg("Attempting to decode as a V2 integration manifest")
+			var v2Manifest IntegrationManifestV2
+			_, err = file.Seek(0, 0)
+			decoder = json.NewDecoder(file)
+			v2MErr := decoder.Decode(&v2Manifest)
+			if v2MErr != nil {
+				log.Error().Err(err).Msg("Unable to decode JSON file as integration manifest V2")
+				return nil, fmt.Errorf("invalid integration manifest format")
+			}
+			v2pamTypes := v2Manifest.About.PAM.PAMTypes
+			log.Debug().Msg("Converting V2 manifest to V3")
+			for _, v2pamType := range v2pamTypes {
+				pamTypes = append(pamTypes, v2pamType)
+			}
+		} else {
+			log.Debug().Msg("Decoded JSON file as integration manifest V3")
+			pamTypes = manifest.About.PAM.PAMTypes
 		}
-		log.Debug().Msg("Decoded JSON file as integration manifest")
-		pamTypes = manifest.About.PAM.PAMTypes
 	} else {
 		log.Debug().Msg("Decoded JSON file as single pam type")
 		pamTypes = []keyfactor.ProviderTypeCreateRequest{pamType}
 	}
 
+	log.Debug().Msg("successfully decoded JSON file")
 	output := make([]keyfactor.ProviderTypeResponse, 0)
 	for _, pt := range pamTypes {
 		log.Debug().Msgf("Creating certificate pam type %s", pt.Name)
