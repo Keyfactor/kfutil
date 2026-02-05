@@ -73,7 +73,7 @@ jobs:
       # If the branch with an open PR already exists, first check out that branch from kfutil
       - name: Check out existing repo merge branch
         if: env.PR_BRANCH == 'commit'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: 'keyfactor/kfutil'
           sparse-checkout: |
@@ -86,7 +86,7 @@ jobs:
       # If the branch does not exist, first check out the main branch from kfutil.
       - name: Check out main
         if: env.PR_BRANCH == 'create'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: 'keyfactor/kfutil'
           sparse-checkout: |
@@ -103,7 +103,7 @@ jobs:
 
       # Checkout and run the python tool
       - name: Check out python merge tool repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: 'keyfactor/integration-tools'
           path: './tools/'
