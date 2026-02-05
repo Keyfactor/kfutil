@@ -1,0 +1,8 @@
+Website = "https://www.github.com/keyfactor/kfutil"
+
+[Details]
+Icon = "Icon.png"
+Name = "kfutil"
+ID = "com.keyfactor.kfutil"
+Version = "2.0.0"
+Build = 1
