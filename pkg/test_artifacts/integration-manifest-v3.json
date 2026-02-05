@@ -1,0 +1,76 @@
+{
+  "$schema": "https://keyfactor.github.io/v3/integration-manifest-schema.json",
+  "integration_type": "pam",
+  "name": "ManifestV3 Test PAM Provider",
+  "status": "test",
+  "support_level": "kf-supported",
+  "link_github": false,
+  "update_catalog": false,
+  "release_dir": "manifestV3Test-pam/bin/Release",
+  "release_project": "manifestV3Test-pam/manifestV3Test-pam.csproj",
+  "description": "The ManifestV3 Test PAM Provider allows for the retrieval of stored account credentials from an ManifestV3 Test secret.",
+  "about": {
+    "pam": {
+      "providerName": "ManifestV3 Test PAM Provider",
+      "assemblyName": "manifestV3Test-pam",
+      "dbName": "ManifestV3 Test",
+      "fullyQualifiedClassName": "Keyfactor.Extensions.Pam.ManifestV3 Test",
+      "pam_types": [
+        {
+          "Name": "ManifestV3 Test",
+          "Parameters": [
+            {
+              "Name": "Url",
+              "DisplayName": "ManifestV3 Test URL",
+              "Description": "The URL to the ManifestV3 Test instance. Defaults to: https://api.manifestV3Test.io",
+              "DataType": 1,
+              "InstanceLevel": false
+            },
+            {
+              "Name": "AccessKeyId",
+              "DisplayName": "Access Key ID",
+              "Description": "The access key ID used to authenticate to ManifestV3 Test using `access_key` authentication.",
+              "DataType": 2,
+              "InstanceLevel": false
+            },
+            {
+              "Name": "AccessKey",
+              "DisplayName": "Access Key",
+              "Description": "The access key used to authenticate to ManifestV3 Test using `access_key` authentication.",
+              "DataType": 2,
+              "InstanceLevel": false
+            },
+            {
+              "Name": "AuthType",
+              "DisplayName": "Auth Type",
+              "Description": "The auth type used to authenticate to the ManifestV3 Test platform. Supported types are `access_key`.",
+              "DataType": 1,
+              "InstanceLevel": false
+            },
+            {
+              "Name": "SecretName",
+              "DisplayName": "Secret Name",
+              "Description": "The full name (path) of the secret in ManifestV3 Test that contains the credential to retrieve.",
+              "DataType": 1,
+              "InstanceLevel": true
+            },
+            {
+              "Name": "SecretType",
+              "DisplayName": "Secret Type",
+              "Description": "The type of secret stored in ManifestV3 Test. Supported types are `static_kv,static_text,static_json`.",
+              "DataType": 1,
+              "InstanceLevel": true
+            },
+            {
+              "Name": "StaticSecretFieldName",
+              "DisplayName": "Static Secret Field Name",
+              "Description": "The field name within a static secret to retrieve the credential from. Required for `static_kv` and optional for `static_json` secret types.",
+              "DataType": 1,
+              "InstanceLevel": true
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

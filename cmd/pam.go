@@ -55,7 +55,7 @@ var deprecatedPamTypesListCmd = &cobra.Command{
 
 var deprecatedPamTypesCreateCmd = &cobra.Command{
 	Use:        "types-create",
-	Deprecated: "use `pam types create`.",
+	Deprecated: "use `pam-types create`.",
 	Short:      "Creates a new PAM provider type.",
 	Long: `Creates a new PAM Provider type, currently only supported from JSON file and from GitHub. To install from 
 Github. To install from GitHub, use the --repo flag to specify the GitHub repository and optionally the branch to use. 
