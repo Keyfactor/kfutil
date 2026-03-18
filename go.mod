@@ -9,7 +9,7 @@ require (
 	github.com/Jeffail/gabs v1.4.0
 	github.com/Keyfactor/keyfactor-auth-client-go v1.3.0
 	github.com/Keyfactor/keyfactor-go-client-sdk/v2 v2.0.0
-	github.com/Keyfactor/keyfactor-go-client/v3 v3.4.0-rc.4
+	github.com/Keyfactor/keyfactor-go-client/v3 v3.5.0-rc.0
 	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/creack/pty v1.1.24
 	github.com/google/go-cmp v0.7.0
@@ -47,6 +47,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/spbsoluble/go-pkcs12 v0.3.3 // indirect
+	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	go.mozilla.org/pkcs7 v0.9.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.47.0 // indirect
