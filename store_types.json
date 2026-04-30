@@ -448,34 +448,6 @@
     "StorePathDescription": "A single specified AWS Region the store will operate in. Additional regions should get their own store defined."
   },
   {
-    "Name": "Airlock Application Firewall Certificate",
-    "ShortName": "AirlockWAF",
-    "Capability": "AirlockWAF",
-    "LocalStore": false,
-    "SupportedOperations": {
-      "Add": false,
-      "Create": false,
-      "Discovery": true,
-      "Enrollment": false,
-      "Remove": false
-    },
-    "Properties": [],
-    "EntryParameters": [],
-    "PasswordOptions": {
-      "EntrySupported": false,
-      "StoreRequired": true,
-      "Style": "Default"
-    },
-    "StorePathType": "",
-    "StorePathValue": "",
-    "PrivateKeyAllowed": "Required",
-    "JobProperties": [],
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Allowed"
-  },
-  {
     "Name": "Akamai Certificate Provisioning Service",
     "ShortName": "Akamai",
     "Capability": "Akamai",
@@ -3685,7 +3657,7 @@
         "Description": "This should be no value or `kubeconfig`",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {

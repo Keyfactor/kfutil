@@ -1,4 +1,4 @@
-// Copyright 2024 Keyfactor
+// Copyright 2025 Keyfactor
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,13 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/rs/zerolog/log"
-	"io"
-	"net/http"
 )
 
 func (apaz AuthProviderAzureIDParams) authAzureIdentity() (azcore.AccessToken, error) {
@@ -100,13 +101,20 @@ func (apaz AuthProviderAzureIDParams) authenticate() (ConfigurationFile, error) 
 		log.Debug().Str("accessToken", hashSecretValue(accessToken)).Msg("access token from Azure response")
 	}
 
-	secretURL := fmt.Sprintf("https://%s.vault.azure.net/secrets/%s?api-version=7.0", apaz.AzureVaultName, apaz.SecretName)
+	secretURL := fmt.Sprintf(
+		"https://%s.vault.azure.net/secrets/%s?api-version=7.0",
+		apaz.AzureVaultName,
+		apaz.SecretName,
+	)
 	log.Debug().Str("secretURL", secretURL).Msg("returning secret URL for Azure Key Vault secret")
 	log.Debug().Msg("return: AuthProviderAzureIDParams.authenticate()")
 	return apaz.getCommandCredsFromAzureKeyVault(secretURL, accessToken)
 }
 
-func (apaz AuthProviderAzureIDParams) getCommandCredsFromAzureKeyVault(secretURL string, accessToken string) (ConfigurationFile, error) {
+func (apaz AuthProviderAzureIDParams) getCommandCredsFromAzureKeyVault(
+	secretURL string,
+	accessToken string,
+) (ConfigurationFile, error) {
 	log.Debug().Str("secretURL", secretURL).
 		Str("accessToken", hashSecretValue(accessToken)).
 		Msg("enter: AuthProviderAzureIDParams.getCommandCredsFromAzureKeyVault()")

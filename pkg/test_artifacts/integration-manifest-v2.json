@@ -1,0 +1,62 @@
+{
+  "$schema": "https://keyfactor.github.io/v2/integration-manifest-schema.json",
+  "integration_type": "pam",
+  "name": "Manifest V2 Test PAM Provider",
+  "status": "test",
+  "description": "A Keyfactor PAM Provider plugin supporting credential retrieval from Manifest V2 Test.",
+  "support_level": "kf-supported",
+  "link_github": true,
+  "update_catalog": true,
+  "release_dir": "manifestV2Test-pam/bin/Release",
+  "release_project": "manifestV2Test-pam/manifestV2Test-pam.csproj",
+  "about": {
+    "pam": {
+      "providerName": "Manifest V2 Test PAM Provider",
+      "assemblyName": "manifestV2Test-pam",
+      "dbName": "ManifestV2Test",
+      "fullyQualifiedClassName": "Keyfactor.Extensions.Pam.CyberArk.ManifestV2Test",
+      "pam_types": {
+        "ManifestV2Test": {
+          "Name": "ManifestV2Test",
+          "Parameters": [
+            {
+              "Name": "ManifestV2TestUrl",
+              "DisplayName": "ManifestV2Test URL",
+              "DataType": 1,
+              "InstanceLevel": false,
+              "Description": "The URL of the ManifestV2Test server (e.g., https://manifestV2Test.example.com)"
+            },
+            {
+              "Name": "AccountId",
+              "DisplayName": "Account ID",
+              "DataType": 1,
+              "InstanceLevel": false,
+              "Description": "The ManifestV2Test account identifier"
+            },
+            {
+              "Name": "Login",
+              "DisplayName": "Login",
+              "DataType": 1,
+              "InstanceLevel": false,
+              "Description": "The login that will access the ManifestV2Test account and variable within the account. The login must have a policy with “read” and “execute” permissions on the target variable"
+            },
+            {
+              "Name": "ApiKey",
+              "DisplayName": "API Key / Password",
+              "DataType": 2,
+              "InstanceLevel": false,
+              "Description": "The API key or password for the login"
+            },
+            {
+              "Name": "VariablePath",
+              "DisplayName": "Variable (Secret) Path",
+              "DataType": 1,
+              "InstanceLevel": true,
+              "Description": "The full path to the variable (secret) in ManifestV2Test (e.g., 'my-app/db-password' or 'production/api-keys/service-token')"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

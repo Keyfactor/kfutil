@@ -22,3 +22,5 @@ vendor/
 /.vs/**/*
 /.vscode/**/*
 .DS_Store
+
+ai_ignore/
