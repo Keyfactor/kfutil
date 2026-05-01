@@ -6,6 +6,8 @@
 
 - `stores import csv`: Support create and sync workflows for certificate stores that use PAM provider-backed
   `ServerUsername`, `ServerPassword`, and store password values.
+- `stores import csv`: Preserve JSON-shaped secret values as secret strings instead of parsing them into nested
+  request objects.
 
 ### Docs
 
