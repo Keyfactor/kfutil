@@ -15,6 +15,7 @@ This example creates ten Kubernetes certificate stores:
 - [Step 1: Choose The Store Types](#step-1-choose-the-store-types)
 - [Step 2: Prepare Static Credential Rows](#step-2-prepare-static-credential-rows)
 - [Step 3: Prepare PAM Provider Rows](#step-3-prepare-pam-provider-rows)
+- [Formatting Secret Values In CSV](#formatting-secret-values-in-csv)
 - [Step 4: Create K8SSecret Stores](#step-4-create-k8ssecret-stores)
 - [Step 5: Create K8STLSSecr Stores](#step-5-create-k8stlssecr-stores)
 - [Step 6: Verify The Created Stores](#step-6-verify-the-created-stores)
@@ -81,6 +82,33 @@ ContainerId,ClientMachine,StorePath,CreateIfMissing,Properties.KubeSecretName,Pr
 ```
 
 The provider ID and parameter names depend on your PAM provider type.
+
+## Formatting Secret Values In CSV
+
+Use normal CSV quoting rules for static credential values.
+
+For non-JSON secrets, put the value directly in the credential column. Quote the value if it contains commas, quotes, or line breaks:
+
+```csv
+Properties.ServerUsername,Properties.ServerPassword
+kubeconfig,"plain,password,with,commas"
+```
+
+For JSON secrets, put the complete JSON document in one CSV cell and escape inner quotes by doubling them:
+
+```csv
+Properties.ServerUsername,Properties.ServerPassword
+kubeconfig,"{""kind"":""Config"",""apiVersion"":""v1"",""clusters"":[]}"
+```
+
+Do not split JSON secrets across multiple property columns. The entire JSON value belongs in `Properties.ServerPassword`, `Properties.ServerUsername`, `Password`, or a `*.SecretValue` column.
+
+For PAM-backed credentials, do not put JSON in the direct secret column. Use the provider and parameter columns instead:
+
+```csv
+Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.SecretName,Properties.ServerPassword.Parameters.SecretType
+30,dev/aks/kf-integrations,static_json
+```
 
 ## Step 4: Create K8SSecret Stores
 

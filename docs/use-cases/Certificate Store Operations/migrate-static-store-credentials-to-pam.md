@@ -123,6 +123,8 @@ Review the sync results file and confirm the `Errors` column is empty for each m
 ## Notes
 
 - This workflow changes where Keyfactor retrieves the store credential. It does not rotate the credential in the target system.
+- When moving the other direction, from PAM-backed credentials to static credentials, put JSON secrets in one CSV cell and escape inner quotes by doubling them, for example `"{""kind"":""Config""}"`.
+- Non-JSON static secrets can be written directly in the credential column, with normal CSV quoting when the value contains commas, quotes, or line breaks.
 - For provider-backed `ServerUsername`, use the same pattern with `Properties.ServerUsername.Provider` and `Properties.ServerUsername.Parameters.*`.
 - For store-level passwords, use `Password.ProviderId` and `Password.Parameters.*`.
 - Test with one store before applying the same provider values to many stores.

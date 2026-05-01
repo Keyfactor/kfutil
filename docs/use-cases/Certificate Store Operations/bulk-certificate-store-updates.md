@@ -24,6 +24,7 @@ export stores -> edit CSV -> sync import -> review results -> verify changes
 - [Step 4: Review Results](#step-4-review-results)
 - [Step 5: Verify Changes](#step-5-verify-changes)
 - [Credentials](#credentials)
+- [Formatting Secret Values In CSV](#formatting-secret-values-in-csv)
 - [PAM Provider Credentials](#pam-provider-credentials)
 - [Template Option](#template-option)
 - [Operational Guidance](#operational-guidance)
@@ -198,6 +199,35 @@ KFUTIL_CSV_STORE_PASSWORD
 Values in the CSV take precedence over flags, environment variables, and prompts.
 
 Avoid putting secrets in CSV files unless your operating procedures allow it. If you do use CSV-based secrets, protect the file, results file, and shell history accordingly.
+
+## Formatting Secret Values In CSV
+
+Static credential values use normal CSV quoting rules.
+
+For non-JSON secrets, put the value directly in the credential column. Quote the value if it contains commas, quotes, or line breaks:
+
+```csv
+Properties.ServerUsername,Properties.ServerPassword
+kubeconfig,"plain,password,with,commas"
+```
+
+For JSON secrets such as kubeconfig content, put the complete JSON document in one CSV cell and escape inner quotes by doubling them:
+
+```csv
+Properties.ServerUsername,Properties.ServerPassword
+kubeconfig,"{""kind"":""Config"",""apiVersion"":""v1"",""clusters"":[]}"
+```
+
+`kfutil` treats credential fields as secret strings even when they look like JSON. This applies to:
+
+```text
+Properties.ServerUsername
+Properties.ServerPassword
+Password
+*.SecretValue
+```
+
+For PAM-backed credentials, use provider and parameter columns instead of a direct secret value.
 
 ## PAM Provider Credentials
 
