@@ -86,5 +86,7 @@ generate_toc:
 store-type-docs:
 	GOWORK=off GOCACHE=/tmp/kfutil-gocache go run ./tools/storetypedocs
 
+pam-operation-docs:
+	GOWORK=off GOCACHE=/tmp/kfutil-gocache go run ./tools/pamdocs
 
-.PHONY: build prerelease release install test fmt vendor version setversion store-type-docs
+.PHONY: build prerelease release install test fmt vendor version setversion store-type-docs pam-operation-docs
