@@ -13,6 +13,7 @@
 - Add use-case documentation for bulk certificate store creation.
 - Add use-case documentation for bulk certificate store updates.
 - Add use-case documentation for migrating certificate store credentials from static values to a PAM provider.
+- Add generated per-store-type bulk create and update use-case guides.
 
 # v1.9.1
 
