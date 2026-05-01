@@ -356,6 +356,19 @@ func Test_FormatProperties_FormatsManagedPamSecretPropertiesForPost(t *testing.T
 	assert.Equal(t, " ", params["StaticSecretFieldName"])
 }
 
+func Test_GetJsonForRequest_TreatsJsonSecretValuesAsStrings(t *testing.T) {
+	header := []string{"Properties.ServerPassword", "Properties.ServerUsername.SecretValue"}
+	row := []string{
+		`{"kind":"Config","apiVersion":"v1"}`,
+		`{"username":"kubeconfig"}`,
+	}
+
+	reqJson := getJsonForRequest(header, row)
+
+	assert.Equal(t, row[0], reqJson.S("Properties", "ServerPassword").Data())
+	assert.Equal(t, row[1], reqJson.S("Properties", "ServerUsername", "SecretValue").Data())
+}
+
 func testExportStore(t *testing.T, storeTypeName string) (string, []string) {
 	var (
 		output string

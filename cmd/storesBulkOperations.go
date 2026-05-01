@@ -1154,7 +1154,9 @@ func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 	reqJson := gabs.New()
 	for hIdx, header := range headerRow {
 		log.Debug().Msgf("Processing header '%s'", header)
-		if strings.ToUpper(row[hIdx]) == "TRUE" {
+		if shouldTreatCSVValueAsSecretString(header) && row[hIdx] != "" {
+			reqJson.Set(row[hIdx], strings.Split(header, ".")...)
+		} else if strings.ToUpper(row[hIdx]) == "TRUE" {
 			reqJson.Set(true, strings.Split(header, ".")...)
 		} else if strings.ToUpper(row[hIdx]) == "FALSE" {
 			reqJson.Set(false, strings.Split(header, ".")...)
@@ -1174,6 +1176,15 @@ func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 		}
 	}
 	return reqJson
+}
+
+func shouldTreatCSVValueAsSecretString(header string) bool {
+	switch header {
+	case "Properties.ServerUsername", "Properties.ServerPassword", "Password":
+		return true
+	default:
+		return strings.HasSuffix(header, ".SecretValue")
+	}
 }
 
 func writeCsvFile(outpath string, rows [][]string) error {
