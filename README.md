@@ -235,7 +235,7 @@ This will attempt to process a CSV input file of certificate stores to create. T
 running: `kfutil stores import generate-template` command.
 
 ```bash
-kfutil stores import create --file <file name to import> --store-type-id <store type id> --store-type-name <store type name> --results-path <filepath for results> --dry-run <check fields only> [flags]
+kfutil stores import csv --file <file name to import> --store-type-id <store type id> --store-type-name <store type name> --results-path <filepath for results> --dry-run <check fields only> [flags]
 ```
 
 ```bash
@@ -246,13 +246,25 @@ Usage:
   kfutil stores import [command]
 
 Available Commands:
-  create            Create certificate stores
+  csv               Create certificate stores from CSV file.
   generate-template For generating a CSV template with headers for bulk store creation.
 
 Flags:
   -h, --help   help for import
 
 Use "kfutil stores import [command] --help" for more information about a command.
+```
+
+#### Bulk update cert stores
+
+For a task-oriented walkthrough, see [Bulk Certificate Store Updates](docs/use-cases/bulk-certificate-store-updates.md).
+
+Bulk updates use the CSV import command with `--sync`. Export the target stores, edit the exported CSV, preserve the
+`Id` column, then sync the changes back to Keyfactor Command.
+
+```bash
+kfutil stores export --store-type-name <store type name>
+kfutil stores import csv --file <exported csv file> --store-type-name <store type name> --sync --no-prompt
 ```
 
 #### Bulk create cert store types

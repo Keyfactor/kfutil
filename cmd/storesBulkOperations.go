@@ -82,6 +82,16 @@ func formatProperties(propsJson *gabs.Container, reqPropertiesForStoreType []str
 			if name == "ServerUsername" || name == "ServerPassword" {
 				reformatted := reformatPamSecretForPost(prop.Data().(map[string]interface{}))
 				if reformatted != nil {
+					if provider, ok := reformatted["Provider"]; ok && provider != nil {
+						managedValue := map[string]interface{}{
+							"Provider": provider,
+						}
+						if params, paramsOk := reformatted["Parameters"]; paramsOk && params != nil {
+							managedValue["Parameters"] = params
+						}
+						propsJson.Set(map[string]interface{}{"value": managedValue}, "Properties", name)
+						break
+					}
 					if _, ok := reformatted["value"].(string); ok {
 						propsJson.Set(reformatted["value"], "Properties", name)
 					} else {
@@ -424,7 +434,7 @@ If you do not wish to include credentials in your CSV file they can be provided 
 
 				updateReqParameters.Password = &api.UpdateStorePasswordConfig{
 					Provider:    passwdParams.Provider,
-					Parameters:  nil,
+					Parameters:  passwdParams.Parameters,
 					SecretValue: passwdParams.SecretValue,
 				}
 				updateReqParameters.Properties = props
