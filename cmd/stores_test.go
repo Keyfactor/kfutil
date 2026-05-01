@@ -328,6 +328,47 @@ func Test_Stores_GenerateImportTemplateCmd(t *testing.T) {
 
 }
 
+func Test_FormatProperties_FormatsManagedPamSecretPropertiesForPost(t *testing.T) {
+	header := []string{
+		"Properties.ServerPassword.Provider",
+		"Properties.ServerPassword.Parameters.SecretName",
+		"Properties.ServerPassword.Parameters.SecretType",
+		"Properties.ServerPassword.Parameters.StaticSecretFieldName",
+	}
+	row := []string{"30", "dev/aks/kf-integrations", "static_json", " "}
+
+	reqJson := getJsonForRequest(header, row)
+	reqJson = formatProperties(reqJson, nil)
+
+	serverPassword := reqJson.S("Properties", "ServerPassword").Data()
+	serverPasswordMap, ok := serverPassword.(map[string]interface{})
+	assert.True(t, ok)
+	valueMap, ok := serverPasswordMap["value"].(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, 30, valueMap["Provider"])
+	assert.NotContains(t, serverPasswordMap, "Provider")
+	assert.NotContains(t, serverPasswordMap, "ProviderId")
+
+	params, ok := valueMap["Parameters"].(map[string]string)
+	assert.True(t, ok)
+	assert.Equal(t, "dev/aks/kf-integrations", params["SecretName"])
+	assert.Equal(t, "static_json", params["SecretType"])
+	assert.Equal(t, " ", params["StaticSecretFieldName"])
+}
+
+func Test_GetJsonForRequest_TreatsJsonSecretValuesAsStrings(t *testing.T) {
+	header := []string{"Properties.ServerPassword", "Properties.ServerUsername.SecretValue"}
+	row := []string{
+		`{"kind":"Config","apiVersion":"v1"}`,
+		`{"username":"kubeconfig"}`,
+	}
+
+	reqJson := getJsonForRequest(header, row)
+
+	assert.Equal(t, row[0], reqJson.S("Properties", "ServerPassword").Data())
+	assert.Equal(t, row[1], reqJson.S("Properties", "ServerUsername", "SecretValue").Data())
+}
+
 func testExportStore(t *testing.T, storeTypeName string) (string, []string) {
 	var (
 		output string

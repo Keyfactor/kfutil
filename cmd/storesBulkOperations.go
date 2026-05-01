@@ -82,6 +82,16 @@ func formatProperties(propsJson *gabs.Container, reqPropertiesForStoreType []str
 			if name == "ServerUsername" || name == "ServerPassword" {
 				reformatted := reformatPamSecretForPost(prop.Data().(map[string]interface{}))
 				if reformatted != nil {
+					if provider, ok := reformatted["Provider"]; ok && provider != nil {
+						managedValue := map[string]interface{}{
+							"Provider": provider,
+						}
+						if params, paramsOk := reformatted["Parameters"]; paramsOk && params != nil {
+							managedValue["Parameters"] = params
+						}
+						propsJson.Set(map[string]interface{}{"value": managedValue}, "Properties", name)
+						break
+					}
 					if _, ok := reformatted["value"].(string); ok {
 						propsJson.Set(reformatted["value"], "Properties", name)
 					} else {
@@ -424,7 +434,7 @@ If you do not wish to include credentials in your CSV file they can be provided 
 
 				updateReqParameters.Password = &api.UpdateStorePasswordConfig{
 					Provider:    passwdParams.Provider,
-					Parameters:  nil,
+					Parameters:  passwdParams.Parameters,
 					SecretValue: passwdParams.SecretValue,
 				}
 				updateReqParameters.Properties = props
@@ -1144,7 +1154,9 @@ func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 	reqJson := gabs.New()
 	for hIdx, header := range headerRow {
 		log.Debug().Msgf("Processing header '%s'", header)
-		if strings.ToUpper(row[hIdx]) == "TRUE" {
+		if shouldTreatCSVValueAsSecretString(header) && row[hIdx] != "" {
+			reqJson.Set(row[hIdx], strings.Split(header, ".")...)
+		} else if strings.ToUpper(row[hIdx]) == "TRUE" {
 			reqJson.Set(true, strings.Split(header, ".")...)
 		} else if strings.ToUpper(row[hIdx]) == "FALSE" {
 			reqJson.Set(false, strings.Split(header, ".")...)
@@ -1164,6 +1176,15 @@ func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 		}
 	}
 	return reqJson
+}
+
+func shouldTreatCSVValueAsSecretString(header string) bool {
+	switch header {
+	case "Properties.ServerUsername", "Properties.ServerPassword", "Password":
+		return true
+	default:
+		return strings.HasSuffix(header, ".SecretValue")
+	}
 }
 
 func writeCsvFile(outpath string, rows [][]string) error {

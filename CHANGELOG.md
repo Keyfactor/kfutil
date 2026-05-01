@@ -1,3 +1,21 @@
+# v1.9.2
+
+## Fixes
+
+### CLI
+
+- `stores import csv`: Support create and sync workflows for certificate stores that use PAM provider-backed
+  `ServerUsername`, `ServerPassword`, and store password values.
+
+### Docs
+
+- Add top-level README link to the use-case documentation index.
+- Add use-case documentation for bulk certificate store creation.
+- Add use-case documentation for bulk certificate store updates.
+- Add use-case documentation for migrating certificate store credentials from static values to a PAM provider.
+- Add generated per-store-type bulk create and update use-case guides.
+- Add generated PAM Operations use-case documentation for PAM type and provider creation.
+
 # v1.9.1
 
 ## Fixes
