@@ -439,27 +439,26 @@ func writeSecretFormatting(b *strings.Builder, st storeType, pamTypes []pamType)
 
 func writePAMTypeIndex(b *strings.Builder, pamTypes []pamType) {
 	b.WriteString("## PAM Provider Parameter Columns\n\n")
-	b.WriteString("PAM-backed secret columns vary by PAM provider type. Provider-level parameters are configured on the PAM provider. Store CSV rows use the instance-level parameter names with the secret column prefix, for example `Properties.ServerPassword.Parameters.SecretId` or `Password.Parameters.SecretId`.\n\n")
+	b.WriteString("PAM-backed secret columns vary by PAM provider type. Certificate store CSV rows can only set the instance-level parameter names exposed to certificate stores, with the secret column prefix. For example, use `Properties.ServerPassword.Parameters.SecretId` or `Password.Parameters.SecretId`.\n\n")
 	writePAMParameterTable(b, pamTypes)
 }
 
 func writePAMParameterTable(b *strings.Builder, pamTypes []pamType) {
-	b.WriteString("| PAM type | Provider-level parameters | Store CSV instance parameters |\n")
-	b.WriteString("| --- | --- | --- |\n")
+	b.WriteString("| PAM type | Store CSV parameter names |\n")
+	b.WriteString("| --- | --- |\n")
 	for _, pamType := range pamTypes {
-		b.WriteString(fmt.Sprintf("| `%s` | %s | %s |\n",
+		b.WriteString(fmt.Sprintf("| `%s` | %s |\n",
 			mdTable(pamType.Name),
-			mdTable(strings.Join(parameterNames(pamType.Parameters, false), ", ")),
-			mdTable(strings.Join(parameterNames(pamType.Parameters, true), ", ")),
+			mdTable(strings.Join(instanceParameterNames(pamType.Parameters), ", ")),
 		))
 	}
 	b.WriteString("\n")
 }
 
-func parameterNames(parameters []pamParameter, instanceLevel bool) []string {
+func instanceParameterNames(parameters []pamParameter) []string {
 	var names []string
 	for _, parameter := range parameters {
-		if parameter.InstanceLevel == instanceLevel {
+		if parameter.InstanceLevel {
 			names = append(names, parameter.Name)
 		}
 	}

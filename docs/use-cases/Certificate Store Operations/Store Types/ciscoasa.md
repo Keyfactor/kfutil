@@ -114,17 +114,17 @@ Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.<Paramet
 
 Use the PAM parameter names in the table below, or check the provider type in Command if your environment uses custom PAM types.
 
-| PAM type | Provider-level parameters | Store CSV instance parameters |
-| --- | --- | --- |
-| `1Password-CLI` | Vault, Token | Item, Field |
-| `Azure-KeyVault` | KeyVaultUri, AuthorityHost | SecretId |
-| `Azure-KeyVault-ServicePrincipal` | KeyVaultUri, AuthorityHost, TenantId, ClientId, ClientSecret | SecretId |
-| `BeyondTrust-PasswordSafe` | Host, APIKey, Username, ClientCertificate | SystemId, AccountId |
-| `CyberArk-CentralCredentialProvider` | AppId, Host, Site | Safe, Folder, Object |
-| `CyberArk-SdkCredentialProvider` | AppId | Safe, Folder, Object |
-| `Delinea-SecretServer` | Host, Username, Password, ClientId, ClientSecret, GrantType | SecretId, SecretFieldName |
-| `GCP-SecretManager` | projectId | secretId |
-| `Hashicorp-Vault` | Host, Token, Path | Secret, Key |
+| PAM type | Store CSV parameter names |
+| --- | --- |
+| `1Password-CLI` | Item, Field |
+| `Azure-KeyVault` | SecretId |
+| `Azure-KeyVault-ServicePrincipal` | SecretId |
+| `BeyondTrust-PasswordSafe` | SystemId, AccountId |
+| `CyberArk-CentralCredentialProvider` | Safe, Folder, Object |
+| `CyberArk-SdkCredentialProvider` | Safe, Folder, Object |
+| `Delinea-SecretServer` | SecretId, SecretFieldName |
+| `GCP-SecretManager` | secretId |
+| `Hashicorp-Vault` | Secret, Key |
 
 ## References
 
