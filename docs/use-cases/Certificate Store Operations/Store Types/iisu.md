@@ -113,12 +113,26 @@ Properties.ServerUsername
 Properties.ServerPassword
 ```
 
-PAM-backed property secrets use provider and parameter columns:
+PAM-backed property secrets use a provider column and provider-type-specific parameter columns. `Provider` identifies the configured PAM provider. `Parameters.*` must match the instance-level parameters for that provider type.
 
 ```csv
 Properties.ServerUsername.Provider,Properties.ServerUsername.Parameters.<ParameterName>
 Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.<ParameterName>
 ```
+
+Use the PAM parameter names in the table below, or check the provider type in Command if your environment uses custom PAM types.
+
+| PAM type | Provider-level parameters | Store CSV instance parameters |
+| --- | --- | --- |
+| `1Password-CLI` | Vault, Token | Item, Field |
+| `Azure-KeyVault` | KeyVaultUri, AuthorityHost | SecretId |
+| `Azure-KeyVault-ServicePrincipal` | KeyVaultUri, AuthorityHost, TenantId, ClientId, ClientSecret | SecretId |
+| `BeyondTrust-PasswordSafe` | Host, APIKey, Username, ClientCertificate | SystemId, AccountId |
+| `CyberArk-CentralCredentialProvider` | AppId, Host, Site | Safe, Folder, Object |
+| `CyberArk-SdkCredentialProvider` | AppId | Safe, Folder, Object |
+| `Delinea-SecretServer` | Host, Username, Password, ClientId, ClientSecret, GrantType | SecretId, SecretFieldName |
+| `GCP-SecretManager` | projectId | secretId |
+| `Hashicorp-Vault` | Host, Token, Path | Secret, Key |
 
 ## References
 
