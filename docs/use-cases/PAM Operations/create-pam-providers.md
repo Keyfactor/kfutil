@@ -240,7 +240,7 @@ Write a provider config file:
       }
     },
     {
-      "Value": "<ClientId>",
+      "Value": "N/A",
       "ProviderTypeParam": {
         "Id": "<ClientId-parameter-id>",
         "Name": "ClientId",
@@ -250,7 +250,7 @@ Write a provider config file:
       }
     },
     {
-      "Value": "<secret-value>",
+      "Value": "N/A",
       "ProviderTypeParam": {
         "Id": "<ClientSecret-parameter-id>",
         "Name": "ClientSecret",
@@ -576,7 +576,7 @@ Write a provider config file:
       }
     },
     {
-      "Value": "<secret-value>",
+      "Value": "N/A",
       "ProviderTypeParam": {
         "Id": "<ClientId-parameter-id>",
         "Name": "ClientId",
@@ -586,7 +586,7 @@ Write a provider config file:
       }
     },
     {
-      "Value": "<secret-value>",
+      "Value": "N/A",
       "ProviderTypeParam": {
         "Id": "<ClientSecret-parameter-id>",
         "Name": "ClientSecret",
@@ -596,7 +596,7 @@ Write a provider config file:
       }
     },
     {
-      "Value": "client_credentials",
+      "Value": "password",
       "ProviderTypeParam": {
         "Id": "<GrantType-parameter-id>",
         "Name": "GrantType",

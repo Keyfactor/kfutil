@@ -48,5 +48,3 @@ kfutil stores rot generate-template [flags]
 ### SEE ALSO
 
 * [kfutil stores rot](kfutil_stores_rot.md)	 - Root of trust utility
-
-###### Auto generated on 26-Jan-2026

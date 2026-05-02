@@ -41,5 +41,3 @@ Commands related to certificate store inventory management
 * [kfutil stores inventory add](kfutil_stores_inventory_add.md)	 - Adds one or more certificates to one or more certificate store inventories.
 * [kfutil stores inventory remove](kfutil_stores_inventory_remove.md)	 - Removes a certificate from the certificate store inventory.
 * [kfutil stores inventory show](kfutil_stores_inventory_show.md)	 - Show the inventory of a certificate store.
-
-###### Auto generated on 26-Jan-2026

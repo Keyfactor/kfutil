@@ -6,7 +6,7 @@ Use cases for creating PAM provider types and PAM providers with `kfutil`.
 These docs are generated from `cmd/pam_types.json`. Regenerate after PAM type metadata changes:
 
 ```bash
-make pam-operation-docs
+kfutil makedocs
 ```
 
 - [Create PAM Types](create-pam-types.md)
@@ -25,4 +25,3 @@ make pam-operation-docs
 | `Delinea-SecretServer` | Host, Username, Password, ClientId, ClientSecret, GrantType | SecretId, SecretFieldName |
 | `GCP-SecretManager` | projectId | secretId |
 | `Hashicorp-Vault` | Host, Token, Path | Secret, Key |
-

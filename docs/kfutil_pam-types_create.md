@@ -4,9 +4,9 @@ Creates a new PAM provider type.
 
 ### Synopsis
 
-Creates a new PAM Provider type, currently only supported from JSON file and from GitHub. To install from 
-Github. To install from GitHub, use the --repo flag to specify the GitHub repository and optionally the branch to use. 
-NOTE: the file from Github must be named integration-manifest.json and must use the same schema as 
+Creates a new PAM Provider type, currently only supported from JSON file and from GitHub. To install from
+Github. To install from GitHub, use the --repo flag to specify the GitHub repository and optionally the branch to use.
+NOTE: the file from Github must be named integration-manifest.json and must use the same schema as
 https://github.com/Keyfactor/hashicorp-vault-pam/blob/main/integration-manifest.json. To install from a local file, use
 --from-file to specify the path to the JSON file.
 
@@ -50,6 +50,4 @@ kfutil pam-types create [flags]
 
 ### SEE ALSO
 
-* [kfutil pam-types](kfutil_pam-types.md)     - Keyfactor PAM types APIs and utilities.
-
-###### Auto generated on 26-Jan-2026
+* [kfutil pam-types](kfutil_pam-types.md)	 - Keyfactor PAM types APIs and utilities.

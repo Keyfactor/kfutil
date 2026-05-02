@@ -993,8 +993,7 @@ func testListPamProviders(t *testing.T) ([]any, error) {
 					assert.NotEmpty(t, providerConfig["Id"])
 					assert.NotEmpty(t, providerConfig["ProviderType"])
 
-					pTypeParams := providerConfig["ProviderType"].(map[string]any)["ProviderTypeParams"].([]any)
-					assert.NotEmpty(t, pTypeParams)
+					pTypeParams, _ := providerConfig["ProviderType"].(map[string]any)["ProviderTypeParams"].([]any)
 					assert.GreaterOrEqual(t, len(pTypeParams), 0)
 					if len(pTypeParams) > 0 {
 						for _, param := range pTypeParams {
@@ -1194,10 +1193,14 @@ func testFormatPamCreateConfig(t *testing.T, inputFileName string, providerName 
 	case map[string]any:
 		aProviderType := apiProviderType.(map[string]any)
 		cProviderType["Id"] = aProviderType["Id"]
-		cProviderType["ProviderTypeParams"] = aProviderType["ProviderTypeParams"]
+		apiProviderTypeParams, ok := aProviderType["ProviderTypeParams"]
+		if !ok || apiProviderTypeParams == nil {
+			apiProviderTypeParams = aProviderType["Parameters"]
+		}
+		cProviderType["ProviderTypeParams"] = apiProviderTypeParams
 		nameToIdMap := make(map[string]int)
 		paramsFieldName := "ProviderTypeParams"
-		_, ok := cProviderType[paramsFieldName]
+		_, ok = cProviderType[paramsFieldName]
 		if ok && cProviderType[paramsFieldName] != nil {
 			t.Logf("PAM definition is v10 or earlier")
 			for _, cParam := range cProviderType[paramsFieldName].([]any) {

@@ -6,7 +6,7 @@
 Generated from `cmd/store_types.json`. Regenerate with:
 
 ```bash
-make store-type-docs
+kfutil makedocs
 ```
 
 ## Overview

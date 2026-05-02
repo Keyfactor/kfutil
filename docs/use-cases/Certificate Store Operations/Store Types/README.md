@@ -6,7 +6,7 @@ These docs are generated from `cmd/store_types.json` and `cmd/pam_types.json` an
 Regenerate after store type metadata changes:
 
 ```bash
-make store-type-docs
+kfutil makedocs
 ```
 
 Use `kfutil stores import generate-template` against a live Command environment when you need a template that reflects deployed customizations.

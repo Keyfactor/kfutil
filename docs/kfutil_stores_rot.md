@@ -53,5 +53,3 @@ kfutil stores rot reconcile --import-csv <audit-file>
 * [kfutil stores rot audit](kfutil_stores_rot_audit.md)	 - Audit generates a CSV report of what actions will be taken based on input CSV files.
 * [kfutil stores rot generate-template](kfutil_stores_rot_generate-template.md)	 - For generating Root Of Trust template(s)
 * [kfutil stores rot reconcile](kfutil_stores_rot_reconcile.md)	 - Reconcile either takes in or will generate an audit report and then add/remove certs as needed.
-
-###### Auto generated on 26-Jan-2026
