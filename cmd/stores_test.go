@@ -369,6 +369,31 @@ func Test_GetJsonForRequest_TreatsJsonSecretValuesAsStrings(t *testing.T) {
 	assert.Equal(t, row[1], reqJson.S("Properties", "ServerUsername", "SecretValue").Data())
 }
 
+func Test_BuildUpdateStorePasswordConfig_FormatsManagedPamStorePassword(t *testing.T) {
+	header := []string{
+		"Password.ProviderId",
+		"Password.Parameters.SecretName",
+		"Password.Parameters.SecretType",
+		"Password.Parameters.StaticSecretFieldName",
+	}
+	row := []string{"30", "dev/aks/kf-integrations", "static_json", " "}
+
+	reqJson := getJsonForRequest(header, row)
+	storePassword := buildUpdateStorePasswordConfig(reqJson.S("Password").Data())
+
+	assert.Equal(t, 30, storePassword.Provider)
+	assert.Nil(t, storePassword.SecretValue)
+	assert.Equal(
+		t,
+		map[string]string{
+			"SecretName":            "dev/aks/kf-integrations",
+			"SecretType":            "static_json",
+			"StaticSecretFieldName": " ",
+		},
+		storePassword.Parameters,
+	)
+}
+
 func testExportStore(t *testing.T, storeTypeName string) (string, []string) {
 	var (
 		output string

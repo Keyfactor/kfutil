@@ -429,7 +429,7 @@ func writeSecretFormatting(b *strings.Builder, st storeType, pamTypes []pamType)
 	if st.PasswordOptions.StorePassword != nil {
 		b.WriteString("The store password uses the `Password` column. ")
 		if st.PasswordOptions.StorePassword.IsPAMEligible {
-			b.WriteString("For a PAM-backed store password, use `Password.Provider` and `Password.Parameters.<ParameterName>` columns. The `Parameters.*` columns must match the instance-level parameters for the configured PAM provider type.\n\n")
+			b.WriteString("For a PAM-backed store password, use `Password.ProviderId` and `Password.Parameters.<ParameterName>` columns. The `Parameters.*` columns must match the instance-level parameters for the configured PAM provider type.\n\n")
 		} else {
 			b.WriteString("This store type metadata does not mark the store password as PAM eligible.\n\n")
 		}

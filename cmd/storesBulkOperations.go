@@ -393,29 +393,11 @@ If you do not wish to include credentials in your CSV file they can be provided 
 			reqJson.Delete("Properties") // todo: why is this deleting the properties from the request json?
 
 			rowStorePassword := reqJson.S("Password").Data()
-			passwdParams := api.UpdateStorePasswordConfig{
-				SecretValue: nil,
-			}
+			passwdParams := buildUpdateStorePasswordConfig(rowStorePassword)
 			switch rowStorePassword.(type) {
 			case string:
 				if rowStorePassword != "" {
 					reqJson.Delete("Password")
-					passwdValue := rowStorePassword.(string)
-					passwdParams.SecretValue = &passwdValue
-				}
-			case map[string]interface{}:
-				// try to convert it to api.UpdateStorePasswordConfig
-				rowPasswordMap := rowStorePassword.(map[string]interface{})
-				if providerId, ok := rowPasswordMap["ProviderId"].(int); ok {
-					passwdParams.Provider = providerId
-				}
-				if params, ok := rowPasswordMap["Parameters"].(map[string]interface{}); ok {
-					for k, v := range params {
-						if passwdParams.Parameters == nil {
-							passwdParams.Parameters = make(map[string]string)
-						}
-						passwdParams.Parameters[k] = fmt.Sprintf("%v", v)
-					}
 				}
 			}
 
@@ -1185,6 +1167,35 @@ func shouldTreatCSVValueAsSecretString(header string) bool {
 	default:
 		return strings.HasSuffix(header, ".SecretValue")
 	}
+}
+
+func buildUpdateStorePasswordConfig(rowStorePassword interface{}) api.UpdateStorePasswordConfig {
+	passwdParams := api.UpdateStorePasswordConfig{
+		SecretValue: nil,
+	}
+
+	switch typedPassword := rowStorePassword.(type) {
+	case string:
+		if typedPassword != "" {
+			passwdParams.SecretValue = &typedPassword
+		}
+	case map[string]interface{}:
+		if providerId, ok := typedPassword["ProviderId"].(int); ok {
+			passwdParams.Provider = providerId
+		} else if providerId, ok := typedPassword["Provider"].(int); ok {
+			passwdParams.Provider = providerId
+		}
+		if params, ok := typedPassword["Parameters"].(map[string]interface{}); ok {
+			for k, v := range params {
+				if passwdParams.Parameters == nil {
+					passwdParams.Parameters = make(map[string]string)
+				}
+				passwdParams.Parameters[k] = fmt.Sprintf("%v", v)
+			}
+		}
+	}
+
+	return passwdParams
 }
 
 func writeCsvFile(outpath string, rows [][]string) error {

@@ -85,7 +85,7 @@ This store type does not define additional `Properties.*` CSV columns.
 
 ## Secret And PAM Formatting
 
-The store password uses the `Password` column. For a PAM-backed store password, use `Password.Provider` and `Password.Parameters.<ParameterName>` columns. The `Parameters.*` columns must match the instance-level parameters for the configured PAM provider type.
+The store password uses the `Password` column. For a PAM-backed store password, use `Password.ProviderId` and `Password.Parameters.<ParameterName>` columns. The `Parameters.*` columns must match the instance-level parameters for the configured PAM provider type.
 
 | PAM type | Store CSV parameter names |
 | --- | --- |
