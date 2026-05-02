@@ -532,6 +532,24 @@ kfutil stores inventory remove \
 
 ## Development
 
+### Regenerating documentation
+
+The command reference and generated use-case docs are checked into this repository. Regenerate them after changing CLI
+commands, flags, embedded store type metadata, or embedded PAM type metadata:
+
+```bash
+go run . makedocs
+```
+
+This updates:
+
+- `docs/kfutil*.md` command reference pages
+- `docs/use-cases/Certificate Store Operations/Store Types/*.md`
+- `docs/use-cases/PAM Operations/*.md`
+
+The store type and PAM operation docs are generated from `cmd/store_types.json` and `cmd/pam_types.json`. The generated
+command docs intentionally omit date-based generator footers to avoid unrelated documentation churn.
+
 This CLI developed using [cobra](https://umarcor.github.io/cobra/)
 
 ### Adding a new command
