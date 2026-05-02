@@ -44,6 +44,4 @@ kfutil pam-types delete [flags]
 
 ### SEE ALSO
 
-* [kfutil pam-types](kfutil_pam-types.md)     - Keyfactor PAM types APIs and utilities.
-
-###### Auto generated on 26-Jan-2026
+* [kfutil pam-types](kfutil_pam-types.md)	 - Keyfactor PAM types APIs and utilities.

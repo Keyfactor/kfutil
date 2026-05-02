@@ -42,5 +42,3 @@ kfutil store-types list [flags]
 ### SEE ALSO
 
 * [kfutil store-types](kfutil_store-types.md)	 - Keyfactor certificate store types APIs and utilities.
-
-###### Auto generated on 26-Jan-2026

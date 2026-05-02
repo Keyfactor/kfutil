@@ -43,5 +43,3 @@ kfutil stores get [flags]
 ### SEE ALSO
 
 * [kfutil stores](kfutil_stores.md)	 - Keyfactor certificate stores APIs and utilities.
-
-###### Auto generated on 26-Jan-2026

@@ -63,5 +63,3 @@ kfutil completion bash
 ### SEE ALSO
 
 * [kfutil completion](kfutil_completion.md)	 - Generate the autocompletion script for the specified shell
-
-###### Auto generated on 26-Jan-2026

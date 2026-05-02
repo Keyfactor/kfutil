@@ -53,5 +53,3 @@ kfutil import [flags]
 ### SEE ALSO
 
 * [kfutil](kfutil.md)	 - Keyfactor CLI utilities
-
-###### Auto generated on 26-Jan-2026
