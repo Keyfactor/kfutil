@@ -44,5 +44,3 @@ See each sub-command's help for details on how to use the generated script.
 * [kfutil completion fish](kfutil_completion_fish.md)	 - Generate the autocompletion script for fish
 * [kfutil completion powershell](kfutil_completion_powershell.md)	 - Generate the autocompletion script for powershell
 * [kfutil completion zsh](kfutil_completion_zsh.md)	 - Generate the autocompletion script for zsh
-
-###### Auto generated on 26-Jan-2026

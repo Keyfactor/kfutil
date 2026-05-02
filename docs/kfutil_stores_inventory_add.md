@@ -56,5 +56,3 @@ kfutil stores inventory add [flags]
 ### SEE ALSO
 
 * [kfutil stores inventory](kfutil_stores_inventory.md)	 - Commands related to certificate store inventory management
-
-###### Auto generated on 26-Jan-2026

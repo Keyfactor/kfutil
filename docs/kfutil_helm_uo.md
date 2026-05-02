@@ -49,5 +49,3 @@ kfutil helm uo [-t <token>] [-o <path>] [-f <file, url, or '-'>] [-e <extension 
 ### SEE ALSO
 
 * [kfutil helm](kfutil_helm.md)	 - Helm utilities for configuring Keyfactor Helm charts
-
-###### Auto generated on 26-Jan-2026

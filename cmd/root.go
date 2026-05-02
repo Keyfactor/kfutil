@@ -17,8 +17,10 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
+	"io/fs"
 	stdlog "log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
@@ -28,6 +30,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 	"golang.org/x/crypto/bcrypt"
+	"kfutil/internal/docgen/pamdocs"
+	"kfutil/internal/docgen/storetypedocs"
 )
 
 var (
@@ -839,11 +843,69 @@ var makeDocsCmd = &cobra.Command{
 	Short:  "Generate markdown documentation for kfutil",
 	Long:   `Generate markdown documentation for kfutil.`,
 	Hidden: true,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		log.Debug().Msg("Enter makeDocsCmd.Run()")
-		doc.GenMarkdownTree(RootCmd, "./docs")
+		disableGeneratedDocFooters(RootCmd)
+		if err := doc.GenMarkdownTree(RootCmd, "./docs"); err != nil {
+			return err
+		}
+		if err := storetypedocs.Generate("", "", ""); err != nil {
+			return err
+		}
+		if err := pamdocs.Generate("", ""); err != nil {
+			return err
+		}
+		if err := normalizeGeneratedMarkdownDocs("./docs"); err != nil {
+			return err
+		}
 		log.Debug().Msg("complete: makeDocsCmd.Run()")
+		return nil
 	},
+}
+
+func disableGeneratedDocFooters(cmd *cobra.Command) {
+	cmd.DisableAutoGenTag = true
+	for _, child := range cmd.Commands() {
+		disableGeneratedDocFooters(child)
+	}
+}
+
+func normalizeGeneratedMarkdownDocs(root string) error {
+	return filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() || filepath.Ext(path) != ".md" {
+			return nil
+		}
+
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		normalized := normalizeMarkdown(string(data))
+		if normalized == string(data) {
+			return nil
+		}
+		return os.WriteFile(path, []byte(normalized), 0o644)
+	})
+}
+
+func normalizeMarkdown(content string) string {
+	content = strings.ReplaceAll(content, "\r\n", "\n")
+	content = strings.ReplaceAll(content, "\r", "\n")
+
+	lines := strings.Split(content, "\n")
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], " \t")
+	}
+	for len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	if len(lines) == 0 {
+		return ""
+	}
+	return strings.Join(lines, "\n") + "\n"
 }
 
 // RootCmd represents the base command when called without any subcommands
