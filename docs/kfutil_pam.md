@@ -4,8 +4,8 @@ Keyfactor PAM Provider APIs.
 
 ### Synopsis
 
-Privileged Access Management (PAM) functionality in Keyfactor Web APIs allows for configuration of third 
-party PAM providers to secure certificate stores. The PAM component of the Keyfactor API includes methods necessary to 
+Privileged Access Management (PAM) functionality in Keyfactor Web APIs allows for configuration of third
+party PAM providers to secure certificate stores. The PAM component of the Keyfactor API includes methods necessary to
 programmatically create, delete, edit, and list PAM Providers.
 
 ### Options
@@ -45,5 +45,3 @@ programmatically create, delete, edit, and list PAM Providers.
 * [kfutil pam get](kfutil_pam_get.md)	 - Get a specific defined PAM Provider by ID.
 * [kfutil pam list](kfutil_pam_list.md)	 - Returns a list of all the configured PAM providers.
 * [kfutil pam update](kfutil_pam_update.md)	 - Updates an existing PAM Provider, currently only supported from file.
-
-###### Auto generated on 26-Jan-2026

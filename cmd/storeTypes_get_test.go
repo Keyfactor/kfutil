@@ -17,27 +17,44 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"os"
 	"testing"
 
 	"kfutil/pkg/cmdtest"
 	manifestv1 "kfutil/pkg/keyfactor/v1"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
+
+func executeRootCommandCaptureCobraOutput(args ...string) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	setCommandOutput(RootCmd, buf)
+	RootCmd.SetArgs(args)
+	err := RootCmd.Execute()
+	return buf.Bytes(), err
+}
+
+func setCommandOutput(cmd *cobra.Command, out io.Writer) {
+	cmd.SetOut(out)
+	for _, child := range cmd.Commands() {
+		setCommandOutput(child, out)
+	}
+}
 
 func Test_StoreTypesGet(t *testing.T) {
 	t.Run(
 		"WithName", func(t *testing.T) {
-			testCmd := RootCmd
-
-			output, err := cmdtest.TestExecuteCommand(t, testCmd, []string{"store-types", "get", "--name", "PEM"}...)
+			resetRootCommandState()
+			output, err := executeRootCommandCaptureCobraOutput("store-types", "get", "--name", "PEM")
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 			var storeType map[string]interface{}
-			if err := json.Unmarshal([]byte(output), &storeType); err != nil {
+			if err := json.Unmarshal(output, &storeType); err != nil {
 				t.Fatalf("Error unmarshalling JSON: %v", err)
 			}
 
@@ -61,12 +78,8 @@ func Test_StoreTypesGet(t *testing.T) {
 
 	t.Run(
 		"GenericOutput", func(t *testing.T) {
-			testCmd := RootCmd
-			output, err := cmdtest.TestExecuteCommand(
-				t,
-				testCmd,
-				[]string{"store-types", "get", "--name", "PEM", "-g"}...,
-			)
+			resetRootCommandState()
+			output, err := executeRootCommandCaptureCobraOutput("store-types", "get", "--name", "PEM", "-g")
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
@@ -99,6 +112,7 @@ func Test_StoreTypesGet(t *testing.T) {
 
 	t.Run(
 		"OutputToManifest", func(t *testing.T) {
+			resetRootCommandState()
 			testCmd := RootCmd
 			_, err := cmdtest.TestExecuteCommand(
 				t,

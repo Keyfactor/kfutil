@@ -38,14 +38,12 @@ A CLI wrapper around the Keyfactor Platform API.
 * [kfutil helm](kfutil_helm.md)	 - Helm utilities for configuring Keyfactor Helm charts
 * [kfutil import](kfutil_import.md)	 - Keyfactor instance import utilities.
 * [kfutil login](kfutil_login.md)	 - User interactive login to Keyfactor. Stores the credentials in the config file '$HOME/.keyfactor/command_config.json'.
-* [kfutil logout](kfutil_logout.md)     - Unsets environment variables and removes the stored credentials file.
-* [kfutil migrate](kfutil_migrate.md)     - Keyfactor Migration Tools.
+* [kfutil logout](kfutil_logout.md)	 - Unsets environment variables and removes the stored credentials file.
+* [kfutil migrate](kfutil_migrate.md)	 - Keyfactor Migration Tools.
 * [kfutil orchs](kfutil_orchs.md)	 - Keyfactor agents/orchestrators APIs and utilities.
 * [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
-* [kfutil pam-types](kfutil_pam-types.md)     - Keyfactor PAM types APIs and utilities.
+* [kfutil pam-types](kfutil_pam-types.md)	 - Keyfactor PAM types APIs and utilities.
 * [kfutil status](kfutil_status.md)	 - List the status of Keyfactor services.
 * [kfutil store-types](kfutil_store-types.md)	 - Keyfactor certificate store types APIs and utilities.
 * [kfutil stores](kfutil_stores.md)	 - Keyfactor certificate stores APIs and utilities.
 * [kfutil version](kfutil_version.md)	 - Shows version of kfutil
-
-###### Auto generated on 26-Jan-2026

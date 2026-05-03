@@ -30,6 +30,19 @@
           "OnRemove": false,
           "OnReenrollment": false
         }
+      },
+      {
+        "Name": "NonExportable",
+        "DisplayName": "Non Exportable Private Key",
+        "Description": "If true, this will mark the certificate as having a non-exportable private key when importing into Azure KeyVault",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
       }
     ],
     "JobProperties": [],
@@ -928,6 +941,20 @@
         },
         "DefaultValue": "SET-DEFAULT",
         "Description": "Required field for Akamai Tech contact."
+      },
+      {
+        "Name": "deployment-network",
+        "DisplayName": "Deployment Network",
+        "Type": "MultipleChoice",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": true
+        },
+        "Options": "Standard TLS,Enhanced TLS",
+        "DefaultValue": "Standard TLS",
+        "Description": "Required field for Deployment Network."
       }
     ],
     "PasswordOptions": {
@@ -948,42 +975,31 @@
   {
     "Name": "Alteon Load Balancer",
     "ShortName": "AlteonLB",
-    "Capability": "AlteonLB",
-    "ClientMachineDescription": "The Alteon Load Balancer Server and port",
-    "StorePathDescription": "This value isn't used for this integration (other than to uniquely identify the cert store in certificate searches).",
+    "LocalStore": false,
+    "BlueprintAllowed": false,
+    "PowerShell": false,
+    "ServerRequired": true,
+    "ClientMachineDescription": "The hostname or IP address of the Alteon Load Balancer device (example: https://alteonlb.test.com).",
+    "StorePathType": "",
+    "StorePathValue": "",
+    "StorePathDescription": "",
     "SupportedOperations": {
       "Add": true,
       "Remove": true,
       "Enrollment": false,
       "Discovery": false,
-      "Inventory": true
+      "Create": false
     },
-    "Properties": [
-      {
-        "Name": "ServerUsername",
-        "DisplayName": "Server Username",
-        "Type": "Secret",
-        "Description": "Alteon user ID with sufficient permissions to manage certs in the Alteon Load Balancer.",
-        "Required": true
-      },
-      {
-        "Name": "ServerPassword",
-        "DisplayName": "Server Password",
-        "Type": "Secret",
-        "Description": "Password associated with Alteon user ID entered above.",
-        "Required": true
-      }
-    ],
     "PasswordOptions": {
       "EntrySupported": false,
       "StoreRequired": false,
       "Style": "Default"
     },
+    "CustomAliasAllowed": "Optional",
     "PrivateKeyAllowed": "Optional",
-    "ServerRequired": true,
-    "PowerShell": false,
-    "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Optional"
+    "JobProperties": [],
+    "Properties": [],
+    "EntryParameters": []
   },
   {
     "Name": "Azure Application Gateway Certificate Binding",
@@ -1048,6 +1064,98 @@
     "PowerShell": false,
     "BlueprintAllowed": false,
     "CustomAliasAllowed": "Required"
+  },
+  {
+    "Name": "Aruba",
+    "ShortName": "Aruba",
+    "Capability": "Aruba",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": true,
+      "Remove": false
+    },
+    "EntryParameters": [
+      {
+        "Name": "SAN",
+        "DisplayName": "SAN",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": "",
+        "Description": "String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>:<san_value> entries separated by comma; Example: 'DNS:www.example.com,DNS:www.example2.com' for multiple SANs. Can be made optional if RFC 2818 is disabled on the CA. Allowed SAN types are email, URI, DNS, RID or IP."
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Forbidden",
+    "ClientMachineDescription": "The base URL / IP address of the Aruba instance without the scheme. (i.e. my-server-name.com if the Aruba URL is https://my-server-name.com)",
+    "StorePathDescription": "A semicolon-delimited string that in the format `<server-hostname>;<service>` (i.e. clearpass.localhost;HTTP(RSA)). Please see orchestrator documentation for more information.",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden",
+    "Properties": [
+      {
+        "Name": "FileServerType",
+        "DisplayName": "File Server Type",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "Amazon S3",
+        "Required": true,
+        "Description": "The type of file server that the certificate will be uploaded to. The file server must be able to serve the file via HTTPS."
+      },
+      {
+        "Name": "FileServerHost",
+        "DisplayName": "File Server Host",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "Description": "Required. The base URL for the file server host without the scheme. (i.e. my-server-name.com if the file server URL is https://my-server-name.com). See File Server Configuration section in the orchestrator documentation for more details."
+      },
+      {
+        "Name": "FileServerUsername",
+        "DisplayName": "File Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Optional. The username used to access the file server. See File Server Configuration section in the orchestrator documentation for more details."
+      },
+      {
+        "Name": "FileServerPassword",
+        "DisplayName": "File Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Optional. The password used to access the file server. See File Server Configuration section in the orchestrator documentation for more details."
+      },
+      {
+        "Name": "DigestAlgorithm",
+        "DisplayName": "Digest Algorithm",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "SHA-256,SHA-1,SHA-224,SHA-384,SHA-512",
+        "Required": true,
+        "Description": "The hash digest algorithm used for the certificate signing request (CSR)."
+      }
+    ]
   },
   {
     "Name": "Axis IP Camera",
@@ -1445,6 +1553,232 @@
     "CustomAliasAllowed": "Required"
   },
   {
+    "Name": "BMC Orchestrator Solution",
+    "ShortName": "BMC",
+    "Capability": "BMC",
+    "LocalStore": false,
+    "StorePathDescription": "Path points to a BMC Keyring.",
+    "ClientMachineDescription": "Runs on a Windows or Linux based machine.",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": true,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": null,
+        "DefaultValue": null,
+        "Required": false
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": null,
+        "DefaultValue": "true",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "CertLabel",
+        "DisplayName": "CertLabel",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": "",
+        "Description": "Cert label as it appears in the BMC API (without the suffix)."
+      },
+      {
+        "Name": "CertOwner",
+        "DisplayName": "CertOwner",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": true,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": "",
+        "Description": "Cert owner as it appears in the BMC API."
+      },
+      {
+        "Name": "CertUse",
+        "DisplayName": "CertUse",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": "",
+        "Description": "Cert use as returned by the BMC API."
+      },
+      {
+        "Name": "ImplementCert",
+        "DisplayName": "ImplementCert",
+        "Type": "Bool",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": false,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": "",
+        "Description": "Is used to pass an implement cert command to BMC."
+      },
+      {
+        "Name": "IsCertDefault",
+        "DisplayName": "IsCertDefault",
+        "Type": "Bool",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": false,
+          "OnReenrollment": true
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": "",
+        "Description": "Indicates whether a given cert is set as default in a keyring."
+      },
+      {
+        "StoreTypeId": 104,
+        "Name": "RemoveFromAllKeyrings",
+        "DisplayName": "RemoveFromAllKeyrings",
+        "Type": "Bool",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": true,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Options": "",
+        "Description": "A bool to indicate whether a given cert is to be removed from all keyrings."
+      },
+      {
+        "StoreTypeId": 104,
+        "Name": "RollbackCert",
+        "DisplayName": "RollbackCert",
+        "Type": "Bool",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Options": "",
+        "Description": "A bool to indicate whether a given cert is to be rolled back."
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": true,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Optional",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  {
+    "Name": "Barracuda WAF",
+    "ShortName": "BarracudaWaf",
+    "Capability": "BarracudaWaf",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": false,
+        "Description": "Determines whether to connect to the Barracuda WAF management interface over HTTPS (port 8443) or HTTP (port 8000). Default is true (HTTPS)."
+      },
+      {
+        "Name": "ApiVersion",
+        "DisplayName": "API Version",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "v3.2",
+        "Required": false,
+        "Description": "The Barracuda WAF REST API version to use for all requests. Defaults to 'v3.2'. Only change this if your WAF firmware requires a different API version."
+      },
+      {
+        "Name": "InventorySelfSignedCerts",
+        "DisplayName": "Inventory Self-Signed Certificates",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": false,
+        "Description": "When enabled, the inventory job will include self-signed certificates from the WAF in addition to signed certificates. Default is true."
+      },
+      {
+        "Name": "InventoryTrustedCerts",
+        "DisplayName": "Inventory Trusted Certificates",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "When enabled, the inventory job will include trusted CA certificates and trusted server certificates from the WAF. Default is false."
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "/",
+    "PrivateKeyAllowed": "Optional",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required",
+    "ClientMachineDescription": "The hostname or IP address of the Barracuda WAF appliance. This is used to connect to the REST API on port 8443 (HTTPS) or 8000 (HTTP).",
+    "StorePathDescription": "Not used for this integration. Set to '/' or leave at the default value."
+  },
+  {
     "Name": "Bosch IP Camera",
     "ShortName": "BoschIPCamera",
     "Capability": "BoschIPCamera",
@@ -1635,9 +1969,13 @@
       "Remove": true
     },
     "PasswordOptions": {
+      "Style": "Default",
       "EntrySupported": false,
-      "StoreRequired": false,
-      "Style": "Default"
+      "StoreRequired": true,
+      "StorePassword": {
+        "Description": "Enter a password that matches your Citrix validation rules to encrypt private keys when adding/replacing certificates.  Select 'No Value' if you desire an unencrypted private key to be uploaded.",
+        "IsPAMEligible": true
+      }
     },
     "Properties": [
       {
@@ -1668,6 +2006,15 @@
         "DefaultValue": "false",
         "Required": false,
         "Description": "Determines whether an attempt will be made to link the added certificate (via a Management-Add job) to its issuing CA certificate."
+      },
+      {
+        "Name": "timeout",
+        "DisplayName": "Login Timeout in seconds",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "3600",
+        "Required": false,
+        "Description": "Determines timeout in seconds for all Citrix ADC API calls."
       }
     ],
     "EntryParameters": [
@@ -2420,7 +2767,20 @@
         "Description": "Determines whether to include the certificate chain when adding a certificate as a secret."
       }
     ],
-    "EntryParameters": [],
+    "EntryParameters": [
+      {
+        "Name": "tags",
+        "DisplayName": "Tags",
+        "Type": "String",
+        "Description": "One-to-many Organization level tag Key:Value combinations, comma delimited - i.e. tagKey1:tagVal1,tagKey2:tagVal2,...tagKeyN:tagValN",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      }
+    ],
     "ClientMachineDescription": "Not used",
     "StorePathDescription": "The Project ID of the Google Secret Manager being managed."
   },
@@ -2597,7 +2957,7 @@
     "StorePathDescription": "This is the path to the secret containing the store.",
     "LocalStore": false,
     "StorePathType": "",
-    "StorePathValue": "",
+    "StorePathValue": "example: '/mycerts/certstore.jks?b64cert'",
     "PrivateKeyAllowed": "Optional",
     "JobProperties": [],
     "ServerRequired": true,
@@ -2649,6 +3009,15 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false
+      },
+      {
+        "Name": "PassphrasePath",
+        "DisplayName": "Passphrase Path",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "This is the path to the secret that contains the passphrase to the cert store file.  If empty or omitted, assume the secret is named 'passphrase' on the same level as the certificate store secret."
       }
     ],
     "EntryParameters": [],
@@ -2670,7 +3039,7 @@
     "StorePathDescription": "This is the path to the secret containing the store.",
     "LocalStore": false,
     "StorePathType": "",
-    "StorePathValue": "",
+    "StorePathValue": "example: '/mycerts/certstore.p12?b64cert'",
     "PrivateKeyAllowed": "Optional",
     "JobProperties": [],
     "ServerRequired": true,
@@ -2722,6 +3091,15 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false
+      },
+      {
+        "Name": "PassphrasePath",
+        "DisplayName": "Passphrase Path",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "This is the path to the secret that contains the passphrase to the cert store file.  If empty or omitted, assume the secret is named 'passphrase' on the same level as the certificate store secret."
       }
     ],
     "EntryParameters": [],
@@ -2823,7 +3201,7 @@
     "StorePathDescription": "This is the path to the secret containing the store.",
     "LocalStore": false,
     "StorePathType": "",
-    "StorePathValue": "",
+    "StorePathValue": "example: '/mycerts/certstore.pfx?b64cert'",
     "PrivateKeyAllowed": "Optional",
     "JobProperties": [],
     "ServerRequired": true,
@@ -2875,6 +3253,15 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false
+      },
+      {
+        "Name": "PassphrasePath",
+        "DisplayName": "Passphrase Path",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "This is the path to the secret that contains the passphrase to the cert store file.  If empty or omitted, assume the secret is named 'passphrase' on the same level as the certificate store secret."
       }
     ],
     "EntryParameters": [],
@@ -2939,6 +3326,15 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": true
+      },
+      {
+        "Name": "PassphrasePath",
+        "DisplayName": "Passphrase Path",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "This is the path to the secret that contains the passphrase to the cert store file.  If empty or omitted, assume the secret is named 'passphrase' on the same level as the certificate store secret."
       }
     ],
     "EntryParameters": [],
@@ -2957,8 +3353,8 @@
     "ShortName": "HPiLO",
     "Capability": "HPiLO",
     "LocalStore": false,
-    "StorePathDescription": "This should contain the path pointing to the HPiLO instance address, IP or domain name.",
-    "ClientMachineDescription": "Should contain a copy of the store path for compatibility reasons but is currently unused.",
+    "StorePathDescription": "This should contain the full URI pointing to the HPiLO instance, using IP (e.g. `https://10.1.1.1/`) or domain name (e.g. `https://hpilo.test.local/`). The orchestrator will connect to the iLO instance using the iLO API.",
+    "ClientMachineDescription": "Currently unused.",
     "SupportedOperations": {
       "Add": true,
       "Create": false,
@@ -3016,11 +3412,11 @@
       "StoreRequired": false,
       "Style": "Default"
     },
-    "PrivateKeyAllowed": "Optional",
+    "PrivateKeyAllowed": "Required",
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
-    "CustomAliasAllowed": "Optional"
+    "CustomAliasAllowed": "Required"
   },
   {
     "Name": "IIS Bound Certificate",
@@ -3195,21 +3591,6 @@
         "DefaultValue": "",
         "Options": "",
         "Description": "Name of the Windows cryptographic service provider to use when generating and storing private keys. For more information, refer to the section 'Using Crypto Service Providers'"
-      },
-      {
-        "Name": "SAN",
-        "DisplayName": "SAN",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": true
-        },
-        "DependsOn": "",
-        "DefaultValue": "",
-        "Options": "",
-        "Description": "String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>=<san_value> entries separated by ampersands; Example: 'dns=www.example.com&dns=www.example2.com' for multiple SANs. Can be made optional if RFC 2818 is disabled on the CA."
       }
     ],
     "PasswordOptions": {
@@ -3260,7 +3641,7 @@
     "Name": "K8SCert",
     "ShortName": "K8SCert",
     "Capability": "K8SCert",
-    "ClientMachineDescription": "This can be anything useful, recommend using the k8s cluster name or identifier.",
+    "ClientMachineDescription": "The Kubernetes cluster name or identifier.",
     "LocalStore": false,
     "SupportedOperations": {
       "Add": false,
@@ -3276,7 +3657,7 @@
         "Description": "This should be no value or `kubeconfig`",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": null,
+        "DefaultValue": "",
         "Required": false
       },
       {
@@ -3289,31 +3670,13 @@
         "Required": true
       },
       {
-        "Name": "KubeNamespace",
-        "DisplayName": "KubeNamespace",
-        "Description": "The K8S namespace to use to manage the K8S secret object.",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": "default",
-        "Required": false
-      },
-      {
         "Name": "KubeSecretName",
         "DisplayName": "KubeSecretName",
-        "Description": "The name of the K8S secret object.",
+        "Description": "The name of a specific CSR to inventory. Leave empty or set to '*' to inventory ALL issued CSRs in the cluster.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false
-      },
-      {
-        "Name": "KubeSecretType",
-        "DisplayName": "KubeSecretType",
-        "Description": "This defaults to and must be `csr`",
-        "Type": "String",
-        "DependsOn": "",
-        "DefaultValue": "cert",
-        "Required": true
       }
     ],
     "EntryParameters": [],
@@ -3352,7 +3715,7 @@
         "DependsOn": null,
         "DefaultValue": "true",
         "Required": false,
-        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed. Note: If the certificate in Keyfactor Command does not have a private key, it will be sent in DER format (leaf certificate only), and the chain cannot be included regardless of this setting."
       },
       {
         "Name": "SeparateChain",
@@ -3432,11 +3795,11 @@
       {
         "Name": "KubeSecretType",
         "DisplayName": "KubeSecretType",
-        "Description": "This defaults to and must be `jks`",
+        "Description": "DEPRECATED: This property is deprecated and will be removed in a future release. The secret type is now automatically derived from the store type. This defaults to and must be `jks`.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "jks",
-        "Required": true
+        "Required": false
       },
       {
         "Name": "CertificateDataFieldName",
@@ -3472,7 +3835,7 @@
         "DependsOn": null,
         "DefaultValue": "true",
         "Required": false,
-        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed. Note: If the certificate in Keyfactor Command does not have a private key, it will be sent in DER format (leaf certificate only), and the chain cannot be included regardless of this setting."
       },
       {
         "Name": "StorePasswordPath",
@@ -3547,7 +3910,7 @@
         "DependsOn": null,
         "DefaultValue": "true",
         "Required": false,
-        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed. Note: If the certificate in Keyfactor Command does not have a private key, it will be sent in DER format (leaf certificate only), and the chain cannot be included regardless of this setting."
       },
       {
         "Name": "SeparateChain",
@@ -3613,7 +3976,7 @@
         "DependsOn": null,
         "DefaultValue": "true",
         "Required": false,
-        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed. Note: If the certificate in Keyfactor Command does not have a private key, it will be sent in DER format (leaf certificate only), and the chain cannot be included regardless of this setting."
       },
       {
         "Name": "CertificateDataFieldName",
@@ -3680,11 +4043,11 @@
       {
         "Name": "KubeSecretType",
         "DisplayName": "Kube Secret Type",
-        "Description": "This defaults to and must be `pkcs12`",
+        "Description": "DEPRECATED: This property is deprecated and will be removed in a future release. The secret type is now automatically derived from the store type. This defaults to and must be `pkcs12`.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "pkcs12",
-        "Required": true
+        "Required": false
       },
       {
         "Name": "StorePasswordPath",
@@ -3746,11 +4109,11 @@
       {
         "Name": "KubeSecretType",
         "DisplayName": "KubeSecretType",
-        "Description": "This defaults to and must be `secret`",
+        "Description": "DEPRECATED: This property is deprecated and will be removed in a future release. The secret type is now automatically derived from the store type. This defaults to and must be `secret`.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "secret",
-        "Required": true
+        "Required": false
       },
       {
         "Name": "IncludeCertChain",
@@ -3759,7 +4122,7 @@
         "DependsOn": null,
         "DefaultValue": "true",
         "Required": false,
-        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed. Note: If the certificate in Keyfactor Command does not have a private key, it will be sent in DER format (leaf certificate only), and the chain cannot be included regardless of this setting."
       },
       {
         "Name": "SeparateChain",
@@ -3839,11 +4202,11 @@
       {
         "Name": "KubeSecretType",
         "DisplayName": "KubeSecretType",
-        "Description": "This defaults to and must be `tls_secret`",
+        "Description": "DEPRECATED: This property is deprecated and will be removed in a future release. The secret type is now automatically derived from the store type. This defaults to and must be `tls_secret`.",
         "Type": "String",
         "DependsOn": "",
         "DefaultValue": "tls_secret",
-        "Required": true
+        "Required": false
       },
       {
         "Name": "IncludeCertChain",
@@ -3852,7 +4215,7 @@
         "DependsOn": null,
         "DefaultValue": "true",
         "Required": false,
-        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed."
+        "Description": "Will default to `true` if not set. If set to `false` only the leaf cert will be deployed. Note: If the certificate in Keyfactor Command does not have a private key, it will be sent in DER format (leaf certificate only), and the chain cannot be included regardless of this setting."
       },
       {
         "Name": "SeparateChain",
@@ -4479,6 +4842,15 @@
         "Type": "Bool",
         "DefaultValue": "True",
         "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
+      },
+      {
+        "Name": "PostJobApplicationRestart",
+        "DisplayName": "Post Job Application Restart",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "Apache Tomcat Restart,Jetty Restart",
+        "Description": "Select the command to be run after a Management Add or ODKG job executes.  Leave unselected if no command is desired."
       }
     ],
     "EntryParameters": [],
@@ -4866,6 +5238,15 @@
         "Type": "Bool",
         "DefaultValue": "True",
         "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
+      },
+      {
+        "Name": "PostJobApplicationRestart",
+        "DisplayName": "Post Job Application Restart",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "Apache HTTPD Restart,NGNIX Restart,HAProxy Restart,Envoy Proxy Restart",
+        "Description": "Select the command to be run after a Management Add or ODKG job executes.  Leave unselected if no command is desired."
       }
     ],
     "EntryParameters": [],
@@ -4991,8 +5372,8 @@
     "ShortName": "SOS",
     "Capability": "SOS",
     "LocalStore": false,
-    "StorePathDescription": "Path points to a local .json file. Orchestrator and its account should have read/write access.",
-    "ClientMachineDescription": "Runs on a Windows based machine.",
+    "StorePathDescription": "The name of the store as defined in the SOS system (i.e. SampleKeyStore2).",
+    "ClientMachineDescription": "The base URL of the SOS API (i.e. http://localhost:8080)",
     "SupportedOperations": {
       "Add": true,
       "Create": true,
@@ -5043,7 +5424,7 @@
           "HasPrivateKey": false,
           "OnAdd": false,
           "OnRemove": false,
-          "OnReenrollment": false
+          "OnReenrollment": true
         },
         "Description": "SAN string."
       },
@@ -5090,14 +5471,14 @@
     ],
     "PasswordOptions": {
       "EntrySupported": true,
-      "StoreRequired": false,
+      "StoreRequired": true,
       "Style": "Default"
     },
     "PrivateKeyAllowed": "Optional",
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": true,
-    "CustomAliasAllowed": "Optional"
+    "CustomAliasAllowed": "Forbidden"
   },
   {
     "Name": "Signum",
@@ -5145,6 +5526,127 @@
       "StoreRequired": false,
       "Style": "Default"
     }
+  },
+  {
+    "Name": "A10 Thunder Management Certificates",
+    "ShortName": "ThunderMgmt",
+    "Capability": "ThunderMgmt",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "OrchToScpServerIp",
+        "DisplayName": "Orch To Scp Server Ip",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "Description": "IP address or hostname of the SCP server that the Universal Orchestrator will connect to for uploading certificate files. This SCP server acts as an intermediary storage location before the A10 device retrieves the certificates."
+      },
+      {
+        "Name": "ScpPort",
+        "DisplayName": "Port Used For Scp",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "Description": "TCP port number used for SSH/SCP connections to the SCP server. Typically port 22 for standard SSH/SCP operations."
+      },
+      {
+        "Name": "ScpUserName",
+        "DisplayName": "UserName Used For Scp",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "Description": "Username credential for authenticating to the SCP server. This account must have write permissions to the target directory path specified in the certificate store configuration. Supports PAM integration for secure credential retrieval."
+      },
+      {
+        "Name": "ScpPassword",
+        "DisplayName": "Password Used For Scp",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "Description": "Password credential for authenticating to the SCP server. Used in conjunction with ScpUserName for SSH/SCP authentication. Supports PAM integration for secure credential retrieval."
+      },
+      {
+        "Name": "A10ToScpServerIp",
+        "DisplayName": "A10 Device To Scp Server Ip",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true,
+        "Description": "IP address or hostname that the A10 vThunder device uses to connect to the SCP server for retrieving certificate files. This may differ from OrchToScpServerIp due to network topology, routing, or firewall configurations where the A10 device and orchestrator access the SCP server through different network paths."
+      },
+      {
+        "Name": "allowInvalidCert",
+        "DisplayName": "Allow Invalid Cert on A10 Management API",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true,
+        "Description": "Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections used during the certificate installation process."
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathValue": "",
+    "ClientMachineDescription": "Hostname or IP address of the A10 vThunder appliance to be managed. The orchestrator will establish an AXAPI (REST API) connection using the credentials specified in the Server Username and Server Password fields to trigger certificate installation on the management interface after uploading files via SCP.",
+    "StorePathDescription": "Absolute directory path on the SCP server where certificate files (.crt and .key) will be uploaded. The A10 device will retrieve certificate files from this location. Example: '/home/certuser'. The specified path must exist and the SCP user must have write permissions to this directory.",
+    "PrivateKeyAllowed": "Required",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  {
+    "Name": "A10 Thunder Ssl Certificates",
+    "ShortName": "ThunderSsl",
+    "Capability": "ThunderSsl",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "allowInvalidCert",
+        "DisplayName": "Allow Invalid Cert on A10 Management API",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true,
+        "Description": "Boolean value specifying whether to allow connections to the A10 vThunder management API when it presents an invalid or self-signed SSL/TLS certificate. Set to true to bypass certificate validation for AXAPI connections."
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathValue": "",
+    "ClientMachineDescription": "Hostname or IP address of the A10 vThunder appliance to be managed. The orchestrator will establish an AXAPI (REST API) connection using the credentials specified in the Server Username and Server Password fields to manage SSL certificates directly on the device.",
+    "StorePathDescription": "A10 partition name where certificates will be managed. Use 'shared' for the default shared partition, or specify a custom partition name (e.g., 'tenant-prod') for multi-tenant deployments. The partition must already exist on the A10 device. Leave empty to default to the shared partition.",
+    "PrivateKeyAllowed": "Optional",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
   },
   {
     "Name": "VMware-NSX",
@@ -5206,6 +5708,105 @@
     "CustomAliasAllowed": "Required",
     "ClientMachineDescription": "This is the URL for the VMware NSX instance. It also includes an optional tenant in square brackets before the URL. A tenant value is required when the certificates being managed are in a different tenant from the default tenant set for the NSX User specified for the store. This should look like either: [optional-tenant-name]https://my.nsx.url/ OR https://my.nsx.url/ ",
     "StorePathDescription": "A selection from the different certificate types supported: Application, Controller, or CA."
+  },
+  {
+    "Name": "ADFS Rotation Manager",
+    "ShortName": "WinAdfs",
+    "Capability": "WinAdfs",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "Properties": [
+      {
+        "Name": "spnwithport",
+        "DisplayName": "SPN With Port",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "WinRM Protocol",
+        "DisplayName": "WinRM Protocol",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "https,http,ssh",
+        "Required": true,
+        "Description": "Multiple choice value specifying which protocol to use.  Protocols https or http use WinRM to connect from Windows to Windows Servers.  Using ssh is only supported when running the orchestrator in a Linux environment."
+      },
+      {
+        "Name": "WinRM Port",
+        "DisplayName": "WinRM Port",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "5986",
+        "Required": true,
+        "Description": "String value specifying the port number that the Windows target server's WinRM listener is configured to use. Example: '5986' for HTTPS or '5985' for HTTP.  By default, when using ssh in a Linux environment, the default port number is 22."
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Username used to log into the target server for establishing the WinRM session. Example: 'administrator' or 'domain\\username'. (This field is automatically created)"
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Password corresponding to the Server Username used to log into the target server.  When establishing a SSH session from a Linux environment, the password must include the full SSH Private key. (This field is automatically created)"
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true,
+        "Description": "Determine whether the server uses SSL or not (This field is automatically created)"
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "ProviderName",
+        "DisplayName": "Crypto Provider Name",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Options": "",
+        "Description": "Name of the Windows cryptographic service provider to use when generating and storing private keys. For more information, refer to the section 'Using Crypto Service Providers'"
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathValue": "My",
+    "PrivateKeyAllowed": "Required",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Forbidden",
+    "ClientMachineDescription": "Since this extension type must run as an agent (The UO Must be installed on the PRIMARY ADFS Server), the ClientMachine must follow the naming convention as outlined in the Client Machine Instructions. Secondary ADFS Nodes will be automatically be updated with the same certificate added on the PRIMARY ADFS server.",
+    "StorePathDescription": "Fixed string value of 'My' indicating the Personal store on the Local Machine. All ADFS Service-Communications certificates are located in the 'My' personal store by default."
   },
   {
     "Name": "WinCerMgmt",
@@ -5326,21 +5927,6 @@
         "DefaultValue": "",
         "Options": "",
         "Description": "Name of the Windows cryptographic service provider to use when generating and storing private keys. For more information, refer to the section 'Using Crypto Service Providers'"
-      },
-      {
-        "Name": "SAN",
-        "DisplayName": "SAN",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": true
-        },
-        "DependsOn": "",
-        "DefaultValue": "",
-        "Options": "",
-        "Description": "String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>=<san_value> entries separated by ampersands; Example: 'dns=www.example.com&dns=www.example2.com' for multiple SANs. Can be made optional if RFC 2818 is disabled on the CA."
       }
     ],
     "PasswordOptions": {
@@ -5461,21 +6047,6 @@
         "DefaultValue": "",
         "Options": "",
         "Description": "Name of the Windows cryptographic service provider to use when generating and storing private keys. For more information, refer to the section 'Using Crypto Service Providers'"
-      },
-      {
-        "Name": "SAN",
-        "DisplayName": "SAN",
-        "Type": "String",
-        "RequiredWhen": {
-          "HasPrivateKey": false,
-          "OnAdd": false,
-          "OnRemove": false,
-          "OnReenrollment": true
-        },
-        "DependsOn": "",
-        "DefaultValue": "",
-        "Options": "",
-        "Description": "String value specifying the Subject Alternative Name (SAN) to be used when performing reenrollment jobs. Format as a list of <san_type>=<san_value> entries separated by ampersands; Example: 'dns=www.example.com&dns=www.example2.com' for multiple SANs."
       }
     ],
     "PasswordOptions": {

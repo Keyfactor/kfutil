@@ -328,6 +328,7 @@ var pamProvidersUpdateCmd = &cobra.Command{
 
 		log.Debug().Msg("call: PAMProviderUpdatePamProvider()")
 		updateRequest := keyfactor.ProviderUpdateRequestLegacy{
+			Id:                      pamProvider.Id,
 			Name:                    pamProvider.Name,
 			Remote:                  pamProvider.Remote,
 			Area:                    pamProvider.Area,
@@ -339,8 +340,8 @@ var pamProvidersUpdateCmd = &cobra.Command{
 		updatedPamProvider, cErr := kfClient.UpdatePAMProvider(&updateRequest)
 
 		log.Debug().Msg("returned: PAMProviderUpdatePamProvider()")
-		if err != nil {
-			return err
+		if cErr != nil {
+			return cErr
 		}
 
 		log.Debug().Msg(convertResponseMsg)

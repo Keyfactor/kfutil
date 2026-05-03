@@ -47,5 +47,3 @@ kfutil store-types get [-i <store-type-id> | -n <store-type-name>] [-b <git-ref>
 ### SEE ALSO
 
 * [kfutil store-types](kfutil_store-types.md)	 - Keyfactor certificate store types APIs and utilities.
-
-###### Auto generated on 26-Jan-2026

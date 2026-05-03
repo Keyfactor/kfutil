@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
@@ -27,6 +28,8 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
+
+var loginSkipValidate bool
 
 var loginCmd = &cobra.Command{
 	Use:        "login",
@@ -78,16 +81,27 @@ WARNING: This will write the environmental credentials to disk and will be store
 			kfcOAuth      *auth_providers.CommandConfigOauth
 			kfcBasicAuth  *auth_providers.CommandAuthConfigBasic
 		)
+		skipValidate := loginSkipValidate
 
 		log.Debug().Msg("calling getEnvConfig()")
-		envConfig, envErr := getServerConfigFromEnv()
+		var envConfig *auth_providers.Server
+		var envErr error
+		if skipValidate {
+			envConfig, envErr = getServerConfigFromEnvNoValidate()
+		} else {
+			envConfig, envErr = getServerConfigFromEnv()
+		}
 		if envErr == nil {
 			log.Debug().Msg("getEnvConfig() returned")
+			message := fmt.Sprintf("Login successful via environment variables to %s", envConfig.Host)
+			if skipValidate {
+				message = fmt.Sprintf("Login configuration saved from environment variables to %s; credential validation skipped", envConfig.Host)
+			}
 			log.Info().
 				Str("host", envConfig.Host).
 				Str("authType", envConfig.AuthType).
 				Msg("Login successful via environment variables")
-			outputResult(fmt.Sprintf("Login successful via environment variables to %s", envConfig.Host), outputFormat)
+			outputResult(message, outputFormat)
 			if profile == "" {
 				profile = "default"
 			}
@@ -227,11 +241,25 @@ WARNING: This will write the environmental credentials to disk and will be store
 					log.Error().Msg("unable to determine auth type from interactive configuration")
 				}
 			}
+			if !skipValidate {
+				skipValidate = !promptForInteractiveYesNo("Validate credentials with Keyfactor Command now?")
+			}
 		}
 
 		if !isValidConfig {
 			log.Debug().Msg("prompting for interactive login")
 			return fmt.Errorf("unable to determine valid configuration")
+		}
+
+		if skipValidate {
+			log.Info().
+				Str("profile", profile).
+				Str("configFile", configFile).
+				Str("host", outputServer.Host).
+				Str("authType", authType).
+				Msg("Login configuration saved; credential validation skipped")
+			outputResult(fmt.Sprintf("Login configuration saved to %s; credential validation skipped", outputServer.Host), outputFormat)
+			return nil
 		}
 
 		if authType == "oauth" {
@@ -297,6 +325,98 @@ WARNING: This will write the environmental credentials to disk and will be store
 
 func init() {
 	RootCmd.AddCommand(loginCmd)
+	loginCmd.Flags().BoolVar(
+		&loginSkipValidate,
+		"skip-validate",
+		false,
+		"Save the login configuration without validating credentials against Keyfactor Command.",
+	)
+}
+
+func getServerConfigFromEnvNoValidate() (*auth_providers.Server, error) {
+	hostname, hOk := os.LookupEnv(auth_providers.EnvKeyfactorHostName)
+	if !hOk || hostname == "" {
+		return nil, fmt.Errorf("environment variable %s is required", auth_providers.EnvKeyfactorHostName)
+	}
+
+	apiPath := os.Getenv(auth_providers.EnvKeyfactorAPIPath)
+	if apiPath == "" {
+		apiPath = auth_providers.DefaultCommandAPIPath
+	}
+	skipVerify := skipVerifyFromEnv()
+
+	username, uOk := os.LookupEnv(auth_providers.EnvKeyfactorUsername)
+	password, pOk := os.LookupEnv(auth_providers.EnvKeyfactorPassword)
+	if uOk && pOk {
+		serverConfig := &auth_providers.Server{
+			Host:          hostname,
+			APIPath:       apiPath,
+			Username:      username,
+			Password:      password,
+			Domain:        os.Getenv(auth_providers.EnvKeyfactorDomain),
+			SkipTLSVerify: skipVerify,
+			AuthType:      "basic",
+		}
+		if _, err := serverConfig.GetBasicAuthClientConfig(); err != nil {
+			return nil, err
+		}
+		return serverConfig, nil
+	}
+
+	clientID, cOk := os.LookupEnv(auth_providers.EnvKeyfactorClientID)
+	clientSecret, csOk := os.LookupEnv(auth_providers.EnvKeyfactorClientSecret)
+	tokenURL, tOk := os.LookupEnv(auth_providers.EnvKeyfactorAuthTokenURL)
+	if cOk && csOk && tOk {
+		serverConfig := &auth_providers.Server{
+			Host:          hostname,
+			APIPath:       apiPath,
+			ClientID:      clientID,
+			ClientSecret:  clientSecret,
+			OAuthTokenUrl: tokenURL,
+			Scopes:        authScopesFromCSV(os.Getenv(auth_providers.EnvKeyfactorAuthScopes)),
+			Audience:      os.Getenv(auth_providers.EnvKeyfactorAuthAudience),
+			SkipTLSVerify: skipVerify,
+			AuthType:      "oauth",
+		}
+		if _, err := serverConfig.GetOAuthClientConfig(); err != nil {
+			return nil, err
+		}
+		return serverConfig, nil
+	}
+
+	return nil, fmt.Errorf(
+		"incomplete environment variable configuration, " +
+			"please provide basic auth credentials or oAuth credentials",
+	)
+}
+
+func skipVerifyFromEnv() bool {
+	if skipVerifyFlag {
+		return true
+	}
+	value := strings.ToLower(os.Getenv(auth_providers.EnvKeyfactorSkipVerify))
+	parsed, err := strconv.ParseBool(value)
+	if err == nil {
+		return parsed
+	}
+	return value == "yes" || value == "y"
+}
+
+func authScopesFromCSV(scopesCSV string) []string {
+	if scopesCSV == "" {
+		return auth_providers.DefaultScopes
+	}
+	var scopes []string
+	for _, scope := range strings.Split(scopesCSV, ",") {
+		scope = strings.TrimSpace(scope)
+		if scope != "" {
+			scopes = append(scopes, scope)
+		}
+	}
+	if len(scopes) == 0 {
+		return auth_providers.DefaultScopes
+	}
+	return scopes
 }
 
 func writeConfigFile(configFile *auth_providers.Config, configPath string) error {

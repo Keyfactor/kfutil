@@ -16,7 +16,7 @@ Command API from a secure location rather than a file on disk or environment var
 
 ## Azure Key Vault
 The Azure Key Vault auth provider allows you to source credentials from an Azure Key Vault instance using Azure Managed
-Identity. 
+Identity.
 
 ### Configuration
 Below is an example configuration for the Azure Key Vault auth provider. This can be placed in the `$HOME/.keyfactor/command_config.json`
@@ -39,7 +39,7 @@ file and will be used by `kfutil` to source credentials for the Keyfactor produc
 ```
 
 ### Azure Key Vault Secret Format
-The format of the Azure Key Vault secret should be the same as if you were to run `kfutil login` and go through the 
+The format of the Azure Key Vault secret should be the same as if you were to run `kfutil login` and go through the
 interactive auth flow. Here's an example of what that would look like:
 
 #### Basic Auth Example
@@ -76,7 +76,7 @@ interactive auth flow. Here's an example of what that would look like:
 #### Usage
 
 ##### Default
-With the above configuration in placed in the default path `$HOME/.keyfactor/command_config.json` the utility will 
+With the above configuration in placed in the default path `$HOME/.keyfactor/command_config.json` the utility will
 implicitly attempt to source credentials from the Azure Key Vault instance.
 ```bash
 kfutil stores list
