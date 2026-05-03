@@ -838,6 +838,11 @@ var storesExportCmd = &cobra.Command{
 					"CreateIfMissing": store.CreateIfMissing,
 					"AgentId":         store.AgentId,
 				}
+				for _, header := range bulkStoreImportCSVHeader {
+					if strings.HasPrefix(header, "InventorySchedule.") {
+						csvData[store.Id][header] = ""
+					}
+				}
 
 				log.Debug().Msg("checking for InventorySchedule")
 				if store.InventorySchedule.Immediate != nil {

@@ -26,6 +26,8 @@ import (
 )
 
 func Test_Stores_HelpCmd(t *testing.T) {
+	defer resetRootCommandState()
+
 	// Test root help
 	testCmd := RootCmd
 	testCmd.SetArgs([]string{"stores", "--help"})

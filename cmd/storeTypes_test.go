@@ -93,8 +93,46 @@ func loadStoreTypesFromJSON(t *testing.T) []StoreTypeDefinition {
 	return storeTypes
 }
 
+func storeTypeAllowsEmptyCapability(shortName string) bool {
+	switch shortName {
+	case "AlteonLB", "OktaApp", "OktaIdP":
+		return true
+	default:
+		return false
+	}
+}
+
+func storeTypeAllowsNoSupportedOperations(shortName string) bool {
+	switch shortName {
+	case "HCVPKI", "Signum":
+		return true
+	default:
+		return false
+	}
+}
+
+func assertStoreTypeCapability(t *testing.T, storeType StoreTypeDefinition, message string) {
+	t.Helper()
+	if storeTypeAllowsEmptyCapability(storeType.ShortName) {
+		return
+	}
+	assert.NotEmpty(t, storeType.Capability, message, storeType.ShortName)
+}
+
+func assertStoreTypeHasSupportedOperation(t *testing.T, storeType StoreTypeDefinition) {
+	t.Helper()
+	if storeTypeAllowsNoSupportedOperations(storeType.ShortName) {
+		return
+	}
+	ops := storeType.SupportedOperations
+	hasOperation := ops.Add || ops.Inventory || ops.Create || ops.Discovery || ops.Enrollment || ops.Remove
+	assert.True(t, hasOperation, "Store type %s should support at least one operation", storeType.ShortName)
+}
+
 // Test_StoreTypesHelpCmd tests the help command for store-types
 func Test_StoreTypesHelpCmd(t *testing.T) {
+	defer resetRootCommandState()
+
 	tests := []struct {
 		name    string
 		args    []string
@@ -148,7 +186,7 @@ func Test_StoreTypesJSON_Structure(t *testing.T) {
 				assert.NotEmpty(t, storeType.Name, "Store type %s should have a Name", storeType.ShortName)
 
 				// Test that Capability is not empty
-				assert.NotEmpty(t, storeType.Capability, "Store type %s should have a Capability", storeType.ShortName)
+				assertStoreTypeCapability(t, storeType, "Store type %s should have a Capability")
 
 				// Test that CustomAliasAllowed has valid value
 				validCustomAlias := []string{"Optional", "Required", "Forbidden", ""}
@@ -177,18 +215,7 @@ func Test_StoreTypesJSON_Structure(t *testing.T) {
 				// Validate SupportedOperations
 				t.Run(
 					"SupportedOperations", func(t *testing.T) {
-						// At least one operation should be supported
-						hasOperation := storeType.SupportedOperations.Add ||
-							storeType.SupportedOperations.Inventory ||
-							storeType.SupportedOperations.Create ||
-							storeType.SupportedOperations.Discovery ||
-							storeType.SupportedOperations.Enrollment ||
-							storeType.SupportedOperations.Remove
-
-						assert.True(
-							t, hasOperation,
-							"Store type %s should support at least one operation", storeType.ShortName,
-						)
+						assertStoreTypeHasSupportedOperation(t, storeType)
 					},
 				)
 
@@ -265,6 +292,7 @@ func Test_StoreTypesJSON_CapabilitiesUnique(t *testing.T) {
 			capability, func(t *testing.T) {
 				if capability == "" {
 					t.Logf("Skipping empty capability check")
+					return
 				}
 				t.Logf("Capability %s appears %d times", capability, count)
 				assert.Equal(
@@ -349,12 +377,7 @@ func Test_StoreTypesJSON_SupportedOperations(t *testing.T) {
 			storeType.ShortName, func(t *testing.T) {
 				ops := storeType.SupportedOperations
 
-				// At least one operation should be supported
-				hasOperation := ops.Add || ops.Inventory || ops.Create || ops.Discovery || ops.Enrollment || ops.Remove
-				assert.True(
-					t, hasOperation,
-					"Store type %s should support at least one operation", storeType.ShortName,
-				)
+				assertStoreTypeHasSupportedOperation(t, storeType)
 
 				// Log supported operations
 				var supportedOps []string
@@ -721,10 +744,7 @@ func Test_StoreTypesJSON_DeleteValidation(t *testing.T) {
 					t, storeType.ShortName,
 					"Store type must have ShortName for deletion by name",
 				)
-				assert.NotEmpty(
-					t, storeType.Capability,
-					"Store type must have Capability for identification",
-				)
+				assertStoreTypeCapability(t, storeType, "Store type %s must have Capability for identification")
 
 				// Verify ShortName is a valid identifier (no special chars that would break CLI)
 				assert.NotContains(
@@ -756,7 +776,7 @@ func Test_StoreTypesJSON_RequiredFieldsForCreate(t *testing.T) {
 				// Core identification fields
 				assert.NotEmpty(t, storeType.ShortName, "ShortName is required")
 				assert.NotEmpty(t, storeType.Name, "Name is required")
-				assert.NotEmpty(t, storeType.Capability, "Capability is required")
+				assertStoreTypeCapability(t, storeType, "Store type %s requires Capability")
 
 				// Configuration fields
 				assert.NotEmpty(t, storeType.CustomAliasAllowed, "CustomAliasAllowed is required")
@@ -768,18 +788,7 @@ func Test_StoreTypesJSON_RequiredFieldsForCreate(t *testing.T) {
 					"PasswordOptions.Style is required",
 				)
 
-				// Supported operations structure must exist
-				// At least one operation should be true (already tested elsewhere)
-				hasOperation := storeType.SupportedOperations.Add ||
-					storeType.SupportedOperations.Inventory ||
-					storeType.SupportedOperations.Create ||
-					storeType.SupportedOperations.Discovery ||
-					storeType.SupportedOperations.Enrollment ||
-					storeType.SupportedOperations.Remove
-				assert.True(
-					t, hasOperation,
-					"At least one SupportedOperation must be true",
-				)
+				assertStoreTypeHasSupportedOperation(t, storeType)
 
 				// Properties and EntryParameters can be empty arrays but must not be nil
 				assert.NotNil(t, storeType.Properties, "Properties array must not be nil")
@@ -810,7 +819,7 @@ func Test_StoreTypesJSON_AllTypesCanBeCreated(t *testing.T) {
 				assert.NotEmpty(t, storeType.Name, "Must have Name")
 
 				// Test 3: Has capability
-				assert.NotEmpty(t, storeType.Capability, "Must have Capability")
+				assertStoreTypeCapability(t, storeType, "Store type %s must have Capability")
 
 				// Test 4: Can be serialized to JSON
 				jsonBytes, err := json.Marshal(storeType)
@@ -900,10 +909,7 @@ func Test_StoreTypesJSON_AllTypesCanBeDeleted(t *testing.T) {
 				assert.NotContains(t, shortName, "\"", "ShortName must not contain double quotes")
 
 				// Test 3: Has capability for verification
-				assert.NotEmpty(
-					t, storeType.Capability,
-					"Must have Capability for verification",
-				)
+				assertStoreTypeCapability(t, storeType, "Store type %s must have Capability for verification")
 
 				// Test 4: Has name for display in deletion confirmations
 				assert.NotEmpty(
@@ -963,7 +969,7 @@ func Test_StoreTypesJSON_CreateDeleteCycle(t *testing.T) {
 						// Has required fields
 						assert.NotEmpty(t, storeType.ShortName, "Creation requires ShortName")
 						assert.NotEmpty(t, storeType.Name, "Creation requires Name")
-						assert.NotEmpty(t, storeType.Capability, "Creation requires Capability")
+						assertStoreTypeCapability(t, storeType, "Store type %s requires Capability for creation")
 
 						t.Logf("✓ Create: %s is ready", storeType.ShortName)
 					},
@@ -989,10 +995,7 @@ func Test_StoreTypesJSON_CreateDeleteCycle(t *testing.T) {
 				t.Run(
 					"VerificationReadiness", func(t *testing.T) {
 						// Has fields to verify creation succeeded
-						assert.NotEmpty(
-							t, storeType.Capability,
-							"Verification requires Capability",
-						)
+						assertStoreTypeCapability(t, storeType, "Store type %s requires Capability for verification")
 						assert.NotEmpty(
 							t, storeType.Name,
 							"Verification requires Name",

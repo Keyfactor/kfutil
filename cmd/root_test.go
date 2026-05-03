@@ -19,6 +19,8 @@ import (
 )
 
 func Test_RootCmd(t *testing.T) {
+	defer resetRootCommandState()
+
 	// Test root help
 	testCmd := RootCmd
 	testCmd.SetArgs([]string{"--help"})

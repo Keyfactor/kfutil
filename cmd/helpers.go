@@ -358,7 +358,14 @@ func outputResult(result interface{}, format string) {
 		Str("format", format).
 		Msg(fmt.Sprintf("%s outputResult", DebugFuncEnter))
 	if format == "json" {
-		fmt.Println(result)
+		switch value := result.(type) {
+		case []byte:
+			fmt.Println(string(value))
+		case string:
+			fmt.Println(value)
+		default:
+			fmt.Println(result)
+		}
 	} else {
 		fmt.Println(fmt.Sprintf("%s", result))
 	}
