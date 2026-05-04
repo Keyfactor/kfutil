@@ -10,6 +10,7 @@ This is a specialized bulk certificate store update. The workflow uses exported 
 - [Step 1: Export Stores](#step-1-export-stores)
 - [Step 2: Identify The PAM Provider Columns](#step-2-identify-the-pam-provider-columns)
 - [Step 3: Build The Sync CSV](#step-3-build-the-sync-csv)
+- [RFPKCS12 Examples By PAM Type](#rfpkcs12-examples-by-pam-type)
 - [Step 4: Sync The Migration](#step-4-sync-the-migration)
 - [Step 5: Verify The Migration](#step-5-verify-the-migration)
 - [Notes](#notes)
@@ -86,6 +87,77 @@ Id,ClientMachine,StorePath,Properties.ServerPassword.Provider,Properties.ServerP
 ```
 
 Do not put the masked export value `********************` into a new direct secret value column. That is a placeholder, not the original secret.
+
+## RFPKCS12 Examples By PAM Type
+
+The embedded store type short name is `RFPkcs12`; use that exact value with `--store-type-name`.
+
+These examples show the columns to migrate an `RFPkcs12` row from static values to PAM-backed `Properties.ServerPassword` and PAM-backed store `Password`. Replace provider IDs, store IDs, paths, and PAM parameter values with values from your environment.
+
+If you are migrating `Properties.ServerUsername` instead of `Properties.ServerPassword`, use the same provider and parameter pattern with the `Properties.ServerUsername.*` prefix.
+
+### 1Password-CLI
+
+```csv
+Id,ClientMachine,StorePath,Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.Item,Properties.ServerPassword.Parameters.Field,Properties.ServerPassword.SecretValue,Password.ProviderId,Password.Parameters.Item,Password.Parameters.Field,Password.SecretValue
+00000000-0000-0000-0000-000000000001,linux01.example.com,/opt/certs/app.p12,101,linux-service-account,password,,101,rfpkcs12-store,password,
+```
+
+### Azure-KeyVault
+
+```csv
+Id,ClientMachine,StorePath,Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.SecretId,Properties.ServerPassword.SecretValue,Password.ProviderId,Password.Parameters.SecretId,Password.SecretValue
+00000000-0000-0000-0000-000000000001,linux01.example.com,/opt/certs/app.p12,102,linux-service-account-password,,102,rfpkcs12-store-password,
+```
+
+### Azure-KeyVault-ServicePrincipal
+
+```csv
+Id,ClientMachine,StorePath,Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.SecretId,Properties.ServerPassword.SecretValue,Password.ProviderId,Password.Parameters.SecretId,Password.SecretValue
+00000000-0000-0000-0000-000000000001,linux01.example.com,/opt/certs/app.p12,103,linux-service-account-password,,103,rfpkcs12-store-password,
+```
+
+### BeyondTrust-PasswordSafe
+
+```csv
+Id,ClientMachine,StorePath,Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.SystemId,Properties.ServerPassword.Parameters.AccountId,Properties.ServerPassword.SecretValue,Password.ProviderId,Password.Parameters.SystemId,Password.Parameters.AccountId,Password.SecretValue
+00000000-0000-0000-0000-000000000001,linux01.example.com,/opt/certs/app.p12,104,bt-system-123,bt-account-456,,104,bt-system-123,bt-account-789,
+```
+
+### CyberArk-CentralCredentialProvider
+
+```csv
+Id,ClientMachine,StorePath,Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.Safe,Properties.ServerPassword.Parameters.Folder,Properties.ServerPassword.Parameters.Object,Properties.ServerPassword.SecretValue,Password.ProviderId,Password.Parameters.Safe,Password.Parameters.Folder,Password.Parameters.Object,Password.SecretValue
+00000000-0000-0000-0000-000000000001,linux01.example.com,/opt/certs/app.p12,105,Certificates,Root,linux-service-account,,105,Certificates,Root,rfpkcs12-store-password,
+```
+
+### CyberArk-SdkCredentialProvider
+
+```csv
+Id,ClientMachine,StorePath,Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.Safe,Properties.ServerPassword.Parameters.Folder,Properties.ServerPassword.Parameters.Object,Properties.ServerPassword.SecretValue,Password.ProviderId,Password.Parameters.Safe,Password.Parameters.Folder,Password.Parameters.Object,Password.SecretValue
+00000000-0000-0000-0000-000000000001,linux01.example.com,/opt/certs/app.p12,106,Certificates,Root,linux-service-account,,106,Certificates,Root,rfpkcs12-store-password,
+```
+
+### Delinea-SecretServer
+
+```csv
+Id,ClientMachine,StorePath,Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.SecretId,Properties.ServerPassword.Parameters.SecretFieldName,Properties.ServerPassword.SecretValue,Password.ProviderId,Password.Parameters.SecretId,Password.Parameters.SecretFieldName,Password.SecretValue
+00000000-0000-0000-0000-000000000001,linux01.example.com,/opt/certs/app.p12,107,12001,password,,107,12002,password,
+```
+
+### GCP-SecretManager
+
+```csv
+Id,ClientMachine,StorePath,Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.secretId,Properties.ServerPassword.SecretValue,Password.ProviderId,Password.Parameters.secretId,Password.SecretValue
+00000000-0000-0000-0000-000000000001,linux01.example.com,/opt/certs/app.p12,108,linux-service-account-password,,108,rfpkcs12-store-password,
+```
+
+### Hashicorp-Vault
+
+```csv
+Id,ClientMachine,StorePath,Properties.ServerPassword.Provider,Properties.ServerPassword.Parameters.Secret,Properties.ServerPassword.Parameters.Key,Properties.ServerPassword.SecretValue,Password.ProviderId,Password.Parameters.Secret,Password.Parameters.Key,Password.SecretValue
+00000000-0000-0000-0000-000000000001,linux01.example.com,/opt/certs/app.p12,109,certstores/linux01,serverPassword,,109,certstores/linux01,storePassword,
+```
 
 ## Step 4: Sync The Migration
 
