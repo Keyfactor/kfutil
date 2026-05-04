@@ -43,5 +43,3 @@ A collections of APIs and utilities for interacting with Keyfactor certificate s
 * [kfutil store-types get](kfutil_store-types_get.md)	 - Get a specific store type by either name or ID.
 * [kfutil store-types list](kfutil_store-types_list.md)	 - List certificate store types.
 * [kfutil store-types templates-fetch](kfutil_store-types_templates-fetch.md)	 - Fetches store type templates from Keyfactor's Github.
-
-###### Auto generated on 26-Jan-2026

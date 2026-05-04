@@ -1,85 +1,22 @@
-// Hosts
-variable "keyfactor_hostname_10_5_0" {
-  description = "The hostname of the Keyfactor v10.5.x instance"
+variable "ses_2541_hostname" {
+  description = "The hostname of the SES 25.4.1 Keyfactor Command instance"
   type        = string
-  default     = "integrations1050-lab.kfdelivery.com"
+  default     = "int25-4-1.kftestlab.com"
 }
 
-variable "keyfactor_hostname_10_5_0_CLEAN" {
-  description = "The hostname of the Keyfactor v10.5.x instance with no stores or orchestrators. This is used for store-type tests."
+variable "ses_2541_auth_token_url" {
+  description = "The OAuth token URL for the SES 25.4.1 Keyfactor Command instance"
   type        = string
-  default     = "int1050-test-clean.kfdelivery.com"
+  default     = "https://auth.kftestlab.com/oauth2/token"
 }
 
-
-variable "keyfactor_hostname_11_5_0" {
-  description = "The hostname of the Keyfactor v11.5.x instance"
-  type        = string
-  default     = "integrations1150-lab.kfdelivery.com"
-}
-
-variable "keyfactor_hostname_11_5_0_CLEAN" {
-  description = "The hostname of the Keyfactor v11.5.x instance with no stores or orchestrators. This is used for store-type tests."
-  type        = string
-  default     = "int1150-test-clean.kfdelivery.com"
-}
-
-variable "keyfactor_hostname_11_5_0_OAUTH" {
-  description = "The hostname of the Keyfactor instance"
-  type        = string
-  default     = "int-oidc-lab.eastus2.cloudapp.azure.com"
-}
-
-variable "keyfactor_hostname_11_5_0_OAUTH_CLEAN" {
-  description = "The hostname of the Keyfactor instance"
-  type        = string
-  default     = "int1150-oauth-test-clean.eastus2.cloudapp.azure.com"
-}
-
-
-variable "keyfactor_hostname_12_3_0" {
-  description = "The hostname of the Keyfactor v12.3.x instance"
-  type        = string
-  default     = "integrations1230-lab.kfdelivery.com"
-}
-
-variable "keyfactor_hostname_12_3_0_CLEAN" {
-  description = "The hostname of the Keyfactor v12.3.x instance with no stores or orchestrators. This is used for store-type tests."
-  type        = string
-  default     = "int1230-test-clean.kfdelivery.com"
-}
-
-variable "keyfactor_hostname_12_3_0_OAUTH" {
-  description = "The hostname of the Keyfactor instance"
-  type        = string
-  default     = "int-oidc-lab.eastus2.cloudapp.azure.com"
-}
-
-
-// Authentication
-variable "keyfactor_username_AD" {
-  description = "The username to authenticate with a Keyfactor instance that uses AD authentication"
+variable "ses_2541_client_id" {
+  description = "The OAuth client ID for the SES 25.4.1 Keyfactor Command instance"
   type        = string
 }
 
-variable "keyfactor_password_AD" {
-  description = "The password to authenticate with Keyfactor instance that uses AD authentication"
+variable "ses_2541_client_secret" {
+  description = "The OAuth client secret for the SES 25.4.1 Keyfactor Command instance"
   type        = string
+  sensitive   = true
 }
-
-variable "keyfactor_client_id" {
-  description = "The client ID to authenticate with the Keyfactor instance using oauth2 client credentials"
-  type        = string
-}
-
-variable "keyfactor_client_secret" {
-  description = "The client secret to authenticate with the Keyfactor instance using oauth2 client credentials"
-  type        = string
-}
-
-variable "keyfactor_auth_token_url" {
-  description = "The token URL to authenticate with the Keyfactor instance using oauth2 client credentials"
-  type        = string
-  default     = "https://int-oidc-lab.eastus2.cloudapp.azure.com:8444/realms/Keyfactor/protocol/openid-connect/token"
-}
-

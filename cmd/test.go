@@ -21,6 +21,9 @@ import (
 	"io"
 	"os"
 	"regexp"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 func captureOutput(f func()) string {
@@ -58,6 +61,36 @@ func captureOutput(f func()) string {
 
 	// Return the captured output as a string
 	return buf.String()
+}
+
+func resetRootCommandState() {
+	resetCommandState(RootCmd)
+}
+
+func resetCommandState(cmd *cobra.Command) {
+	cmd.SetArgs(nil)
+	cmd.SetOut(os.Stdout)
+	cmd.SetErr(os.Stderr)
+	cmd.SilenceUsage = false
+	cmd.SilenceErrors = false
+
+	resetFlagSet(cmd.Flags())
+	resetFlagSet(cmd.PersistentFlags())
+	resetFlagSet(cmd.LocalFlags())
+
+	for _, child := range cmd.Commands() {
+		resetCommandState(child)
+	}
+}
+
+func resetFlagSet(flags *pflag.FlagSet) {
+	if flags == nil {
+		return
+	}
+	flags.VisitAll(func(flag *pflag.Flag) {
+		_ = flag.Value.Set(flag.DefValue)
+		flag.Changed = false
+	})
 }
 
 type testEnv struct {

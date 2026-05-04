@@ -43,6 +43,4 @@ kfutil migrate check [flags]
 
 ### SEE ALSO
 
-* [kfutil migrate](kfutil_migrate.md)     - Keyfactor Migration Tools.
-
-###### Auto generated on 26-Jan-2026
+* [kfutil migrate](kfutil_migrate.md)	 - Keyfactor Migration Tools.
