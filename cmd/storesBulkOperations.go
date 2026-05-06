@@ -82,6 +82,16 @@ func formatProperties(propsJson *gabs.Container, reqPropertiesForStoreType []str
 			if name == "ServerUsername" || name == "ServerPassword" {
 				reformatted := reformatPamSecretForPost(prop.Data().(map[string]interface{}))
 				if reformatted != nil {
+					if provider, ok := reformatted["Provider"]; ok && provider != nil {
+						managedValue := map[string]interface{}{
+							"Provider": provider,
+						}
+						if params, paramsOk := reformatted["Parameters"]; paramsOk && params != nil {
+							managedValue["Parameters"] = params
+						}
+						propsJson.Set(map[string]interface{}{"value": managedValue}, "Properties", name)
+						break
+					}
 					if _, ok := reformatted["value"].(string); ok {
 						propsJson.Set(reformatted["value"], "Properties", name)
 					} else {
@@ -383,29 +393,11 @@ If you do not wish to include credentials in your CSV file they can be provided 
 			reqJson.Delete("Properties") // todo: why is this deleting the properties from the request json?
 
 			rowStorePassword := reqJson.S("Password").Data()
-			passwdParams := api.UpdateStorePasswordConfig{
-				SecretValue: nil,
-			}
+			passwdParams := buildUpdateStorePasswordConfig(rowStorePassword)
 			switch rowStorePassword.(type) {
 			case string:
 				if rowStorePassword != "" {
 					reqJson.Delete("Password")
-					passwdValue := rowStorePassword.(string)
-					passwdParams.SecretValue = &passwdValue
-				}
-			case map[string]interface{}:
-				// try to convert it to api.UpdateStorePasswordConfig
-				rowPasswordMap := rowStorePassword.(map[string]interface{})
-				if providerId, ok := rowPasswordMap["ProviderId"].(int); ok {
-					passwdParams.Provider = providerId
-				}
-				if params, ok := rowPasswordMap["Parameters"].(map[string]interface{}); ok {
-					for k, v := range params {
-						if passwdParams.Parameters == nil {
-							passwdParams.Parameters = make(map[string]string)
-						}
-						passwdParams.Parameters[k] = fmt.Sprintf("%v", v)
-					}
 				}
 			}
 
@@ -424,7 +416,7 @@ If you do not wish to include credentials in your CSV file they can be provided 
 
 				updateReqParameters.Password = &api.UpdateStorePasswordConfig{
 					Provider:    passwdParams.Provider,
-					Parameters:  nil,
+					Parameters:  passwdParams.Parameters,
 					SecretValue: passwdParams.SecretValue,
 				}
 				updateReqParameters.Properties = props
@@ -846,6 +838,11 @@ var storesExportCmd = &cobra.Command{
 					"CreateIfMissing": store.CreateIfMissing,
 					"AgentId":         store.AgentId,
 				}
+				for _, header := range bulkStoreImportCSVHeader {
+					if strings.HasPrefix(header, "InventorySchedule.") {
+						csvData[store.Id][header] = ""
+					}
+				}
 
 				log.Debug().Msg("checking for InventorySchedule")
 				if store.InventorySchedule.Immediate != nil {
@@ -1144,7 +1141,9 @@ func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 	reqJson := gabs.New()
 	for hIdx, header := range headerRow {
 		log.Debug().Msgf("Processing header '%s'", header)
-		if strings.ToUpper(row[hIdx]) == "TRUE" {
+		if shouldTreatCSVValueAsSecretString(header) && row[hIdx] != "" {
+			reqJson.Set(row[hIdx], strings.Split(header, ".")...)
+		} else if strings.ToUpper(row[hIdx]) == "TRUE" {
 			reqJson.Set(true, strings.Split(header, ".")...)
 		} else if strings.ToUpper(row[hIdx]) == "FALSE" {
 			reqJson.Set(false, strings.Split(header, ".")...)
@@ -1164,6 +1163,44 @@ func getJsonForRequest(headerRow []string, row []string) *gabs.Container {
 		}
 	}
 	return reqJson
+}
+
+func shouldTreatCSVValueAsSecretString(header string) bool {
+	switch header {
+	case "Properties.ServerUsername", "Properties.ServerPassword", "Password":
+		return true
+	default:
+		return strings.HasSuffix(header, ".SecretValue")
+	}
+}
+
+func buildUpdateStorePasswordConfig(rowStorePassword interface{}) api.UpdateStorePasswordConfig {
+	passwdParams := api.UpdateStorePasswordConfig{
+		SecretValue: nil,
+	}
+
+	switch typedPassword := rowStorePassword.(type) {
+	case string:
+		if typedPassword != "" {
+			passwdParams.SecretValue = &typedPassword
+		}
+	case map[string]interface{}:
+		if providerId, ok := typedPassword["ProviderId"].(int); ok {
+			passwdParams.Provider = providerId
+		} else if providerId, ok := typedPassword["Provider"].(int); ok {
+			passwdParams.Provider = providerId
+		}
+		if params, ok := typedPassword["Parameters"].(map[string]interface{}); ok {
+			for k, v := range params {
+				if passwdParams.Parameters == nil {
+					passwdParams.Parameters = make(map[string]string)
+				}
+				passwdParams.Parameters[k] = fmt.Sprintf("%v", v)
+			}
+		}
+	}
+
+	return passwdParams
 }
 
 func writeCsvFile(outpath string, rows [][]string) error {

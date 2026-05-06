@@ -83,5 +83,10 @@ generate_toc:
 	@command -v markdown-toc >/dev/null 2>&1 || (echo "markdown-toc is not installed. Installing..." && npm install -g markdown-toc)
 	markdown-toc -i $(MARKDOWN_FILE) --skip 'Table of Contents'
 
+store-type-docs:
+	GOWORK=off GOCACHE=/tmp/kfutil-gocache go run ./tools/storetypedocs
 
-.PHONY: build prerelease release install test fmt vendor version setversion
+pam-operation-docs:
+	GOWORK=off GOCACHE=/tmp/kfutil-gocache go run ./tools/pamdocs
+
+.PHONY: build prerelease release install test fmt vendor version setversion store-type-docs pam-operation-docs

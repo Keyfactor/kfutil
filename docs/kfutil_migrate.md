@@ -5,8 +5,8 @@ Keyfactor Migration Tools.
 ### Synopsis
 
 Migrating to new Types and Extension implementations in Keyfactor is possible but not currently automated
-in the platform. This tool aims to assist in performing the necessary steps to migrate, in limited scenarios,
-to new Extension implementations that have definitions that differ from prior releases.
+	in the platform. This tool aims to assist in performing the necessary steps to migrate, in limited scenarios,
+	to new Extension implementations that have definitions that differ from prior releases.
 
 ### Options
 
@@ -39,9 +39,6 @@ to new Extension implementations that have definitions that differ from prior re
 
 ### SEE ALSO
 
-* [kfutil](kfutil.md)     - Keyfactor CLI utilities
-* [kfutil migrate check](kfutil_migrate_check.md)     - Check usage of a feature to migrate. Currently only PAM is
-  supported.
-* [kfutil migrate pam](kfutil_migrate_pam.md)     - Migrate existing PAM Provider usage to a new PAM Provider
-
-###### Auto generated on 26-Jan-2026
+* [kfutil](kfutil.md)	 - Keyfactor CLI utilities
+* [kfutil migrate check](kfutil_migrate_check.md)	 - Check usage of a feature to migrate. Currently only PAM is supported.
+* [kfutil migrate pam](kfutil_migrate_pam.md)	 - Migrate existing PAM Provider usage to a new PAM Provider
