@@ -1,3 +1,26 @@
+# v1.9.2
+
+## Fixes
+
+### CLI
+
+- `stores import csv`: Support create and sync workflows for certificate stores that use PAM provider-backed
+  `ServerUsername`, `ServerPassword`, and store password values.
+- `stores import csv`: Preserve JSON-shaped secret values as secret strings instead of parsing them into nested
+  request objects.
+- `login`: Add `--skip-validate` to save login configuration without validating credentials against Keyfactor Command.
+
+### Docs
+
+- Add top-level README link to the use-case documentation index.
+- Add use-case documentation for bulk certificate store creation.
+- Add use-case documentation for bulk certificate store updates.
+- Add use-case documentation for migrating certificate store credentials from static values to a PAM provider.
+- Add generated per-store-type bulk create and update use-case guides.
+- Add generated PAM Operations use-case documentation for PAM type and provider creation.
+- `makedocs` now regenerates command docs, store-type use cases, and PAM operation use cases without date-based
+  generated footers.
+
 # v1.9.1
 
 ## Fixes

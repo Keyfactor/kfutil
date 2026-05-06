@@ -37,10 +37,8 @@ A collections of APIs and utilities for interacting with Keyfactor PAM types.
 
 ### SEE ALSO
 
-* [kfutil](kfutil.md)     - Keyfactor CLI utilities
-* [kfutil pam-types create](kfutil_pam-types_create.md)     - Creates a new PAM provider type.
-* [kfutil pam-types delete](kfutil_pam-types_delete.md)     - Deletes a defined PAM Provider type by ID or Name.
-* [kfutil pam-types get](kfutil_pam-types_get.md)     - Get a specific defined PAM Provider type by ID or Name.
-* [kfutil pam-types list](kfutil_pam-types_list.md)     - Returns a list of all available PAM provider types.
-
-###### Auto generated on 26-Jan-2026
+* [kfutil](kfutil.md)	 - Keyfactor CLI utilities
+* [kfutil pam-types create](kfutil_pam-types_create.md)	 - Creates a new PAM provider type.
+* [kfutil pam-types delete](kfutil_pam-types_delete.md)	 - Deletes a defined PAM Provider type by ID or Name.
+* [kfutil pam-types get](kfutil_pam-types_get.md)	 - Get a specific defined PAM Provider type by ID or Name.
+* [kfutil pam-types list](kfutil_pam-types_list.md)	 - Returns a list of all available PAM provider types.

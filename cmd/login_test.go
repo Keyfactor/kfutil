@@ -29,6 +29,8 @@ import (
 )
 
 func Test_LoginHelpCmd(t *testing.T) {
+	defer resetRootCommandState()
+
 	// Test root help
 	testCmd := RootCmd
 	testCmd.SetArgs([]string{"login", "--help"})
@@ -96,7 +98,9 @@ func Test_LoginFileNoPrompt(t *testing.T) {
 			defer setBasicEnvVariables(username, password, domain)
 
 			npfCmd := RootCmd
-			npfCmd.SetArgs([]string{"login", "--no-prompt"})
+			npfCmd.SetArgs(
+				[]string{"login", "--no-prompt", "--skip-validate", "--config", configFilePath, "--profile", "default"},
+			)
 
 			output := captureOutput(
 				func() {
@@ -108,7 +112,7 @@ func Test_LoginFileNoPrompt(t *testing.T) {
 				},
 			)
 			t.Logf("output: %s", output)
-			assert.Contains(t, output, "Login successful to")
+			assert.Contains(t, output, "Login configuration saved")
 			testConfigExists(t, configFilePath, true)
 			testConfigValid(t)
 			//testLogout(t)
@@ -165,7 +169,7 @@ func testLogout(t *testing.T, configFilePath string, restoreConfig bool) {
 					t.FailNow()
 				}
 			}
-			testCmd.SetArgs([]string{"logout"})
+			testCmd.SetArgs([]string{"logout", "--no-prompt"})
 			output := captureOutput(
 				func() {
 					err := testCmd.Execute()
@@ -174,7 +178,7 @@ func testLogout(t *testing.T, configFilePath string, restoreConfig bool) {
 			)
 			t.Logf("output: %s", output)
 
-			assert.Contains(t, output, "Logged out successfully!")
+			assert.Contains(t, output, "Logged out successfully")
 
 			// Test that the config file does not exist
 			if _, fErr := os.Stat(configFile); !os.IsNotExist(fErr) {

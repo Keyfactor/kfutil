@@ -28,6 +28,27 @@
       },
       {
         "Id": -1,
+        "Name": "ClientId",
+        "DisplayName": "Client ID",
+        "DataType": 2,
+        "InstanceLevel": false
+      },
+      {
+        "Id": -1,
+        "Name": "ClientSecret",
+        "DisplayName": "ClientSecret",
+        "DataType": 2,
+        "InstanceLevel": false
+      },
+      {
+        "Id": -1,
+        "Name": "GrantType",
+        "DisplayName": "Grant Type",
+        "DataType": 1,
+        "InstanceLevel": false
+      },
+      {
+        "Id": -1,
         "Name": "SecretId",
         "DisplayName": "Secret ID",
         "DataType": 1,
@@ -69,6 +90,36 @@
         "Id": -1,
         "Name": "Password",
         "DisplayName": "Secret Server Password",
+        "DataType": 1,
+        "InstanceLevel": false
+      }
+    },
+    {
+      "Value": "N/A",
+      "ProviderTypeParam": {
+        "Id": -1,
+        "Name": "ClientId",
+        "DisplayName": "Client ID",
+        "DataType": 2,
+        "InstanceLevel": false
+      }
+    },
+    {
+      "Value": "N/A",
+      "ProviderTypeParam": {
+        "Id": -1,
+        "Name": "ClientSecret",
+        "DisplayName": "ClientSecret",
+        "DataType": 2,
+        "InstanceLevel": false
+      }
+    },
+    {
+      "Value": "password",
+      "ProviderTypeParam": {
+        "Id": -1,
+        "Name": "GrantType",
+        "DisplayName": "Grant Type",
         "DataType": 1,
         "InstanceLevel": false
       }

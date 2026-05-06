@@ -47,7 +47,4 @@ kfutil stores import generate-template --store-type-id <store type id> --store-t
 
 ### SEE ALSO
 
-* [kfutil stores import](kfutil_stores_import.md)     - Import a file with certificate store definitions and create them
-  in Keyfactor Command.
-
-###### Auto generated on 26-Jan-2026
+* [kfutil stores import](kfutil_stores_import.md)	 - Import a file with certificate store definitions and create them in Keyfactor Command.

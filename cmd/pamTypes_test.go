@@ -74,6 +74,8 @@ func hasIntegrationTestEnvironment() bool {
 
 // Test_PAMTypesHelpCmd tests the help command for pam-types
 func Test_PAMTypesHelpCmd(t *testing.T) {
+	defer resetRootCommandState()
+
 	tests := []struct {
 		name    string
 		args    []string
