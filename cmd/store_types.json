@@ -448,6 +448,537 @@
     "StorePathDescription": "A single specified AWS Region the store will operate in. Additional regions should get their own store defined."
   },
   {
+    "Name": "AwsSecretsManager JKS",
+    "ShortName": "AWSSMJKS",
+    "Capability": "AWSSMJKS",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "UseDefaultSdkAuth",
+        "DisplayName": "Use Default SDK Auth",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to use Default SDK credentials"
+      },
+      {
+        "Name": "DefaultSdkAssumeRole",
+        "DisplayName": "Assume new Role using Default SDK Auth",
+        "Type": "Bool",
+        "DependsOn": "UseDefaultSdkAuth",
+        "DefaultValue": "false",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to assume a new Role when using Default SDK credentials"
+      },
+      {
+        "Name": "UseOAuth",
+        "DisplayName": "Use OAuth 2.0 Provider",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to use an OAuth provider workflow to authenticate with AWS"
+      },
+      {
+        "Name": "OAuthScope",
+        "DisplayName": "OAuth Scope",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "This is the OAuth Scope needed for Okta OAuth, defined in Okta"
+      },
+      {
+        "Name": "OAuthGrantType",
+        "DisplayName": "OAuth Grant Type",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "client_credentials",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`"
+      },
+      {
+        "Name": "OAuthUrl",
+        "DisplayName": "OAuth Url",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "https://***/oauth2/default/v1/token",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The token endpoint for the OAuth 2.0 provider"
+      },
+      {
+        "Name": "OAuthClientId",
+        "DisplayName": "OAuth Client ID",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The Client ID for OAuth."
+      },
+      {
+        "Name": "OAuthClientSecret",
+        "DisplayName": "OAuth Client Secret",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The Client Secret for OAuth."
+      },
+      {
+        "Name": "UseIAM",
+        "DisplayName": "Use IAM User Auth",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS"
+      },
+      {
+        "Name": "IAMUserAccessKey",
+        "DisplayName": "IAM User Access Key",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The AWS Access Key for an IAM User"
+      },
+      {
+        "Name": "IAMUserAccessSecret",
+        "DisplayName": "IAM User Access Secret",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The AWS Access Secret for an IAM User."
+      },
+      {
+        "Name": "ExternalId",
+        "DisplayName": "sts:ExternalId",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "CertificateTags",
+        "DisplayName": "Certificate Tags",
+        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+        "Type": "string",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": ""
+      },
+      {
+        "Name": "ReplicaRegions",
+        "DisplayName": "Replica Regions",
+        "Description": "To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]",
+        "Type": "string",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": ""
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "StorePathDescription": "The store path contains the AWS region where the SecretsManager resides.  It can optionally accept values for tags OR path prefix for identifying secrets to be managed by the cert store instance.  example:'us-east-2 [prefix='dev/midwest']' or 'us-east1 [tagName='managedBy' tagValue='keyfactor']' ",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  {
+    "Name": "AwsSecretsManager PEM",
+    "ShortName": "AWSSMPEM",
+    "Capability": "AWSSMPEM",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "UseDefaultSdkAuth",
+        "DisplayName": "Use Default SDK Auth",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to use Default SDK credentials"
+      },
+      {
+        "Name": "DefaultSdkAssumeRole",
+        "DisplayName": "Assume new Role using Default SDK Auth",
+        "Type": "Bool",
+        "DependsOn": "UseDefaultSdkAuth",
+        "DefaultValue": "false",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to assume a new Role when using Default SDK credentials"
+      },
+      {
+        "Name": "UseOAuth",
+        "DisplayName": "Use OAuth 2.0 Provider",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to use an OAuth provider workflow to authenticate with AWS"
+      },
+      {
+        "Name": "OAuthScope",
+        "DisplayName": "OAuth Scope",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "This is the OAuth Scope needed for Okta OAuth, defined in Okta"
+      },
+      {
+        "Name": "OAuthGrantType",
+        "DisplayName": "OAuth Grant Type",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "client_credentials",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`"
+      },
+      {
+        "Name": "OAuthUrl",
+        "DisplayName": "OAuth Url",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "https://***/oauth2/default/v1/token",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The token endpoint for the OAuth 2.0 provider"
+      },
+      {
+        "Name": "OAuthClientId",
+        "DisplayName": "OAuth Client ID",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The Client ID for OAuth."
+      },
+      {
+        "Name": "OAuthClientSecret",
+        "DisplayName": "OAuth Client Secret",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The Client Secret for OAuth."
+      },
+      {
+        "Name": "UseIAM",
+        "DisplayName": "Use IAM User Auth",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS"
+      },
+      {
+        "Name": "IAMUserAccessKey",
+        "DisplayName": "IAM User Access Key",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The AWS Access Key for an IAM User"
+      },
+      {
+        "Name": "IAMUserAccessSecret",
+        "DisplayName": "IAM User Access Secret",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The AWS Access Secret for an IAM User."
+      },
+      {
+        "Name": "ExternalId",
+        "DisplayName": "sts:ExternalId",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "CertificateTags",
+        "DisplayName": "Certificate Tags",
+        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+        "Type": "string",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": ""
+      },
+      {
+        "Name": "ReplicaRegions",
+        "DisplayName": "Replica Regions",
+        "Description": "To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]",
+        "Type": "string",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": ""
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "StorePathDescription": "The store path contains the AWS region where the SecretsManager resides.  It can optionally accept values for tags OR path prefix for identifying secrets to be managed by the cert store instance.  example:'us-east-2 [prefix='dev/midwest']' or 'us-east1 [tagName='managedBy' tagValue='keyfactor']' ",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  {
+    "Name": "AwsSecretsManager PFX",
+    "ShortName": "AWSSMPFX",
+    "Capability": "AWSSMPFX",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "UseDefaultSdkAuth",
+        "DisplayName": "Use Default SDK Auth",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to use Default SDK credentials"
+      },
+      {
+        "Name": "DefaultSdkAssumeRole",
+        "DisplayName": "Assume new Role using Default SDK Auth",
+        "Type": "Bool",
+        "DependsOn": "UseDefaultSdkAuth",
+        "DefaultValue": "false",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to assume a new Role when using Default SDK credentials"
+      },
+      {
+        "Name": "UseOAuth",
+        "DisplayName": "Use OAuth 2.0 Provider",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to use an OAuth provider workflow to authenticate with AWS"
+      },
+      {
+        "Name": "OAuthScope",
+        "DisplayName": "OAuth Scope",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "This is the OAuth Scope needed for Okta OAuth, defined in Okta"
+      },
+      {
+        "Name": "OAuthGrantType",
+        "DisplayName": "OAuth Grant Type",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "client_credentials",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "In OAuth 2.0, the term 'grant type' refers to the way an application gets an access token. In Okta this is `client_credentials`"
+      },
+      {
+        "Name": "OAuthUrl",
+        "DisplayName": "OAuth Url",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "https://***/oauth2/default/v1/token",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The token endpoint for the OAuth 2.0 provider"
+      },
+      {
+        "Name": "OAuthClientId",
+        "DisplayName": "OAuth Client ID",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The Client ID for OAuth."
+      },
+      {
+        "Name": "OAuthClientSecret",
+        "DisplayName": "OAuth Client Secret",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The Client Secret for OAuth."
+      },
+      {
+        "Name": "UseIAM",
+        "DisplayName": "Use IAM User Auth",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "IsPAMEligible": false,
+        "Description": "A switch to enable the store to use IAM User auth to assume a role when authenticating with AWS"
+      },
+      {
+        "Name": "IAMUserAccessKey",
+        "DisplayName": "IAM User Access Key",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The AWS Access Key for an IAM User"
+      },
+      {
+        "Name": "IAMUserAccessSecret",
+        "DisplayName": "IAM User Access Secret",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The AWS Access Secret for an IAM User."
+      },
+      {
+        "Name": "ExternalId",
+        "DisplayName": "sts:ExternalId",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "CertificateTags",
+        "DisplayName": "Certificate Tags",
+        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+        "Type": "string",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": ""
+      },
+      {
+        "Name": "ReplicaRegions",
+        "DisplayName": "Replica Regions",
+        "Description": "To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]",
+        "Type": "string",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": ""
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "StorePathDescription": "The store path contains the AWS region where the SecretsManager resides.  It can optionally accept values for tags OR path prefix for identifying secrets to be managed by the cert store instance.  example:'us-east-2 [prefix='dev/midwest']' or 'us-east1 [tagName='managedBy' tagValue='keyfactor']' ",
+    "PrivateKeyAllowed": "Optional",
+    "JobProperties": [],
+    "ServerRequired": false,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Required"
+  },
+  {
     "Name": "Airlock Application Firewall Certificate",
     "ShortName": "AirlockWAF",
     "Capability": "AirlockWAF",
