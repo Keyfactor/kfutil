@@ -23,11 +23,14 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"os/user"
 	"runtime"
 	"strings"
 
 	"github.com/minio/selfupdate"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -35,10 +38,17 @@ const (
 	binaryName  = "kfutil"
 )
 
+// allowedTokenHosts are the only hosts to which GITHUB_TOKEN may be forwarded.
+var allowedTokenHosts = map[string]bool{
+	"api.github.com":               true,
+	"github.com":                   true,
+	"objects.githubusercontent.com": true,
+}
+
 // GitHubRelease is the minimal shape we need from the GitHub releases API.
 type GitHubRelease struct {
-	TagName string          `json:"tag_name"`
-	Assets  []GitHubAsset  `json:"assets"`
+	TagName string        `json:"tag_name"`
+	Assets  []GitHubAsset `json:"assets"`
 }
 
 type GitHubAsset struct {
@@ -46,12 +56,27 @@ type GitHubAsset struct {
 	BrowserDownloadURL string `json:"browser_download_url"`
 }
 
+// resolveOperator returns the current OS user name for audit log fields.
+func resolveOperator() string {
+	u, err := user.Current()
+	if err != nil {
+		return "unknown"
+	}
+	return u.Username
+}
+
 // Run fetches the target release, verifies the checksum, and replaces the
 // running binary. targetVersion may be any valid GitHub tag (e.g. "v1.9.0")
 // or empty to use the latest release.
 func Run(currentVersion, targetVersion string, dryRun, force bool) error {
+	operator := resolveOperator()
+
 	release, err := fetchRelease(targetVersion)
 	if err != nil {
+		log.Error().Err(err).
+			Str("event", "upgrade.fetch_release_failed").
+			Str("operator", operator).
+			Msg("failed to fetch release metadata")
 		return err
 	}
 
@@ -65,6 +90,15 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 	if !force && targetVersion == "" && releaseVer == currentVer {
 		fmt.Println("Already at the latest version.")
 		return nil
+	}
+
+	// Log when --force bypasses the version-match safety check.
+	if force && targetVersion == "" && releaseVer == currentVer {
+		log.Warn().
+			Str("event", "upgrade.force_override").
+			Str("operator", operator).
+			Str("version", releaseVer).
+			Msg("version-match check bypassed via --force")
 	}
 
 	assetName := archiveAssetName(release.TagName)
@@ -85,11 +119,13 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 			runtime.GOOS, runtime.GOARCH, assetName, listAssets(release.Assets))
 	}
 
+	if sumsURL == "" {
+		return fmt.Errorf("release %s has no SHA256SUMS asset — upgrade aborted", release.TagName)
+	}
+
 	if dryRun {
 		fmt.Printf("\n[dry-run] Would download : %s\n", archiveURL)
-		if sumsURL != "" {
-			fmt.Printf("[dry-run] Would verify   : %s\n", sumsURL)
-		}
+		fmt.Printf("[dry-run] Would verify   : %s\n", sumsURL)
 		fmt.Printf("[dry-run] Would replace  : %s\n", currentExecutable())
 		return nil
 	}
@@ -97,30 +133,75 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 	fmt.Printf("Downloading %s ...\n", assetName)
 	archiveData, err := download(archiveURL)
 	if err != nil {
+		log.Error().Err(err).
+			Str("event", "upgrade.download_failed").
+			Str("url", archiveURL).
+			Str("operator", operator).
+			Msg("archive download failed")
 		return fmt.Errorf("download failed: %w", err)
 	}
 
 	binary, err := extractBinary(archiveData, binaryName)
 	if err != nil {
+		log.Error().Err(err).
+			Str("event", "upgrade.extract_failed").
+			Str("operator", operator).
+			Msg("binary extraction from archive failed")
 		return fmt.Errorf("extract failed: %w", err)
 	}
 
-	if sumsURL != "" {
-		fmt.Println("Verifying checksum ...")
-		sumsData, err := download(sumsURL)
-		if err != nil {
-			return fmt.Errorf("checksum download failed: %w", err)
-		}
-		if err := verifyChecksum(binary, assetName, sumsData); err != nil {
-			return err
-		}
-		fmt.Println("Checksum OK.")
+	fmt.Println("Verifying checksum ...")
+	sumsData, err := download(sumsURL)
+	if err != nil {
+		log.Error().Err(err).
+			Str("event", "upgrade.checksum_download_failed").
+			Str("url", sumsURL).
+			Str("operator", operator).
+			Msg("SHA256SUMS download failed")
+		return fmt.Errorf("checksum download failed: %w", err)
 	}
+	// Verify the hash of the zip archive, not the extracted binary —
+	// goreleaser's SHA256SUMS records hashes of the zip archives.
+	if err := verifyChecksum(archiveData, assetName, sumsData); err != nil {
+		log.Error().Err(err).
+			Str("event", "upgrade.checksum_mismatch").
+			Str("asset", assetName).
+			Str("operator", operator).
+			Msg("checksum verification failed")
+		return err
+	}
+	fmt.Println("Checksum OK.")
+
+	exe := currentExecutable()
+	log.Info().
+		Str("event", "upgrade.applying").
+		Str("from_version", currentVer).
+		Str("to_version", releaseVer).
+		Str("executable", exe).
+		Str("operator", operator).
+		Str("source_url", archiveURL).
+		Msg("applying binary replacement")
 
 	fmt.Println("Applying update ...")
 	if err := apply(bytes.NewReader(binary)); err != nil {
+		log.Error().Err(err).
+			Str("event", "upgrade.apply_failed").
+			Str("from_version", currentVer).
+			Str("to_version", releaseVer).
+			Str("executable", exe).
+			Str("operator", operator).
+			Msg("binary replacement failed")
 		return err
 	}
+
+	log.Info().
+		Str("event", "upgrade.applied").
+		Str("from_version", currentVer).
+		Str("to_version", releaseVer).
+		Str("executable", exe).
+		Str("operator", operator).
+		Str("source_url", archiveURL).
+		Msg("binary replacement complete")
 
 	fmt.Printf("Upgraded to %s.\n", release.TagName)
 	return nil
@@ -133,14 +214,14 @@ func fetchRelease(tag string) (*GitHubRelease, error) {
 
 // fetchReleaseFrom is the testable core of fetchRelease; baseURL replaces releasesURL.
 func fetchReleaseFrom(baseURL, tag string) (*GitHubRelease, error) {
-	var url string
+	var reqURL string
 	if tag == "" {
-		url = baseURL + "/latest"
+		reqURL = baseURL + "/latest"
 	} else {
-		url = baseURL + "/tags/" + tag
+		reqURL = baseURL + "/tags/" + tag
 	}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -154,6 +235,13 @@ func fetchReleaseFrom(baseURL, tag string) (*GitHubRelease, error) {
 		return nil, fmt.Errorf("GitHub API request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	log.Debug().
+		Str("event", "upgrade.github_api_response").
+		Str("url", reqURL).
+		Str("method", http.MethodGet).
+		Int("status_code", resp.StatusCode).
+		Msg("GitHub API response received")
 
 	switch resp.StatusCode {
 	case http.StatusOK:
@@ -184,14 +272,19 @@ func archiveAssetName(tag string) string {
 	return fmt.Sprintf("kfutil_%s_%s_%s.zip", ver, goos, goarch)
 }
 
-// download fetches a URL and returns the body bytes.
-func download(url string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+// download fetches a URL and returns the body bytes. GITHUB_TOKEN is only
+// forwarded to hosts in allowedTokenHosts to prevent token exfiltration via
+// a tampered BrowserDownloadURL.
+func download(rawURL string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	if tok := os.Getenv("GITHUB_TOKEN"); tok != "" {
-		req.Header.Set("Authorization", "Bearer "+tok)
+		if parsed, err := url.Parse(rawURL); err == nil && allowedTokenHosts[parsed.Hostname()] {
+			req.Header.Set("Authorization", "Bearer "+tok)
+		}
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -200,8 +293,15 @@ func download(url string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
+	log.Debug().
+		Str("event", "upgrade.http_response").
+		Str("url", rawURL).
+		Str("method", http.MethodGet).
+		Int("status_code", resp.StatusCode).
+		Msg("HTTP response received")
+
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, url)
+		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, rawURL)
 	}
 	return io.ReadAll(resp.Body)
 }
@@ -229,10 +329,11 @@ func extractBinary(zipData []byte, name string) ([]byte, error) {
 	return nil, fmt.Errorf("binary %q not found in archive", name)
 }
 
-// verifyChecksum checks the SHA-256 of binary against the goreleaser SUMS file.
+// verifyChecksum checks the SHA-256 of archiveData against the goreleaser SUMS file.
 // The SUMS file has lines: "<hex>  <assetname.zip>"
-func verifyChecksum(binary []byte, assetName string, sumsData []byte) error {
-	h := sha256.Sum256(binary)
+// A missing entry is an error — the SUMS file must cover the target asset.
+func verifyChecksum(archiveData []byte, assetName string, sumsData []byte) error {
+	h := sha256.Sum256(archiveData)
 	got := hex.EncodeToString(h[:])
 
 	for _, line := range strings.Split(string(sumsData), "\n") {
@@ -244,8 +345,7 @@ func verifyChecksum(binary []byte, assetName string, sumsData []byte) error {
 			return nil
 		}
 	}
-	// No entry found — skip silently rather than blocking the upgrade.
-	return nil
+	return fmt.Errorf("no checksum entry found for %s in SHA256SUMS", assetName)
 }
 
 // apply replaces the running binary using minio/selfupdate.

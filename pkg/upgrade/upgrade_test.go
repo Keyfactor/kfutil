@@ -66,9 +66,11 @@ func TestVerifyChecksum_Mismatch(t *testing.T) {
 }
 
 func TestVerifyChecksum_AssetNotInSums(t *testing.T) {
-	// No matching line → silently passes (non-blocking)
+	// Missing entry must be an error — a SUMS file that doesn't cover the target
+	// asset must not silently pass, as an attacker could strip the entry.
 	err := verifyChecksum([]byte("data"), "kfutil_1.9.0_freebsd_arm64.zip", []byte("abc123  kfutil_1.9.0_linux_amd64.zip\n"))
-	require.NoError(t, err)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no checksum entry found")
 }
 
 // ── extractBinary ─────────────────────────────────────────────────────────────
@@ -110,6 +112,24 @@ func TestExtractBinary_InvalidZip(t *testing.T) {
 	_, err := extractBinary([]byte("not a zip"), "kfutil")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid zip archive")
+}
+
+// ── download (token host allowlist) ──────────────────────────────────────────
+
+func TestDownload_TokenNotSentToUntrustedHost(t *testing.T) {
+	var receivedAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedAuth = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("data"))
+	}))
+	defer srv.Close()
+
+	t.Setenv("GITHUB_TOKEN", "super-secret-token")
+
+	_, err := download(srv.URL + "/asset.zip")
+	require.NoError(t, err)
+	assert.Empty(t, receivedAuth, "GITHUB_TOKEN must not be sent to untrusted host")
 }
 
 // ── fetchRelease (via mock HTTP server) ───────────────────────────────────────
