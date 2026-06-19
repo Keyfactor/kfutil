@@ -196,8 +196,8 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 			Str("executable", currentExecutable()).
 			Str("source_url", sanitizeURL(archiveURL)).
 			Msg("dry-run: no changes applied")
-		fmt.Printf("\n[dry-run] Would download : %s\n", archiveURL)
-		fmt.Printf("[dry-run] Would verify   : %s\n", sumsURL)
+		fmt.Printf("\n[dry-run] Would download : %s\n", sanitizeURL(archiveURL))
+		fmt.Printf("[dry-run] Would verify   : %s\n", sanitizeURL(sumsURL))
 		fmt.Printf("[dry-run] Would replace  : %s\n", currentExecutable())
 		return nil
 	}
@@ -306,6 +306,11 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 
 	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
 	if err != nil {
+		log.Warn().Err(err).
+			Str("event", "upgrade.github_api_request_build_failed").
+			Str("operator", operator).
+			Str("url", sanitizeURL(reqURL)).
+			Msg("failed to construct GitHub API request")
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
@@ -386,6 +391,11 @@ func archiveAssetName(tag string) string {
 func download(rawURL, operator string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
 	if err != nil {
+		log.Warn().Err(err).
+			Str("event", "upgrade.http_request_build_failed").
+			Str("operator", operator).
+			Str("url", sanitizeURL(rawURL)).
+			Msg("failed to construct HTTP request")
 		return nil, err
 	}
 
@@ -428,7 +438,7 @@ func download(rawURL, operator string) ([]byte, error) {
 		Msg("HTTP response received")
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, rawURL)
+		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, sanitizeURL(rawURL))
 	}
 	return io.ReadAll(io.LimitReader(resp.Body, maxBinaryBytes))
 }
