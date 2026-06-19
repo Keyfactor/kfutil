@@ -69,6 +69,15 @@ func resolveOperator() string {
 	return u.Username
 }
 
+// normalizeTag returns the tag as-is, or "latest" when the tag is empty,
+// so log fields are unambiguous when no --version flag was passed.
+func normalizeTag(tag string) string {
+	if tag == "" {
+		return "latest"
+	}
+	return tag
+}
+
 // Run fetches the target release, verifies the checksum, and replaces the
 // running binary. targetVersion may be any valid GitHub tag (e.g. "v1.9.0")
 // or empty to use the latest release.
@@ -79,7 +88,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		Str("event", "upgrade.run_started").
 		Str("operator", operator).
 		Str("current_version", currentVersion).
-		Str("target_version", targetVersion).
+		Str("target_version", normalizeTag(targetVersion)).
 		Bool("force", force).
 		Bool("dry_run", dryRun).
 		Msg("upgrade run initiated")
@@ -89,7 +98,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		log.Error().Err(err).
 			Str("event", "upgrade.fetch_release_failed").
 			Str("operator", operator).
-			Str("tag", targetVersion).
+			Str("tag", normalizeTag(targetVersion)).
 			Msg("failed to fetch release metadata")
 		return err
 	}
@@ -176,8 +185,8 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 	if err != nil {
 		log.Error().Err(err).
 			Str("event", "upgrade.download_failed").
-			Str("url", archiveURL).
 			Str("operator", operator).
+			Str("source_url", archiveURL).
 			Msg("archive download failed")
 		return fmt.Errorf("download failed: %w", err)
 	}
@@ -197,8 +206,8 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 	if err != nil {
 		log.Error().Err(err).
 			Str("event", "upgrade.checksum_download_failed").
-			Str("url", sumsURL).
 			Str("operator", operator).
+			Str("sums_url", sumsURL).
 			Msg("SHA256SUMS download failed")
 		return fmt.Errorf("checksum download failed: %w", err)
 	}
@@ -226,7 +235,11 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		Msg("applying binary replacement")
 
 	fmt.Println("Applying update ...")
-	if err := apply(bytes.NewReader(binary)); err != nil {
+	if err := apply(bytes.NewReader(binary), operator); err != nil {
+		failureReason := "apply_error"
+		if os.IsPermission(err) {
+			failureReason = "permission_denied"
+		}
 		log.Error().Err(err).
 			Str("event", "upgrade.apply_failed").
 			Str("from_version", currentVer).
@@ -234,6 +247,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 			Str("executable", exe).
 			Str("operator", operator).
 			Str("source_url", archiveURL).
+			Str("failure_reason", failureReason).
 			Msg("binary replacement failed")
 		return err
 	}
@@ -281,7 +295,7 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 	}
 	defer resp.Body.Close()
 
-	log.Debug().
+	log.Info().
 		Str("event", "upgrade.github_api_response").
 		Str("url", reqURL).
 		Str("method", http.MethodGet).
@@ -341,7 +355,7 @@ func download(rawURL, operator string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	log.Debug().
+	log.Info().
 		Str("event", "upgrade.http_response").
 		Str("url", rawURL).
 		Str("method", http.MethodGet).
@@ -399,12 +413,13 @@ func verifyChecksum(archiveData []byte, assetName string, sumsData []byte) error
 }
 
 // apply replaces the running binary using minio/selfupdate.
-func apply(binary io.Reader) error {
+func apply(binary io.Reader, operator string) error {
 	err := selfupdate.Apply(binary, selfupdate.Options{})
 	if err != nil {
 		if rbErr := selfupdate.RollbackError(err); rbErr != nil {
 			log.Error().Err(rbErr).
 				Str("event", "upgrade.rollback_failed").
+				Str("operator", operator).
 				Msg("binary replacement failed and rollback also failed — binary may be corrupted")
 			return fmt.Errorf("upgrade failed and rollback also failed: %w", rbErr)
 		}

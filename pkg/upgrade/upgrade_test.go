@@ -136,6 +136,17 @@ func TestDownload_TokenSentToTrustedHost(t *testing.T) {
 	assert.Equal(t, "Bearer super-secret-token", receivedAuth, "GITHUB_TOKEN must be forwarded to trusted host")
 }
 
+func TestDownload_NonOKStatus(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer srv.Close()
+
+	_, err := download(srv.URL+"/asset.zip", "testuser")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "403")
+}
+
 func TestDownload_TokenNotSentToUntrustedHost(t *testing.T) {
 	var receivedAuth string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
