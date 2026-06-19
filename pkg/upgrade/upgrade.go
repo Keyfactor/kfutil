@@ -38,6 +38,9 @@ import (
 const (
 	releasesURL = "https://api.github.com/repos/Keyfactor/kfutil/releases"
 	binaryName  = "kfutil"
+
+	// maxBinaryBytes caps the extracted binary size to prevent OOM on malformed archives.
+	maxBinaryBytes = 100 * 1024 * 1024 // 100 MiB
 )
 
 // apiClient is used for GitHub API metadata calls (short, bounded latency).
@@ -83,6 +86,18 @@ func normalizeTag(tag string) string {
 		return "latest"
 	}
 	return tag
+}
+
+// sanitizeURL strips query-string parameters before a URL is written to a log field.
+// This prevents presigned CDN URLs (which carry time-limited credentials in their
+// query strings) from appearing in log storage.
+func sanitizeURL(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	parsed.RawQuery = ""
+	return parsed.String()
 }
 
 // Run fetches the target release, verifies the checksum, and replaces the
@@ -179,7 +194,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 			Str("from_version", currentVer).
 			Str("to_version", releaseVer).
 			Str("executable", currentExecutable()).
-			Str("source_url", archiveURL).
+			Str("source_url", sanitizeURL(archiveURL)).
 			Msg("dry-run: no changes applied")
 		fmt.Printf("\n[dry-run] Would download : %s\n", archiveURL)
 		fmt.Printf("[dry-run] Would verify   : %s\n", sumsURL)
@@ -193,7 +208,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		log.Error().Err(err).
 			Str("event", "upgrade.download_failed").
 			Str("operator", operator).
-			Str("source_url", archiveURL).
+			Str("source_url", sanitizeURL(archiveURL)).
 			Msg("archive download failed")
 		return fmt.Errorf("download failed: %w", err)
 	}
@@ -203,7 +218,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		log.Error().Err(err).
 			Str("event", "upgrade.extract_failed").
 			Str("operator", operator).
-			Str("source_url", archiveURL).
+			Str("source_url", sanitizeURL(archiveURL)).
 			Msg("binary extraction from archive failed")
 		return fmt.Errorf("extract failed: %w", err)
 	}
@@ -214,7 +229,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		log.Error().Err(err).
 			Str("event", "upgrade.checksum_download_failed").
 			Str("operator", operator).
-			Str("sums_url", sumsURL).
+			Str("sums_url", sanitizeURL(sumsURL)).
 			Msg("SHA256SUMS download failed")
 		return fmt.Errorf("checksum download failed: %w", err)
 	}
@@ -225,7 +240,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 			Str("event", "upgrade.checksum_mismatch").
 			Str("asset", assetName).
 			Str("operator", operator).
-			Str("source_url", archiveURL).
+			Str("source_url", sanitizeURL(archiveURL)).
 			Msg("checksum verification failed")
 		return err
 	}
@@ -238,7 +253,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		Str("to_version", releaseVer).
 		Str("executable", exe).
 		Str("operator", operator).
-		Str("source_url", archiveURL).
+		Str("source_url", sanitizeURL(archiveURL)).
 		Msg("applying binary replacement")
 
 	fmt.Println("Applying update ...")
@@ -253,7 +268,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 			Str("to_version", releaseVer).
 			Str("executable", exe).
 			Str("operator", operator).
-			Str("source_url", archiveURL).
+			Str("source_url", sanitizeURL(archiveURL)).
 			Str("failure_reason", failureReason).
 			Msg("binary replacement failed")
 		return err
@@ -265,7 +280,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		Str("to_version", releaseVer).
 		Str("executable", exe).
 		Str("operator", operator).
-		Str("source_url", archiveURL).
+		Str("source_url", sanitizeURL(archiveURL)).
 		Msg("binary replacement complete")
 
 	fmt.Printf("Upgraded to %s.\n", release.TagName)
@@ -283,7 +298,9 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 	if tag == "" {
 		reqURL = baseURL + "/latest"
 	} else {
-		reqURL = baseURL + "/tags/" + tag
+		// URL-encode the tag so path-separator or query characters in user
+		// input cannot alter the request URL structure.
+		reqURL = baseURL + "/tags/" + url.PathEscape(tag)
 	}
 
 	req, err := http.NewRequest(http.MethodGet, reqURL, nil)
@@ -291,7 +308,9 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
+	tokenPresent := false
 	if tok := os.Getenv("GITHUB_TOKEN"); tok != "" {
+		tokenPresent = true
 		req.Header.Set("Authorization", "Bearer "+tok)
 	}
 
@@ -304,6 +323,7 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 			Str("url", reqURL).
 			Str("method", http.MethodGet).
 			Int64("latency_ms", time.Since(start).Milliseconds()).
+			Bool("github_token_present", tokenPresent).
 			Msg("GitHub API network request failed")
 		return nil, fmt.Errorf("GitHub API request failed: %w", err)
 	}
@@ -320,6 +340,7 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 		Str("method", http.MethodGet).
 		Int("status_code", resp.StatusCode).
 		Int64("latency_ms", time.Since(start).Milliseconds()).
+		Bool("github_token_present", tokenPresent).
 		Str("operator", operator).
 		Msg("GitHub API response received")
 
@@ -367,8 +388,10 @@ func download(rawURL, operator string) ([]byte, error) {
 		return nil, err
 	}
 
+	tokenPresent := false
 	if tok := os.Getenv("GITHUB_TOKEN"); tok != "" {
 		if parsed, err := url.Parse(rawURL); err == nil && allowedTokenHosts[parsed.Hostname()] {
+			tokenPresent = true
 			req.Header.Set("Authorization", "Bearer "+tok)
 		}
 	}
@@ -379,9 +402,10 @@ func download(rawURL, operator string) ([]byte, error) {
 		log.Error().Err(err).
 			Str("event", "upgrade.http_network_error").
 			Str("operator", operator).
-			Str("url", rawURL).
+			Str("url", sanitizeURL(rawURL)).
 			Str("method", http.MethodGet).
 			Int64("latency_ms", time.Since(start).Milliseconds()).
+			Bool("github_token_present", tokenPresent).
 			Msg("HTTP network request failed")
 		return nil, err
 	}
@@ -394,10 +418,11 @@ func download(rawURL, operator string) ([]byte, error) {
 		ev = log.Info()
 	}
 	ev.Str("event", "upgrade.http_response").
-		Str("url", rawURL).
+		Str("url", sanitizeURL(rawURL)).
 		Str("method", http.MethodGet).
 		Int("status_code", resp.StatusCode).
 		Int64("latency_ms", time.Since(start).Milliseconds()).
+		Bool("github_token_present", tokenPresent).
 		Str("operator", operator).
 		Msg("HTTP response received")
 
@@ -423,7 +448,15 @@ func extractBinary(zipData []byte, name string) ([]byte, error) {
 					return nil, err
 				}
 				defer rc.Close()
-				return io.ReadAll(rc)
+				// LimitReader prevents OOM on malformed or zip-bomb archives.
+				data, err := io.ReadAll(io.LimitReader(rc, maxBinaryBytes))
+				if err != nil {
+					return nil, err
+				}
+				if int64(len(data)) >= maxBinaryBytes {
+					return nil, fmt.Errorf("binary %q exceeds maximum allowed size (%d bytes)", name, maxBinaryBytes)
+				}
+				return data, nil
 			}
 		}
 	}
@@ -460,6 +493,12 @@ func apply(binary io.Reader, operator string) error {
 				Msg("binary replacement failed and rollback also failed — binary may be corrupted")
 			return fmt.Errorf("upgrade failed and rollback also failed: %w", rbErr)
 		}
+		// Rollback succeeded — log so auditors can distinguish this outcome
+		// from a rollback failure.
+		log.Info().
+			Str("event", "upgrade.rollback_succeeded").
+			Str("operator", operator).
+			Msg("apply failed but binary was successfully rolled back to prior version")
 		if os.IsPermission(err) {
 			return fmt.Errorf("permission denied writing to %s\nTry re-running with elevated privileges (sudo kfutil upgrade)", currentExecutable())
 		}
