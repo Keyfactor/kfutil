@@ -114,6 +114,7 @@ jobs:
           echo "LATEST_TAG=${{ env.LATEST_TAG }}" | tee -a "$GITHUB_OUTPUT"
 
   call-starter-workflow:
+    if: github.ref_name != 'all'
     uses: keyfactor/actions/.github/workflows/starter.yml@v3
     needs: get-versions
     secrets:
@@ -125,7 +126,7 @@ jobs:
 
   # Tester Install Script
   Test_Install_Script:
-    runs-on: kfutil-runner-set
+    runs-on: ubuntu-latest
     needs:
       - get-versions
     #      - call-starter-workflow
