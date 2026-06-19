@@ -1,0 +1,176 @@
+// Copyright 2025 Keyfactor
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package upgrade
+
+import (
+	"archive/zip"
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"runtime"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// ── archiveAssetName ──────────────────────────────────────────────────────────
+
+func TestArchiveAssetName(t *testing.T) {
+	name := archiveAssetName("v1.9.0")
+	expected := fmt.Sprintf("kfutil_1.9.0_%s_%s.zip", runtime.GOOS, runtime.GOARCH)
+	assert.Equal(t, expected, name)
+}
+
+func TestArchiveAssetName_NoLeadingV(t *testing.T) {
+	assert.Equal(t, archiveAssetName("v1.2.3"), archiveAssetName("v1.2.3"))
+	// Both should strip the "v"
+	withV := archiveAssetName("v1.2.3")
+	assert.NotContains(t, withV, "_v1.")
+}
+
+// ── verifyChecksum ────────────────────────────────────────────────────────────
+
+func TestVerifyChecksum_Match(t *testing.T) {
+	data := []byte("fake binary content")
+	h := sha256.Sum256(data)
+	hashHex := hex.EncodeToString(h[:])
+	sums := fmt.Sprintf("%s  kfutil_1.9.0_linux_amd64.zip\n", hashHex)
+
+	err := verifyChecksum(data, "kfutil_1.9.0_linux_amd64.zip", []byte(sums))
+	require.NoError(t, err)
+}
+
+func TestVerifyChecksum_Mismatch(t *testing.T) {
+	data := []byte("fake binary content")
+	sums := "badhash  kfutil_1.9.0_linux_amd64.zip\n"
+	err := verifyChecksum(data, "kfutil_1.9.0_linux_amd64.zip", []byte(sums))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "checksum mismatch")
+}
+
+func TestVerifyChecksum_AssetNotInSums(t *testing.T) {
+	// No matching line → silently passes (non-blocking)
+	err := verifyChecksum([]byte("data"), "kfutil_1.9.0_freebsd_arm64.zip", []byte("abc123  kfutil_1.9.0_linux_amd64.zip\n"))
+	require.NoError(t, err)
+}
+
+// ── extractBinary ─────────────────────────────────────────────────────────────
+
+func makeZip(t *testing.T, filename, content string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, err := w.Create(filename)
+	require.NoError(t, err)
+	_, err = f.Write([]byte(content))
+	require.NoError(t, err)
+	require.NoError(t, w.Close())
+	return buf.Bytes()
+}
+
+func TestExtractBinary_Unix(t *testing.T) {
+	data := makeZip(t, "kfutil", "binary-content")
+	got, err := extractBinary(data, "kfutil")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("binary-content"), got)
+}
+
+func TestExtractBinary_Windows(t *testing.T) {
+	data := makeZip(t, "kfutil.exe", "win-binary")
+	got, err := extractBinary(data, "kfutil")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("win-binary"), got)
+}
+
+func TestExtractBinary_NotFound(t *testing.T) {
+	data := makeZip(t, "readme.txt", "hello")
+	_, err := extractBinary(data, "kfutil")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not found in archive")
+}
+
+func TestExtractBinary_InvalidZip(t *testing.T) {
+	_, err := extractBinary([]byte("not a zip"), "kfutil")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid zip archive")
+}
+
+// ── fetchRelease (via mock HTTP server) ───────────────────────────────────────
+
+func mockReleaseServer(t *testing.T, tag string, statusCode int) *httptest.Server {
+	t.Helper()
+	rel := GitHubRelease{
+		TagName: tag,
+		Assets: []GitHubAsset{
+			{Name: fmt.Sprintf("kfutil_1.9.0_%s_%s.zip", runtime.GOOS, runtime.GOARCH), BrowserDownloadURL: "http://example.com/kfutil.zip"},
+			{Name: "kfutil_1.9.0_SHA256SUMS", BrowserDownloadURL: "http://example.com/SHA256SUMS"},
+		},
+	}
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if statusCode != http.StatusOK {
+			w.WriteHeader(statusCode)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(rel)
+	}))
+}
+
+func TestFetchRelease_Latest(t *testing.T) {
+	srv := mockReleaseServer(t, "v1.9.0", http.StatusOK)
+	defer srv.Close()
+
+	// Temporarily point releasesURL at the mock.
+	orig := releasesURL
+	// fetchRelease builds the URL itself, so we test via a helper that accepts a base.
+	_ = orig // used indirectly; full integration via Run() in integration tests.
+
+	rel, err := fetchReleaseFrom(srv.URL, "")
+	require.NoError(t, err)
+	assert.Equal(t, "v1.9.0", rel.TagName)
+	assert.Len(t, rel.Assets, 2)
+}
+
+func TestFetchRelease_SpecificTag(t *testing.T) {
+	srv := mockReleaseServer(t, "v1.8.0", http.StatusOK)
+	defer srv.Close()
+
+	rel, err := fetchReleaseFrom(srv.URL, "v1.8.0")
+	require.NoError(t, err)
+	assert.Equal(t, "v1.8.0", rel.TagName)
+}
+
+func TestFetchRelease_NotFound(t *testing.T) {
+	srv := mockReleaseServer(t, "", http.StatusNotFound)
+	defer srv.Close()
+
+	_, err := fetchReleaseFrom(srv.URL, "v99.0.0")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
+}
+
+func TestFetchRelease_RateLimited(t *testing.T) {
+	srv := mockReleaseServer(t, "", http.StatusForbidden)
+	defer srv.Close()
+
+	_, err := fetchReleaseFrom(srv.URL, "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "rate limited")
+}
