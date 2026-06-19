@@ -254,6 +254,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		Str("executable", exe).
 		Str("operator", operator).
 		Str("source_url", sanitizeURL(archiveURL)).
+		Bool("force", force).
 		Msg("applying binary replacement")
 
 	fmt.Println("Applying update ...")
@@ -320,7 +321,7 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 		log.Error().Err(err).
 			Str("event", "upgrade.github_api_network_error").
 			Str("operator", operator).
-			Str("url", reqURL).
+			Str("url", sanitizeURL(reqURL)).
 			Str("method", http.MethodGet).
 			Int64("latency_ms", time.Since(start).Milliseconds()).
 			Bool("github_token_present", tokenPresent).
@@ -336,7 +337,7 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 		ev = log.Info()
 	}
 	ev.Str("event", "upgrade.github_api_response").
-		Str("url", reqURL).
+		Str("url", sanitizeURL(reqURL)).
 		Str("method", http.MethodGet).
 		Int("status_code", resp.StatusCode).
 		Int64("latency_ms", time.Since(start).Milliseconds()).
@@ -362,7 +363,7 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 		log.Error().Err(err).
 			Str("event", "upgrade.release_parse_failed").
 			Str("operator", operator).
-			Str("url", reqURL).
+			Str("url", sanitizeURL(reqURL)).
 			Int("status_code", resp.StatusCode).
 			Msg("failed to parse GitHub release response body")
 		return nil, fmt.Errorf("failed to parse release response: %w", err)
@@ -429,7 +430,7 @@ func download(rawURL, operator string) ([]byte, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, rawURL)
 	}
-	return io.ReadAll(resp.Body)
+	return io.ReadAll(io.LimitReader(resp.Body, maxBinaryBytes))
 }
 
 // extractBinary unpacks the binary named <name> or <name>.exe from a zip archive.
@@ -510,6 +511,9 @@ func apply(binary io.Reader, operator string) error {
 func currentExecutable() string {
 	exe, err := os.Executable()
 	if err != nil {
+		log.Warn().Err(err).
+			Str("event", "upgrade.executable_resolution_failed").
+			Msg("could not resolve executable path — audit logs will record 'kfutil' as executable")
 		return "kfutil"
 	}
 	return exe
