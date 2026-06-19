@@ -40,8 +40,8 @@ const (
 
 // allowedTokenHosts are the only hosts to which GITHUB_TOKEN may be forwarded.
 var allowedTokenHosts = map[string]bool{
-	"api.github.com":               true,
-	"github.com":                   true,
+	"api.github.com":                true,
+	"github.com":                    true,
 	"objects.githubusercontent.com": true,
 }
 
@@ -60,6 +60,9 @@ type GitHubAsset struct {
 func resolveOperator() string {
 	u, err := user.Current()
 	if err != nil {
+		log.Warn().Err(err).
+			Str("event", "upgrade.operator_resolution_failed").
+			Msg("could not resolve OS user identity — audit logs will use 'unknown'")
 		return "unknown"
 	}
 	return u.Username
@@ -71,7 +74,16 @@ func resolveOperator() string {
 func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 	operator := resolveOperator()
 
-	release, err := fetchRelease(targetVersion)
+	log.Info().
+		Str("event", "upgrade.run_started").
+		Str("operator", operator).
+		Str("current_version", currentVersion).
+		Str("target_version", targetVersion).
+		Bool("force", force).
+		Bool("dry_run", dryRun).
+		Msg("upgrade run initiated")
+
+	release, err := fetchRelease(targetVersion, operator)
 	if err != nil {
 		log.Error().Err(err).
 			Str("event", "upgrade.fetch_release_failed").
@@ -88,17 +100,24 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 	fmt.Printf("Target version  : %s\n", releaseVer)
 
 	if !force && targetVersion == "" && releaseVer == currentVer {
+		log.Info().
+			Str("event", "upgrade.already_current").
+			Str("operator", operator).
+			Str("version", currentVer).
+			Msg("binary is already at the latest version — no action taken")
 		fmt.Println("Already at the latest version.")
 		return nil
 	}
 
-	// Log when --force bypasses the version-match safety check.
-	if force && targetVersion == "" && releaseVer == currentVer {
+	// Log when --force is set regardless of whether it overrides the guard,
+	// so the flag's presence is always traceable in the audit record.
+	if force {
 		log.Warn().
 			Str("event", "upgrade.force_override").
 			Str("operator", operator).
-			Str("version", releaseVer).
-			Msg("version-match check bypassed via --force")
+			Str("current_version", currentVer).
+			Str("target_version", releaseVer).
+			Msg("--force flag set: safety checks may be bypassed")
 	}
 
 	assetName := archiveAssetName(release.TagName)
@@ -115,15 +134,36 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 	}
 
 	if archiveURL == "" {
+		log.Error().
+			Str("event", "upgrade.asset_not_found").
+			Str("operator", operator).
+			Str("tag", release.TagName).
+			Str("asset_name", assetName).
+			Str("os", runtime.GOOS).
+			Str("arch", runtime.GOARCH).
+			Msg("no matching release asset found for current platform")
 		return fmt.Errorf("no release asset found for %s/%s (looked for %q)\navailable assets:\n%s",
 			runtime.GOOS, runtime.GOARCH, assetName, listAssets(release.Assets))
 	}
 
 	if sumsURL == "" {
+		log.Error().
+			Str("event", "upgrade.sums_missing").
+			Str("operator", operator).
+			Str("tag", release.TagName).
+			Msg("release has no SHA256SUMS asset — upgrade aborted")
 		return fmt.Errorf("release %s has no SHA256SUMS asset — upgrade aborted", release.TagName)
 	}
 
 	if dryRun {
+		log.Info().
+			Str("event", "upgrade.dry_run").
+			Str("operator", operator).
+			Str("from_version", currentVer).
+			Str("to_version", releaseVer).
+			Str("executable", currentExecutable()).
+			Str("archive_url", archiveURL).
+			Msg("dry-run: no changes applied")
 		fmt.Printf("\n[dry-run] Would download : %s\n", archiveURL)
 		fmt.Printf("[dry-run] Would verify   : %s\n", sumsURL)
 		fmt.Printf("[dry-run] Would replace  : %s\n", currentExecutable())
@@ -131,7 +171,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 	}
 
 	fmt.Printf("Downloading %s ...\n", assetName)
-	archiveData, err := download(archiveURL)
+	archiveData, err := download(archiveURL, operator)
 	if err != nil {
 		log.Error().Err(err).
 			Str("event", "upgrade.download_failed").
@@ -151,7 +191,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 	}
 
 	fmt.Println("Verifying checksum ...")
-	sumsData, err := download(sumsURL)
+	sumsData, err := download(sumsURL, operator)
 	if err != nil {
 		log.Error().Err(err).
 			Str("event", "upgrade.checksum_download_failed").
@@ -208,12 +248,12 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 }
 
 // fetchRelease returns the latest release or a specific tagged release.
-func fetchRelease(tag string) (*GitHubRelease, error) {
-	return fetchReleaseFrom(releasesURL, tag)
+func fetchRelease(tag, operator string) (*GitHubRelease, error) {
+	return fetchReleaseFrom(releasesURL, tag, operator)
 }
 
 // fetchReleaseFrom is the testable core of fetchRelease; baseURL replaces releasesURL.
-func fetchReleaseFrom(baseURL, tag string) (*GitHubRelease, error) {
+func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 	var reqURL string
 	if tag == "" {
 		reqURL = baseURL + "/latest"
@@ -241,6 +281,7 @@ func fetchReleaseFrom(baseURL, tag string) (*GitHubRelease, error) {
 		Str("url", reqURL).
 		Str("method", http.MethodGet).
 		Int("status_code", resp.StatusCode).
+		Str("operator", operator).
 		Msg("GitHub API response received")
 
 	switch resp.StatusCode {
@@ -275,7 +316,7 @@ func archiveAssetName(tag string) string {
 // download fetches a URL and returns the body bytes. GITHUB_TOKEN is only
 // forwarded to hosts in allowedTokenHosts to prevent token exfiltration via
 // a tampered BrowserDownloadURL.
-func download(rawURL string) ([]byte, error) {
+func download(rawURL, operator string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
 	if err != nil {
 		return nil, err
@@ -298,6 +339,7 @@ func download(rawURL string) ([]byte, error) {
 		Str("url", rawURL).
 		Str("method", http.MethodGet).
 		Int("status_code", resp.StatusCode).
+		Str("operator", operator).
 		Msg("HTTP response received")
 
 	if resp.StatusCode != http.StatusOK {

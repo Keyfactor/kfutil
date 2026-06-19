@@ -127,7 +127,7 @@ func TestDownload_TokenNotSentToUntrustedHost(t *testing.T) {
 
 	t.Setenv("GITHUB_TOKEN", "super-secret-token")
 
-	_, err := download(srv.URL + "/asset.zip")
+	_, err := download(srv.URL+"/asset.zip", "testuser")
 	require.NoError(t, err)
 	assert.Empty(t, receivedAuth, "GITHUB_TOKEN must not be sent to untrusted host")
 }
@@ -157,12 +157,9 @@ func TestFetchRelease_Latest(t *testing.T) {
 	srv := mockReleaseServer(t, "v1.9.0", http.StatusOK)
 	defer srv.Close()
 
-	// Temporarily point releasesURL at the mock.
-	orig := releasesURL
-	// fetchRelease builds the URL itself, so we test via a helper that accepts a base.
-	_ = orig // used indirectly; full integration via Run() in integration tests.
+	// fetchRelease builds the URL itself; test via fetchReleaseFrom which accepts a base URL.
 
-	rel, err := fetchReleaseFrom(srv.URL, "")
+	rel, err := fetchReleaseFrom(srv.URL, "", "testuser")
 	require.NoError(t, err)
 	assert.Equal(t, "v1.9.0", rel.TagName)
 	assert.Len(t, rel.Assets, 2)
@@ -172,7 +169,7 @@ func TestFetchRelease_SpecificTag(t *testing.T) {
 	srv := mockReleaseServer(t, "v1.8.0", http.StatusOK)
 	defer srv.Close()
 
-	rel, err := fetchReleaseFrom(srv.URL, "v1.8.0")
+	rel, err := fetchReleaseFrom(srv.URL, "v1.8.0", "testuser")
 	require.NoError(t, err)
 	assert.Equal(t, "v1.8.0", rel.TagName)
 }
@@ -181,7 +178,7 @@ func TestFetchRelease_NotFound(t *testing.T) {
 	srv := mockReleaseServer(t, "", http.StatusNotFound)
 	defer srv.Close()
 
-	_, err := fetchReleaseFrom(srv.URL, "v99.0.0")
+	_, err := fetchReleaseFrom(srv.URL, "v99.0.0", "testuser")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
 }
@@ -190,7 +187,7 @@ func TestFetchRelease_RateLimited(t *testing.T) {
 	srv := mockReleaseServer(t, "", http.StatusForbidden)
 	defer srv.Close()
 
-	_, err := fetchReleaseFrom(srv.URL, "")
+	_, err := fetchReleaseFrom(srv.URL, "", "testuser")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "rate limited")
 }
