@@ -279,7 +279,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		Msg("applying binary replacement")
 
 	fmt.Println("Applying update ...")
-	if err := apply(bytes.NewReader(binary), operator, currentVer, releaseVer, exe); err != nil {
+	if err := apply(bytes.NewReader(binary), operator, currentVer, releaseVer, exe, sanitizeURL(archiveURL)); err != nil {
 		failureReason := "apply_error"
 		if os.IsPermission(err) {
 			failureReason = "permission_denied"
@@ -356,6 +356,10 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 	}
 	defer resp.Body.Close()
 
+	// Two events fire for non-200 responses: github_api_response (Warn) captures
+	// transport telemetry (latency, headers); github_api_rejected (Error) captures
+	// the control decision. Both are intentional — removing the Warn event would
+	// drop latency_ms from the audit trail.
 	var ev *zerolog.Event
 	if resp.StatusCode >= 400 {
 		ev = log.Warn()
@@ -464,6 +468,10 @@ func download(rawURL, operator string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
+	// Two events fire for non-200 responses: http_response (Warn) captures
+	// transport telemetry (latency, headers); http_request_failed (Error) captures
+	// the control decision. Both are intentional — removing the Warn event would
+	// drop latency_ms from the audit trail.
 	var ev *zerolog.Event
 	if resp.StatusCode >= 400 {
 		ev = log.Warn()
@@ -488,7 +496,21 @@ func download(rawURL, operator string) ([]byte, error) {
 			Msg("HTTP download request returned non-success status")
 		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, sanitizeURL(rawURL))
 	}
-	return io.ReadAll(io.LimitReader(resp.Body, maxBinaryBytes))
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxBinaryBytes))
+	if err != nil {
+		return nil, err
+	}
+	// LimitReader silently caps at maxBinaryBytes; detect and reject truncated payloads.
+	if int64(len(data)) >= maxBinaryBytes {
+		log.Error().
+			Str("event", "upgrade.download_size_limit_reached").
+			Str("operator", operator).
+			Str("url", sanitizeURL(rawURL)).
+			Int64("limit_bytes", maxBinaryBytes).
+			Msg("HTTP response body reached size cap — download rejected")
+		return nil, fmt.Errorf("response body from %s exceeded maximum allowed size (%d bytes)", sanitizeURL(rawURL), maxBinaryBytes)
+	}
+	return data, nil
 }
 
 // extractBinary unpacks the binary named <name> or <name>.exe from a zip archive.
@@ -542,13 +564,14 @@ func verifyChecksum(archiveData []byte, assetName string, sumsData []byte) error
 }
 
 // apply replaces the running binary using minio/selfupdate.
-func apply(binary io.Reader, operator, fromVersion, toVersion, exe string) error {
+func apply(binary io.Reader, operator, fromVersion, toVersion, exe, sourceURL string) error {
 	log.Info().
 		Str("event", "upgrade.apply_started").
 		Str("operator", operator).
 		Str("from_version", fromVersion).
 		Str("to_version", toVersion).
 		Str("executable", exe).
+		Str("source_url", sourceURL).
 		Msg("binary write commencing via selfupdate")
 	err := selfupdate.Apply(binary, selfupdate.Options{})
 	if err != nil {
@@ -559,6 +582,7 @@ func apply(binary io.Reader, operator, fromVersion, toVersion, exe string) error
 				Str("from_version", fromVersion).
 				Str("to_version", toVersion).
 				Str("executable", exe).
+				Str("source_url", sourceURL).
 				Msg("binary replacement failed and rollback also failed — binary may be corrupted")
 			return fmt.Errorf("upgrade failed and rollback also failed: %w", rbErr)
 		}
@@ -570,6 +594,7 @@ func apply(binary io.Reader, operator, fromVersion, toVersion, exe string) error
 			Str("from_version", fromVersion).
 			Str("to_version", toVersion).
 			Str("executable", exe).
+			Str("source_url", sourceURL).
 			Msg("apply failed but binary was successfully rolled back to prior version")
 		if os.IsPermission(err) {
 			return fmt.Errorf("permission denied writing to %s\nTry re-running with elevated privileges (sudo kfutil upgrade)", exe)

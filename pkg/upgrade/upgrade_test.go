@@ -147,6 +147,29 @@ func TestDownload_NonOKStatus(t *testing.T) {
 	assert.Contains(t, err.Error(), "403")
 }
 
+func TestDownload_BodyTruncatedAtLimit(t *testing.T) {
+	// Serve exactly maxBinaryBytes bytes — download must return an error rather
+	// than silently returning a truncated payload that would later fail checksum.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		chunk := make([]byte, 4096)
+		written := 0
+		for written < maxBinaryBytes {
+			n := maxBinaryBytes - written
+			if n > len(chunk) {
+				n = len(chunk)
+			}
+			_, _ = w.Write(chunk[:n])
+			written += n
+		}
+	}))
+	defer srv.Close()
+
+	_, err := download(srv.URL+"/big.zip", "testuser")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "exceeded maximum allowed size")
+}
+
 func TestDownload_TokenNotSentToUntrustedHost(t *testing.T) {
 	var receivedAuth string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
