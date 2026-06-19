@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"github.com/minio/selfupdate"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -38,6 +39,12 @@ const (
 	releasesURL = "https://api.github.com/repos/Keyfactor/kfutil/releases"
 	binaryName  = "kfutil"
 )
+
+// apiClient is used for GitHub API metadata calls (short, bounded latency).
+var apiClient = &http.Client{Timeout: 30 * time.Second}
+
+// downloadClient is used for binary asset downloads (larger payloads).
+var downloadClient = &http.Client{Timeout: 5 * time.Minute}
 
 // allowedTokenHosts are the only hosts to which GITHUB_TOKEN may be forwarded.
 var allowedTokenHosts = map[string]bool{
@@ -289,14 +296,26 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 	}
 
 	start := time.Now()
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := apiClient.Do(req)
 	if err != nil {
+		log.Error().Err(err).
+			Str("event", "upgrade.github_api_network_error").
+			Str("operator", operator).
+			Str("url", reqURL).
+			Str("method", http.MethodGet).
+			Int64("latency_ms", time.Since(start).Milliseconds()).
+			Msg("GitHub API network request failed")
 		return nil, fmt.Errorf("GitHub API request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	log.Info().
-		Str("event", "upgrade.github_api_response").
+	var ev *zerolog.Event
+	if resp.StatusCode >= 400 {
+		ev = log.Warn()
+	} else {
+		ev = log.Info()
+	}
+	ev.Str("event", "upgrade.github_api_response").
 		Str("url", reqURL).
 		Str("method", http.MethodGet).
 		Int("status_code", resp.StatusCode).
@@ -319,6 +338,12 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 
 	var rel GitHubRelease
 	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
+		log.Error().Err(err).
+			Str("event", "upgrade.release_parse_failed").
+			Str("operator", operator).
+			Str("url", reqURL).
+			Int("status_code", resp.StatusCode).
+			Msg("failed to parse GitHub release response body")
 		return nil, fmt.Errorf("failed to parse release response: %w", err)
 	}
 	return &rel, nil
@@ -349,14 +374,26 @@ func download(rawURL, operator string) ([]byte, error) {
 	}
 
 	start := time.Now()
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := downloadClient.Do(req)
 	if err != nil {
+		log.Error().Err(err).
+			Str("event", "upgrade.http_network_error").
+			Str("operator", operator).
+			Str("url", rawURL).
+			Str("method", http.MethodGet).
+			Int64("latency_ms", time.Since(start).Milliseconds()).
+			Msg("HTTP network request failed")
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	log.Info().
-		Str("event", "upgrade.http_response").
+	var ev *zerolog.Event
+	if resp.StatusCode >= 400 {
+		ev = log.Warn()
+	} else {
+		ev = log.Info()
+	}
+	ev.Str("event", "upgrade.http_response").
 		Str("url", rawURL).
 		Str("method", http.MethodGet).
 		Int("status_code", resp.StatusCode).
