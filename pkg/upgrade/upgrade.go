@@ -97,6 +97,7 @@ func sanitizeURL(rawURL string) string {
 		return rawURL
 	}
 	parsed.RawQuery = ""
+	parsed.Fragment = ""
 	return parsed.String()
 }
 
@@ -373,13 +374,34 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 	switch resp.StatusCode {
 	case http.StatusOK:
 	case http.StatusNotFound:
+		var errMsg string
 		if tag != "" {
-			return nil, fmt.Errorf("release tag %q not found", tag)
+			errMsg = fmt.Sprintf("release tag %q not found", tag)
+		} else {
+			errMsg = "no releases found for this repository"
 		}
-		return nil, fmt.Errorf("no releases found for this repository")
+		log.Error().
+			Str("event", "upgrade.github_api_rejected").
+			Str("operator", operator).
+			Int("status_code", resp.StatusCode).
+			Str("url", sanitizeURL(reqURL)).
+			Msg("GitHub API rejected the upgrade request")
+		return nil, fmt.Errorf("%s", errMsg)
 	case http.StatusForbidden, http.StatusTooManyRequests:
+		log.Error().
+			Str("event", "upgrade.github_api_rejected").
+			Str("operator", operator).
+			Int("status_code", resp.StatusCode).
+			Str("url", sanitizeURL(reqURL)).
+			Msg("GitHub API rejected the upgrade request")
 		return nil, fmt.Errorf("GitHub API rate limited (HTTP %d) — set GITHUB_TOKEN to increase limits", resp.StatusCode)
 	default:
+		log.Error().
+			Str("event", "upgrade.github_api_rejected").
+			Str("operator", operator).
+			Int("status_code", resp.StatusCode).
+			Str("url", sanitizeURL(reqURL)).
+			Msg("GitHub API rejected the upgrade request")
 		return nil, fmt.Errorf("GitHub API returned HTTP %d", resp.StatusCode)
 	}
 
@@ -458,6 +480,12 @@ func download(rawURL, operator string) ([]byte, error) {
 		Msg("HTTP response received")
 
 	if resp.StatusCode != http.StatusOK {
+		log.Error().
+			Str("event", "upgrade.http_request_failed").
+			Str("operator", operator).
+			Int("status_code", resp.StatusCode).
+			Str("url", sanitizeURL(rawURL)).
+			Msg("HTTP download request returned non-success status")
 		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, sanitizeURL(rawURL))
 	}
 	return io.ReadAll(io.LimitReader(resp.Body, maxBinaryBytes))
@@ -515,6 +543,13 @@ func verifyChecksum(archiveData []byte, assetName string, sumsData []byte) error
 
 // apply replaces the running binary using minio/selfupdate.
 func apply(binary io.Reader, operator, fromVersion, toVersion, exe string) error {
+	log.Info().
+		Str("event", "upgrade.apply_started").
+		Str("operator", operator).
+		Str("from_version", fromVersion).
+		Str("to_version", toVersion).
+		Str("executable", exe).
+		Msg("binary write commencing via selfupdate")
 	err := selfupdate.Apply(binary, selfupdate.Options{})
 	if err != nil {
 		if rbErr := selfupdate.RollbackError(err); rbErr != nil {
@@ -527,9 +562,9 @@ func apply(binary io.Reader, operator, fromVersion, toVersion, exe string) error
 				Msg("binary replacement failed and rollback also failed — binary may be corrupted")
 			return fmt.Errorf("upgrade failed and rollback also failed: %w", rbErr)
 		}
-		// Rollback succeeded — log so auditors can distinguish this outcome
-		// from a rollback failure.
-		log.Info().
+		// Rollback succeeded — log at Warn so auditors can distinguish a
+		// recovery action from routine Info events.
+		log.Warn().
 			Str("event", "upgrade.rollback_succeeded").
 			Str("operator", operator).
 			Str("from_version", fromVersion).

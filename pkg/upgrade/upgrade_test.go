@@ -241,3 +241,38 @@ func TestSanitizeURL_ParseErrorFallback(t *testing.T) {
 	got := sanitizeURL(raw)
 	assert.Equal(t, raw, got)
 }
+
+func TestSanitizeURL_StripsFragment(t *testing.T) {
+	raw := "https://github.com/Keyfactor/kfutil/releases/tag/v1.9.0#readme"
+	got := sanitizeURL(raw)
+	assert.NotContains(t, got, "#")
+	assert.NotContains(t, got, "readme")
+}
+
+// ── extractBinary size cap ────────────────────────────────────────────────────
+
+func TestExtractBinary_ExceedsMaxSize(t *testing.T) {
+	// Build a zip with an entry that is exactly maxBinaryBytes bytes.
+	// extractBinary must return an error rather than returning a slice of that size.
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	f, err := w.Create("kfutil")
+	require.NoError(t, err)
+	// Write maxBinaryBytes bytes — this will trigger the size-cap check.
+	chunk := make([]byte, 4096)
+	written := 0
+	for written < maxBinaryBytes {
+		n := maxBinaryBytes - written
+		if n > len(chunk) {
+			n = len(chunk)
+		}
+		_, err = f.Write(chunk[:n])
+		require.NoError(t, err)
+		written += n
+	}
+	require.NoError(t, w.Close())
+
+	_, err = extractBinary(buf.Bytes(), "kfutil")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "exceeds maximum allowed size")
+}
