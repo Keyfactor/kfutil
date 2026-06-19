@@ -1,12 +1,35 @@
-## kfutil
+## kfutil upgrade
 
-Keyfactor CLI utilities
+Upgrade kfutil to the latest release
 
 ### Synopsis
 
-A CLI wrapper around the Keyfactor Platform API.
+Fetches a kfutil release from GitHub, verifies its SHA-256 checksum,
+and atomically replaces the running binary.
+
+By default the latest published release is installed. Pass --version with any
+valid GitHub tag (e.g. v1.9.0, v1.10.0-beta.1) to install a specific release,
+including pre-releases and older versions.
+
+Examples:
+  kfutil upgrade                      # install latest
+  kfutil upgrade --version v1.8.0    # install a specific tag
+  kfutil upgrade --dry-run           # preview without changing anything
+
+```
+kfutil upgrade [flags]
+```
 
 ### Options
+
+```
+      --dry-run          Show what would be downloaded without replacing the binary
+      --force            Upgrade even if already at the target version
+  -h, --help             help for upgrade
+      --version string   GitHub tag to install (default: latest release)
+```
+
+### Options inherited from parent commands
 
 ```
       --api-path string                API Path to use for authenticating to Keyfactor Command. (default is KeyfactorAPI) (default "KeyfactorAPI")
@@ -19,7 +42,6 @@ A CLI wrapper around the Keyfactor Platform API.
       --domain string                  Domain to use for authenticating to Keyfactor Command.
       --exp                            Enable expEnabled features. (USE AT YOUR OWN RISK, these features are not supported and may change or be removed at any time.)
       --format text                    How to format the CLI output. Currently only text is supported. (default "text")
-  -h, --help                           help for kfutil
       --hostname string                Hostname to use for authenticating to Keyfactor Command.
       --no-prompt                      Do not prompt for any user input and assume defaults or environmental variables are set.
       --offline                        Will not attempt to connect to GitHub for latest release information and resources.
@@ -32,19 +54,4 @@ A CLI wrapper around the Keyfactor Platform API.
 
 ### SEE ALSO
 
-* [kfutil completion](kfutil_completion.md)	 - Generate the autocompletion script for the specified shell
-* [kfutil containers](kfutil_containers.md)	 - Keyfactor certificate store container API and utilities.
-* [kfutil export](kfutil_export.md)	 - Keyfactor instance export utilities.
-* [kfutil helm](kfutil_helm.md)	 - Helm utilities for configuring Keyfactor Helm charts
-* [kfutil import](kfutil_import.md)	 - Keyfactor instance import utilities.
-* [kfutil login](kfutil_login.md)	 - User interactive login to Keyfactor. Stores the credentials in the config file '$HOME/.keyfactor/command_config.json'.
-* [kfutil logout](kfutil_logout.md)	 - Unsets environment variables and removes the stored credentials file.
-* [kfutil migrate](kfutil_migrate.md)	 - Keyfactor Migration Tools.
-* [kfutil orchs](kfutil_orchs.md)	 - Keyfactor agents/orchestrators APIs and utilities.
-* [kfutil pam](kfutil_pam.md)	 - Keyfactor PAM Provider APIs.
-* [kfutil pam-types](kfutil_pam-types.md)	 - Keyfactor PAM types APIs and utilities.
-* [kfutil status](kfutil_status.md)	 - List the status of Keyfactor services.
-* [kfutil store-types](kfutil_store-types.md)	 - Keyfactor certificate store types APIs and utilities.
-* [kfutil stores](kfutil_stores.md)	 - Keyfactor certificate stores APIs and utilities.
-* [kfutil upgrade](kfutil_upgrade.md)	 - Upgrade kfutil to the latest release
-* [kfutil version](kfutil_version.md)	 - Shows version of kfutil
+* [kfutil](kfutil.md)	 - Keyfactor CLI utilities
