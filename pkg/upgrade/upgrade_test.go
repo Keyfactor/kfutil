@@ -26,9 +26,23 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// captureLog redirects the global zerolog logger to a buffer for the duration
+// of the test, then restores it. Returns the buffer so callers can assert on
+// logged event names.
+func captureLog(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	orig := log.Logger
+	log.Logger = zerolog.New(&buf)
+	t.Cleanup(func() { log.Logger = orig })
+	return &buf
+}
 
 // ── archiveAssetName ──────────────────────────────────────────────────────────
 
@@ -137,6 +151,7 @@ func TestDownload_TokenSentToTrustedHost(t *testing.T) {
 }
 
 func TestDownload_NonOKStatus(t *testing.T) {
+	logBuf := captureLog(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 	}))
@@ -145,11 +160,13 @@ func TestDownload_NonOKStatus(t *testing.T) {
 	_, err := download(srv.URL+"/asset.zip", "testuser")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "403")
+	assert.Contains(t, logBuf.String(), "upgrade.http_request_failed", "audit event must fire on non-200 download")
 }
 
 func TestDownload_BodyTruncatedAtLimit(t *testing.T) {
 	// Serve exactly maxBinaryBytes bytes — download must return an error rather
 	// than silently returning a truncated payload that would later fail checksum.
+	logBuf := captureLog(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		chunk := make([]byte, 4096)
@@ -168,6 +185,7 @@ func TestDownload_BodyTruncatedAtLimit(t *testing.T) {
 	_, err := download(srv.URL+"/big.zip", "testuser")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "exceeded maximum allowed size")
+	assert.Contains(t, logBuf.String(), "upgrade.download_size_limit_reached", "audit event must fire on body size cap")
 }
 
 func TestDownload_TokenNotSentToUntrustedHost(t *testing.T) {
@@ -238,12 +256,14 @@ func TestFetchRelease_NotFound(t *testing.T) {
 }
 
 func TestFetchRelease_RateLimited(t *testing.T) {
+	logBuf := captureLog(t)
 	srv := mockReleaseServer(t, "", http.StatusForbidden)
 	defer srv.Close()
 
 	_, err := fetchReleaseFrom(srv.URL, "", "testuser")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "rate limited")
+	assert.Contains(t, logBuf.String(), "upgrade.github_api_rejected", "audit event must fire on rate-limited response")
 }
 
 // ── sanitizeURL ───────────────────────────────────────────────────────────────

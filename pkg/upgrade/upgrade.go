@@ -498,6 +498,11 @@ func download(rawURL, operator string) ([]byte, error) {
 	}
 	data, err := io.ReadAll(io.LimitReader(resp.Body, maxBinaryBytes))
 	if err != nil {
+		log.Error().Err(err).
+			Str("event", "upgrade.http_body_read_error").
+			Str("operator", operator).
+			Str("url", sanitizeURL(rawURL)).
+			Msg("HTTP response body read failed after successful connection")
 		return nil, err
 	}
 	// LimitReader silently caps at maxBinaryBytes; detect and reject truncated payloads.
@@ -587,8 +592,9 @@ func apply(binary io.Reader, operator, fromVersion, toVersion, exe, sourceURL st
 			return fmt.Errorf("upgrade failed and rollback also failed: %w", rbErr)
 		}
 		// Rollback succeeded — log at Warn so auditors can distinguish a
-		// recovery action from routine Info events.
-		log.Warn().
+		// recovery action from routine Info events. Include the original error
+		// so the root cause is in the structured record (SOC1 completeness).
+		log.Warn().Err(err).
 			Str("event", "upgrade.rollback_succeeded").
 			Str("operator", operator).
 			Str("from_version", fromVersion).
