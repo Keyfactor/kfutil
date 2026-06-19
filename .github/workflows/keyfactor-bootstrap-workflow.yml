@@ -126,6 +126,7 @@ jobs:
 
   # Tester Install Script
   Test_Install_Script:
+    if: github.ref_name != 'all'
     runs-on: ubuntu-latest
     needs:
       - get-versions
