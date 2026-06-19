@@ -116,6 +116,26 @@ func TestExtractBinary_InvalidZip(t *testing.T) {
 
 // ── download (token host allowlist) ──────────────────────────────────────────
 
+func TestDownload_TokenSentToTrustedHost(t *testing.T) {
+	var receivedAuth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedAuth = r.Header.Get("Authorization")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("data"))
+	}))
+	defer srv.Close()
+
+	// Temporarily register the test server's host (127.0.0.1) as trusted.
+	allowedTokenHosts["127.0.0.1"] = true
+	t.Cleanup(func() { delete(allowedTokenHosts, "127.0.0.1") })
+
+	t.Setenv("GITHUB_TOKEN", "super-secret-token")
+
+	_, err := download(srv.URL+"/asset.zip", "testuser")
+	require.NoError(t, err)
+	assert.Equal(t, "Bearer super-secret-token", receivedAuth, "GITHUB_TOKEN must be forwarded to trusted host")
+}
+
 func TestDownload_TokenNotSentToUntrustedHost(t *testing.T) {
 	var receivedAuth string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

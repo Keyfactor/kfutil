@@ -28,6 +28,7 @@ import (
 	"os/user"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/minio/selfupdate"
 	"github.com/rs/zerolog/log"
@@ -88,6 +89,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		log.Error().Err(err).
 			Str("event", "upgrade.fetch_release_failed").
 			Str("operator", operator).
+			Str("tag", targetVersion).
 			Msg("failed to fetch release metadata")
 		return err
 	}
@@ -109,8 +111,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		return nil
 	}
 
-	// Log when --force is set regardless of whether it overrides the guard,
-	// so the flag's presence is always traceable in the audit record.
+	// Log whenever --force is set so the flag is always traceable in the audit record.
 	if force {
 		log.Warn().
 			Str("event", "upgrade.force_override").
@@ -162,7 +163,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 			Str("from_version", currentVer).
 			Str("to_version", releaseVer).
 			Str("executable", currentExecutable()).
-			Str("archive_url", archiveURL).
+			Str("source_url", archiveURL).
 			Msg("dry-run: no changes applied")
 		fmt.Printf("\n[dry-run] Would download : %s\n", archiveURL)
 		fmt.Printf("[dry-run] Would verify   : %s\n", sumsURL)
@@ -186,6 +187,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		log.Error().Err(err).
 			Str("event", "upgrade.extract_failed").
 			Str("operator", operator).
+			Str("source_url", archiveURL).
 			Msg("binary extraction from archive failed")
 		return fmt.Errorf("extract failed: %w", err)
 	}
@@ -207,6 +209,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 			Str("event", "upgrade.checksum_mismatch").
 			Str("asset", assetName).
 			Str("operator", operator).
+			Str("source_url", archiveURL).
 			Msg("checksum verification failed")
 		return err
 	}
@@ -230,6 +233,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 			Str("to_version", releaseVer).
 			Str("executable", exe).
 			Str("operator", operator).
+			Str("source_url", archiveURL).
 			Msg("binary replacement failed")
 		return err
 	}
@@ -270,6 +274,7 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 		req.Header.Set("Authorization", "Bearer "+tok)
 	}
 
+	start := time.Now()
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("GitHub API request failed: %w", err)
@@ -281,6 +286,7 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 		Str("url", reqURL).
 		Str("method", http.MethodGet).
 		Int("status_code", resp.StatusCode).
+		Int64("latency_ms", time.Since(start).Milliseconds()).
 		Str("operator", operator).
 		Msg("GitHub API response received")
 
@@ -328,6 +334,7 @@ func download(rawURL, operator string) ([]byte, error) {
 		}
 	}
 
+	start := time.Now()
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -339,6 +346,7 @@ func download(rawURL, operator string) ([]byte, error) {
 		Str("url", rawURL).
 		Str("method", http.MethodGet).
 		Int("status_code", resp.StatusCode).
+		Int64("latency_ms", time.Since(start).Milliseconds()).
 		Str("operator", operator).
 		Msg("HTTP response received")
 
@@ -395,6 +403,9 @@ func apply(binary io.Reader) error {
 	err := selfupdate.Apply(binary, selfupdate.Options{})
 	if err != nil {
 		if rbErr := selfupdate.RollbackError(err); rbErr != nil {
+			log.Error().Err(rbErr).
+				Str("event", "upgrade.rollback_failed").
+				Msg("binary replacement failed and rollback also failed — binary may be corrupted")
 			return fmt.Errorf("upgrade failed and rollback also failed: %w", rbErr)
 		}
 		if os.IsPermission(err) {

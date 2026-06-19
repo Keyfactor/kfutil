@@ -18,6 +18,7 @@ import (
 	"kfutil/pkg/upgrade"
 	"kfutil/pkg/version"
 
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
 
@@ -39,6 +40,14 @@ Examples:
 		targetVersion, _ := cmd.Flags().GetString("version")
 		dryRun, _ := cmd.Flags().GetBool("dry-run")
 		force, _ := cmd.Flags().GetBool("force")
+		// Upgrade always emits Info+ audit events regardless of --debug.
+		// Other commands use informDebug() which sets Disabled when debug is off,
+		// but the binary-replacement audit trail must be unconditionally durable.
+		if debugFlag {
+			zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		} else {
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		}
 		return upgrade.Run(version.VERSION, targetVersion, dryRun, force)
 	},
 }
