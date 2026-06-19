@@ -88,9 +88,9 @@ func normalizeTag(tag string) string {
 	return tag
 }
 
-// sanitizeURL strips query-string parameters before a URL is written to a log field.
-// This prevents presigned CDN URLs (which carry time-limited credentials in their
-// query strings) from appearing in log storage.
+// sanitizeURL strips query-string parameters before a URL is written to a log
+// field or console output. This prevents presigned CDN URLs (which carry
+// time-limited credentials in their query strings) from appearing in logs.
 func sanitizeURL(rawURL string) string {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
@@ -98,6 +98,19 @@ func sanitizeURL(rawURL string) string {
 	}
 	parsed.RawQuery = ""
 	return parsed.String()
+}
+
+// currentExecutable resolves the path to the running binary for audit log fields.
+func currentExecutable(operator string) string {
+	exe, err := os.Executable()
+	if err != nil {
+		log.Warn().Err(err).
+			Str("event", "upgrade.executable_resolution_failed").
+			Str("operator", operator).
+			Msg("could not resolve executable path — audit logs will record 'kfutil' as executable")
+		return "kfutil"
+	}
+	return exe
 }
 
 // Run fetches the target release, verifies the checksum, and replaces the
@@ -187,18 +200,20 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		return fmt.Errorf("release %s has no SHA256SUMS asset — upgrade aborted", release.TagName)
 	}
 
+	exe := currentExecutable(operator)
+
 	if dryRun {
 		log.Info().
 			Str("event", "upgrade.dry_run").
 			Str("operator", operator).
 			Str("from_version", currentVer).
 			Str("to_version", releaseVer).
-			Str("executable", currentExecutable()).
+			Str("executable", exe).
 			Str("source_url", sanitizeURL(archiveURL)).
 			Msg("dry-run: no changes applied")
 		fmt.Printf("\n[dry-run] Would download : %s\n", sanitizeURL(archiveURL))
 		fmt.Printf("[dry-run] Would verify   : %s\n", sanitizeURL(sumsURL))
-		fmt.Printf("[dry-run] Would replace  : %s\n", currentExecutable())
+		fmt.Printf("[dry-run] Would replace  : %s\n", exe)
 		return nil
 	}
 
@@ -244,9 +259,14 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 			Msg("checksum verification failed")
 		return err
 	}
+	log.Info().
+		Str("event", "upgrade.checksum_verified").
+		Str("operator", operator).
+		Str("asset", assetName).
+		Str("source_url", sanitizeURL(archiveURL)).
+		Msg("SHA-256 checksum verified successfully")
 	fmt.Println("Checksum OK.")
 
-	exe := currentExecutable()
 	log.Info().
 		Str("event", "upgrade.applying").
 		Str("from_version", currentVer).
@@ -258,7 +278,7 @@ func Run(currentVersion, targetVersion string, dryRun, force bool) error {
 		Msg("applying binary replacement")
 
 	fmt.Println("Applying update ...")
-	if err := apply(bytes.NewReader(binary), operator); err != nil {
+	if err := apply(bytes.NewReader(binary), operator, currentVer, releaseVer, exe); err != nil {
 		failureReason := "apply_error"
 		if os.IsPermission(err) {
 			failureReason = "permission_denied"
@@ -494,13 +514,16 @@ func verifyChecksum(archiveData []byte, assetName string, sumsData []byte) error
 }
 
 // apply replaces the running binary using minio/selfupdate.
-func apply(binary io.Reader, operator string) error {
+func apply(binary io.Reader, operator, fromVersion, toVersion, exe string) error {
 	err := selfupdate.Apply(binary, selfupdate.Options{})
 	if err != nil {
 		if rbErr := selfupdate.RollbackError(err); rbErr != nil {
 			log.Error().Err(rbErr).
 				Str("event", "upgrade.rollback_failed").
 				Str("operator", operator).
+				Str("from_version", fromVersion).
+				Str("to_version", toVersion).
+				Str("executable", exe).
 				Msg("binary replacement failed and rollback also failed — binary may be corrupted")
 			return fmt.Errorf("upgrade failed and rollback also failed: %w", rbErr)
 		}
@@ -509,24 +532,16 @@ func apply(binary io.Reader, operator string) error {
 		log.Info().
 			Str("event", "upgrade.rollback_succeeded").
 			Str("operator", operator).
+			Str("from_version", fromVersion).
+			Str("to_version", toVersion).
+			Str("executable", exe).
 			Msg("apply failed but binary was successfully rolled back to prior version")
 		if os.IsPermission(err) {
-			return fmt.Errorf("permission denied writing to %s\nTry re-running with elevated privileges (sudo kfutil upgrade)", currentExecutable())
+			return fmt.Errorf("permission denied writing to %s\nTry re-running with elevated privileges (sudo kfutil upgrade)", exe)
 		}
 		return fmt.Errorf("upgrade failed: %w", err)
 	}
 	return nil
-}
-
-func currentExecutable() string {
-	exe, err := os.Executable()
-	if err != nil {
-		log.Warn().Err(err).
-			Str("event", "upgrade.executable_resolution_failed").
-			Msg("could not resolve executable path — audit logs will record 'kfutil' as executable")
-		return "kfutil"
-	}
-	return exe
 }
 
 func listAssets(assets []GitHubAsset) string {

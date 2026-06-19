@@ -222,3 +222,22 @@ func TestFetchRelease_RateLimited(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "rate limited")
 }
+
+// ── sanitizeURL ───────────────────────────────────────────────────────────────
+
+func TestSanitizeURL_StripsQueryParams(t *testing.T) {
+	raw := "https://objects.githubusercontent.com/github-production-release-asset/abc123/kfutil.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKID&X-Amz-Signature=deadbeef"
+	got := sanitizeURL(raw)
+	assert.Equal(t, "https://objects.githubusercontent.com/github-production-release-asset/abc123/kfutil.zip", got)
+	assert.NotContains(t, got, "X-Amz")
+	assert.NotContains(t, got, "Signature")
+	assert.NotContains(t, got, "?")
+}
+
+func TestSanitizeURL_ParseErrorFallback(t *testing.T) {
+	// An unparseable URL must be returned as-is — better to log a weird string
+	// than to panic or drop the URL entirely from audit output.
+	raw := "://not a valid url"
+	got := sanitizeURL(raw)
+	assert.Equal(t, raw, got)
+}
