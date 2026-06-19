@@ -130,6 +130,10 @@ func TestExtractBinary_InvalidZip(t *testing.T) {
 
 // ── download (token host allowlist) ──────────────────────────────────────────
 
+// TestDownload_TokenSentToTrustedHost and TestDownload_TokenNotSentToUntrustedHost
+// must NOT run in parallel: the former mutates allowedTokenHosts (127.0.0.1 → true)
+// which would cause the latter to see the test server as trusted and silently invert
+// its assertion. The t.Cleanup restores state, but only after the test completes.
 func TestDownload_TokenSentToTrustedHost(t *testing.T) {
 	var receivedAuth string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

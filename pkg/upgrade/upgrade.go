@@ -335,10 +335,12 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	tokenPresent := false
-	if tok := os.Getenv("GITHUB_TOKEN"); tok != "" {
-		tokenPresent = true
-		req.Header.Set("Authorization", "Bearer "+tok)
+	tokenPresent := os.Getenv("GITHUB_TOKEN") != ""
+	tokenForwarded := false
+	if tokenPresent {
+		// GitHub API is always a trusted host — token is always forwarded when present.
+		tokenForwarded = true
+		req.Header.Set("Authorization", "Bearer "+os.Getenv("GITHUB_TOKEN"))
 	}
 
 	start := time.Now()
@@ -351,6 +353,7 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 			Str("method", http.MethodGet).
 			Int64("latency_ms", time.Since(start).Milliseconds()).
 			Bool("github_token_present", tokenPresent).
+			Bool("github_token_forwarded", tokenForwarded).
 			Msg("GitHub API network request failed")
 		return nil, fmt.Errorf("GitHub API request failed: %w", err)
 	}
@@ -372,6 +375,7 @@ func fetchReleaseFrom(baseURL, tag, operator string) (*GitHubRelease, error) {
 		Int("status_code", resp.StatusCode).
 		Int64("latency_ms", time.Since(start).Milliseconds()).
 		Bool("github_token_present", tokenPresent).
+		Bool("github_token_forwarded", tokenForwarded).
 		Str("operator", operator).
 		Msg("GitHub API response received")
 
@@ -445,10 +449,12 @@ func download(rawURL, operator string) ([]byte, error) {
 		return nil, err
 	}
 
-	tokenPresent := false
-	if tok := os.Getenv("GITHUB_TOKEN"); tok != "" {
+	tok := os.Getenv("GITHUB_TOKEN")
+	tokenPresent := tok != ""
+	tokenForwarded := false
+	if tokenPresent {
 		if parsed, err := url.Parse(rawURL); err == nil && allowedTokenHosts[parsed.Hostname()] {
-			tokenPresent = true
+			tokenForwarded = true
 			req.Header.Set("Authorization", "Bearer "+tok)
 		}
 	}
@@ -463,6 +469,7 @@ func download(rawURL, operator string) ([]byte, error) {
 			Str("method", http.MethodGet).
 			Int64("latency_ms", time.Since(start).Milliseconds()).
 			Bool("github_token_present", tokenPresent).
+			Bool("github_token_forwarded", tokenForwarded).
 			Msg("HTTP network request failed")
 		return nil, err
 	}
@@ -484,6 +491,7 @@ func download(rawURL, operator string) ([]byte, error) {
 		Int("status_code", resp.StatusCode).
 		Int64("latency_ms", time.Since(start).Milliseconds()).
 		Bool("github_token_present", tokenPresent).
+		Bool("github_token_forwarded", tokenForwarded).
 		Str("operator", operator).
 		Msg("HTTP response received")
 
@@ -580,9 +588,11 @@ func apply(binary io.Reader, operator, fromVersion, toVersion, exe, sourceURL st
 		Msg("binary write commencing via selfupdate")
 	err := selfupdate.Apply(binary, selfupdate.Options{})
 	if err != nil {
+		applyErr := err // preserve original cause before RollbackError unwraps it
 		if rbErr := selfupdate.RollbackError(err); rbErr != nil {
 			log.Error().Err(rbErr).
 				Str("event", "upgrade.rollback_failed").
+				Str("apply_error", applyErr.Error()).
 				Str("operator", operator).
 				Str("from_version", fromVersion).
 				Str("to_version", toVersion).
