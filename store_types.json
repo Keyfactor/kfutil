@@ -5234,6 +5234,120 @@
     "CustomAliasAllowed": "Required"
   },
   {
+    "Name": "PingOne Application Binding",
+    "ShortName": "PingOneBind",
+    "Capability": "PingOneBind",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Inventory": true,
+      "Remove": false
+    },
+    "Properties": [
+      {
+        "Name": "Region",
+        "DisplayName": "PingOne Region",
+        "Type": "MultipleChoice",
+        "DefaultValue": "NA",
+        "Options": "NA,EU,CA,AP,AU,SG",
+        "Required": true
+      },
+      {
+        "Name": "WorkerEnvironmentId",
+        "DisplayName": "Worker App Environment ID (defaults to Store Path)",
+        "Type": "String",
+        "Required": false
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "KeyId",
+        "DisplayName": "PingOne Key Pair ID",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Forbidden",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Optional"
+  },
+  {
+    "Name": "PingOne Key Pair",
+    "ShortName": "PingOneKey",
+    "Capability": "PingOneKey",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": true,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "Region",
+        "DisplayName": "PingOne Region",
+        "Type": "MultipleChoice",
+        "DefaultValue": "NA",
+        "Options": "NA,EU,CA,AP,AU,SG",
+        "Required": true
+      },
+      {
+        "Name": "WorkerEnvironmentId",
+        "DisplayName": "Worker App Environment ID (defaults to Store Path)",
+        "Type": "String",
+        "Required": false
+      },
+      {
+        "Name": "DefaultUsageType",
+        "DisplayName": "Default Key Usage Type",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SIGNING",
+        "Options": "SIGNING,ENCRYPTION,SSL/TLS,ISSUANCE",
+        "Required": false
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "UsageType",
+        "DisplayName": "Key Usage Type",
+        "Type": "MultipleChoice",
+        "Options": "SIGNING,ENCRYPTION,SSL/TLS,ISSUANCE",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Required",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  {
     "Name": "RFDER",
     "ShortName": "RFDER",
     "Capability": "RFDER",
