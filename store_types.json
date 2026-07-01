@@ -1615,7 +1615,7 @@
         "Name": "AzureCloud",
         "DisplayName": "Azure Global Cloud Authority Host",
         "Type": "MultipleChoice",
-        "DefaultValue": "public,china,germany,government",
+        "DefaultValue": "public,china,government",
         "Description": "Specifies the Azure Cloud instance used by the organization.",
         "Required": false
       },
@@ -1964,7 +1964,7 @@
         "Name": "AzureCloud",
         "DisplayName": "Azure Global Cloud Authority Host",
         "Type": "MultipleChoice",
-        "DefaultValue": "public,china,germany,government",
+        "DefaultValue": "public,china,government",
         "Description": "Specifies the Azure Cloud instance used by the organization.",
         "Required": false
       },
@@ -5241,7 +5241,7 @@
     "SupportedOperations": {
       "Add": true,
       "Create": false,
-      "Discovery": false,
+      "Discovery": true,
       "Enrollment": false,
       "Inventory": true,
       "Remove": false
@@ -5296,6 +5296,7 @@
       "Create": false,
       "Discovery": true,
       "Enrollment": true,
+      "Inventory": true,
       "Remove": true
     },
     "Properties": [
