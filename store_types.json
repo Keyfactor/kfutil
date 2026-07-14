@@ -3,7 +3,7 @@
     "BlueprintAllowed": false,
     "Capability": "AKV",
     "ClientMachineDescription": "The GUID of the tenant ID of the Azure Keyvault instance; for example, '12345678-1234-1234-1234-123456789abc'.",
-    "CustomAliasAllowed": "Optional",
+    "CustomAliasAllowed": "Required",
     "EntryParameters": [
       {
         "Name": "CertificateTags",
@@ -56,14 +56,6 @@
     "PowerShell": false,
     "PrivateKeyAllowed": "Optional",
     "Properties": [
-      {
-        "Name": "TenantId",
-        "DisplayName": "Tenant Id",
-        "Description": "The ID of the primary Azure Tenant where the KeyVaults are hosted",
-        "Type": "String",
-        "DependsOn": "",
-        "Required": false
-      },
       {
         "Name": "SkuType",
         "DisplayName": "SKU Type",
@@ -585,7 +577,7 @@
       {
         "Name": "CertificateTags",
         "DisplayName": "Certificate Tags",
-        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.",
         "Type": "string",
         "RequiredWhen": {
           "HasPrivateKey": false,
@@ -637,6 +629,16 @@
       "Remove": true
     },
     "Properties": [
+      {
+        "Name": "SeparatePrivateKey",
+        "DisplayName": "Store as JSON with separate private key",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string."
+      },
       {
         "Name": "UseDefaultSdkAuth",
         "DisplayName": "Use Default SDK Auth",
@@ -762,7 +764,7 @@
       {
         "Name": "CertificateTags",
         "DisplayName": "Certificate Tags",
-        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.",
         "Type": "string",
         "RequiredWhen": {
           "HasPrivateKey": false,
@@ -939,7 +941,7 @@
       {
         "Name": "CertificateTags",
         "DisplayName": "Certificate Tags",
-        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.",
         "Type": "string",
         "RequiredWhen": {
           "HasPrivateKey": false,
@@ -3517,6 +3519,20 @@
           "OnReenrollment": false
         },
         "Description": "GCP Certificate Manager `scope` for this certificate entry. Allowed: `DEFAULT` (global external Application Load Balancers), `ALL_REGIONS` (cross-region internal Application Load Balancers), `EDGE_CACHE` (Media CDN), `CLIENT_AUTH` (mTLS trust configs / authorized client server certs). **Immutable in GCP** - once a certificate is created with a given scope, GCP refuses to change it. Inventory persists the existing scope back from GCP so renewals carry it forward automatically. A single store can hold certs at different scopes (the field is per-entry, not store-wide)."
+      },
+      {
+        "Name": "labels",
+        "DisplayName": "Labels",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "Description": "An optional list of one-to-many comma delimited label key:value pairs to assign to the certificate. Values should be entered as key1:value1,key2:value2,...,keyN:valueN. Inventory persists the certificate's existing GCP labels back into this field so renewals carry them forward automatically."
       }
     ]
   },
