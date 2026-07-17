@@ -2607,6 +2607,36 @@
     "StorePathDescription": "The path where certificate files are located on the Citrix ADC appliance.  This value will likely be /nsconfig/ssl/"
   },
   {
+    "Name": "Cloudflare Edge",
+    "ShortName": "CloudflareEdge",
+    "Capability": "CloudflareEdge",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "EntryParameters": [],
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Forbidden",
+    "ClientMachineDescription": "The account identifier for the Cloudflare account to be used for connecting to the Cloudflare API.",
+    "StorePathDescription": "The zone identifier for the Cloudflare zone where the edge certificates are located.",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden",
+    "Properties": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    }
+  },
+  {
     "Name": "IBM Data Power",
     "ShortName": "DataPower",
     "Capability": "DataPower",
