@@ -41,6 +41,7 @@ kfutil completion bash
 
 ```
       --api-path string                API Path to use for authenticating to Keyfactor Command. (default is KeyfactorAPI) (default "KeyfactorAPI")
+      --audience string                OAuth2 audience to request when authenticating to Keyfactor Command. Not used by all IdPs (e.g. leave unset for Entra ID).
       --auth-provider-profile string   The profile to use defined in the securely stored config. If not specified the config named 'default' will be used if it exists. (default "default")
       --auth-provider-type string      Provider type choices: (azid)
       --client-id string               OAuth2 client-id to use for authenticating to Keyfactor Command.
@@ -55,6 +56,7 @@ kfutil completion bash
       --offline                        Will not attempt to connect to GitHub for latest release information and resources.
       --password string                Password to use for authenticating to Keyfactor Command. WARNING: Remember to delete your console history if providing kfcPassword here in plain text.
       --profile string                 Use a specific profile from your config file. If not specified the config named 'default' will be used if it exists.
+      --scopes string                  Comma-separated list of OAuth2 scopes to request when authenticating via a third-party IdP (e.g. Entra ID: api://<app-id-uri>/.default).
       --skip-tls-verify                Disable TLS verification for API requests to Keyfactor Command.
       --token-url string               OAuth2 token endpoint full URL to use for authenticating to Keyfactor Command.
       --username string                Username to use for authenticating to Keyfactor Command.
