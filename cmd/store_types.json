@@ -3,7 +3,7 @@
     "BlueprintAllowed": false,
     "Capability": "AKV",
     "ClientMachineDescription": "The GUID of the tenant ID of the Azure Keyvault instance; for example, '12345678-1234-1234-1234-123456789abc'.",
-    "CustomAliasAllowed": "Optional",
+    "CustomAliasAllowed": "Required",
     "EntryParameters": [
       {
         "Name": "CertificateTags",
@@ -56,14 +56,6 @@
     "PowerShell": false,
     "PrivateKeyAllowed": "Optional",
     "Properties": [
-      {
-        "Name": "TenantId",
-        "DisplayName": "Tenant Id",
-        "Description": "The ID of the primary Azure Tenant where the KeyVaults are hosted",
-        "Type": "String",
-        "DependsOn": "",
-        "Required": false
-      },
       {
         "Name": "SkuType",
         "DisplayName": "SKU Type",
@@ -585,7 +577,7 @@
       {
         "Name": "CertificateTags",
         "DisplayName": "Certificate Tags",
-        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.",
         "Type": "string",
         "RequiredWhen": {
           "HasPrivateKey": false,
@@ -637,6 +629,16 @@
       "Remove": true
     },
     "Properties": [
+      {
+        "Name": "SeparatePrivateKey",
+        "DisplayName": "Store as JSON with separate private key",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string."
+      },
       {
         "Name": "UseDefaultSdkAuth",
         "DisplayName": "Use Default SDK Auth",
@@ -762,7 +764,7 @@
       {
         "Name": "CertificateTags",
         "DisplayName": "Certificate Tags",
-        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.",
         "Type": "string",
         "RequiredWhen": {
           "HasPrivateKey": false,
@@ -939,7 +941,7 @@
       {
         "Name": "CertificateTags",
         "DisplayName": "Certificate Tags",
-        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'",
+        "Description": "If desired, tags can be applied to the certificate entries in AWS Secrets Manager.  Provide them as a JSON string of key-value pairs ie: '{'tag-name': 'tag-content', 'other-tag-name': 'other-tag-content'}'.  Tag values may contain the placeholder tokens %SERIAL_NUMBER%, %NOT_BEFORE%, and %NOT_AFTER%, which are replaced with the certificate's serial number (hexadecimal) and validity dates (ISO-8601 UTC) before the tag is written.",
         "Type": "string",
         "RequiredWhen": {
           "HasPrivateKey": false,
@@ -1615,7 +1617,7 @@
         "Name": "AzureCloud",
         "DisplayName": "Azure Global Cloud Authority Host",
         "Type": "MultipleChoice",
-        "DefaultValue": "public,china,germany,government",
+        "DefaultValue": "public,china,government",
         "Description": "Specifies the Azure Cloud instance used by the organization.",
         "Required": false
       },
@@ -1964,7 +1966,7 @@
         "Name": "AzureCloud",
         "DisplayName": "Azure Global Cloud Authority Host",
         "Type": "MultipleChoice",
-        "DefaultValue": "public,china,germany,government",
+        "DefaultValue": "public,china,government",
         "Description": "Specifies the Azure Cloud instance used by the organization.",
         "Required": false
       },
@@ -2986,6 +2988,24 @@
         "Description": "Select this if you wish to use F5's token authentication instead of basic authentication for all API requests. If you choose not to add this custom field, the default value of False will be assumed and basic authentication will be used for all API requests for all jobs. Setting this value to True will enable an initial basic authenticated request to acquire an authentication token, which will then be used for all subsequent API requests."
       },
       {
+        "Name": "SyncDevice",
+        "DisplayName": "Sync To Device Group",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "Description": "Set this to True if you wish to sync this node to a pre-configured F5 device group.  See [Syncing to Device Group](#syncing-to-device-group) for more information on this feature."
+      },
+      {
+        "Name": "SyncDeviceGroup",
+        "DisplayName": "Device Group",
+        "Type": "String",
+        "DependsOn": "SyncDevice",
+        "DefaultValue": "DeviceGroup",
+        "Required": true,
+        "Description": "Enter the name of the pre-configured F5 device group you wish to sync to (valid if SyncDevice = True).  See [Syncing to Device Group](#syncing-to-device-group) for more information on this feature."
+      },
+      {
         "Name": "ServerUsername",
         "DisplayName": "Server Username",
         "Type": "Secret",
@@ -3499,6 +3519,20 @@
           "OnReenrollment": false
         },
         "Description": "GCP Certificate Manager `scope` for this certificate entry. Allowed: `DEFAULT` (global external Application Load Balancers), `ALL_REGIONS` (cross-region internal Application Load Balancers), `EDGE_CACHE` (Media CDN), `CLIENT_AUTH` (mTLS trust configs / authorized client server certs). **Immutable in GCP** - once a certificate is created with a given scope, GCP refuses to change it. Inventory persists the existing scope back from GCP so renewals carry it forward automatically. A single store can hold certs at different scopes (the field is per-entry, not store-wide)."
+      },
+      {
+        "Name": "labels",
+        "DisplayName": "Labels",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "Description": "An optional list of one-to-many comma delimited label key:value pairs to assign to the certificate. Values should be entered as key1:value1,key2:value2,...,keyN:valueN. Inventory persists the certificate's existing GCP labels back into this field so renewals carry them forward automatically."
       }
     ]
   },
@@ -5234,6 +5268,121 @@
     "CustomAliasAllowed": "Required"
   },
   {
+    "Name": "PingOne Application Binding",
+    "ShortName": "PingOneBind",
+    "Capability": "PingOneBind",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": false,
+      "Inventory": true,
+      "Remove": false
+    },
+    "Properties": [
+      {
+        "Name": "Region",
+        "DisplayName": "PingOne Region",
+        "Type": "MultipleChoice",
+        "DefaultValue": "NA",
+        "Options": "NA,EU,CA,AP,AU,SG",
+        "Required": true
+      },
+      {
+        "Name": "WorkerEnvironmentId",
+        "DisplayName": "Worker App Environment ID (defaults to Store Path)",
+        "Type": "String",
+        "Required": false
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "KeyId",
+        "DisplayName": "PingOne Key Pair ID",
+        "Type": "String",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": true,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Forbidden",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Optional"
+  },
+  {
+    "Name": "PingOne Key Pair",
+    "ShortName": "PingOneKey",
+    "Capability": "PingOneKey",
+    "LocalStore": false,
+    "SupportedOperations": {
+      "Add": true,
+      "Create": false,
+      "Discovery": true,
+      "Enrollment": true,
+      "Inventory": true,
+      "Remove": true
+    },
+    "Properties": [
+      {
+        "Name": "Region",
+        "DisplayName": "PingOne Region",
+        "Type": "MultipleChoice",
+        "DefaultValue": "NA",
+        "Options": "NA,EU,CA,AP,AU,SG",
+        "Required": true
+      },
+      {
+        "Name": "WorkerEnvironmentId",
+        "DisplayName": "Worker App Environment ID (defaults to Store Path)",
+        "Type": "String",
+        "Required": false
+      },
+      {
+        "Name": "DefaultUsageType",
+        "DisplayName": "Default Key Usage Type",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SIGNING",
+        "Options": "SIGNING,ENCRYPTION,SSL/TLS,ISSUANCE",
+        "Required": false
+      }
+    ],
+    "EntryParameters": [
+      {
+        "Name": "UsageType",
+        "DisplayName": "Key Usage Type",
+        "Type": "MultipleChoice",
+        "Options": "SIGNING,ENCRYPTION,SSL/TLS,ISSUANCE",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
+      }
+    ],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "PrivateKeyAllowed": "Required",
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  {
     "Name": "RFDER",
     "ShortName": "RFDER",
     "Capability": "RFDER",
@@ -5350,6 +5499,24 @@
         "Type": "Bool",
         "DefaultValue": "True",
         "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
+      },
+      {
+        "Name": "PostJobApplicationRestart",
+        "DisplayName": "Post Job Application Restart",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "None",
+        "Description": "Select the command to be run after a Management Add or ODKG job executes.  Leave unselected if no command is desired.  No options are initially delivered for RFDER."
+      },
+      {
+        "Name": "RequiresLegacyEncryption",
+        "DisplayName": "Requires Legacy Encryption",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Optional setting.  If set to true, PkcsObjectIdentifiers.PbeWithShaAnd3KeyTripleDesCbc and PkcsObjectIdentifiers.PbewithShaAnd40BitRC2Cbc algorithms will be used to create the underlying BouncyCastle Pkcs12Store used to feed the certificate store being managed during Management jobs.  Should be left not implemented or set to False for most instances."
       }
     ],
     "EntryParameters": [],
@@ -5473,6 +5640,15 @@
         "Type": "MultipleChoice",
         "DefaultValue": "Apache Tomcat Restart,Jetty Restart",
         "Description": "Select the command to be run after a Management Add or ODKG job executes.  Leave unselected if no command is desired."
+      },
+      {
+        "Name": "RequiresLegacyEncryption",
+        "DisplayName": "Requires Legacy Encryption",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Optional setting.  If set to true, PkcsObjectIdentifiers.PbeWithShaAnd3KeyTripleDesCbc and PkcsObjectIdentifiers.PbewithShaAnd40BitRC2Cbc algorithms will be used to create the underlying BouncyCastle Pkcs12Store used to feed the certificate store being managed during Management jobs.  Should be left not implemented or set to False for most instances."
       }
     ],
     "EntryParameters": [],
@@ -5587,6 +5763,24 @@
         "Type": "Bool",
         "DefaultValue": "True",
         "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
+      },
+      {
+        "Name": "PostJobApplicationRestart",
+        "DisplayName": "Post Job Application Restart",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "None",
+        "Description": "Select the command to be run after a Management Add or ODKG job executes.  Leave unselected if no command is desired.  No options are initially delivered for RFKDB."
+      },
+      {
+        "Name": "RequiresLegacyEncryption",
+        "DisplayName": "Requires Legacy Encryption",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Optional setting.  If set to true, PkcsObjectIdentifiers.PbeWithShaAnd3KeyTripleDesCbc and PkcsObjectIdentifiers.PbewithShaAnd40BitRC2Cbc algorithms will be used to create the underlying BouncyCastle Pkcs12Store used to feed the certificate store being managed during Management jobs.  Should be left not implemented or set to False for most instances."
       }
     ],
     "EntryParameters": [],
@@ -5667,15 +5861,6 @@
         "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
       },
       {
-        "Name": "WorkFolder",
-        "DisplayName": "Location to use for creation/removal of work files",
-        "Required": true,
-        "DependsOn": "",
-        "Type": "String",
-        "DefaultValue": "",
-        "Description": "The WorkFolder field should contain the path on the managed server where temporary work files can be created, modified, and deleted during Inventory and Management jobs. Example: '/path/to/workfolder'."
-      },
-      {
         "Name": "RemoveRootCertificate",
         "DisplayName": "Remove Root Certificate from Chain",
         "Required": false,
@@ -5710,11 +5895,29 @@
         "Type": "Bool",
         "DefaultValue": "True",
         "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
+      },
+      {
+        "Name": "PostJobApplicationRestart",
+        "DisplayName": "Post Job Application Restart",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "None",
+        "Description": "Select the command to be run after a Management Add or ODKG job executes.  Leave unselected if no command is desired.  No options are initially delivered for RFORA."
+      },
+      {
+        "Name": "RequiresLegacyEncryption",
+        "DisplayName": "Requires Legacy Encryption",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Optional setting.  If set to true, PkcsObjectIdentifiers.PbeWithShaAnd3KeyTripleDesCbc and PkcsObjectIdentifiers.PbewithShaAnd40BitRC2Cbc algorithms will be used to create the underlying BouncyCastle Pkcs12Store used to feed the certificate store being managed during Management jobs.  Should be left not implemented or set to False for most instances."
       }
     ],
     "EntryParameters": [],
     "ClientMachineDescription": "The Client Machine field should contain the DNS name or IP address of the remote orchestrated server for Linux orchestrated servers, formatted as a URL (protocol://dns-or-ip:port) for Windows orchestrated servers, or '1.1.1.1|LocalMachine' for local agents. Example: 'https://myserver.mydomain.com:5986' or '1.1.1.1|LocalMachine' for local access.",
-    "StorePathDescription": "The Store Path field should contain the full path and file name of the Oracle Wallet, including the 'eWallet.p12' file name by convention. Example: '/path/to/eWallet.p12' or 'c:\\path\\to\\eWallet.p12'."
+    "StorePathDescription": "The Store Path field should contain the full path and file name of the Oracle Wallet, including the 'eWallet.p12' file name that is generally used by convention. Example: '/path/to/eWallet.p12' or 'c:\\path\\to\\eWallet.p12'."
   },
   {
     "Name": "RFPEM",
@@ -5869,6 +6072,15 @@
         "Type": "MultipleChoice",
         "DefaultValue": "Apache HTTPD Restart,NGNIX Restart,HAProxy Restart,Envoy Proxy Restart",
         "Description": "Select the command to be run after a Management Add or ODKG job executes.  Leave unselected if no command is desired."
+      },
+      {
+        "Name": "RequiresLegacyEncryption",
+        "DisplayName": "Requires Legacy Encryption",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Optional setting.  If set to true, PkcsObjectIdentifiers.PbeWithShaAnd3KeyTripleDesCbc and PkcsObjectIdentifiers.PbewithShaAnd40BitRC2Cbc algorithms will be used to create the underlying BouncyCastle Pkcs12Store used to feed the certificate store being managed during Management jobs.  Should be left not implemented or set to False for most instances."
       }
     ],
     "EntryParameters": [],
@@ -5983,6 +6195,24 @@
         "Type": "Bool",
         "DefaultValue": "True",
         "Description": "Recommended to be set to the default value of 'Y'.  For a detailed explanation of this setting, please refer to [Use Shell Commands Setting](#use-shell-commands-setting)"
+      },
+      {
+        "Name": "PostJobApplicationRestart",
+        "DisplayName": "Post Job Application Restart",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "None",
+        "Description": "Select the command to be run after a Management Add or ODKG job executes.  Leave unselected if no command is desired.  No options are initially delivered for RFPkcs12."
+      },
+      {
+        "Name": "RequiresLegacyEncryption",
+        "DisplayName": "Requires Legacy Encryption",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "Description": "Optional setting.  If set to true, PkcsObjectIdentifiers.PbeWithShaAnd3KeyTripleDesCbc and PkcsObjectIdentifiers.PbewithShaAnd40BitRC2Cbc algorithms will be used to create the underlying BouncyCastle Pkcs12Store used to feed the certificate store being managed during Management jobs.  Should be left not implemented or set to False for most instances."
       }
     ],
     "EntryParameters": [],
