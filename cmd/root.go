@@ -1023,7 +1023,7 @@ func init() {
 	)
 
 	RootCmd.PersistentFlags().StringVarP(
-		&kfcClientId,
+		&kfcTokenUrl,
 		"token-url",
 		"",
 		"",

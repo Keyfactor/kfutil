@@ -65,10 +65,44 @@ Currently `Basic Authentication` via `Active Directory` is the *ONLY* supported 
 | KEYFACTOR_AUTH_CLIENT_ID     | Keyfactor Auth Client ID                                                                                                        |          |
 | KEYFACTOR_AUTH_CLIENT_SECRET | Keyfactor Auth Client Secret                                                                                                    |          |
 | KEYFACTOR_AUTH_TOKEN_URL     | URL to request an access token from Keyfactor Auth                                                                              |          |
-| KEYFACTOR_AUTH_SCOPES        | Scopes to request when authenticating to Keyfactor Command API. Each scope MUST be separated by `,`                             | `openid` |
-| KEYFACTOR_AUTH_AUDIENCE      | Audience to request when authenticating to Keyfactor Command API                                                                |          |
+| KEYFACTOR_AUTH_SCOPES        | Scopes to request when authenticating to Keyfactor Command API. Multiple scopes MUST be separated by `,` (comma)                | _(none)_ |
+| KEYFACTOR_AUTH_AUDIENCE      | Audience to request when authenticating to Keyfactor Command API. Sent as the `audience` form parameter. Leave unset for Microsoft Entra ID (see below) |          |
 | KEYFACTOR_AUTH_ACCESS_TOKEN  | Access token to use to authenticate to Keyfactor Command API. This can be supplied directly or generated via client credentials |          |
 | KEYFACTOR_AUTH_CA_CERT       | Either a file path or PEM encoded string to a CA certificate to use when connecting to Keyfactor Auth                           |          |
+
+`kfutil` supports two oAuth2 grant types:
+
+- **Client Credentials** — `kfutil` exchanges a `client_id` and `client_secret` at the `token_url` for an
+  access token. This is the most common configuration.
+- **Static Access Token** — you supply a previously obtained access token directly via `KEYFACTOR_AUTH_ACCESS_TOKEN`.
+
+The interactive authorization-code / PKCE grant is **not** supported.
+
+#### Third-party IdP (Microsoft Entra ID / Azure AD)
+
+`kfutil` is not limited to the Keyfactor-hosted Keycloak IdP. Because the token endpoint (`token_url`) and
+`scopes` are fully configurable, you can authenticate against any OAuth2 IdP that Keyfactor Command trusts,
+including **Microsoft Entra ID** (formerly Azure AD).
+
+The Entra-side setup (registering the Command API application, exposing an API / Application ID URI, and
+granting the calling application permission to it) is documented in the Keyfactor Command / Entra SSO
+documentation and is a prerequisite for the steps below. Once that is in place, configure `kfutil` as follows:
+
+- **`token_url`** must point at the Entra v2.0 token endpoint for your tenant:
+  `https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token`
+- **`client_id`** / **`client_secret`** are the Entra app registration's *Application (client) ID* and a
+  *client secret* generated for it.
+- **`scopes`** is **mandatory** for Entra and must be `api://<command-app-id-uri>/.default`. `kfutil` does not
+  send any scope by default, so a request with no scope configured will be rejected by Entra.
+  When using the `KEYFACTOR_AUTH_SCOPES` environment variable, supply exactly **one** scope with **no commas**
+  (the value is split on `,`).
+- **`audience`** must be **left unset** for Entra. Entra does not accept an `audience` form parameter; the
+  target resource is encoded inside the `.default` scope instead.
+
+> **Scope vs. audience — the key distinction:** Some IdPs (such as Keycloak) identify the target resource via
+> an `audience` parameter. Entra ID does **not**; it derives the resource from the requested scope
+> (`api://<command-app-id-uri>/.default`). If you set `audience` when authenticating against Entra, the token
+> request will fail. Use `scopes` for Entra and leave `audience` empty.
 
 ### kfutil specific
 
@@ -112,6 +146,19 @@ This is the minimum required configuration to authenticate to Keyfactor Command 
 ```bash
 export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
 export KEYFACTOR_AUTH_ACCESS_TOKEN="<my-access-token>"
+```
+
+#### oAuth Client Credentials with Microsoft Entra ID (Azure AD)
+
+This authenticates to Keyfactor Command using an Entra ID app registration. Note the Entra v2.0 `token_url`,
+the mandatory `.default` scope, and that `KEYFACTOR_AUTH_AUDIENCE` is intentionally **not** set.
+```bash
+export KEYFACTOR_HOSTNAME="<mykeyfactorhost.mydomain.com>"
+export KEYFACTOR_AUTH_CLIENT_ID="<entra-app-client-id>"
+export KEYFACTOR_AUTH_CLIENT_SECRET="<entra-client-secret>"
+export KEYFACTOR_AUTH_TOKEN_URL="https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token"
+export KEYFACTOR_AUTH_SCOPES="api://<command-app-id-uri>/.default"
+# Do NOT set KEYFACTOR_AUTH_AUDIENCE for Entra ID
 ```
 
 #### Additional variables
@@ -158,6 +205,20 @@ This is the minimum required configuration to authenticate to Keyfactor Command 
 ```powershell
 $env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"
 $env:KEYFACTOR_AUTH_ACCESS_TOKEN = "<my-access-token>"
+```
+
+#### oAuth Client Credentials with Microsoft Entra ID (Azure AD)
+
+This authenticates to Keyfactor Command using an Entra ID app registration. Note the Entra v2.0 token URL,
+the mandatory `.default` scope, and that `KEYFACTOR_AUTH_AUDIENCE` is intentionally **not** set.
+
+```powershell
+$env:KEYFACTOR_HOSTNAME = "<mykeyfactorhost.mydomain.com>"
+$env:KEYFACTOR_AUTH_CLIENT_ID = "<entra-app-client-id>"
+$env:KEYFACTOR_AUTH_CLIENT_SECRET = "<entra-client-secret>"
+$env:KEYFACTOR_AUTH_TOKEN_URL = "https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token"
+$env:KEYFACTOR_AUTH_SCOPES = "api://<command-app-id-uri>/.default"
+# Do NOT set KEYFACTOR_AUTH_AUDIENCE for Entra ID
 ```
 
 #### Additional variables:
