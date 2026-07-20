@@ -37,7 +37,7 @@ jobs:
       # Checkout code
       # https://github.com/actions/checkout
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # Extract metadata (tags, labels) for Docker
       # If the pull request is not merged, do not include the edge tag and only include the sha tag.
