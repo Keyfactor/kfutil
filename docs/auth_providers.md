@@ -73,6 +73,53 @@ interactive auth flow. Here's an example of what that would look like:
 }
 ```
 
+#### oAuth Client Credentials with a Third-party IdP (Microsoft Entra ID / Azure AD)
+
+`kfutil` can authenticate against any OAuth2 IdP that Keyfactor Command trusts, not only the Keyfactor-hosted
+Keycloak. The example below configures **Microsoft Entra ID** (formerly Azure AD) using the client-credentials
+grant. The Entra-side setup — registering the Command API application, exposing its API / Application ID URI,
+and granting the calling app permission — lives in the Keyfactor Command / Entra SSO documentation and is a
+prerequisite.
+
+```json
+{
+  "servers": {
+    "default": {
+      "host": "keyfactor.example.com",
+      "auth_type": "oauth",
+      "client_id": "<entra-app-client-id>",
+      "client_secret": "<entra-client-secret>",
+      "token_url": "https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token",
+      "scopes": ["api://<command-app-id-uri>/.default"],
+      "api_path": "KeyfactorAPI"
+    }
+  }
+}
+```
+
+Key points when targeting Entra ID:
+
+- **`token_url`** is the Entra v2.0 token endpoint for your tenant:
+  `https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token`.
+- **`client_id`** / **`client_secret`** are the Entra app registration's *Application (client) ID* and a
+  generated *client secret*.
+- **`scopes`** is **mandatory** and must be `api://<command-app-id-uri>/.default`. `kfutil` sends no scope by
+  default, so an Entra request with no scope configured is rejected.
+- **`audience`** must be **omitted**. Entra ID does not accept an `audience` form parameter.
+
+##### Scope vs. audience
+
+This is the most common point of confusion when moving from Keycloak to Entra ID:
+
+- **Keycloak** (the Keyfactor-hosted IdP) identifies the target resource with the `audience` field, and scopes
+  are typically optional.
+- **Entra ID** identifies the target resource through the requested **scope** (`api://<command-app-id-uri>/.default`)
+  and does **not** support an `audience` parameter.
+
+Therefore, for Entra ID set `scopes` and leave `audience` unset. Setting `audience` against Entra will cause the
+token request to fail. Note also that the `KEYFACTOR_AUTH_SCOPES` environment variable is split on `,` (comma),
+so when using env vars supply exactly one Entra scope with no commas.
+
 #### Usage
 
 ##### Default
