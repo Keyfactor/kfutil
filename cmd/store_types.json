@@ -286,7 +286,7 @@
     "SupportedOperations": {
       "Add": true,
       "Create": false,
-      "Discovery": false,
+      "Discovery": true,
       "Enrollment": false,
       "Remove": true
     },
@@ -410,6 +410,16 @@
         "Required": false,
         "IsPAMEligible": false,
         "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
+      },
+      {
+        "Name": "DiscoveryRoleName",
+        "DisplayName": "Discovery Role Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "KeyfactorACMDiscoveryRole",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The IAM role name that exists in each target account. Used during cross-account Discovery to construct the Role ARN for cross-account access (arn:aws:iam::<account-id>:role/<this-value>). During a Discovery job this is supplied via the 'File name patterns to match' dialog field; this store property documents and defaults the value."
       }
     ],
     "EntryParameters": [
@@ -437,7 +447,7 @@
     "BlueprintAllowed": true,
     "CustomAliasAllowed": "Optional",
     "ClientMachineDescription": "This is a full AWS ARN specifying a Role. This is the Role that will be assumed in any Auth scenario performing Assume Role. This will dictate what certificates are usable by the orchestrator. A preceding [profile] name should be included if a Credential Profile is to be used in Default Sdk Auth.",
-    "StorePathDescription": "A single specified AWS Region the store will operate in. Additional regions should get their own store defined."
+    "StorePathDescription": "The AWS Region the store operates in (e.g. us-east-1). Stores created by cross-account Discovery instead use a self-contained path of the form '<roleArn>|<region>' (e.g. 'arn:aws:iam::123456789012:role/KeyfactorACMDiscoveryRole|us-east-1') which carries both the Role ARN to assume and the Region; for those stores the Client Machine field is informational only. Additional regions should get their own store defined."
   },
   {
     "Name": "AwsSecretsManager JKS",
@@ -1050,6 +1060,16 @@
         "Required": true,
         "IsPAMEligible": false,
         "Description": "The Akamai client_secret for authentication."
+      },
+      {
+        "Name": "ContractId",
+        "DisplayName": "Contract ID",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The default Akamai Contract ID for the certificate store. When performing re-enrollment, the Contract ID entry parameter will take precedence."
       }
     ],
     "EntryParameters": [
@@ -1067,16 +1087,15 @@
       },
       {
         "Name": "ContractId",
-        "DisplayName": "Contract ID",
+        "DisplayName": "Contract ID Override",
         "Type": "String",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
           "OnRemove": false,
-          "OnReenrollment": true
+          "OnReenrollment": false
         },
-        "DefaultValue": "SET-DEFAULT",
-        "Description": "The Contract ID of your account in Akamai."
+        "Description": "The Contract ID of your account in Akamai. If a Contract ID is defined on the certificate store, the value of this parameter will take precedence. If a Contract ID is not defined on the certificate store, a value is required for this parameter."
       },
       {
         "Name": "Sans",
@@ -3645,7 +3664,17 @@
     "StorePathType": "",
     "StorePathValue": "example: '/mycerts/certstore.jks?b64cert'",
     "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
+    "JobProperties": [
+      {
+        "Name": "DiscoverySuffix",
+        "DisplayName": "Discovery Suffix",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "_jks",
+        "Required": false,
+        "Description": "The secret-key-name suffix Discovery jobs use to identify candidate JKS certificate secrets. Defaults to '_jks'."
+      }
+    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
@@ -3727,7 +3756,17 @@
     "StorePathType": "",
     "StorePathValue": "example: '/mycerts/certstore.p12?b64cert'",
     "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
+    "JobProperties": [
+      {
+        "Name": "DiscoverySuffix",
+        "DisplayName": "Discovery Suffix",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "_p12",
+        "Required": false,
+        "Description": "The secret-key-name suffix Discovery jobs use to identify candidate PKCS12 certificate secrets. Defaults to '_p12'."
+      }
+    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
@@ -3805,9 +3844,21 @@
     "Capability": "HCVKVPEM",
     "LocalStore": false,
     "ClientMachineDescription": "This can be any value to help uniquely identify the store.  It is not used by this integration.",
-    "StorePathDescription": "This is the path after mount point where the certificates will be stored.",
+    "StorePathDescription": "This is the path to the secret containing the certificate.",
+    "StorePathType": "",
+    "StorePathValue": "example: '/mycerts/mycert_pem?b64cert'",
     "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
+    "JobProperties": [
+      {
+        "Name": "DiscoverySuffix",
+        "DisplayName": "Discovery Suffix",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "_pem",
+        "Required": false,
+        "Description": "The secret-key-name suffix Discovery jobs use to identify candidate PEM certificate secrets. Defaults to '_pem'."
+      }
+    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
@@ -3841,15 +3892,6 @@
         "Description": "Vault token that will be used by the Orchestrator integration for authenticating and performing operations in the Vault instance"
       },
       {
-        "Name": "SubfolderInventory",
-        "DisplayName": "Subfolder Inventory",
-        "Description": "Should certificates found in sub-paths be included when performing an inventory?",
-        "Type": "Bool",
-        "DependsOn": "",
-        "DefaultValue": "false",
-        "Required": false
-      },
-      {
         "Name": "IncludeCertChain",
         "DisplayName": "Include Certificate Chain",
         "Description": "Should the certificate chain be included when performing an enrollment?",
@@ -3866,6 +3908,15 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false
+      },
+      {
+        "Name": "PrivateKeyPath",
+        "DisplayName": "Private Key Path",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "This is the path to the secret that contains the PEM-encoded private key. Optional \u2014 omit for CA trust chain / certificate-only PEM stores that have no private key. Unlike other Key-Value store types, no sibling-secret convention is assumed when this is omitted."
       }
     ],
     "EntryParameters": [],
@@ -3889,7 +3940,17 @@
     "StorePathType": "",
     "StorePathValue": "example: '/mycerts/certstore.pfx?b64cert'",
     "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
+    "JobProperties": [
+      {
+        "Name": "DiscoverySuffix",
+        "DisplayName": "Discovery Suffix",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "_pfx",
+        "Required": false,
+        "Description": "The secret-key-name suffix Discovery jobs use to identify candidate PFX certificate secrets. Defaults to '_pfx'."
+      }
+    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
@@ -4170,6 +4231,15 @@
         "DefaultValue": "true",
         "Required": true,
         "Description": "Determine whether the server uses SSL or not (This field is automatically created)"
+      },
+      {
+        "Name": "JEAEndpointName",
+        "DisplayName": "JEA End Point Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Name of the JEA endpoint to use for the session (This field is automatically created)"
       }
     ],
     "EntryParameters": [
@@ -5279,7 +5349,17 @@
         "DefaultValue": "",
         "Required": false,
         "IsPAMEligible": false,
-        "Description": "Template stack used for device push of certificates via Template."
+        "Description": "A semicolon delimited list of Template Stacks used for device push of certificates via Template (i.e. `Stack 1`, `Stack 1;Stack2`, or `Stack 1; Stack 2`, etc.)."
+      },
+      {
+        "Name": "PushFailureBehavior",
+        "DisplayName": "Push Failure Behavior",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "Failure,Warning",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "Controls the job result when Panorama fails to commit to a device group, template, or template stack. 'Failure' will fail the management job and trigger a retry, while 'Warning' records the failure message but marks the job as completed."
       }
     ],
     "EntryParameters": [],
@@ -6738,6 +6818,15 @@
         "DefaultValue": "true",
         "Required": true,
         "Description": "Determine whether the server uses SSL or not (This field is automatically created)"
+      },
+      {
+        "Name": "JEAEndpointName",
+        "DisplayName": "JEA End Point Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Name of the JEA endpoint to use for the session (This field is automatically created)"
       }
     ],
     "EntryParameters": [
@@ -6780,7 +6869,7 @@
       "Add": true,
       "Create": false,
       "Discovery": false,
-      "Enrollment": false,
+      "Enrollment": true,
       "Remove": true
     },
     "Properties": [
@@ -6846,6 +6935,15 @@
         "DefaultValue": "false",
         "Required": true,
         "Description": "Boolean value (true or false) indicating whether to restart the SQL Server service after installing the certificate. Example: 'true' to enable service restart after installation."
+      },
+      {
+        "Name": "JEAEndpointName",
+        "DisplayName": "JEA End Point Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Name of the JEA endpoint to use for the session (This field is automatically created)"
       }
     ],
     "EntryParameters": [
