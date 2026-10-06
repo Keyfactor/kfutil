@@ -2783,6 +2783,8 @@
     "PowerShell": false,
     "BlueprintAllowed": true,
     "CustomAliasAllowed": "Required",
+    "ClientMachineDescription": "The URL of the F5 device being managed.  Example - https://my.f5.com.",
+    "StorePathDescription": "Enter the partition for the F5 device being managed (usually Common)",
     "SupportedOperations": {
       "Add": true,
       "Create": false,
