@@ -663,6 +663,16 @@
         "Description": "When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string."
       },
       {
+        "Name": "IncludeChain",
+        "DisplayName": "Include certificate chain in PEM",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "When enabled, the single concatenated PEM secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key. Only applies when 'Store as JSON with separate private key' is disabled; the JSON format always includes the chain."
+      },
+      {
         "Name": "UseDefaultSdkAuth",
         "DisplayName": "Use Default SDK Auth",
         "Type": "Bool",
