@@ -5915,13 +5915,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
       },
       {
         "Name": "SeparatePrivateKeyFilePath",
@@ -5949,6 +5949,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -6047,13 +6056,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides DefaultSudoImpersonatedUser [config.json](#post-installation) setting."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides DefaultSudoImpersonatedUser [config.json](#post-installation) setting."
       },
       {
         "Name": "RemoveRootCertificate",
@@ -6072,6 +6081,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -6152,6 +6170,16 @@
         "Description": "A password (or valid PAM key if the password is stored in a KF Command configured PAM integration). The password can also be an SSH private key if connecting via SSH to a server using SSH private key authentication. If acting as an *agent* using local file access, just check *No Value*"
       },
       {
+        "Name": "CommandPath",
+        "DisplayName": "GSKCAPICMD installation folder path",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The full folder path (not including the file name itself) where the GSKCAPCMD CLI located is installed."
+      },
+      {
         "Name": "LinuxFilePermissionsOnStoreCreation",
         "DisplayName": "Linux File Permissions on Store Creation",
         "Required": false,
@@ -6170,13 +6198,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
       },
       {
         "Name": "RemoveRootCertificate",
@@ -6195,6 +6223,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -6293,13 +6330,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
       },
       {
         "Name": "RemoveRootCertificate",
@@ -6318,6 +6355,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -6416,13 +6462,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting.."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting.."
       },
       {
         "Name": "IsTrustStore",
@@ -6477,6 +6523,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -6575,13 +6630,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides DefaultSudoImpersonatedUser [config.json](#post-installation) setting."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides DefaultSudoImpersonatedUser [config.json](#post-installation) setting."
       },
       {
         "Name": "RemoveRootCertificate",
@@ -6600,6 +6655,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -6956,6 +7020,16 @@
         "Required": true,
         "IsPAMEligible": false,
         "Description": "The API Version of Avi / NSX to target. A default is set for the version this was originally developed and tested against."
+      },
+      {
+        "Name": "RetriesForFailedAuthentication",
+        "DisplayName": "Retries For Failed Authentication",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "0",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The number of additional login attempts to make if NSX ALB rejects the configured credentials as invalid. NSX ALB can be configured to validate logins against an external identity provider (e.g. LDAP/AD); when that provider is momentarily overwhelmed or unreachable, NSX ALB returns the same generic 'Invalid credentials' error it would for an actually wrong password, even though the configured credentials are correct. Retrying with a short backoff gives that kind of transient identity-provider issue a chance to clear before the job fails outright. Defaults to 0 (no retries), which preserves the original behavior unless this is explicitly configured."
       }
     ],
     "EntryParameters": [],
