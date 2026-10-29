@@ -43,6 +43,19 @@
           "OnRemove": false,
           "OnReenrollment": false
         }
+      },
+      {
+        "Name": "PreserveChainOrder",
+        "DisplayName": "Preserve Chain Order",
+        "Description": "By default, Azure Key Vault reorders the certificate chain on import (forcing the leaf certificate to index 0). If true, this tells Azure Key Vault to preserve the exact chain order provided instead of applying its own default reordering.",
+        "Type": "Bool",
+        "DefaultValue": "False",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        }
       }
     ],
     "JobProperties": [],
@@ -286,7 +299,7 @@
     "SupportedOperations": {
       "Add": true,
       "Create": false,
-      "Discovery": false,
+      "Discovery": true,
       "Enrollment": false,
       "Remove": true
     },
@@ -410,6 +423,16 @@
         "Required": false,
         "IsPAMEligible": false,
         "Description": "An optional parameter sts:ExternalId to pass with Assume Role calls"
+      },
+      {
+        "Name": "DiscoveryRoleName",
+        "DisplayName": "Discovery Role Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "KeyfactorACMDiscoveryRole",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The IAM role name that exists in each target account. Used during cross-account Discovery to construct the Role ARN for cross-account access (arn:aws:iam::<account-id>:role/<this-value>). During a Discovery job this is supplied via the 'File name patterns to match' dialog field; this store property documents and defaults the value."
       }
     ],
     "EntryParameters": [
@@ -437,7 +460,7 @@
     "BlueprintAllowed": true,
     "CustomAliasAllowed": "Optional",
     "ClientMachineDescription": "This is a full AWS ARN specifying a Role. This is the Role that will be assumed in any Auth scenario performing Assume Role. This will dictate what certificates are usable by the orchestrator. A preceding [profile] name should be included if a Credential Profile is to be used in Default Sdk Auth.",
-    "StorePathDescription": "A single specified AWS Region the store will operate in. Additional regions should get their own store defined."
+    "StorePathDescription": "The AWS Region the store operates in (e.g. us-east-1). Stores created by cross-account Discovery instead use a self-contained path of the form '<roleArn>|<region>' (e.g. 'arn:aws:iam::123456789012:role/KeyfactorACMDiscoveryRole|us-east-1') which carries both the Role ARN to assume and the Region; for those stores the Client Machine field is informational only. Additional regions should get their own store defined."
   },
   {
     "Name": "AwsSecretsManager JKS",
@@ -638,6 +661,16 @@
         "Required": false,
         "IsPAMEligible": false,
         "Description": "When enabled, the certificate is stored as a JSON document with separate 'certificate' (PEM certificate and chain, leaf first) and 'private_key' (PEM) properties, rather than a single concatenated PEM string."
+      },
+      {
+        "Name": "IncludeChain",
+        "DisplayName": "Include certificate chain in PEM",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "When enabled, the single concatenated PEM secret contains the leaf certificate, followed by the issuer chain (leaf first), followed by the private key. Only applies when 'Store as JSON with separate private key' is disabled; the JSON format always includes the chain."
       },
       {
         "Name": "UseDefaultSdkAuth",
@@ -1050,6 +1083,16 @@
         "Required": true,
         "IsPAMEligible": false,
         "Description": "The Akamai client_secret for authentication."
+      },
+      {
+        "Name": "ContractId",
+        "DisplayName": "Contract ID",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The default Akamai Contract ID for the certificate store. When performing re-enrollment, the Contract ID entry parameter will take precedence."
       }
     ],
     "EntryParameters": [
@@ -1067,16 +1110,15 @@
       },
       {
         "Name": "ContractId",
-        "DisplayName": "Contract ID",
+        "DisplayName": "Contract ID Override",
         "Type": "String",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
           "OnRemove": false,
-          "OnReenrollment": true
+          "OnReenrollment": false
         },
-        "DefaultValue": "SET-DEFAULT",
-        "Description": "The Contract ID of your account in Akamai."
+        "Description": "The Contract ID of your account in Akamai. If a Contract ID is defined on the certificate store, the value of this parameter will take precedence. If a Contract ID is not defined on the certificate store, a value is required for this parameter."
       },
       {
         "Name": "Sans",
@@ -1744,7 +1786,6 @@
     "PrivateKeyAllowed": "Forbidden",
     "SupportedOperations": {
       "Add": true,
-      "Create": false,
       "Discovery": false,
       "Enrollment": true,
       "Remove": true
@@ -1780,7 +1821,34 @@
         "DependsOn": "",
         "DefaultValue": "true",
         "Required": true,
-        "Description": "Select True or False depending on if SSL (HTTPS) should be used to communicate with the camera. This should always be \"True\""
+        "Description": "Select True or False depending on if SSL (HTTPS) should be used to communicate with the camera."
+      },
+      {
+        "Name": "BypassTlsValidation",
+        "DisplayName": "Bypass TLS Validation",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "Description": "If true and 'Use SSL' is enabled, TLS certificate validation is skipped when connecting to the camera. Has no effect when 'Use SSL' is false. Only enable this when the camera's certificate cannot be trusted by the orchestrator server."
+      },
+      {
+        "Name": "HttpPort",
+        "DisplayName": "HTTP Port",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Optional. Port used to connect to the camera over HTTP, when 'Use SSL' is false. A port set here replaces any port in Client Machine. If blank, the port in Client Machine is used, or the default HTTP port (80) if Client Machine has no port."
+      },
+      {
+        "Name": "HttpsPort",
+        "DisplayName": "HTTPS Port",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Optional. Port used to connect to the camera over HTTPS, when 'Use SSL' is true. A port set here replaces any port in Client Machine. If blank, the port in Client Machine is used, or the default HTTPS port (443) if Client Machine has no port."
       }
     ],
     "EntryParameters": [
@@ -2525,7 +2593,7 @@
       "Add": true,
       "Create": false,
       "Discovery": false,
-      "Enrollment": false,
+      "Enrollment": true,
       "Remove": true
     },
     "PasswordOptions": {
@@ -2565,7 +2633,7 @@
         "DependsOn": "",
         "DefaultValue": "false",
         "Required": false,
-        "Description": "Determines whether an attempt will be made to link the added certificate (via a Management-Add job) to its issuing CA certificate."
+        "Description": "Determines whether an attempt will be made to link the added certificate (via a Management-Add or Reenrollment job) to its issuing CA certificate."
       },
       {
         "Name": "timeout",
@@ -2575,6 +2643,15 @@
         "DefaultValue": "3600",
         "Required": false,
         "Description": "Determines timeout in seconds for all Citrix ADC API calls."
+      },
+      {
+        "Name": "removeOldFiles",
+        "DisplayName": "Remove Old Files",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "Delete previous certificate and key files after renewal/replace"
       }
     ],
     "EntryParameters": [
@@ -2582,7 +2659,7 @@
         "Name": "virtualServerName",
         "DisplayName": "Virtual Server Name",
         "Type": "String",
-        "Description": "When adding a certificate, this can be a single VServer name or a comma separated list of VServers to bind to  Note: must match the number of Virtual SNI Cert values.",
+        "Description": "When adding a certificate or reenrolling a new alias, this can be a single VServer name or a comma separated list of VServers to bind to  Note: must match the number of Virtual SNI Cert values.",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
@@ -2594,7 +2671,7 @@
         "Name": "sniCert",
         "DisplayName": "SNI Cert",
         "Type": "String",
-        "Description": "When adding a certificate, this can be a single boolean value (true/false) or a comma separated list of boolean values to determine whether the binding should use server name indication.  Note: must match the number of Virtual Server Name values.",
+        "Description": "When adding a certificate or reenrolling a new alias, this can be a single boolean value (true/false) or a comma separated list of boolean values to determine whether the binding should use server name indication.  Note: must match the number of Virtual Server Name values.",
         "RequiredWhen": {
           "HasPrivateKey": false,
           "OnAdd": false,
@@ -2743,6 +2820,8 @@
     "PowerShell": false,
     "BlueprintAllowed": true,
     "CustomAliasAllowed": "Required",
+    "ClientMachineDescription": "The URL of the F5 device being managed.  Example - https://my.f5.com.",
+    "StorePathDescription": "Enter the partition for the F5 device being managed (usually Common)",
     "SupportedOperations": {
       "Add": true,
       "Create": false,
@@ -2877,6 +2956,15 @@
         "Description": "Select this if you wish to stop the orchestrator from adding, replacing or renewing certificates on nodes that are inactive. If this is not selected, adding, replacing and renewing certificates on inactive nodes will be allowed. If you choose not to add this custom field, the default value of False will be assumed."
       },
       {
+        "Name": "InheritedProfile",
+        "DisplayName": "Profile to Inherit",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Optional value representing an existing SSL Profile to inherit settings from during a Management-Create job.  Value must be in Partition/SSLProfileName format.  Profile must be the same type as the one being added and exist in the same partition or the Common partition."
+      },
+      {
         "Name": "IgnoreSSLWarning",
         "DisplayName": "Ignore SSL Warning",
         "Type": "Bool",
@@ -2893,6 +2981,138 @@
         "DefaultValue": "false",
         "Required": true,
         "Description": "Select this if you wish to use F5's token authentiation instead of basic authentication for all API requests. If you choose not to add this custom field, the default value of False will be assumed and basic authentication will be used for all API requests for all jobs. Setting this value to True will enable an initial basic authenticated request to acquire an authentication token, which will then be used for all subsequent API requests."
+      },
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "IsPAMEligible": true,
+        "Required": false,
+        "Description": "Login credential for the F5 device.  MUST be an Admin account."
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "IsPAMEligible": true,
+        "Required": false,
+        "Description": "Login password for the F5 device."
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true,
+        "Description": "True if using https to access the F5 device. False if using http."
+      }
+    ],
+    "EntryParameters": []
+  },
+  {
+    "Name": "F5 Profiles REST",
+    "ShortName": "F5-PF-REST",
+    "Capability": "F5-PF-REST",
+    "ServerRequired": true,
+    "BlueprintAllowed": true,
+    "CustomAliasAllowed": "Required",
+    "PowerShell": false,
+    "PrivateKeyAllowed": "Required",
+    "ClientMachineDescription": "The server name or IP Address for the F5 device.",
+    "StorePathDescription": "Enter the store path in the form 'Partition/ProfileType/ProfileName'. Partition and Profile Name are case sensitive. ProfileType must be either \"Client\" or \"Server\".",
+    "SupportedOperations": {
+      "Add": true,
+      "Create": true,
+      "Discovery": true,
+      "Enrollment": false,
+      "Remove": false
+    },
+    "PasswordOptions": {
+      "Style": "Default",
+      "EntrySupported": false,
+      "StoreRequired": true,
+      "StorePassword": {
+        "Description": "Check \"No Password\" if you wish the private key of any added certificate to be set to Key Security Type \"Normal\". Enter a value (either a password or pointer to an installed PAM provider key for the password) to be used to encrypt the private key of any added certificate for Key Security Type of \"Password\".",
+        "IsPAMEligible": true
+      }
+    },
+    "Properties": [
+      {
+        "Name": "AliasFormat",
+        "DisplayName": "Alias Format",
+        "Type": "Bool",
+        "DependsOn": "AutoGenerateAlias",
+        "DefaultValue": "EnteredValue,Thumbprint,SerialNumber,CN-Thumbprint,CN-SerialNumber",
+        "Required": true,
+        "Description": "Select EnteredValue if you wish to use the alias entered when scheduling a ManagementAdd job.  Select one of the other values to ignore the entered alias value and format the alias based on attributes of the certificate itself."
+      },
+      {
+        "Name": "PrimaryNodeOnlineRequired",
+        "DisplayName": "Primary Node Online Required",
+        "Type": "MultipleChoice",
+        "DefaultValue": "CN,Thumbprint,SerialNumber,CN-Thumbprint,CN-SerialNumber",
+        "DependsOn": "AutoGenerateAlias",
+        "Required": true,
+        "Description": "Select the format for auto generated aliases when adding new certificates."
+      },
+      {
+        "Name": "PrimaryNode",
+        "DisplayName": "Primary Node",
+        "Type": "String",
+        "DependsOn": "PrimaryNodeOnlineRequired",
+        "DefaultValue": "",
+        "Required": true,
+        "Description": "Only required (and shown) if Primary Node Online Required is added and selected.  Enter the Host Name of the F5 device that acts as the primary node in a highly available F5 implementation. Please note that this value IS case sensitive."
+      },
+      {
+        "Name": "PrimaryNodeCheckRetryWaitSecs",
+        "DisplayName": "Primary Node Check Retry Wait Seconds",
+        "Type": "String",
+        "DependsOn": "PrimaryNodeOnlineRequired",
+        "DefaultValue": "120",
+        "Required": true,
+        "Description": "Enter the number of seconds to wait between attempts to add/replace/renew a certificate if the node is inactive."
+      },
+      {
+        "Name": "PrimaryNodeCheckRetryMax",
+        "DisplayName": "Primary Node Check Retry Maximum",
+        "Type": "String",
+        "DependsOn": "PrimaryNodeOnlineRequired",
+        "DefaultValue": "3",
+        "Required": true,
+        "Description": "Enter the number of times a Management-Add job will attempt to add/replace/renew a certificate if the node is inactive before failing."
+      },
+      {
+        "Name": "IgnoreSSLWarning",
+        "DisplayName": "Ignore SSL Warning",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "False",
+        "Required": true,
+        "Description": "Select this if you wish to ignore SSL warnings from F5 that occur during API calls when the site does not have a trusted certificate with the proper SAN bound to it. If you choose not to add this custom field, the default value of False will be assumed and SSL warnings will cause errors during orchestrator extension jobs."
+      },
+      {
+        "Name": "UseTokenAuth",
+        "DisplayName": "Use Token Authentication",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "Description": "Select this if you wish to use F5's token authentication instead of basic authentication for all API requests. If you choose not to add this custom field, the default value of False will be assumed and basic authentication will be used for all API requests for all jobs. Setting this value to True will enable an initial basic authenticated request to acquire an authentication token, which will then be used for all subsequent API requests."
+      },
+      {
+        "Name": "InheritedProfile",
+        "DisplayName": "Profile to Inherit",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "The optional fully qualified name of the profile you want this profile to inherit settings from in {Partition}/{ProfileName} format.  If left blank, the default profile for the profile type will be used."
       },
       {
         "Name": "ServerUsername",
@@ -3645,7 +3865,17 @@
     "StorePathType": "",
     "StorePathValue": "example: '/mycerts/certstore.jks?b64cert'",
     "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
+    "JobProperties": [
+      {
+        "Name": "DiscoverySuffix",
+        "DisplayName": "Discovery Suffix",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "_jks",
+        "Required": false,
+        "Description": "The secret-key-name suffix Discovery jobs use to identify candidate JKS certificate secrets. Defaults to '_jks'."
+      }
+    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
@@ -3663,7 +3893,7 @@
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": "",
+        "DefaultValue": "<vault server url>",
         "Required": true,
         "IsPAMEligible": true,
         "Description": "The base URI (and port) to the instance of Hashicorp Vault ex: https://localhost:8200"
@@ -3673,10 +3903,75 @@
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": "",
-        "Required": true,
+        "DefaultValue": "<vault token>",
+        "Required": false,
         "IsPAMEligible": true,
-        "Description": "Vault token that will be used by the Orchestrator integration for authenticating and performing operations in the Vault instance"
+        "Description": "Vault token that will be used by the Orchestrator integration for authenticating and performing operations in the Vault instance. Required unless 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "UseOAuth",
+        "DisplayName": "Use OAuth 2.0 (Client Credentials)",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "Enables OAuth 2.0 Client Credentials authentication: the orchestrator obtains a JWT from the configured IdP (e.g. PingFederate, Microsoft Entra ID) and exchanges it for a short-lived Vault token via Vault's JWT auth method, instead of using a static 'Server Password' Vault token."
+      },
+      {
+        "Name": "ClientId",
+        "DisplayName": "Client ID",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "<client id>",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The OAuth 2.0 Client ID registered with your IdP. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "ClientSecret",
+        "DisplayName": "Client Secret",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "<client secret>",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The OAuth 2.0 Client Secret for the above Client ID. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "OAuthUrl",
+        "DisplayName": "OAuth Token Endpoint",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<oauth url>",
+        "Required": false,
+        "Description": "The IdP's OAuth 2.0 token endpoint URL used to obtain a JWT via the Client Credentials grant. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "Scope",
+        "DisplayName": "OAuth Scope",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<scope>",
+        "Required": false,
+        "Description": "Optional OAuth 2.0 scope to request from the IdP (e.g. Entra ID typically needs 'api://<app-id-uri>/.default'). Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "VaultRoleName",
+        "DisplayName": "Vault Role Name",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<vault role name>",
+        "Required": false,
+        "Description": "The name of the Vault role, configured under the JWT auth mount (e.g. 'auth/jwt/role/<name>'), to authenticate against using the JWT obtained from the IdP. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "AuthMountPoint",
+        "DisplayName": "JWT Auth Mount Point",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "jwt/",
+        "Required": false,
+        "Description": "The mount point of Vault's JWT auth method used to exchange the IdP-issued JWT for a Vault token. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
       },
       {
         "Name": "IncludeCertChain",
@@ -3727,7 +4022,17 @@
     "StorePathType": "",
     "StorePathValue": "example: '/mycerts/certstore.p12?b64cert'",
     "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
+    "JobProperties": [
+      {
+        "Name": "DiscoverySuffix",
+        "DisplayName": "Discovery Suffix",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "_p12",
+        "Required": false,
+        "Description": "The secret-key-name suffix Discovery jobs use to identify candidate PKCS12 certificate secrets. Defaults to '_p12'."
+      }
+    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
@@ -3745,7 +4050,7 @@
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": "",
+        "DefaultValue": "<vault server url>",
         "Required": true,
         "IsPAMEligible": true,
         "Description": "The base URI (and port) to the instance of Hashicorp Vault ex: https://localhost:8200"
@@ -3755,10 +4060,75 @@
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": "",
-        "Required": true,
+        "DefaultValue": "<vault token>",
+        "Required": false,
         "IsPAMEligible": true,
-        "Description": "Vault token that will be used by the Orchestrator integration for authenticating and performing operations in the Vault instance"
+        "Description": "Vault token that will be used by the Orchestrator integration for authenticating and performing operations in the Vault instance. Required unless 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "UseOAuth",
+        "DisplayName": "Use OAuth 2.0 (Client Credentials)",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "Enables OAuth 2.0 Client Credentials authentication: the orchestrator obtains a JWT from the configured IdP (e.g. PingFederate, Microsoft Entra ID) and exchanges it for a short-lived Vault token via Vault's JWT auth method, instead of using a static 'Server Password' Vault token."
+      },
+      {
+        "Name": "ClientId",
+        "DisplayName": "Client ID",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "<client id>",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The OAuth 2.0 Client ID registered with your IdP. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "ClientSecret",
+        "DisplayName": "Client Secret",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "<client secret>",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The OAuth 2.0 Client Secret for the above Client ID. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "OAuthUrl",
+        "DisplayName": "OAuth Token Endpoint",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<oauth url>",
+        "Required": false,
+        "Description": "The IdP's OAuth 2.0 token endpoint URL used to obtain a JWT via the Client Credentials grant. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "Scope",
+        "DisplayName": "OAuth Scope",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<scope>",
+        "Required": false,
+        "Description": "Optional OAuth 2.0 scope to request from the IdP (e.g. Entra ID typically needs 'api://<app-id-uri>/.default'). Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "VaultRoleName",
+        "DisplayName": "Vault Role Name",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<vault role name>",
+        "Required": false,
+        "Description": "The name of the Vault role, configured under the JWT auth mount (e.g. 'auth/jwt/role/<name>'), to authenticate against using the JWT obtained from the IdP. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "AuthMountPoint",
+        "DisplayName": "JWT Auth Mount Point",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "jwt/",
+        "Required": false,
+        "Description": "The mount point of Vault's JWT auth method used to exchange the IdP-issued JWT for a Vault token. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
       },
       {
         "Name": "IncludeCertChain",
@@ -3805,9 +4175,21 @@
     "Capability": "HCVKVPEM",
     "LocalStore": false,
     "ClientMachineDescription": "This can be any value to help uniquely identify the store.  It is not used by this integration.",
-    "StorePathDescription": "This is the path after mount point where the certificates will be stored.",
+    "StorePathDescription": "This is the path to the secret containing the certificate.",
+    "StorePathType": "",
+    "StorePathValue": "example: '/mycerts/mycert_pem?b64cert'",
     "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
+    "JobProperties": [
+      {
+        "Name": "DiscoverySuffix",
+        "DisplayName": "Discovery Suffix",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "_pem",
+        "Required": false,
+        "Description": "The secret-key-name suffix Discovery jobs use to identify candidate PEM certificate secrets. Defaults to '_pem'."
+      }
+    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
@@ -3825,7 +4207,7 @@
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": "",
+        "DefaultValue": "<vault server url>",
         "Required": true,
         "IsPAMEligible": true,
         "Description": "The base URI (and port) to the instance of Hashicorp Vault ex: https://localhost:8200"
@@ -3835,19 +4217,75 @@
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": "",
-        "Required": true,
+        "DefaultValue": "<vault token>",
+        "Required": false,
         "IsPAMEligible": true,
-        "Description": "Vault token that will be used by the Orchestrator integration for authenticating and performing operations in the Vault instance"
+        "Description": "Vault token that will be used by the Orchestrator integration for authenticating and performing operations in the Vault instance. Required unless 'Use OAuth 2.0 (Client Credentials)' is enabled."
       },
       {
-        "Name": "SubfolderInventory",
-        "DisplayName": "Subfolder Inventory",
-        "Description": "Should certificates found in sub-paths be included when performing an inventory?",
+        "Name": "UseOAuth",
+        "DisplayName": "Use OAuth 2.0 (Client Credentials)",
         "Type": "Bool",
         "DependsOn": "",
         "DefaultValue": "false",
-        "Required": false
+        "Required": false,
+        "Description": "Enables OAuth 2.0 Client Credentials authentication: the orchestrator obtains a JWT from the configured IdP (e.g. PingFederate, Microsoft Entra ID) and exchanges it for a short-lived Vault token via Vault's JWT auth method, instead of using a static 'Server Password' Vault token."
+      },
+      {
+        "Name": "ClientId",
+        "DisplayName": "Client ID",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "<client id>",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The OAuth 2.0 Client ID registered with your IdP. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "ClientSecret",
+        "DisplayName": "Client Secret",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "<client secret>",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The OAuth 2.0 Client Secret for the above Client ID. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "OAuthUrl",
+        "DisplayName": "OAuth Token Endpoint",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<oauth url>",
+        "Required": false,
+        "Description": "The IdP's OAuth 2.0 token endpoint URL used to obtain a JWT via the Client Credentials grant. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "Scope",
+        "DisplayName": "OAuth Scope",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<scope>",
+        "Required": false,
+        "Description": "Optional OAuth 2.0 scope to request from the IdP (e.g. Entra ID typically needs 'api://<app-id-uri>/.default'). Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "VaultRoleName",
+        "DisplayName": "Vault Role Name",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<vault role name>",
+        "Required": false,
+        "Description": "The name of the Vault role, configured under the JWT auth mount (e.g. 'auth/jwt/role/<name>'), to authenticate against using the JWT obtained from the IdP. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "AuthMountPoint",
+        "DisplayName": "JWT Auth Mount Point",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "jwt/",
+        "Required": false,
+        "Description": "The mount point of Vault's JWT auth method used to exchange the IdP-issued JWT for a Vault token. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
       },
       {
         "Name": "IncludeCertChain",
@@ -3866,6 +4304,15 @@
         "DependsOn": "",
         "DefaultValue": "",
         "Required": false
+      },
+      {
+        "Name": "PrivateKeyPath",
+        "DisplayName": "Private Key Path",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "This is the path to the secret that contains the PEM-encoded private key. Optional \u2014 omit for CA trust chain / certificate-only PEM stores that have no private key. Unlike other Key-Value store types, no sibling-secret convention is assumed when this is omitted."
       }
     ],
     "EntryParameters": [],
@@ -3889,7 +4336,17 @@
     "StorePathType": "",
     "StorePathValue": "example: '/mycerts/certstore.pfx?b64cert'",
     "PrivateKeyAllowed": "Optional",
-    "JobProperties": [],
+    "JobProperties": [
+      {
+        "Name": "DiscoverySuffix",
+        "DisplayName": "Discovery Suffix",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "_pfx",
+        "Required": false,
+        "Description": "The secret-key-name suffix Discovery jobs use to identify candidate PFX certificate secrets. Defaults to '_pfx'."
+      }
+    ],
     "ServerRequired": true,
     "PowerShell": false,
     "BlueprintAllowed": false,
@@ -3907,7 +4364,7 @@
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": "",
+        "DefaultValue": "<vault server url>",
         "Required": true,
         "IsPAMEligible": true,
         "Description": "The base URI (and port) to the instance of Hashicorp Vault ex: https://localhost:8200"
@@ -3917,10 +4374,75 @@
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": "",
-        "Required": true,
+        "DefaultValue": "<vault token>",
+        "Required": false,
         "IsPAMEligible": true,
-        "Description": "Vault token that will be used by the Orchestrator integration for authenticating and performing operations in the Vault instance"
+        "Description": "Vault token that will be used by the Orchestrator integration for authenticating and performing operations in the Vault instance. Required unless 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "UseOAuth",
+        "DisplayName": "Use OAuth 2.0 (Client Credentials)",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "Enables OAuth 2.0 Client Credentials authentication: the orchestrator obtains a JWT from the configured IdP (e.g. PingFederate, Microsoft Entra ID) and exchanges it for a short-lived Vault token via Vault's JWT auth method, instead of using a static 'Server Password' Vault token."
+      },
+      {
+        "Name": "ClientId",
+        "DisplayName": "Client ID",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "<client id>",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The OAuth 2.0 Client ID registered with your IdP. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "ClientSecret",
+        "DisplayName": "Client Secret",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "<client secret>",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The OAuth 2.0 Client Secret for the above Client ID. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "OAuthUrl",
+        "DisplayName": "OAuth Token Endpoint",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<oauth url>",
+        "Required": false,
+        "Description": "The IdP's OAuth 2.0 token endpoint URL used to obtain a JWT via the Client Credentials grant. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "Scope",
+        "DisplayName": "OAuth Scope",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<scope>",
+        "Required": false,
+        "Description": "Optional OAuth 2.0 scope to request from the IdP (e.g. Entra ID typically needs 'api://<app-id-uri>/.default'). Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "VaultRoleName",
+        "DisplayName": "Vault Role Name",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<vault role name>",
+        "Required": false,
+        "Description": "The name of the Vault role, configured under the JWT auth mount (e.g. 'auth/jwt/role/<name>'), to authenticate against using the JWT obtained from the IdP. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "AuthMountPoint",
+        "DisplayName": "JWT Auth Mount Point",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "jwt/",
+        "Required": false,
+        "Description": "The mount point of Vault's JWT auth method used to exchange the IdP-issued JWT for a Vault token. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
       },
       {
         "Name": "IncludeCertChain",
@@ -3989,7 +4511,7 @@
         "DisplayName": "Server Username",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": "",
+        "DefaultValue": "<vault server url>",
         "Required": true,
         "IsPAMEligible": true,
         "Description": "The base URI (and port) to the instance of Hashicorp Vault ex: https://localhost:8200"
@@ -3999,10 +4521,75 @@
         "DisplayName": "Server Password",
         "Type": "Secret",
         "DependsOn": "",
-        "DefaultValue": "",
-        "Required": true,
+        "DefaultValue": "<vault token>",
+        "Required": false,
         "IsPAMEligible": true,
-        "Description": "Vault token that will be used by the Orchestrator integration for authenticating and performing operations in the Vault instance"
+        "Description": "Vault token that will be used by the Orchestrator integration for authenticating and performing operations in the Vault instance. Required unless 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "UseOAuth",
+        "DisplayName": "Use OAuth 2.0 (Client Credentials)",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": false,
+        "Description": "Enables OAuth 2.0 Client Credentials authentication: the orchestrator obtains a JWT from the configured IdP (e.g. PingFederate, Microsoft Entra ID) and exchanges it for a short-lived Vault token via Vault's JWT auth method, instead of using a static 'Server Password' Vault token."
+      },
+      {
+        "Name": "ClientId",
+        "DisplayName": "Client ID",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "<client id>",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The OAuth 2.0 Client ID registered with your IdP. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "ClientSecret",
+        "DisplayName": "Client Secret",
+        "Type": "Secret",
+        "DependsOn": "",
+        "DefaultValue": "<client secret>",
+        "Required": false,
+        "IsPAMEligible": true,
+        "Description": "The OAuth 2.0 Client Secret for the above Client ID. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "OAuthUrl",
+        "DisplayName": "OAuth Token Endpoint",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<oauth url>",
+        "Required": false,
+        "Description": "The IdP's OAuth 2.0 token endpoint URL used to obtain a JWT via the Client Credentials grant. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "Scope",
+        "DisplayName": "OAuth Scope",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<scope>",
+        "Required": false,
+        "Description": "Optional OAuth 2.0 scope to request from the IdP (e.g. Entra ID typically needs 'api://<app-id-uri>/.default'). Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "VaultRoleName",
+        "DisplayName": "Vault Role Name",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "<vault role name>",
+        "Required": false,
+        "Description": "The name of the Vault role, configured under the JWT auth mount (e.g. 'auth/jwt/role/<name>'), to authenticate against using the JWT obtained from the IdP. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
+      },
+      {
+        "Name": "AuthMountPoint",
+        "DisplayName": "JWT Auth Mount Point",
+        "Type": "String",
+        "DependsOn": "UseOAuth",
+        "DefaultValue": "jwt/",
+        "Required": false,
+        "Description": "The mount point of Vault's JWT auth method used to exchange the IdP-issued JWT for a Vault token. Only used when 'Use OAuth 2.0 (Client Credentials)' is enabled."
       },
       {
         "Name": "MountPoint",
@@ -4170,6 +4757,15 @@
         "DefaultValue": "true",
         "Required": true,
         "Description": "Determine whether the server uses SSL or not (This field is automatically created)"
+      },
+      {
+        "Name": "JEAEndpointName",
+        "DisplayName": "JEA End Point Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Name of the JEA endpoint to use for the session (This field is automatically created)"
       }
     ],
     "EntryParameters": [
@@ -5279,7 +5875,17 @@
         "DefaultValue": "",
         "Required": false,
         "IsPAMEligible": false,
-        "Description": "Template stack used for device push of certificates via Template."
+        "Description": "A semicolon delimited list of Template Stacks used for device push of certificates via Template (i.e. `Stack 1`, `Stack 1;Stack2`, or `Stack 1; Stack 2`, etc.)."
+      },
+      {
+        "Name": "PushFailureBehavior",
+        "DisplayName": "Push Failure Behavior",
+        "Type": "MultipleChoice",
+        "DependsOn": "",
+        "DefaultValue": "Failure,Warning",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "Controls the job result when Panorama fails to commit to a device group, template, or template stack. 'Failure' will fail the management job and trigger a retry, while 'Warning' records the failure message but marks the job as completed."
       }
     ],
     "EntryParameters": [],
@@ -5477,13 +6083,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
       },
       {
         "Name": "SeparatePrivateKeyFilePath",
@@ -5511,6 +6117,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -5609,13 +6224,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides DefaultSudoImpersonatedUser [config.json](#post-installation) setting."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides DefaultSudoImpersonatedUser [config.json](#post-installation) setting."
       },
       {
         "Name": "RemoveRootCertificate",
@@ -5634,6 +6249,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -5714,6 +6338,16 @@
         "Description": "A password (or valid PAM key if the password is stored in a KF Command configured PAM integration). The password can also be an SSH private key if connecting via SSH to a server using SSH private key authentication. If acting as an *agent* using local file access, just check *No Value*"
       },
       {
+        "Name": "CommandPath",
+        "DisplayName": "GSKCAPICMD installation folder path",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The full folder path (not including the file name itself) where the GSKCAPCMD CLI located is installed."
+      },
+      {
         "Name": "LinuxFilePermissionsOnStoreCreation",
         "DisplayName": "Linux File Permissions on Store Creation",
         "Required": false,
@@ -5732,13 +6366,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
       },
       {
         "Name": "RemoveRootCertificate",
@@ -5757,6 +6391,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -5855,13 +6498,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting."
       },
       {
         "Name": "RemoveRootCertificate",
@@ -5880,6 +6523,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -5978,13 +6630,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting.."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides [config.json](#post-installation) DefaultSudoImpersonatedUser setting.."
       },
       {
         "Name": "IsTrustStore",
@@ -6039,6 +6691,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -6137,13 +6798,13 @@
         "Description": "The LinuxFileOwnerOnStoreCreation field should contain a valid user ID recognized by the destination Linux server, optionally followed by a colon and a group ID if the group owner differs. Example: 'userID' or 'userID:groupID'.  Overrides DefaultOwnerOnStoreCreation [config.json](#post-installation) setting."
       },
       {
-        "Name": "SudoImpersonatingUser",
+        "Name": "SudoImpersonatedUser",
         "DisplayName": "Sudo Impersonating User",
         "Required": false,
         "DependsOn": "",
         "Type": "String",
         "DefaultValue": "",
-        "Description": "The SudoImpersonatingUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides DefaultSudoImpersonatedUser [config.json](#post-installation) setting."
+        "Description": "The SudoImpersonatedUser field should contain a valid user ID to impersonate using sudo on the destination Linux server. Example: 'impersonatedUserID'.  Overrides DefaultSudoImpersonatedUser [config.json](#post-installation) setting."
       },
       {
         "Name": "RemoveRootCertificate",
@@ -6162,6 +6823,15 @@
         "Type": "Bool",
         "DefaultValue": "False",
         "Description": "Internally set the -IncludePortInSPN option when creating the remote PowerShell connection. Needed for some Kerberos configurations."
+      },
+      {
+        "Name": "FileTransferProtocol",
+        "DisplayName": "File Transfer Protocol to Use",
+        "Required": false,
+        "DependsOn": "",
+        "Type": "MultipleChoice",
+        "DefaultValue": "SCP,SFTP,Both",
+        "Description": "Which protocol should be used when uploading/downloading files - SCP, SFTP, or Both (try one, and then if necessary, the other).  Overrides FileTransferProtocol [config.json](#post-installation) setting."
       },
       {
         "Name": "SSHPort",
@@ -6518,6 +7188,16 @@
         "Required": true,
         "IsPAMEligible": false,
         "Description": "The API Version of Avi / NSX to target. A default is set for the version this was originally developed and tested against."
+      },
+      {
+        "Name": "RetriesForFailedAuthentication",
+        "DisplayName": "Retries For Failed Authentication",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "0",
+        "Required": false,
+        "IsPAMEligible": false,
+        "Description": "The number of additional login attempts to make if NSX ALB rejects the configured credentials as invalid. NSX ALB can be configured to validate logins against an external identity provider (e.g. LDAP/AD); when that provider is momentarily overwhelmed or unreachable, NSX ALB returns the same generic 'Invalid credentials' error it would for an actually wrong password, even though the configured credentials are correct. Retrying with a short backoff gives that kind of transient identity-provider issue a chance to clear before the job fails outright. Defaults to 0 (no retries), which preserves the original behavior unless this is explicitly configured."
       }
     ],
     "EntryParameters": [],
@@ -6738,6 +7418,15 @@
         "DefaultValue": "true",
         "Required": true,
         "Description": "Determine whether the server uses SSL or not (This field is automatically created)"
+      },
+      {
+        "Name": "JEAEndpointName",
+        "DisplayName": "JEA End Point Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Name of the JEA endpoint to use for the session (This field is automatically created)"
       }
     ],
     "EntryParameters": [
@@ -6780,7 +7469,7 @@
       "Add": true,
       "Create": false,
       "Discovery": false,
-      "Enrollment": false,
+      "Enrollment": true,
       "Remove": true
     },
     "Properties": [
@@ -6846,6 +7535,15 @@
         "DefaultValue": "false",
         "Required": true,
         "Description": "Boolean value (true or false) indicating whether to restart the SQL Server service after installing the certificate. Example: 'true' to enable service restart after installation."
+      },
+      {
+        "Name": "JEAEndpointName",
+        "DisplayName": "JEA End Point Name",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Name of the JEA endpoint to use for the session (This field is automatically created)"
       }
     ],
     "EntryParameters": [
