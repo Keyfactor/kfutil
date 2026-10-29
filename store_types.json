@@ -1821,7 +1821,34 @@
         "DependsOn": "",
         "DefaultValue": "true",
         "Required": true,
-        "Description": "Select True or False depending on if SSL (HTTPS) should be used to communicate with the camera. This should always be \"True\""
+        "Description": "Select True or False depending on if SSL (HTTPS) should be used to communicate with the camera."
+      },
+      {
+        "Name": "BypassTlsValidation",
+        "DisplayName": "Bypass TLS Validation",
+        "Type": "Bool",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true,
+        "Description": "If true and 'Use SSL' is enabled, TLS certificate validation is skipped when connecting to the camera. Has no effect when 'Use SSL' is false. Only enable this when the camera's certificate cannot be trusted by the orchestrator server."
+      },
+      {
+        "Name": "HttpPort",
+        "DisplayName": "HTTP Port",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Optional. Port used to connect to the camera over HTTP, when 'Use SSL' is false. A port set here replaces any port in Client Machine. If blank, the port in Client Machine is used, or the default HTTP port (80) if Client Machine has no port."
+      },
+      {
+        "Name": "HttpsPort",
+        "DisplayName": "HTTPS Port",
+        "Type": "String",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": false,
+        "Description": "Optional. Port used to connect to the camera over HTTPS, when 'Use SSL' is true. A port set here replaces any port in Client Machine. If blank, the port in Client Machine is used, or the default HTTPS port (443) if Client Machine has no port."
       }
     ],
     "EntryParameters": [
