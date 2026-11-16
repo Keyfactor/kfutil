@@ -5647,6 +5647,73 @@
     "CustomAliasAllowed": "Forbidden"
   },
   {
+    "Name": "Mobotix IP Camera",
+    "ShortName": "MobotixIPCamera",
+    "Capability": "MobotixIPCamera",
+    "LocalStore": true,
+    "ClientMachineDescription": "The IP address of the Camera. Sample is \"192.167.231.174:44444\". Include the port if necessary.",
+    "StorePathDescription": "Enter the camera's factory IP address, as shown in the camera's web UI at initial setup. Used to validate the camera's factory certificate.",
+    "SupportedOperations": {
+      "Add": false,
+      "Create": false,
+      "Discovery": false,
+      "Enrollment": true,
+      "Remove": false
+    },
+    "Properties": [
+      {
+        "Name": "ServerUsername",
+        "DisplayName": "Server Username",
+        "Type": "Secret",
+        "Description": "Enter the username of the configured \"service\" user on the camera",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true
+      },
+      {
+        "Name": "ServerPassword",
+        "DisplayName": "Server Password",
+        "Type": "Secret",
+        "Description": "Enter the password of the configured \"service\" user on the camera",
+        "DependsOn": "",
+        "DefaultValue": "",
+        "Required": true
+      },
+      {
+        "Name": "ServerUseSsl",
+        "DisplayName": "Use SSL",
+        "Type": "Bool",
+        "Description": "Select True or False depending on if SSL (HTTPS) should be used to communicate with the camera.",
+        "DependsOn": "",
+        "DefaultValue": "true",
+        "Required": true
+      },
+      {
+        "Name": "BypassTlsValidation",
+        "DisplayName": "Bypass TLS Validation",
+        "Type": "Bool",
+        "Description": "If true and 'Use SSL' is enabled, TLS certificate validation is skipped when connecting to the camera. Has no effect when 'Use SSL' is false. Only enable this when the camera's certificate cannot be trusted by the orchestrator server.",
+        "DependsOn": "",
+        "DefaultValue": "false",
+        "Required": true
+      }
+    ],
+    "EntryParameters": [],
+    "PasswordOptions": {
+      "EntrySupported": false,
+      "StoreRequired": false,
+      "Style": "Default"
+    },
+    "StorePathType": "",
+    "StorePathValue": "",
+    "PrivateKeyAllowed": "Forbidden",
+    "JobProperties": [],
+    "ServerRequired": true,
+    "PowerShell": false,
+    "BlueprintAllowed": false,
+    "CustomAliasAllowed": "Forbidden"
+  },
+  {
     "Name": "Nmap Orchestrator",
     "ShortName": "Nmap",
     "Capability": "Nmap",
