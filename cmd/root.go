@@ -52,6 +52,8 @@ var (
 	kfcClientSecret string
 	kfcTokenUrl     string
 	kfcAPIPath      string
+	kfcScopes       string
+	kfcAudience     string
 	logInsecure     bool
 	outputFormat    string
 	offline         bool
@@ -148,6 +150,46 @@ func getServerConfigFromEnv() (*auth_providers.Server, error) {
 	tokenUrl, tOk := os.LookupEnv(auth_providers.EnvKeyfactorAuthTokenURL)
 	skipVerify, svOk := os.LookupEnv(auth_providers.EnvKeyfactorSkipVerify)
 	var skipVerifyBool bool
+
+	// CLI persistent flags, when explicitly provided, take precedence over environment
+	// variables. Changed() is used (rather than a non-empty check) so that flags with a
+	// non-empty default (e.g. --api-path) do not silently override an environment value
+	// the user did set.
+	authFlags := RootCmd.PersistentFlags()
+	if authFlags.Changed("username") {
+		username, uOk = kfcUsername, true
+	}
+	if authFlags.Changed("password") {
+		password, pOk = kfcPassword, true
+	}
+	if authFlags.Changed("domain") {
+		domain, dOk = kfcDomain, true
+	}
+	if authFlags.Changed("hostname") {
+		hostname, hOk = kfcHostName, true
+	}
+	if authFlags.Changed("api-path") {
+		apiPath, aOk = kfcAPIPath, true
+	}
+	if authFlags.Changed("client-id") {
+		clientId, cOk = kfcClientId, true
+	}
+	if authFlags.Changed("client-secret") {
+		clientSecret, csOk = kfcClientSecret, true
+	}
+	if authFlags.Changed("token-url") {
+		tokenUrl, tOk = kfcTokenUrl, true
+	}
+	if authFlags.Changed("audience") {
+		audience = kfcAudience
+	}
+	if authFlags.Changed("scopes") {
+		if kfcScopes != "" {
+			scopes = strings.Split(kfcScopes, ",")
+		} else {
+			scopes = nil
+		}
+	}
 
 	isBasicAuth := uOk && pOk
 	isOAuth := cOk && csOk && tOk
@@ -1023,7 +1065,7 @@ func init() {
 	)
 
 	RootCmd.PersistentFlags().StringVarP(
-		&kfcClientId,
+		&kfcTokenUrl,
 		"token-url",
 		"",
 		"",
@@ -1057,6 +1099,20 @@ func init() {
 		"",
 		"KeyfactorAPI",
 		"API Path to use for authenticating to Keyfactor Command. (default is KeyfactorAPI)",
+	)
+	RootCmd.PersistentFlags().StringVarP(
+		&kfcScopes,
+		"scopes",
+		"",
+		"",
+		"Comma-separated list of OAuth2 scopes to request when authenticating via a third-party IdP (e.g. Entra ID: api://<app-id-uri>/.default).",
+	)
+	RootCmd.PersistentFlags().StringVarP(
+		&kfcAudience,
+		"audience",
+		"",
+		"",
+		"OAuth2 audience to request when authenticating to Keyfactor Command. Not used by all IdPs (e.g. leave unset for Entra ID).",
 	)
 
 	// Cobra also supports local flags, which will only run
