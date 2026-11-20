@@ -622,6 +622,19 @@
           "OnReenrollment": false
         },
         "DefaultValue": ""
+      },
+      {
+        "Name": "KmsKeyId",
+        "DisplayName": "KMS Key ID",
+        "Description": "The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the certificate secret and the <alias>-pw password secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead.",
+        "Type": "string",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": ""
       }
     ],
     "PasswordOptions": {
@@ -819,6 +832,19 @@
           "OnReenrollment": false
         },
         "DefaultValue": ""
+      },
+      {
+        "Name": "KmsKeyId",
+        "DisplayName": "KMS Key ID",
+        "Description": "The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead.",
+        "Type": "string",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": ""
       }
     ],
     "PasswordOptions": {
@@ -988,6 +1014,19 @@
         "Name": "ReplicaRegions",
         "DisplayName": "Replica Regions",
         "Description": "To replicate secrets to other regions, you can provide them here as a JSON array in the format: [{ 'KmsKeyId': '<optionally specify the encryption key ID', 'Region': '<region name>'}, {...}]",
+        "Type": "string",
+        "RequiredWhen": {
+          "HasPrivateKey": false,
+          "OnAdd": false,
+          "OnRemove": false,
+          "OnReenrollment": false
+        },
+        "DefaultValue": ""
+      },
+      {
+        "Name": "KmsKeyId",
+        "DisplayName": "KMS Key ID",
+        "Description": "The ID, ARN, alias name (alias/<name>), or alias ARN of the AWS KMS key used to encrypt the certificate secret and the <alias>-pw password secret in the primary region. If not provided, the AWS managed key (aws/secretsmanager) is used. To specify the key used by a replica region, use the KmsKeyId property in the ReplicaRegions entry parameter instead.",
         "Type": "string",
         "RequiredWhen": {
           "HasPrivateKey": false,
@@ -3046,7 +3085,7 @@
         "Name": "AliasFormat",
         "DisplayName": "Alias Format",
         "Type": "Bool",
-        "DependsOn": "AutoGenerateAlias",
+        "DependsOn": "",
         "DefaultValue": "EnteredValue,Thumbprint,SerialNumber,CN-Thumbprint,CN-SerialNumber",
         "Required": true,
         "Description": "Select EnteredValue if you wish to use the alias entered when scheduling a ManagementAdd job.  Select one of the other values to ignore the entered alias value and format the alias based on attributes of the certificate itself."
@@ -3056,7 +3095,7 @@
         "DisplayName": "Primary Node Online Required",
         "Type": "MultipleChoice",
         "DefaultValue": "CN,Thumbprint,SerialNumber,CN-Thumbprint,CN-SerialNumber",
-        "DependsOn": "AutoGenerateAlias",
+        "DependsOn": "",
         "Required": true,
         "Description": "Select the format for auto generated aliases when adding new certificates."
       },
